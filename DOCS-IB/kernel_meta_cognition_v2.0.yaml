@@ -1,0 +1,628 @@
+id: kernel_meta_cognition_v2.0
+name: Meta-Cognition Kernel
+version: 2.0.0
+created_at: '2025-01-29T00:00:00Z'
+owner: Igor
+author: L
+type: kernel
+scope: cognitive
+ring: R1
+status: operational
+description: 'Meta-cognitive kernel enabling self-awareness, self-monitoring, and
+  recursive reasoning about reasoning processes. Provides higher-order thinking about
+  cognitive operations with deterministic monitoring and optimization.
+
+  '
+purpose: 'Enable the system to reason about its own reasoning, monitor cognitive processes,
+  detect errors in thinking, and optimize its own cognitive operations through deterministic
+  meta-reasoning.
+
+  '
+roles:
+- name: Cognitive Monitor
+  responsibility: Monitor cognitive processes continuously
+  authority: read_cognitive_state
+- name: Error Detector
+  responsibility: Detect logical errors and biases
+  authority: flag_errors
+- name: Strategy Selector
+  responsibility: Select optimal reasoning strategies
+  authority: select_strategies
+- name: Quality Evaluator
+  responsibility: Evaluate reasoning quality
+  authority: assess_quality
+- name: Optimization Engine
+  responsibility: Optimize cognitive operations
+  authority: modify_cognitive_parameters
+inputs:
+- name: cognitive_operation
+  type: operation_spec
+  description: Cognitive operation to monitor
+  required: false
+- name: reasoning_trace
+  type: reasoning_trace
+  description: Trace of reasoning process
+  required: false
+- name: performance_metrics
+  type: metrics_data
+  description: Performance metrics for evaluation
+  required: false
+- name: optimization_request
+  type: optimization_query
+  description: Request for cognitive optimization
+  required: false
+- name: error_report
+  type: error_data
+  description: Reported error for analysis
+  required: false
+outputs:
+- name: meta_cognitive_state
+  type: meta_state
+  description: Current meta-cognitive state
+- name: reasoning_quality_metrics
+  type: quality_report
+  description: Quality metrics for reasoning
+- name: error_analysis
+  type: error_report
+  description: Analysis of detected errors
+- name: strategy_recommendation
+  type: strategy_spec
+  description: Recommended reasoning strategy
+- name: optimization_result
+  type: optimization_report
+  description: Result of optimization operation
+- name: self_correction_plan
+  type: correction_spec
+  description: Plan for self-correction
+pipeline:
+  stages:
+  - stage: cognitive_monitoring
+    description: Monitor cognitive processes
+    inputs:
+    - cognitive_operation
+    outputs:
+    - monitoring_data
+    methods:
+    - monitor_cognitive_processes
+    - track_reasoning_steps
+  - stage: error_detection
+    description: Detect errors in reasoning
+    inputs:
+    - reasoning_trace
+    - monitoring_data
+    outputs:
+    - detected_errors
+    methods:
+    - detect_logical_errors
+    - identify_biases
+    - flag_inconsistencies
+  - stage: quality_evaluation
+    description: Evaluate reasoning quality
+    inputs:
+    - reasoning_trace
+    - performance_metrics
+    outputs:
+    - quality_assessment
+    methods:
+    - assess_logical_consistency
+    - evaluate_evidence_strength
+    - detect_biases
+  - stage: strategy_analysis
+    description: Analyze reasoning strategies
+    inputs:
+    - cognitive_operation
+    - quality_assessment
+    outputs:
+    - strategy_evaluation
+    methods:
+    - evaluate_strategies
+    - compare_alternatives
+    - select_optimal_strategy
+  - stage: optimization_planning
+    description: Plan cognitive optimization
+    inputs:
+    - quality_assessment
+    - detected_errors
+    outputs:
+    - optimization_plan
+    methods:
+    - identify_optimization_opportunities
+    - plan_optimizations
+  - stage: self_correction
+    description: Execute self-correction
+    inputs:
+    - detected_errors
+    - optimization_plan
+    outputs:
+    - correction_result
+    methods:
+    - identify_error_source
+    - correct_reasoning_path
+    - update_prevention_rules
+methods:
+- name: monitor_cognitive_processes
+  description: Continuously monitor cognitive processes
+  inputs:
+  - cognitive_operation
+  outputs:
+  - monitoring_data
+  deterministic: true
+- name: track_reasoning_steps
+  description: Track reasoning steps for analysis
+  inputs:
+  - reasoning_trace
+  outputs:
+  - step_analysis
+  deterministic: true
+- name: detect_logical_errors
+  description: Detect logical errors in reasoning
+  inputs:
+  - reasoning_trace
+  outputs:
+  - logical_errors
+  deterministic: true
+- name: identify_biases
+  description: Identify cognitive biases
+  inputs:
+  - reasoning_trace
+  outputs:
+  - bias_flags
+  deterministic: true
+- name: flag_inconsistencies
+  description: Flag logical inconsistencies
+  inputs:
+  - reasoning_trace
+  outputs:
+  - inconsistency_flags
+  deterministic: true
+- name: assess_logical_consistency
+  description: Assess logical consistency
+  inputs:
+  - reasoning_trace
+  outputs:
+  - consistency_score
+  deterministic: true
+- name: evaluate_evidence_strength
+  description: Evaluate strength of evidence
+  inputs:
+  - reasoning_trace
+  outputs:
+  - evidence_score
+  deterministic: true
+- name: detect_biases
+  description: Detect biases in reasoning
+  inputs:
+  - reasoning_trace
+  outputs:
+  - bias_detection
+  deterministic: true
+- name: evaluate_strategies
+  description: Evaluate reasoning strategies
+  inputs:
+  - cognitive_operation
+  outputs:
+  - strategy_scores
+  deterministic: true
+- name: compare_alternatives
+  description: Compare alternative strategies
+  inputs:
+  - strategy_scores
+  outputs:
+  - comparison_result
+  deterministic: true
+- name: select_optimal_strategy
+  description: Select optimal reasoning strategy
+  inputs:
+  - comparison_result
+  outputs:
+  - selected_strategy
+  deterministic: true
+- name: identify_optimization_opportunities
+  description: Identify optimization opportunities
+  inputs:
+  - quality_assessment
+  outputs:
+  - optimization_opportunities
+  deterministic: true
+- name: plan_optimizations
+  description: Plan cognitive optimizations
+  inputs:
+  - optimization_opportunities
+  outputs:
+  - optimization_plan
+  deterministic: true
+- name: identify_error_source
+  description: Identify source of error
+  inputs:
+  - detected_errors
+  outputs:
+  - error_source
+  deterministic: true
+- name: correct_reasoning_path
+  description: Correct reasoning path
+  inputs:
+  - error_source
+  outputs:
+  - corrected_path
+  deterministic: true
+- name: update_prevention_rules
+  description: Update error prevention rules
+  inputs:
+  - error_analysis
+  outputs:
+  - updated_rules
+  deterministic: true
+state_rules:
+  memory:
+  - &id001
+    name: cognitive_state_history
+    type: persistent
+    description: History of cognitive states
+    retention: rolling_30_days
+    max_entries: 100000
+  - &id002
+    name: reasoning_quality_registry
+    type: persistent
+    description: Registry of reasoning quality metrics
+    retention: rolling_90_days
+  - &id003
+    name: error_patterns_library
+    type: persistent
+    description: Library of error patterns
+    retention: permanent
+  - &id004
+    name: strategy_performance_data
+    type: persistent
+    description: Performance data for strategies
+    retention: rolling_90_days
+  - &id005
+    name: optimization_history
+    type: persistent
+    description: History of optimizations
+    retention: rolling_30_days
+    max_entries: 10000
+  - &id006
+    name: current_meta_state
+    type: ephemeral
+    description: Current meta-cognitive state
+    retention: session
+  recursion:
+    max_depth: 3
+    recursion_detection: true
+    recursion_prevention: halt_on_detection
+    safe_recursion_patterns:
+    - meta_reasoning_about_meta_reasoning
+    - iterative_optimization
+  thresholds:
+    error_detection_confidence_threshold: 0.75
+    quality_evaluation_frequency_seconds: 60
+    optimization_trigger_threshold: 0.2
+    max_meta_reasoning_depth: 3
+    strategy_evaluation_timeout_seconds: 30
+triggers:
+- name: reasoning_in_progress
+  condition: reasoning_trace.active == true
+  action: detect_logical_errors_and_biases
+  priority: high
+- name: inefficiency_detected
+  condition: performance_metrics.efficiency < threshold
+  action: initiate_cognitive_optimization
+  priority: high
+- name: complex_problem
+  condition: problem.complexity > threshold
+  action: activate_meta_reasoning_mode
+  priority: high
+- name: uncertainty_high
+  condition: confidence.level < threshold
+  action: activate_meta_reasoning_mode
+  priority: medium
+- name: error_detected
+  condition: error.detected == true
+  action: activate_self_correction_mode
+  priority: critical
+- name: scheduled_quality_evaluation
+  condition: time_since_last_evaluation > quality_evaluation_frequency_seconds
+  action: evaluate_reasoning_quality
+  priority: low
+interface:
+  exposed_apis:
+  - name: monitor_reasoning
+    method: POST
+    endpoint: /api/meta_cognition/monitor
+    inputs:
+    - cognitive_operation
+    outputs:
+    - monitoring_data
+  - name: evaluate_quality
+    method: POST
+    endpoint: /api/meta_cognition/quality
+    inputs:
+    - reasoning_trace
+    outputs:
+    - quality_assessment
+  - name: detect_errors
+    method: POST
+    endpoint: /api/meta_cognition/errors
+    inputs:
+    - reasoning_trace
+    outputs:
+    - error_analysis
+  - name: optimize_cognition
+    method: POST
+    endpoint: /api/meta_cognition/optimize
+    inputs:
+    - optimization_request
+    outputs:
+    - optimization_result
+  exposed_variables:
+  - name: reasoning_mode
+    type: string
+    description: Current reasoning mode
+    access: read_only
+    values:
+    - deductive
+    - inductive
+    - abductive
+    - bayesian
+    - causal
+  - name: inference_count
+    type: integer
+    description: Total inference operations performed
+    access: read_only
+    update_frequency: real_time
+  exposed_events:
+  - name: reasoning_completed
+    description: Emitted when reasoning operation completes
+    payload:
+    - reasoning_type
+    - conclusion
+    - confidence
+    - inference_trace
+    subscribers:
+    - kernel_meta_cognition
+    - kernel_thinking_engine
+  - name: inference_error
+    description: Emitted when inference error occurs
+    payload:
+    - error_type
+    - error_message
+    - recovery_action
+    subscribers:
+    - kernel_meta_cognition
+error_handling:
+  error_types: &id007
+  - name: meta_reasoning_failure
+    severity: high
+    action: fallback_to_basic_monitoring
+    fallback: disable_meta_reasoning
+  - name: error_detection_failure
+    severity: medium
+    action: use_alternative_detection
+    fallback: flag_uncertainty
+  - name: optimization_failure
+    severity: medium
+    action: revert_optimization
+    fallback: maintain_current_state
+  - name: recursion_detected
+    severity: critical
+    action: halt_meta_reasoning
+    fallback: reset_meta_state
+  - name: quality_evaluation_failure
+    severity: medium
+    action: use_cached_evaluation
+    fallback: skip_evaluation
+  fallback_strategies: &id008
+  - name: basic_monitoring_mode
+    trigger: meta_reasoning_failure
+    behavior: use_basic_monitoring_only
+    recovery: automatic_after_stability
+  - name: conservative_optimization
+    trigger: repeated_optimization_failures
+    behavior: use_conservative_optimizations
+    recovery: automatic_after_validation
+governance_hooks:
+- name: pre_meta_reasoning_check
+  location: before_meta_reasoning
+  action: check_meta_reasoning_compliance
+  required: false
+- name: meta_reasoning_quality_monitoring
+  location: during_meta_reasoning
+  action: monitor_meta_reasoning_quality
+  required: true
+- name: post_optimization_validation
+  location: after_optimization
+  action: validate_optimization_results
+  required: true
+enforcement:
+- principle: recursive_awareness
+  level: high
+  mechanism: meta_monitoring_always_active
+  violation_action: enable_meta_monitoring
+- principle: error_correction
+  level: critical
+  mechanism: automatic_error_detection_and_correction
+  violation_action: enable_error_detection
+- principle: deterministic_meta_reasoning
+  level: critical
+  mechanism: all_meta_reasoning_must_be_traceable
+  violation_action: require_meta_reasoning_trace
+- principle: recursion_safety
+  level: critical
+  mechanism: recursion_detection_and_prevention
+  violation_action: halt_on_recursion
+schema:
+  meta_cognitive_state:
+  - current_reasoning_strategy: string
+  - confidence_level: float
+  - uncertainty_metrics: object
+  - error_detection_status: string
+  - optimization_opportunities: list[object]
+  reasoning_quality_metrics:
+  - logical_consistency_score: float
+  - evidence_strength: float
+  - bias_detection_flags: list[string]
+  - efficiency_metrics: object
+modes:
+- name: meta_reasoning_mode
+  trigger: complex_problem OR uncertainty_high
+  behavior: 'Analyze reasoning approach, evaluate alternatives, select optimal strategy,
+    monitor execution
+
+    '
+  active: true
+- name: self_correction_mode
+  trigger: error_detected
+  behavior: 'Identify error source, correct reasoning path, update error_prevention_rules,
+    verify correction
+
+    '
+  active: true
+- name: optimization_mode
+  trigger: inefficiency_detected
+  behavior: 'Identify optimization opportunities, plan optimizations, execute optimizations,
+    validate results
+
+    '
+  active: false
+- name: monitoring_mode
+  trigger: default
+  behavior: 'Continuously monitor cognitive processes, track quality metrics, detect
+    errors
+
+    '
+  active: true
+hooks:
+- name: pre_reasoning
+  location: before_cognitive_operation
+  action: select_optimal_reasoning_strategy
+  required: true
+- name: post_reasoning
+  location: after_cognitive_operation
+  action: evaluate_reasoning_quality
+  required: true
+- name: pre_error_correction
+  location: before_self_correction
+  action: analyze_error_source
+  required: true
+- name: post_optimization
+  location: after_optimization
+  action: validate_optimization_results
+  required: true
+integration:
+  dependencies:
+  - kernel: kernel_context_kernel
+    purpose: Get relevant context for reasoning
+    interface: query_context
+    required: true
+    fallback: use_empty_context
+  - kernel: kernel_world_model
+    purpose: Get world model data for causal reasoning
+    interface: get_model_snapshot
+    required: false
+    fallback: skip_causal_reasoning
+  dependents:
+  - kernel: kernel_thinking_engine
+    purpose: Provide reasoning capabilities
+    interface: logical_inference
+    call_frequency: high
+    expected_latency_ms: 100
+  - kernel: kernel_meta_cognition
+    purpose: Provide reasoning traces for monitoring
+    interface: inference_trace
+    call_frequency: high
+    expected_latency_ms: 50
+  event_subscriptions:
+  - event: context_updated
+    source: kernel_context_kernel
+    action: refresh_reasoning_context
+activation_logic:
+  automatic_triggers:
+  - name: premises_available
+    condition: premises.received == true
+    action: apply_logical_rules
+    priority: high
+    async: false
+    timeout_seconds: 600
+  - name: new_evidence_available
+    condition: evidence.received == true
+    action: update_beliefs_probabilistically
+    priority: high
+    async: false
+    timeout_seconds: 300
+  manual_triggers:
+  - name: force_reasoning
+    endpoint: /api/reasoning/logical
+    method: POST
+    required_params:
+    - premises
+logging:
+  log_levels:
+  - level: debug
+    enabled: true
+    purpose: Detailed inference tracing
+    includes:
+    - premise_parsing
+    - rule_applications
+    - intermediate_results
+    retention_days: 7
+  - level: info
+    enabled: true
+    purpose: Normal reasoning operations
+    includes:
+    - reasoning_completed
+    - mode_changes
+    retention_days: 30
+  - level: error
+    enabled: true
+    purpose: Reasoning errors
+    includes:
+    - inference_failures
+    - timeout_errors
+    retention_days: 365
+    alert: true
+  log_categories:
+  - category: inference_operations
+    level: info
+    fields:
+    - reasoning_type
+    - premises_count
+    - conclusions
+    - duration_ms
+    purpose: Track all inference operations
+  - category: bayesian_updates
+    level: debug
+    fields:
+    - prior_beliefs
+    - evidence
+    - posterior_beliefs
+    - confidence
+    purpose: Trace Bayesian updates
+  reasoning_trace:
+    enabled: true
+    includes:
+    - premises
+    - rule_applications
+    - intermediate_steps
+    - conclusions
+    format: structured_json
+    retention_days: 30
+  decision_map:
+    enabled: true
+    includes:
+    - reasoning_mode_selection
+    - rule_selection
+    - conclusion_derivation
+    format: graph_structure
+    retention_days: 90
+memory:
+  persistent:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005
+  volatile:
+  - *id006
+fallback:
+  error_handling: *id007
+  fallback_strategies: *id008

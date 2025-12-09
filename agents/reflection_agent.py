@@ -1,0 +1,345 @@
+"""
+L9 Agents - Reflection Agent
+============================
+
+Meta-reasoning and self-correction agent.
+
+Responsibilities:
+- Analyze execution patterns
+- Identify improvements
+- Self-correct behaviors
+- Extract lessons learned
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any, Optional
+
+from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+
+logger = logging.getLogger(__name__)
+
+
+SYSTEM_PROMPT = """You are the Reflection Agent for L9, responsible for meta-reasoning and self-improvement.
+
+Your responsibilities:
+1. Analyze execution history and outcomes
+2. Identify patterns in successes and failures
+3. Derive lessons and improvements
+4. Enable self-correction behaviors
+5. Build institutional knowledge
+
+When reflecting:
+- Look for root causes, not symptoms
+- Identify recurring patterns
+- Consider counterfactuals
+- Extract generalizable lessons
+- Propose concrete improvements
+
+Your insights shape the system's evolution. Be thorough and insightful.
+"""
+
+
+class ReflectionAgent(BaseAgent):
+    """
+    Meta-reasoning agent for self-improvement.
+    """
+    
+    agent_role = AgentRole.REFLECTION
+    agent_name = "reflection_agent"
+    
+    def __init__(
+        self,
+        agent_id: Optional[str] = None,
+        config: Optional[AgentConfig] = None,
+    ):
+        """Initialize Reflection Agent."""
+        super().__init__(agent_id, config)
+        self._lessons_learned: list[dict[str, Any]] = []
+    
+    def get_system_prompt(self) -> str:
+        """Get the system prompt."""
+        return self._config.system_prompt_override or SYSTEM_PROMPT
+    
+    async def run(
+        self,
+        task: dict[str, Any],
+        context: Optional[dict[str, Any]] = None,
+    ) -> AgentResponse:
+        """
+        Execute reflection task.
+        
+        Args:
+            task: Task with 'history' and optional 'focus'
+            context: Optional context
+            
+        Returns:
+            AgentResponse with insights
+        """
+        history = task.get("history", [])
+        focus = task.get("focus", "general")
+        goals = task.get("goals", [])
+        
+        prompt = f"""Reflect on this execution history:
+
+History:
+{json.dumps(history, indent=2)}
+
+Focus Area: {focus}
+Goals: {json.dumps(goals, indent=2)}
+
+Provide deep reflection:
+{{
+    "analysis": {{
+        "successes": [
+            {{"action": "...", "outcome": "...", "success_factors": ["..."]}}
+        ],
+        "failures": [
+            {{"action": "...", "outcome": "...", "root_cause": "...", "could_have_prevented": "..."}}
+        ],
+        "patterns": [
+            {{"pattern": "...", "frequency": "...", "impact": "positive|negative|neutral", "significance": "..."}}
+        ]
+    }},
+    "insights": [
+        {{"insight": "...", "evidence": ["..."], "confidence": 0.0 to 1.0, "applicability": "..."}}
+    ],
+    "lessons_learned": [
+        {{"lesson": "...", "context": "...", "application": "...", "priority": "high|medium|low"}}
+    ],
+    "improvements": [
+        {{
+            "area": "...",
+            "current_state": "...",
+            "proposed_state": "...",
+            "action_required": "...",
+            "expected_impact": "..."
+        }}
+    ],
+    "knowledge_updates": [
+        {{"type": "add|update|remove", "key": "...", "value": "...", "reason": "..."}}
+    ],
+    "meta_observations": ["observations about the reflection process itself"],
+    "summary": "..."
+}}
+"""
+        
+        if context:
+            prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
+        
+        messages = [self.format_user_message(prompt)]
+        response = await self.call_llm(messages, json_mode=True)
+        
+        # Store lessons learned
+        if response.success and response.structured_output:
+            for lesson in response.structured_output.get("lessons_learned", []):
+                self._lessons_learned.append(lesson)
+        
+        self.add_message(messages[0])
+        if response.success:
+            self.add_message(self.format_assistant_message(response.content))
+        
+        return response
+    
+    async def analyze_failure(
+        self,
+        failure_context: dict[str, Any],
+        error: str,
+        stack_trace: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        Analyze a specific failure.
+        
+        Args:
+            failure_context: Context of failure
+            error: Error message
+            stack_trace: Optional stack trace
+            
+        Returns:
+            Failure analysis
+        """
+        prompt = f"""Analyze this failure deeply:
+
+Context:
+{json.dumps(failure_context, indent=2)}
+
+Error: {error}
+
+Stack Trace:
+{stack_trace or "Not available"}
+
+Provide:
+{{
+    "root_cause_analysis": {{
+        "immediate_cause": "...",
+        "contributing_factors": ["..."],
+        "root_cause": "...",
+        "chain_of_events": ["..."]
+    }},
+    "similar_past_failures": ["if this seems like a recurring issue"],
+    "prevention_strategies": [
+        {{"strategy": "...", "implementation": "...", "effort": "low|medium|high"}}
+    ],
+    "recovery_actions": ["immediate actions to recover"],
+    "detection_improvements": ["how to catch this earlier"],
+    "systemic_changes": ["broader changes to prevent similar issues"],
+    "lessons": ["key takeaways"]
+}}
+"""
+        
+        return await self.call_llm_json(prompt)
+    
+    async def compare_approaches(
+        self,
+        approach_a: dict[str, Any],
+        approach_b: dict[str, Any],
+        criteria: list[str],
+    ) -> dict[str, Any]:
+        """
+        Compare two approaches.
+        
+        Args:
+            approach_a: First approach
+            approach_b: Second approach
+            criteria: Comparison criteria
+            
+        Returns:
+            Comparison analysis
+        """
+        prompt = f"""Compare these two approaches:
+
+Approach A:
+{json.dumps(approach_a, indent=2)}
+
+Approach B:
+{json.dumps(approach_b, indent=2)}
+
+Criteria:
+{json.dumps(criteria, indent=2)}
+
+Provide:
+{{
+    "comparison": [
+        {{
+            "criterion": "...",
+            "approach_a_score": 0.0 to 1.0,
+            "approach_b_score": 0.0 to 1.0,
+            "analysis": "..."
+        }}
+    ],
+    "overall_scores": {{
+        "approach_a": 0.0 to 1.0,
+        "approach_b": 0.0 to 1.0
+    }},
+    "recommendation": "A|B|hybrid",
+    "hybrid_suggestion": "if applicable",
+    "key_differentiators": ["..."],
+    "context_dependencies": ["when A is better vs when B is better"],
+    "reasoning": "..."
+}}
+"""
+        
+        return await self.call_llm_json(prompt)
+    
+    async def extract_patterns(
+        self,
+        examples: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """
+        Extract patterns from examples.
+        
+        Args:
+            examples: List of examples to analyze
+            
+        Returns:
+            Extracted patterns
+        """
+        prompt = f"""Extract patterns from these examples:
+
+Examples:
+{json.dumps(examples, indent=2)}
+
+Identify:
+{{
+    "patterns": [
+        {{
+            "name": "...",
+            "description": "...",
+            "frequency": "how often it appears",
+            "examples": ["which examples show this"],
+            "conditions": ["when this pattern applies"],
+            "implications": ["what this pattern means"]
+        }}
+    ],
+    "anti_patterns": [
+        {{"name": "...", "description": "...", "why_avoid": "..."}}
+    ],
+    "correlations": ["relationships between patterns"],
+    "outliers": ["examples that don't fit patterns"],
+    "generalizations": ["broader rules that can be derived"],
+    "confidence": 0.0 to 1.0
+}}
+"""
+        
+        return await self.call_llm_json(prompt)
+    
+    async def generate_improvements(
+        self,
+        current_performance: dict[str, Any],
+        goals: list[str],
+    ) -> dict[str, Any]:
+        """
+        Generate improvement suggestions.
+        
+        Args:
+            current_performance: Current metrics
+            goals: Improvement goals
+            
+        Returns:
+            Improvement plan
+        """
+        prompt = f"""Generate improvements based on current performance:
+
+Current Performance:
+{json.dumps(current_performance, indent=2)}
+
+Goals:
+{json.dumps(goals, indent=2)}
+
+Provide:
+{{
+    "gap_analysis": {{
+        "current_vs_goal": [
+            {{"metric": "...", "current": "...", "goal": "...", "gap": "..."}}
+        ]
+    }},
+    "improvement_plan": [
+        {{
+            "improvement": "...",
+            "target_metric": "...",
+            "expected_impact": "...",
+            "effort": "low|medium|high",
+            "priority": 1 to 10,
+            "implementation_steps": ["..."],
+            "success_criteria": "..."
+        }}
+    ],
+    "quick_wins": ["low effort, high impact improvements"],
+    "strategic_changes": ["high effort, high impact improvements"],
+    "risks": ["potential downsides of changes"],
+    "measurement_plan": "how to track progress"
+}}
+"""
+        
+        return await self.call_llm_json(prompt)
+    
+    def get_lessons_learned(self) -> list[dict[str, Any]]:
+        """Get accumulated lessons learned."""
+        return self._lessons_learned.copy()
+    
+    def clear_lessons(self) -> None:
+        """Clear lessons learned."""
+        self._lessons_learned.clear()
+

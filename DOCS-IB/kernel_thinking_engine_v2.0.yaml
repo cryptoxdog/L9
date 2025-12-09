@@ -1,0 +1,561 @@
+id: kernel_thinking_engine_v2.0
+name: Thinking Engine Kernel
+version: 2.0.0
+created_at: '2025-01-29T00:00:00Z'
+owner: Igor
+author: L
+type: kernel
+scope: cognitive
+ring: R1
+status: operational
+description: 'Thinking engine providing structured thought processes, multi-step reasoning
+  chains, and systematic problem-solving approaches. Enables deterministic decomposition,
+  synthesis, and solution generation.
+
+  '
+purpose: 'Provide structured thinking methodologies, enable multi-step reasoning,
+  and support systematic problem decomposition and solution synthesis with deterministic,
+  traceable reasoning chains.
+
+  '
+roles:
+- name: Problem Analyzer
+  responsibility: Analyze and decompose complex problems
+  authority: read_problem_statements
+- name: Reasoning Orchestrator
+  responsibility: Orchestrate multi-step reasoning processes
+  authority: execute_reasoning_steps
+- name: Solution Synthesizer
+  responsibility: Synthesize solutions from subproblem results
+  authority: combine_solutions
+- name: Quality Validator
+  responsibility: Validate reasoning quality and completeness
+  authority: evaluate_reasoning_outputs
+inputs:
+- name: problem_statement
+  type: problem_definition
+  description: Problem to be solved
+  required: true
+- name: thinking_strategy
+  type: strategy_spec
+  description: Selected thinking strategy
+  required: false
+- name: context
+  type: context_data
+  description: Relevant context for problem solving
+  required: false
+- name: constraints
+  type: constraint_set
+  description: Constraints and requirements
+  required: false
+outputs:
+- name: decomposition_result
+  type: subproblem_list
+  description: List of decomposed subproblems
+- name: reasoning_chain
+  type: reasoning_trace
+  description: Complete reasoning chain with steps
+- name: solution
+  type: solution_definition
+  description: Final synthesized solution
+- name: quality_assessment
+  type: quality_metrics
+  description: Assessment of reasoning quality
+pipeline:
+  stages:
+  - stage: problem_analysis
+    description: Analyze problem structure and requirements
+    inputs:
+    - problem_statement
+    - context
+    outputs:
+    - problem_analysis
+    methods:
+    - parse_problem
+    - identify_requirements
+  - stage: strategy_selection
+    description: Select optimal thinking strategy
+    inputs:
+    - problem_analysis
+    outputs:
+    - selected_strategy
+    methods:
+    - evaluate_strategies
+    - select_strategy
+  - stage: decomposition
+    description: Decompose problem into subproblems
+    inputs:
+    - problem_analysis
+    - selected_strategy
+    outputs:
+    - subproblem_list
+    methods:
+    - decompose_problem
+    - validate_decomposition
+  - stage: reasoning_execution
+    description: Execute reasoning steps
+    inputs:
+    - subproblem_list
+    - selected_strategy
+    outputs:
+    - reasoning_chain
+    - intermediate_results
+    methods:
+    - execute_reasoning_steps
+    - track_reasoning
+  - stage: solution_synthesis
+    description: Synthesize final solution
+    inputs:
+    - intermediate_results
+    - reasoning_chain
+    outputs:
+    - solution
+    methods:
+    - combine_solutions
+    - verify_coherence
+  - stage: quality_evaluation
+    description: Evaluate reasoning quality
+    inputs:
+    - solution
+    - reasoning_chain
+    outputs:
+    - quality_assessment
+    methods:
+    - assess_completeness
+    - evaluate_logical_consistency
+methods:
+- name: parse_problem
+  description: Parse and structure problem statement
+  inputs:
+  - problem_statement
+  outputs:
+  - structured_problem
+  deterministic: true
+- name: identify_requirements
+  description: Identify explicit and implicit requirements
+  inputs:
+  - structured_problem
+  outputs:
+  - requirement_list
+  deterministic: true
+- name: evaluate_strategies
+  description: Evaluate available thinking strategies
+  inputs:
+  - problem_analysis
+  outputs:
+  - strategy_scores
+  deterministic: true
+- name: select_strategy
+  description: Select optimal thinking strategy
+  inputs:
+  - strategy_scores
+  outputs:
+  - selected_strategy
+  deterministic: true
+- name: decompose_problem
+  description: Break problem into manageable subproblems
+  inputs:
+  - structured_problem
+  - selected_strategy
+  outputs:
+  - subproblem_list
+  deterministic: true
+  recursion_safe: true
+- name: validate_decomposition
+  description: Validate decomposition completeness
+  inputs:
+  - subproblem_list
+  - structured_problem
+  outputs:
+  - validation_result
+  deterministic: true
+- name: execute_reasoning_steps
+  description: Execute reasoning steps sequentially
+  inputs:
+  - subproblem_list
+  - selected_strategy
+  outputs:
+  - step_results
+  deterministic: true
+- name: track_reasoning
+  description: Track reasoning chain for traceability
+  inputs:
+  - step_results
+  outputs:
+  - reasoning_chain
+  deterministic: true
+- name: combine_solutions
+  description: Combine subproblem solutions into coherent whole
+  inputs:
+  - step_results
+  outputs:
+  - combined_solution
+  deterministic: true
+- name: verify_coherence
+  description: Verify solution coherence and consistency
+  inputs:
+  - combined_solution
+  outputs:
+  - coherence_verification
+  deterministic: true
+- name: assess_completeness
+  description: Assess solution completeness
+  inputs:
+  - solution
+  - requirement_list
+  outputs:
+  - completeness_score
+  deterministic: true
+- name: evaluate_logical_consistency
+  description: Evaluate logical consistency of reasoning
+  inputs:
+  - reasoning_chain
+  outputs:
+  - consistency_score
+  deterministic: true
+state_rules:
+  memory:
+  - &id001
+    name: thinking_strategies
+    type: persistent
+    description: Registry of available thinking strategies
+    retention: permanent
+  - &id002
+    name: reasoning_history
+    type: persistent
+    description: History of reasoning operations
+    retention: rolling_30_days
+    max_entries: 10000
+  - &id003
+    name: problem_patterns
+    type: persistent
+    description: Learned problem patterns and solutions
+    retention: permanent
+  - &id004
+    name: active_reasoning_context
+    type: ephemeral
+    description: Current reasoning context
+    retention: session
+  recursion:
+    max_depth: 10
+    recursion_detection: true
+    recursion_prevention: detect_and_optimize
+    safe_recursion_patterns:
+    - iterative_refinement
+    - hierarchical_decomposition
+  thresholds:
+    max_subproblems: 50
+    max_reasoning_steps: 1000
+    completeness_threshold: 0.9
+    coherence_threshold: 0.85
+    reasoning_timeout_seconds: 300
+triggers:
+- name: complex_problem_encountered
+  condition: problem_complexity > threshold
+  action: initiate_structured_thinking
+  priority: high
+- name: reasoning_task_active
+  condition: reasoning_request.received == true
+  action: execute_reasoning_pipeline
+  priority: high
+- name: subproblems_solved
+  condition: all_subproblems.completed == true
+  action: initiate_solution_synthesis
+  priority: high
+- name: analysis_required
+  condition: analysis_request.received == true
+  action: activate_analytical_mode
+  priority: medium
+- name: synthesis_required
+  condition: synthesis_request.received == true
+  action: activate_synthetic_mode
+  priority: medium
+interface:
+  exposed_apis:
+  - name: solve_problem
+    method: POST
+    endpoint: /api/thinking/solve
+    inputs:
+    - problem_statement
+    - constraints
+    outputs:
+    - solution
+    - reasoning_chain
+  - name: decompose_problem
+    method: POST
+    endpoint: /api/thinking/decompose
+    inputs:
+    - problem_statement
+    outputs:
+    - subproblem_list
+  - name: get_reasoning_history
+    method: GET
+    endpoint: /api/thinking/history
+    inputs:
+    - limit
+    - offset
+    outputs:
+    - reasoning_entries
+  exposed_variables:
+  - name: reasoning_mode
+    type: string
+    description: Current reasoning mode
+    access: read_only
+    values:
+    - deductive
+    - inductive
+    - abductive
+    - bayesian
+    - causal
+  - name: inference_count
+    type: integer
+    description: Total inference operations performed
+    access: read_only
+    update_frequency: real_time
+  exposed_events:
+  - name: reasoning_completed
+    description: Emitted when reasoning operation completes
+    payload:
+    - reasoning_type
+    - conclusion
+    - confidence
+    - inference_trace
+    subscribers:
+    - kernel_meta_cognition
+    - kernel_thinking_engine
+  - name: inference_error
+    description: Emitted when inference error occurs
+    payload:
+    - error_type
+    - error_message
+    - recovery_action
+    subscribers:
+    - kernel_meta_cognition
+error_handling:
+  error_types: &id005
+  - name: decomposition_failure
+    severity: high
+    action: retry_with_alternative_strategy
+    fallback: return_partial_decomposition
+  - name: reasoning_timeout
+    severity: medium
+    action: return_partial_results
+    fallback: notify_and_abort
+  - name: synthesis_failure
+    severity: high
+    action: retry_synthesis
+    fallback: return_subproblem_results
+  - name: recursion_detected
+    severity: critical
+    action: halt_reasoning_process
+    fallback: reset_and_optimize
+  - name: incomplete_solution
+    severity: medium
+    action: flag_incompleteness
+    fallback: return_with_warnings
+  fallback_strategies: &id006
+  - name: simplified_mode
+    trigger: complexity_too_high
+    behavior: use_simpler_strategy
+    recovery: automatic_after_completion
+  - name: iterative_refinement
+    trigger: incomplete_solution
+    behavior: refine_solution_iteratively
+    recovery: continue_until_complete
+governance_hooks:
+- name: pre_thinking_governance_check
+  location: before_problem_analysis
+  action: check_problem_compliance
+  required: false
+- name: reasoning_quality_monitoring
+  location: during_reasoning_execution
+  action: monitor_reasoning_quality
+  required: true
+- name: post_thinking_validation
+  location: after_solution_synthesis
+  action: validate_solution_against_governance
+  required: true
+enforcement:
+- principle: systematic_thinking
+  level: high
+  mechanism: structured_approach_required
+  violation_action: enforce_structure
+- principle: completeness
+  level: high
+  mechanism: verify_all_subproblems_addressed
+  violation_action: flag_incompleteness
+- principle: deterministic_reasoning
+  level: critical
+  mechanism: all_reasoning_must_be_traceable
+  violation_action: require_reasoning_trace
+- principle: recursion_safety
+  level: critical
+  mechanism: recursion_detection_and_prevention
+  violation_action: halt_on_recursion
+schema:
+  thinking_process:
+  - problem_statement: string
+  - decomposition_steps: list[object]
+  - reasoning_chain: list[object]
+  - intermediate_results: list[object]
+  - final_solution: object
+  - quality_metrics: object
+  thinking_strategy:
+  - strategy_type: string
+  - step_sequence: list[string]
+  - validation_checkpoints: list[string]
+  - success_criteria: object
+modes:
+- name: analytical_mode
+  trigger: analysis_required
+  behavior: 'Decompose problem, analyze components, synthesize insights, generate
+    conclusions
+
+    '
+  active: true
+- name: synthetic_mode
+  trigger: synthesis_required
+  behavior: 'Gather components, identify patterns, combine creatively, verify coherence
+
+    '
+  active: true
+- name: iterative_mode
+  trigger: complex_problem
+  behavior: 'Iteratively refine solution, validate at each step, converge to optimal
+    solution
+
+    '
+  active: true
+hooks:
+- name: pre_thinking
+  location: before_problem_solving
+  action: select_thinking_strategy
+  required: true
+- name: post_thinking
+  location: after_problem_solving
+  action: evaluate_thinking_quality
+  required: true
+- name: pre_decomposition
+  location: before_decomposition
+  action: prepare_decomposition_context
+  required: false
+- name: post_synthesis
+  location: after_solution_synthesis
+  action: validate_solution_coherence
+  required: true
+integration:
+  dependencies:
+  - kernel: kernel_context_kernel
+    purpose: Get relevant context for reasoning
+    interface: query_context
+    required: true
+    fallback: use_empty_context
+  - kernel: kernel_world_model
+    purpose: Get world model data for causal reasoning
+    interface: get_model_snapshot
+    required: false
+    fallback: skip_causal_reasoning
+  dependents:
+  - kernel: kernel_thinking_engine
+    purpose: Provide reasoning capabilities
+    interface: logical_inference
+    call_frequency: high
+    expected_latency_ms: 100
+  - kernel: kernel_meta_cognition
+    purpose: Provide reasoning traces for monitoring
+    interface: inference_trace
+    call_frequency: high
+    expected_latency_ms: 50
+  event_subscriptions:
+  - event: context_updated
+    source: kernel_context_kernel
+    action: refresh_reasoning_context
+activation_logic:
+  automatic_triggers:
+  - name: premises_available
+    condition: premises.received == true
+    action: apply_logical_rules
+    priority: high
+    async: false
+    timeout_seconds: 600
+  - name: new_evidence_available
+    condition: evidence.received == true
+    action: update_beliefs_probabilistically
+    priority: high
+    async: false
+    timeout_seconds: 300
+  manual_triggers:
+  - name: force_reasoning
+    endpoint: /api/reasoning/logical
+    method: POST
+    required_params:
+    - premises
+logging:
+  log_levels:
+  - level: debug
+    enabled: true
+    purpose: Detailed inference tracing
+    includes:
+    - premise_parsing
+    - rule_applications
+    - intermediate_results
+    retention_days: 7
+  - level: info
+    enabled: true
+    purpose: Normal reasoning operations
+    includes:
+    - reasoning_completed
+    - mode_changes
+    retention_days: 30
+  - level: error
+    enabled: true
+    purpose: Reasoning errors
+    includes:
+    - inference_failures
+    - timeout_errors
+    retention_days: 365
+    alert: true
+  log_categories:
+  - category: inference_operations
+    level: info
+    fields:
+    - reasoning_type
+    - premises_count
+    - conclusions
+    - duration_ms
+    purpose: Track all inference operations
+  - category: bayesian_updates
+    level: debug
+    fields:
+    - prior_beliefs
+    - evidence
+    - posterior_beliefs
+    - confidence
+    purpose: Trace Bayesian updates
+  reasoning_trace:
+    enabled: true
+    includes:
+    - premises
+    - rule_applications
+    - intermediate_steps
+    - conclusions
+    format: structured_json
+    retention_days: 30
+  decision_map:
+    enabled: true
+    includes:
+    - reasoning_mode_selection
+    - rule_selection
+    - conclusion_derivation
+    format: graph_structure
+    retention_days: 90
+memory:
+  persistent:
+  - *id001
+  - *id002
+  - *id003
+  volatile:
+  - *id004
+fallback:
+  error_handling: *id005
+  fallback_strategies: *id006

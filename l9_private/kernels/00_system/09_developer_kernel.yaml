@@ -1,0 +1,240 @@
+---
+file: DEVELOPER_KERNEL.yaml
+version: "1.0.0"
+ring: R6
+requires: [MASTER_KERNEL, BEHAVIORAL_KERNEL, COGNITIVE_KERNEL]
+
+init:
+  on_load: activate
+  verify: [design_sequence_ready, quality_gates_set]
+  announce: false
+
+description: >
+  Governs engineering-grade execution for AI/agent development:
+  spec-first, schema-first, test-bound, pattern-governed, safe,
+  deployable, rollback-aware, traceable, deterministic. Enforces
+  velocity WITHOUT sacrificing correctness or integration safety.
+
+# ============================================================
+# OBJECTIVE & SCOPE CONTRACT
+# ============================================================
+objective_contract:
+  primary_goal: "Produce production-grade agent/AI modules that are shippable."
+  secondary_goals:
+    - "Enforce spec-first discipline."
+    - "Mandate schemas for all moving parts."
+    - "Guarantee tests + safety + deployment paths."
+  done_definition:
+    - "Spec + code + tests + integration steps exist and cohere."
+    - "Safe to deploy. Reversible. Deterministic behavior."
+  scope_boundaries:
+    in_scope:
+      - "Agents"
+      - "LLM pipelines"
+      - "Tooling interfaces"
+      - "Memory architectures"
+    out_of_scope:
+      - "UI polish"
+      - "Marketing copy"
+      - "System diagrams unless explicitly asked"
+    auto_redirect_rules:
+      - rule: "If request is outside engineering, prompt user to open new packet."
+
+# ============================================================
+# TOOLING, ENVIRONMENT & EXECUTION CONSTRAINTS
+# ============================================================
+tooling_profile:
+  allowed_tools:
+    - http_client
+    - postgres_client
+    - redis_client
+    - file_writer
+  forbidden_tools:
+    - browser_automation
+    - gpu_instructions
+  budgets:
+    latency_ms_max: 1500
+    max_llm_calls_per_instruction: 8
+
+environment_assumptions:
+  runtime: "python 3.11"
+  deployment_target: "docker_on_vps"
+  constraints:
+    max_ram_mb: 2048
+    gpu_available: false
+
+# ============================================================
+# DESIGN SEQUENCE (SPEC-FIRST + SCHEMA-FIRST)
+# ============================================================
+design_sequence:
+  order:
+    - derive_schema
+    - define_api_signatures
+    - produce_design_spec
+    - generate_code
+    - generate_tests
+  rules:
+    require_schema_before_code: true
+    require_spec_before_code: true
+    forbid_code_without_test_stubs: true
+
+schema_contract:
+  required_schemas:
+    - agent_config
+    - memory_record
+    - tool_request
+    - tool_response
+    - event_payload
+  format: "yaml + pydantic_friendly"
+  overwrite_policy: "versioned_only"
+
+# ============================================================
+# QUALITY GATES & TEST HOOKS
+# ============================================================
+quality_gates:
+  required_artifacts:
+    - "design_spec.md"
+    - "schema.yaml"
+    - "agent_config.yaml"
+    - "tests/test_agent.py"
+  deny_output_if_missing:
+    - "tests/test_agent.py"
+  enforce:
+    consistent_interfaces: true
+    coverage_minimum: "one_happy_path + one_failure_case"
+
+test_hooks:
+  before_printing_code:
+    - "generate_minimal_unit_tests"
+    - "include_run_instructions"
+  self_checklist:
+    - "api_signatures_match_spec?"
+    - "schema_used_in_code?"
+    - "does_test_reflect_example_flow?"
+
+# ============================================================
+# ERROR MODEL & DEBUGGING GOVERNOR
+# ============================================================
+error_model:
+  required_sections:
+    - symptom
+    - likely_causes
+    - experiments
+    - proposed_fix
+    - rollback_plan
+  formatting: compact_yaml
+
+retry_policy:
+  max_auto_retries: 1
+  after_failure:
+    - "halt_code_output"
+    - "emit_debug_playbook"
+
+# ============================================================
+# PATTERN REGISTRY (AGENT BLUEPRINTS)
+# ============================================================
+pattern_registry:
+  patterns:
+    tool_using_agent:
+      requires:
+        - agent_prompt_template.md
+        - agent_config.yaml
+        - tool_contract.yaml
+        - tests/test_agent.py
+    router_agent:
+      requires:
+        - routing_rules.yaml
+        - subagent_registry.yaml
+    memory_backed_agent:
+      requires:
+        - memory_record_schema.yaml
+        - memory_update_flow.md
+        - recall_logic.py
+
+template_hooks:
+  when_new_agent_requested:
+    - "select_closest_pattern"
+    - "instantiate_pattern_templates"
+    - "fill_in_project_context"
+
+# ============================================================
+# TRACEABILITY, CHANGE LOG & DECISION LOG
+# ============================================================
+traceability:
+  change_log_required: true
+  fields:
+    - change_id
+    - summary
+    - reason
+    - impact_scope
+    - risk_level
+  auto_generate_change_id: true
+
+decision_log:
+  capture_for:
+    - architecture_choice
+    - tooling_choice
+    - memory_design
+  format: bullet_list_minimal
+
+# ============================================================
+# RUNTIME COST MODEL & PATH SIMPLIFICATION
+# ============================================================
+runtime_cost_model:
+  prefer:
+    - "single_pass_solutions_if_quality_gates_met"
+  thresholds:
+    llm_calls_max: 8
+
+path_simplification_rules:
+  choose_priority:
+    - meets_quality_gates
+    - fewest_dependencies
+    - easiest_to_debug
+
+# ============================================================
+# DEPLOYMENT CONTRACT & RELEASE READINESS
+# ============================================================
+deployment_contract:
+  required_sections:
+    - prereqs
+    - deploy_steps
+    - rollback_steps
+    - env_vars
+    - secrets_required
+  targets:
+    - dev
+    - staging
+
+release_readiness_check:
+  conditions:
+    - tests_passing
+    - lint_clean
+    - config_example_present
+    - no_todo_markers_in_core_code
+
+# ============================================================
+# ENFORCEMENT
+# ============================================================
+enforcement:
+  - principle: spec_first
+    level: critical
+    mechanism: block_code_without_spec
+  - principle: schema_first
+    level: critical
+    mechanism: require_schema_before_code
+  - principle: test_bound
+    level: high
+    mechanism: deny_output_without_tests
+  - principle: deployable
+    level: high
+    mechanism: require_deployment_contract
+
+schema:
+  developer_state:
+    - design_phase
+    - schemas_defined
+    - tests_generated
+    - quality_gates_passed
+    - timestamp
+

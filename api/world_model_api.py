@@ -1,0 +1,395 @@
+"""
+L9 World Model API
+==================
+
+FastAPI routes for World Model operations.
+
+Endpoints:
+- GET /world-model/entities/{entity_id} - Get entity by ID
+- GET /world-model/entities - List entities with filtering
+- GET /world-model/state-version - Get current state version
+- POST /world-model/snapshot - Create a snapshot
+- POST /world-model/restore - Restore from snapshot
+- GET /world-model/updates - List recent updates
+- POST /world-model/insights - Submit insights for update
+
+Version: 1.0.0
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import datetime
+from typing import Any, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/world-model", tags=["world-model"])
+
+
+# =============================================================================
+# Request/Response Models
+# =============================================================================
+
+class EntityResponse(BaseModel):
+    """Entity data response."""
+    entity_id: str
+    entity_type: str
+    attributes: dict[str, Any]
+    confidence: float
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    version: int = 1
+
+
+class EntityListResponse(BaseModel):
+    """List of entities response."""
+    entities: list[EntityResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class StateVersionResponse(BaseModel):
+    """State version response."""
+    state_version: int
+    entity_count: int
+
+
+class SnapshotRequest(BaseModel):
+    """Create snapshot request."""
+    description: Optional[str] = Field(None, description="Optional description")
+    created_by: str = Field(default="api", description="Creator identifier")
+
+
+class SnapshotResponse(BaseModel):
+    """Snapshot response."""
+    snapshot_id: str
+    state_version: int
+    entity_count: int
+    created_at: str
+    description: Optional[str] = None
+
+
+class RestoreRequest(BaseModel):
+    """Restore from snapshot request."""
+    snapshot_id: str = Field(..., description="Snapshot UUID to restore from")
+
+
+class RestoreResponse(BaseModel):
+    """Restore result response."""
+    status: str
+    snapshot_id: str
+    entities_restored: int
+    state_version: int
+
+
+class InsightInput(BaseModel):
+    """Single insight for world model update."""
+    insight_id: Optional[str] = None
+    insight_type: str = Field(..., description="Type: pattern, conclusion, recommendation")
+    content: str = Field(..., description="Insight content")
+    entities: list[str] = Field(default_factory=list, description="Referenced entities")
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    trigger_world_model: bool = Field(default=True)
+    source_packet: Optional[str] = None
+    facts: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class InsightsRequest(BaseModel):
+    """Submit insights for update request."""
+    insights: list[InsightInput] = Field(..., min_length=1)
+
+
+class InsightsResponse(BaseModel):
+    """Insights processing result."""
+    status: str
+    updates_applied: int = 0
+    entities_affected: int = 0
+    state_version: int = 0
+
+
+class UpdateRecord(BaseModel):
+    """Single update record."""
+    update_id: str
+    insight_id: Optional[str] = None
+    insight_type: Optional[str] = None
+    entities: list[str]
+    confidence: float
+    applied_at: str
+
+
+class UpdatesListResponse(BaseModel):
+    """List of updates response."""
+    updates: list[UpdateRecord]
+    total: int
+
+
+# =============================================================================
+# Service Dependency
+# =============================================================================
+
+def _get_service():
+    """Get WorldModelService instance."""
+    from world_model.service import get_world_model_service
+    return get_world_model_service()
+
+
+# =============================================================================
+# Endpoints
+# =============================================================================
+
+@router.get("/health")
+async def world_model_health():
+    """Health check for world model API."""
+    try:
+        service = _get_service()
+        version = await service.get_state_version()
+        count = await service.get_entity_count()
+        return {
+            "status": "healthy",
+            "state_version": version,
+            "entity_count": count,
+        }
+    except Exception as e:
+        logger.error(f"World model health check failed: {e}")
+        return {
+            "status": "degraded",
+            "error": str(e),
+        }
+
+
+@router.get("/entities/{entity_id}", response_model=EntityResponse)
+async def get_entity(entity_id: str):
+    """
+    Get entity by ID.
+    
+    Args:
+        entity_id: Unique entity identifier
+        
+    Returns:
+        Entity data
+        
+    Raises:
+        404: Entity not found
+    """
+    service = _get_service()
+    entity = await service.get_entity(entity_id)
+    
+    if entity is None:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    
+    return EntityResponse(**entity)
+
+
+@router.get("/entities", response_model=EntityListResponse)
+async def list_entities(
+    entity_type: Optional[str] = Query(None, description="Filter by entity type"),
+    min_confidence: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum results"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+):
+    """
+    List entities with optional filtering.
+    
+    Args:
+        entity_type: Filter by entity type
+        min_confidence: Minimum confidence threshold
+        limit: Maximum results
+        offset: Pagination offset
+        
+    Returns:
+        List of matching entities
+    """
+    service = _get_service()
+    entities = await service.list_entities(
+        entity_type=entity_type,
+        min_confidence=min_confidence,
+        limit=limit,
+        offset=offset,
+    )
+    
+    return EntityListResponse(
+        entities=[EntityResponse(**e) for e in entities],
+        total=len(entities),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/state-version", response_model=StateVersionResponse)
+async def get_state_version():
+    """
+    Get current world model state version.
+    
+    Returns:
+        Current state version and entity count
+    """
+    service = _get_service()
+    version = await service.get_state_version()
+    count = await service.get_entity_count()
+    
+    return StateVersionResponse(
+        state_version=version,
+        entity_count=count,
+    )
+
+
+@router.post("/snapshot", response_model=SnapshotResponse)
+async def create_snapshot(request: SnapshotRequest):
+    """
+    Create a snapshot of current world model state.
+    
+    Args:
+        request: Snapshot creation parameters
+        
+    Returns:
+        Created snapshot info
+    """
+    service = _get_service()
+    
+    try:
+        snapshot = await service.create_snapshot(
+            description=request.description,
+            created_by=request.created_by,
+        )
+        
+        return SnapshotResponse(
+            snapshot_id=snapshot["snapshot_id"],
+            state_version=snapshot["state_version"],
+            entity_count=snapshot["entity_count"],
+            created_at=snapshot["created_at"],
+            description=snapshot.get("description"),
+        )
+    except Exception as e:
+        logger.error(f"Failed to create snapshot: {e}")
+        raise HTTPException(status_code=500, detail=f"Snapshot failed: {str(e)}")
+
+
+@router.post("/restore", response_model=RestoreResponse)
+async def restore_from_snapshot(request: RestoreRequest):
+    """
+    Restore world model state from a snapshot.
+    
+    WARNING: This replaces all current entities!
+    
+    Args:
+        request: Restore parameters with snapshot_id
+        
+    Returns:
+        Restore result
+    """
+    service = _get_service()
+    
+    try:
+        snapshot_uuid = UUID(request.snapshot_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid snapshot_id format")
+    
+    result = await service.restore_from_snapshot(snapshot_uuid)
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=404, detail=result.get("error", "Restore failed"))
+    
+    return RestoreResponse(
+        status=result["status"],
+        snapshot_id=request.snapshot_id,
+        entities_restored=result.get("entities_restored", 0),
+        state_version=result.get("state_version", 0),
+    )
+
+
+@router.get("/snapshots")
+async def list_snapshots(
+    limit: int = Query(20, ge=1, le=100, description="Maximum results"),
+):
+    """
+    List recent snapshots.
+    
+    Args:
+        limit: Maximum results
+        
+    Returns:
+        List of snapshots
+    """
+    service = _get_service()
+    snapshots = await service.list_snapshots(limit=limit)
+    
+    return {
+        "snapshots": snapshots,
+        "total": len(snapshots),
+    }
+
+
+@router.post("/insights", response_model=InsightsResponse)
+async def submit_insights(request: InsightsRequest):
+    """
+    Submit insights for world model update.
+    
+    This is the primary integration point with the memory substrate.
+    
+    Args:
+        request: List of insights to process
+        
+    Returns:
+        Update result with affected entities
+    """
+    service = _get_service()
+    
+    # Convert to dict format expected by service
+    insights = [i.model_dump() for i in request.insights]
+    
+    result = await service.update_from_insights(insights)
+    
+    return InsightsResponse(
+        status=result.get("status", "error"),
+        updates_applied=result.get("updates_applied", 0),
+        entities_affected=result.get("entities_affected", 0),
+        state_version=result.get("state_version", 0),
+    )
+
+
+@router.get("/updates", response_model=UpdatesListResponse)
+async def list_updates(
+    insight_type: Optional[str] = Query(None, description="Filter by insight type"),
+    min_confidence: Optional[float] = Query(None, ge=0.0, le=1.0),
+    limit: int = Query(100, ge=1, le=1000),
+):
+    """
+    List recent world model updates.
+    
+    Args:
+        insight_type: Filter by insight type
+        min_confidence: Minimum confidence
+        limit: Maximum results
+        
+    Returns:
+        List of update records
+    """
+    service = _get_service()
+    updates = await service.list_updates(
+        insight_type=insight_type,
+        min_confidence=min_confidence,
+        limit=limit,
+    )
+    
+    records = []
+    for u in updates:
+        records.append(UpdateRecord(
+            update_id=u["update_id"],
+            insight_id=u.get("insight_id"),
+            insight_type=u.get("insight_type"),
+            entities=u.get("entities", []),
+            confidence=u.get("confidence", 0.0),
+            applied_at=u.get("applied_at", ""),
+        ))
+    
+    return UpdatesListResponse(
+        updates=records,
+        total=len(records),
+    )
+

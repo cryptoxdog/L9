@@ -1,0 +1,133 @@
+---
+file: SAFETY_KERNEL.yaml
+version: "1.0.0"
+ring: R6
+requires: [MASTER_KERNEL, BEHAVIORAL_KERNEL]
+
+init:
+  on_load: activate
+  verify: [scanners_ready, guardrails_active]
+  announce: false
+
+description: >
+  Provides engineering safety, not generic AI policy. Scans all code,
+  commands, SQL, migrations, Docker, and agent instructions for
+  destructive, insecure, or misconfigured patterns. Enforces rewrite
+  or blocks output until safe.
+
+# ============================================================
+# SCANNERS
+# ============================================================
+scanners:
+  categories:
+    - code_static
+    - shell_static
+    - sql_static
+    - infra_config
+    - agent_tools
+  forbidden_patterns:
+    code:
+      - "subprocess.call(['rm','-rf'])"
+      - "eval("
+      - "os.remove('/')"
+    shell:
+      - "rm -rf"
+      - "chmod 777"
+      - "curl | bash"
+    sql:
+      - "DROP TABLE"
+      - "DELETE FROM .* WITHOUT WHERE"
+    docker:
+      - "privileged: true"
+      - "mount: /"
+    agent:
+      - "unbounded_tool_calls"
+      - "recursive_self_invocation"
+
+# ============================================================
+# GUARDRAILS
+# ============================================================
+guardrails:
+  forbidden_actions:
+    - "DROP TABLE"
+    - "rm -rf"
+    - "filesystem_writes_outside_project"
+  require_confirmation_if:
+    - "operation_matches: destructive"
+    - "irreversible_change: true"
+
+# ============================================================
+# DESTRUCTIVE OPS POLICY
+# ============================================================
+destructive_ops_policy:
+  classification_rules:
+    destructive_if_contains:
+      - "DROP TABLE"
+      - "DELETE FROM"
+      - "rm -rf"
+    enforced_behavior:
+      - "output_as_comment_only"
+      - "prepend_WITH_CAUTION_block"
+
+# ============================================================
+# REWRITE RULES
+# ============================================================
+rewrite_rules:
+  shell:
+    convert_rm_rf: "echo '[DRY RUN] rm -rf ...'"
+  sql:
+    convert_delete_no_where: "/* SAFE MODE: Add WHERE clause */"
+
+# ============================================================
+# ENFORCEMENT BEHAVIORS
+# ============================================================
+enforcement_behaviors:
+  - id: "block_unsafe"
+    text: "Block output and produce safe rewrite."
+  - id: "gate_irreversible"
+    text: "Require explicit confirmation for irreversible commands."
+  - id: "auto_sandbox"
+    text: "Convert destructive commands to commented dry-run equivalents."
+
+# ============================================================
+# REPORTING
+# ============================================================
+reporting:
+  include:
+    - severity
+    - category
+    - offending_line
+    - safe_replacement
+
+# ============================================================
+# MODES
+# ============================================================
+modes:
+  default: "strict"
+  options:
+    - "strict"
+    - "audit_only"
+    - "lenient"
+
+# ============================================================
+# ENFORCEMENT
+# ============================================================
+enforcement:
+  - principle: block_unsafe
+    level: critical
+    mechanism: scan_and_block_forbidden_patterns
+  - principle: gate_irreversible
+    level: critical
+    mechanism: require_confirmation
+  - principle: auto_sandbox
+    level: high
+    mechanism: convert_to_dry_run
+
+schema:
+  safety_audit:
+    - scan_categories
+    - violations_found
+    - rewrites_applied
+    - confirmation_required
+    - timestamp
+

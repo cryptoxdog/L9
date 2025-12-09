@@ -1,0 +1,406 @@
+header:
+module_name: "plasticos_memory_substrate"
+module_version: "1.0.0"
+schema_version: "1.3.0"
+module_type: "kernel"          # kernel providing memory + reasoning substrate
+status: "active"
+owner: "L9-core"
+domain: "plastic_brokerage"
+description: >
+Hybrid memory + structured reasoning substrate for L9 and PlasticOS using
+Postgres + pgvector + LangGraph. Exposes a PacketEnvelope API for all agents,
+persists semantic and episodic memory, and runs a minimal DAG for intake →
+reasoning → memory writes → semantic embedding → checkpoint.
+
+governance_metadata:
+risk_level: "high"
+data_sensitivity: "internal"
+change_control: "pr_required"
+audit_required: true
+compliance_tags: ["mlops", "core_state"]
+
+technical_metadata:
+language: "python"
+runtime: "python3.11"
+frameworks:
+- fastapi
+- pydantic
+- langgraph
+- langchain
+interfaces:
+- library
+- http_rest
+dependencies_logical:
+- postgres_core
+- pgvector_memory
+deployment_target: "docker"
+service_tier: "backend"
+
+operational_metadata:
+owner_team: "L9-Platform"
+support_model: "best_effort"
+sla:
+availability_target: "99.0%"
+p95_latency_ms: 1000
+runbook_ref: "docs/memory_substrate_readme_v1.0.0.md"
+oncall_rotation: "L9-platform-oncall"
+
+business_metadata:
+capability: "state_and_memory_kernel"
+primary_kpis:
+- substrate_uptime
+- semantic_hit_rate
+- packet_write_success_rate
+consumers:
+- plasticos_agent
+- l9_research_factory
+- future_domain_agents
+
+mlops_metadata:
+model_registry_id: ""
+model_version: ""
+model_stage: "development"
+experiment_id: ""
+training_data_version: ""
+deployment_strategy: "direct"
+canary_percentage: 0
+rollback_version: ""
+rollback_trigger: "manual"
+feature_flag_key: ""
+
+quality_metadata:
+test_coverage_min: 50          # MVP level, higher later
+unit_tests_required: true
+integration_tests_required: true
+quality_gate_enabled: true
+quality_gate_thresholds:
+latency_p99_max_ms: 2000
+error_rate_max: 0.05
+blocking_on_failure: false
+drift_detection_enabled: false
+
+what_it_does: |
+This module implements the Memory Substrate for L9 and PlasticOS:
+
+* Owns all persistent state for agent events, semantic vectors, reasoning traces,
+  packets, and graph checkpoints.
+* Provides a PacketEnvelope interface used by all domain agents and higher-level
+  systems.
+* Wraps Postgres + pgvector as the durable backing store for semantic search and
+  episodic recall.
+* Exposes a minimal LangGraph DAG for intake → reasoning → memory writes →
+  semantic embedding → checkpoint.
+* Serves as a stable foundation for adding world-model and hypergraph layers later.
+
+when_to_use: |
+
+* Any time an L9 agent (including PlasticOS) needs to:
+
+  * write or read memory,
+  * store or retrieve semantic embeddings,
+  * persist reasoning traces,
+  * checkpoint graph/agent state.
+* Required for running PlasticOS as a stateful, Odoo-integrated domain OS.
+
+behavior_engine: |
+The substrate provides:
+
+* Relational state in Postgres (11 tables).
+* Semantic memory via pgvector.
+* PacketEnvelope and StructuredReasoningBlock models.
+* A LangGraph DAG that routes envelopes through:
+  intake_node → reasoning_node → memory_write_node → semantic_embed_node →
+  checkpoint_node.
+  The DAG is designed for Suite-1 (stateful) and Suite-2 (reasoning-aware)
+  operation, but avoids over-complexity for MVP deployment.
+
+inputs:
+
+* name: "PacketEnvelopeIn"
+  description: "Canonical envelope for substrate writes and reasoning traces."
+  fields:
+
+  * { name: packet_id, type: str, required: true, description: "UUID string for this packet." }
+  * { name: packet_type, type: str, required: true, description: "Type: 'event', 'memory_write', 'reasoning_trace', etc." }
+  * { name: timestamp, type: datetime, required: true, description: "ISO timestamp when packet was created." }
+  * { name: payload, type: dict, required: true, description: "JSON payload to persist or reason over." }
+  * { name: metadata, type: dict, required: false, description: "schema_version, reasoning_mode, agent, domain, etc." }
+  * { name: provenance, type: dict, required: false, description: "source, parent_packet, and tool-origin info." }
+  * { name: confidence, type: dict, required: false, description: "Optional confidence score and rationale." }
+  * { name: reasoning_block, type: dict, required: false, description: "Optional StructuredReasoningBlock inline." }
+
+* name: "SemanticSearchRequest"
+  description: "Request to search semantic memory."
+  fields:
+
+  * { name: query, type: str, required: true, description: "Natural language query." }
+  * { name: top_k, type: int, required: true, description: "Number of neighbors to return." }
+
+outputs:
+
+* name: "PacketWriteResult"
+  description: "Result of writing a PacketEnvelope."
+  fields:
+
+  * { name: packet_id, type: str, required: true, description: "Echoed packet ID." }
+  * { name: written_tables, type: list, required: true, description: "Tables updated, e.g. ['packet_store','reasoning_traces']." }
+  * { name: status, type: str, required: true, description: "'ok' or 'error'." }
+
+* name: "SemanticSearchResult"
+  description: "Top-k semantic hits."
+  fields:
+
+  * { name: query, type: str, required: true, description: "Original query." }
+  * { name: hits, type: list, required: true, description: "List of {embedding_id, score, payload} objects." }
+
+endpoints:
+
+* path: "/packet"
+  method: "post"
+  name: "write_packet"
+  description: "Submit a PacketEnvelope into the substrate."
+  request_model: "PacketEnvelopeIn"
+  response_model: "PacketWriteResult"
+
+* path: "/semantic/search"
+  method: "post"
+  name: "semantic_search"
+  description: "Search semantic memory using pgvector."
+  request_model: "SemanticSearchRequest"
+  response_model: "SemanticSearchResult"
+
+dependencies:
+production:
+- fastapi>=0.115.0
+- pydantic>=2.7.0
+- langgraph>=0.2.0
+- langchain>=0.3.0
+- psycopg2-binary>=2.9.0
+- pgvector>=0.2.5
+- uvicorn>=0.30.0
+development:
+- pytest>=7.0
+- ruff>=0.5.0
+- mypy>=1.8.0
+
+env_vars:
+
+* name: "DATABASE_URL"
+  required: true
+  description: "Postgres DSN with pgvector extension enabled."
+  default: ""
+* name: "EMBEDDING_MODEL"
+  required: false
+  description: "Embedding model name; defaults to text-embedding-3-large."
+  default: "text-embedding-3-large"
+
+substrate_spec:
+persistence:
+db: "postgres"
+vector_backend: "pgvector"
+embedding_model: "text-embedding-3-large"
+namespace: "plasticos"
+checkpointer: "postgres"
+
+memory_tables:
+- name: "agent_memory_events"
+type: "structured"
+columns:
+event_id: "uuid primary key"
+agent_id: "text not null"
+timestamp: "timestamptz not null"
+packet_id: "uuid"
+event_type: "text not null"
+content: "jsonb not null"
+
+```
+- name: "semantic_memory"
+  type: "vector"
+  columns:
+    embedding_id: "uuid primary key"
+    agent_id: "text"
+    vector: "vector(1536) not null"
+    payload: "jsonb not null"
+    created_at: "timestamptz not null"
+
+- name: "agent_log"
+  type: "structured"
+  columns:
+    log_id: "uuid primary key"
+    timestamp: "timestamptz not null"
+    agent_id: "text not null"
+    level: "text not null"
+    message: "text not null"
+    metadata: "jsonb"
+
+- name: "reasoning_traces"
+  type: "structured"
+  columns:
+    trace_id: "uuid primary key"
+    agent_id: "text not null"
+    packet_id: "uuid"
+    steps: "jsonb"
+    extracted_features: "jsonb"
+    inference_steps: "jsonb"
+    reasoning_tokens: "jsonb"
+    decision_tokens: "jsonb"
+    confidence_scores: "jsonb"
+    created_at: "timestamptz not null"
+
+- name: "packet_store"
+  type: "structured"
+  columns:
+    packet_id: "uuid primary key"
+    packet_type: "text not null"
+    envelope: "jsonb not null"
+    timestamp: "timestamptz not null"
+    routing: "jsonb"
+    provenance: "jsonb"
+
+- name: "graph_checkpoints"
+  type: "structured"
+  columns:
+    checkpoint_id: "uuid primary key"
+    agent_id: "text not null"
+    graph_state: "jsonb not null"
+    updated_at: "timestamptz not null"
+
+- name: "buyer_profiles"
+  type: "structured"
+  columns:
+    buyer_id: "uuid primary key"
+    name: "text not null"
+    profile: "jsonb not null"
+    updated_at: "timestamptz not null"
+
+- name: "supplier_profiles"
+  type: "structured"
+  columns:
+    supplier_id: "uuid primary key"
+    name: "text not null"
+    profile: "jsonb not null"
+    updated_at: "timestamptz not null"
+
+- name: "transactions"
+  type: "structured"
+  columns:
+    transaction_id: "uuid primary key"
+    supplier_id: "uuid"
+    buyer_id: "uuid"
+    material: "jsonb not null"
+    price: "numeric"
+    quantity: "numeric"
+    timestamp: "timestamptz not null"
+
+- name: "material_edges"
+  type: "structured"
+  columns:
+    edge_id: "uuid primary key"
+    material: "jsonb not null"
+    attributes: "jsonb"
+    relationships: "jsonb"
+    updated_at: "timestamptz not null"
+
+- name: "entity_metadata"
+  type: "structured"
+  columns:
+    entity_id: "uuid primary key"
+    entity_type: "text not null"
+    metadata: "jsonb not null"
+    updated_at: "timestamptz not null"
+```
+
+packet_envelope:
+grade: "B"
+fields:
+packet_id: "uuid"
+packet_type: "string"
+timestamp: "timestamptz"
+payload: "object"
+metadata:
+schema_version: "string"
+reasoning_mode: "string"
+agent: "string"
+domain: "string"
+provenance:
+parent_packet: "uuid?"
+source: "string?"
+tool: "string?"
+confidence:
+score: "float?"
+rationale: "string?"
+reasoning_block_ref: "uuid?"
+
+reasoning_block:
+name: "StructuredReasoningBlock"
+version: "1.0"
+fields:
+block_id: "uuid"
+packet_id: "uuid"
+extracted_features: "object"
+inference_steps: "list"
+reasoning_tokens: "list"
+decision_tokens: "list"
+confidence_scores: "object"
+memory_write_ops: "list"
+timestamp: "timestamptz"
+
+orchestrator:
+framework: "langgraph"
+mode: "minimal_dag"
+nodes:
+- name: "intake_node"
+type: "entry"
+uses: "PacketEnvelope"
+- name: "reasoning_node"
+type: "processor"
+uses: "StructuredReasoningBlock"
+- name: "memory_write_node"
+type: "writer"
+tables: ["agent_memory_events", "reasoning_traces", "packet_store"]
+- name: "semantic_embed_node"
+type: "vector_writer"
+table: "semantic_memory"
+model: "text-embedding-3-large"
+- name: "checkpoint_node"
+type: "checkpoint"
+table: "graph_checkpoints"
+edges:
+- "intake_node -> reasoning_node"
+- "reasoning_node -> memory_write_node"
+- "reasoning_node -> semantic_embed_node"
+- "memory_write_node -> checkpoint_node"
+
+api:
+endpoints:
+- route: "/packet"
+method: "POST"
+accepts: "PacketEnvelopeIn"
+writes: ["packet_store", "reasoning_traces"]
+- route: "/semantic/search"
+method: "POST"
+accepts: "SemanticSearchRequest"
+reads: ["semantic_memory"]
+
+sync:
+strategy: "hybrid_event_and_interval"
+triggers: ["packet_written"]
+interval_minutes: 10
+targets: ["odoo"]
+
+codegen_hints:
+base_path: "/L9"
+primary_files:
+- "memory/substrate_models.py"
+- "memory/substrate_repository.py"
+- "memory/substrate_semantic.py"
+- "memory/substrate_graph.py"
+- "memory/substrate_service.py"
+- "api/memory_api.py"
+- "config/memory_substrate_settings.py"
+- "migrations/0001_init_memory_substrate.sql"
+- "deploy/docker-compose.memory_substrate_v1.0.0.yaml"
+- "deploy/Dockerfile.memory_api_v1.0.0"
+- "deploy/Dockerfile.memory_worker_v1.0.0"
+- "tests/test_memory_substrate_basic.py"
+- "docs/memory_substrate_readme_v1.0.0.md"

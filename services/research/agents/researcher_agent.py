@@ -1,0 +1,197 @@
+"""
+L9 Research Factory - Researcher Agent
+Version: 1.0.0
+
+Gathers evidence by executing research steps using tools.
+"""
+
+import logging
+from datetime import datetime
+from typing import Any, Optional
+
+from services.research.agents.base_agent import BaseAgent
+from services.research.graph_state import Evidence, ResearchStep
+
+logger = logging.getLogger(__name__)
+
+
+RESEARCHER_SYSTEM_PROMPT = """You are a research agent. Your job is to gather information based on the given query and synthesize findings.
+
+Given a research query:
+1. Analyze what information is needed
+2. If tool results are provided, synthesize them
+3. Extract key facts, findings, and insights
+4. Cite sources when available
+
+Respond in JSON format with:
+{
+  "findings": "Main findings summary",
+  "key_facts": ["fact1", "fact2", ...],
+  "sources": ["source1", "source2", ...],
+  "confidence": 0.0-1.0,
+  "gaps": ["What's missing or unclear"]
+}"""
+
+
+class ResearcherAgent(BaseAgent):
+    """
+    Researcher Agent - Gathers evidence and information.
+    
+    Executes research steps by:
+    - Calling tools (Perplexity, web search, etc.)
+    - Synthesizing results
+    - Extracting evidence
+    """
+    
+    def __init__(self, agent_id: str = "research_worker"):
+        """Initialize researcher agent."""
+        super().__init__(agent_id=agent_id)
+        self._tool_registry = None
+    
+    def set_tool_registry(self, registry: Any) -> None:
+        """Set the tool registry for tool execution."""
+        self._tool_registry = registry
+    
+    async def run(
+        self,
+        step: ResearchStep,
+        previous_evidence: list[Evidence] = None,
+    ) -> Evidence:
+        """
+        Execute a research step and gather evidence.
+        
+        Args:
+            step: The research step to execute
+            previous_evidence: Evidence from previous steps for context
+            
+        Returns:
+            Evidence gathered from this step
+        """
+        logger.info(f"Researcher executing step: {step.get('step_id')}")
+        
+        query = step.get("query", "")
+        tools = step.get("tools", [])
+        
+        # Execute tools if available
+        tool_results = []
+        if self._tool_registry and tools:
+            for tool_name in tools:
+                try:
+                    result = await self._execute_tool(tool_name, query)
+                    if result:
+                        tool_results.append({"tool": tool_name, "result": result})
+                except Exception as e:
+                    logger.warning(f"Tool {tool_name} failed: {e}")
+        
+        # Build context from previous evidence
+        context = ""
+        if previous_evidence:
+            context = "\n\nPrevious findings:\n"
+            for ev in previous_evidence[-3:]:  # Last 3 pieces
+                context += f"- {ev.get('content', '')[:200]}...\n"
+        
+        # Build tool results context
+        tool_context = ""
+        if tool_results:
+            tool_context = "\n\nTool Results:\n"
+            for tr in tool_results:
+                result_str = str(tr["result"])[:1000]
+                tool_context += f"[{tr['tool']}]: {result_str}\n"
+        
+        # Call LLM to synthesize
+        messages = [
+            self.format_system_prompt(RESEARCHER_SYSTEM_PROMPT),
+            self.format_user_prompt(
+                f"Research Query: {query}"
+                f"{context}"
+                f"{tool_context}"
+                "\n\nSynthesize the findings and respond in JSON format."
+            ),
+        ]
+        
+        response = await self.call_llm_json(messages, max_tokens=2000)
+        
+        # Create evidence
+        evidence = Evidence(
+            source=step.get("step_id", "unknown"),
+            content=response.get("findings", "No findings"),
+            confidence=float(response.get("confidence", 0.5)),
+            timestamp=datetime.utcnow().isoformat(),
+            metadata={
+                "key_facts": response.get("key_facts", []),
+                "sources": response.get("sources", []),
+                "gaps": response.get("gaps", []),
+                "tools_used": tools,
+            },
+        )
+        
+        logger.info(f"Researcher gathered evidence with confidence {evidence['confidence']}")
+        return evidence
+    
+    async def _execute_tool(self, tool_name: str, query: str) -> Optional[str]:
+        """
+        Execute a tool and return results.
+        
+        Args:
+            tool_name: Name of tool to execute
+            query: Query to pass to tool
+            
+        Returns:
+            Tool result string, or None on failure
+        """
+        if not self._tool_registry:
+            logger.warning("No tool registry available")
+            return None
+        
+        try:
+            tool = self._tool_registry.get(tool_name)
+            if tool:
+                result = await tool.execute({"query": query})
+                return str(result)
+        except Exception as e:
+            logger.error(f"Tool execution failed: {e}")
+        
+        return None
+    
+    async def synthesize_evidence(
+        self,
+        evidence_list: list[Evidence],
+        query: str,
+    ) -> str:
+        """
+        Synthesize multiple pieces of evidence into a summary.
+        
+        Args:
+            evidence_list: List of evidence to synthesize
+            query: Original research query
+            
+        Returns:
+            Synthesized summary
+        """
+        if not evidence_list:
+            return "No evidence gathered."
+        
+        # Format evidence for synthesis
+        evidence_text = ""
+        for i, ev in enumerate(evidence_list, 1):
+            evidence_text += f"\n[Evidence {i}] (confidence: {ev.get('confidence', 0):.2f})\n"
+            evidence_text += f"{ev.get('content', '')}\n"
+            if ev.get("metadata", {}).get("key_facts"):
+                evidence_text += f"Key facts: {', '.join(ev['metadata']['key_facts'][:5])}\n"
+        
+        messages = [
+            self.format_system_prompt(
+                "You are a research synthesizer. Combine the evidence into a clear, "
+                "comprehensive summary. Include key findings, supporting facts, and "
+                "note any gaps or uncertainties. Be thorough but concise."
+            ),
+            self.format_user_prompt(
+                f"Original Query: {query}\n\n"
+                f"Evidence:{evidence_text}\n\n"
+                "Synthesize this evidence into a comprehensive summary."
+            ),
+        ]
+        
+        summary = await self.call_llm(messages, max_tokens=2000)
+        return summary.strip()
+

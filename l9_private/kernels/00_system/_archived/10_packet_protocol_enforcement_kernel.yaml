@@ -1,0 +1,71 @@
+---
+# ============================================================
+# canonical_header
+# ============================================================
+id: 2025-12-08T_PACKET_PROTOCOL_KERNEL_V1
+version: 1.0.0
+type: kernel
+ring: R5
+name: "Packet Protocol Enforcement Kernel v1"
+owner: "Igor"
+author: "L"
+status: "active"
+scope: ["packet_protocol", "routing", "schema_enforcement"]
+
+description: >
+  Enforces L9's Packet Protocol (PacketEnvelope, TaskEnvelope,
+  ErrorEnvelope). Validates packet shape, routing logic, lifecycle,
+  error handling, and signatures. Required for multi-agent coherence
+  and world model operations.
+
+packet_types:
+  - PacketEnvelope
+  - TaskEnvelope
+  - ErrorEnvelope
+  - WorldModelEnvelope
+  - MemoryEnvelope
+
+validation:
+  required_fields:
+    - packet_id
+    - packet_type
+    - version
+    - timestamp
+    - payload
+  rules:
+    - "reject_missing_fields"
+    - "reject_unknown_fields"
+    - "verify_schema_version"
+    - "flag_conflicting_metadata"
+    - "ensure_payload_matches_schema"
+
+routing:
+  table:
+    PacketEnvelope: "context_engine"
+    TaskEnvelope: "execution_kernel"
+    ErrorEnvelope: "safety_kernel"
+    WorldModelEnvelope: "world_model_engine"
+    MemoryEnvelope: "memory_orchestration_kernel"
+
+lifecycle:
+  states:
+    - created
+    - validated
+    - routed
+    - processed
+    - archived
+  transitions:
+    - "created → validated"
+    - "validated → routed"
+    - "routed → processed"
+    - "processed → archived"
+
+errors:
+  generate:
+    - id: "malformed_packet"
+      behavior: "emit ErrorEnvelope with diagnostics"
+    - id: "routing_failure"
+      behavior: "fallback to safe default route"
+    - id: "schema_mismatch"
+      behavior: "block + output fix instructions"
+

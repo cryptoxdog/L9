@@ -1,0 +1,243 @@
+# L9 DORA Workflow State
+# Updated: 2025-12-08
+# Version: 1.2.0
+
+project:
+  name: "L9 Unified Runtime"
+  description: "AI Agent Runtime with Memory Substrate, World Model, IR Engine, Collaborative Cells, and Unified Controller"
+  started: "2025-12-07"
+
+phase:
+  current: 3
+  name: "Core Runtime Integration"
+  started: "2025-12-08"
+
+progress:
+  current_task: null
+  completed_items:
+    # Phase 1 - Foundation
+    - "1.1: Project structure (L9/ root with __init__.py)"
+    - "1.2: Core schemas (core/schemas/ - packet_envelope, research_factory)"
+    - "1.3: Requirements files (requirements.txt, requirements_memory_substrate.txt)"
+    - "1.4: Configuration layer (config/ - settings, research_settings)"
+    
+    # Phase 2 - Infrastructure
+    - "2.1: Docker Compose unified (docker-compose.yml - postgres, memory-api, runtime, longrag)"
+    - "2.2: Memory Substrate service (memory/ - substrate_models, substrate_service, substrate_repository)"
+    - "2.3: Memory Client httpx (clients/memory_client.py)"
+    - "2.4: Migrations (migrations/0001_init_memory_substrate.sql)"
+    - "2.5: Deploy configs (deploy/ - Dockerfiles, compose files)"
+    - "2.6: World Model skeleton (world_model/ - 10 files, scaffold only)"
+    - "2.7: Orchestrator Layer (orchestrators/ - 7 orchestrators, 28 files)"
+    - "2.8: LangGraph integration (langgraph/packet_node_adapter.py)"
+    - "2.9: Research Graph (services/research/ - graph, agents, store_insights node)"
+    
+    # Phase 3 - Core Runtime
+    - "3.1: IR Engine (ir_engine/ - 9 files: semantic_compiler, ir_schema, ir_validator, constraint_challenger, deliberation_cell, simulation_router, ir_to_plan_adapter, ir_generator)"
+    - "3.2: Collaborative Cells (collaborative_cells/ - 6 files: base_cell, architect_cell, coder_cell, reviewer_cell, reflection_cell)"
+    - "3.3: Simulation Engine (simulation/ - 4 files: simulation_engine, scenario_loader, outcome_evaluator)"
+    - "3.4: Unified Controller (orchestration/ - 6 files: unified_controller, orchestrator_kernel, task_router, cell_orchestrator, plan_executor)"
+    
+  blockers: []
+
+session:
+  last_active: "2025-12-08T00:00:00Z"
+  session_count: 2
+
+# =============================================================================
+# L9 Repository Structure (current state)
+# =============================================================================
+repo_structure:
+  clients:
+    - memory_client.py  # httpx async client for memory API
+    
+  collaborative_cells:
+    - __init__.py
+    - base_cell.py          # Abstract base with consensus loop
+    - architect_cell.py     # Architecture design cell
+    - coder_cell.py         # Code implementation cell
+    - reviewer_cell.py      # Code review cell
+    - reflection_cell.py    # Meta-analysis cell
+    
+  config:
+    - settings.yaml
+    - memory_substrate_settings.py
+    - research_settings.py
+    
+  core:
+    schemas:
+      - packet_envelope.py
+      - research_factory_models.py
+      - research_factory_nodes.py
+      - research_factory_state.py
+      - universal_schema.py
+    retrievers:
+      - substrate_retriever.py
+      
+  deploy:
+    - docker-compose.memory_substrate_v1.0.0.yaml
+    - Dockerfile.memory_api_v1.0.0
+    - Dockerfile.memory_worker_v1.0.0
+    
+  ir_engine:
+    - __init__.py
+    - ir_schema.py          # IRGraph, IntentNode, ConstraintNode, ActionNode
+    - semantic_compiler.py  # NL → IR compilation
+    - ir_validator.py       # Schema + completeness validation
+    - ir_generator.py       # IR output generation
+    - constraint_challenger.py  # False constraint detection
+    - simulation_router.py  # Route to simulation engine
+    - ir_to_plan_adapter.py # IR → ExecutionPlan conversion
+    - deliberation_cell.py  # 2-agent IR refinement
+    
+  langgraph:
+    - packet_node_adapter.py
+    
+  memory:
+    - substrate_models.py
+    - substrate_service.py
+    - substrate_repository.py
+    - substrate_semantic.py
+    - substrate_graph.py
+    - checkpoint_manager.py
+    - state_manager.py
+    - timeline_service.py
+    - packet_serializer.py
+    - index_syncer.py
+    - housekeeping.py
+    - ingestion.py
+    - retrieval.py
+    - insight_extraction.py
+    extractor:
+      - base_extractor.py
+      - code_extractor.py
+      - memory_extractor.py
+      - agent_config_extractor.py
+      - cursor_action_extractor.py
+      - module_schema_extractor.py
+    validators:
+      - packet_validator.py
+      
+  migrations:
+    - 0001_init_memory_substrate.sql
+    
+  orchestration:
+    - __init__.py
+    - unified_controller.py   # GOD-MODE façade (main entry point)
+    - orchestrator_kernel.py  # Core IR Engine pipeline loop
+    - task_router.py          # Complexity/risk-based routing
+    - cell_orchestrator.py    # Cell workflow coordination
+    - plan_executor.py        # Plan execution with memory hooks
+    
+  orchestrators:
+    meta:
+      - interface.py
+      - orchestrator.py
+      - adapter.py
+    evolution:
+      - interface.py
+      - orchestrator.py
+      - apply_engine.py
+    research_swarm:
+      - interface.py
+      - orchestrator.py
+      - convergence.py
+    reasoning:
+      - interface.py
+      - orchestrator.py
+      - adapter_node.py
+    memory:
+      - interface.py
+      - orchestrator.py
+      - housekeeping.py
+    world_model:
+      - interface.py
+      - orchestrator.py
+      - scheduler.py
+    action_tool:
+      - interface.py
+      - orchestrator.py
+      - validator.py
+      
+  services:
+    research:
+      - research_graph.py
+      - graph_state.py
+      - graph_runtime.py
+      - memory_adapter.py
+      - research_api.py
+      - insight_extractor.py
+      agents:
+        - base_agent.py
+        - planner_agent.py
+        - researcher_agent.py
+        - critic_agent.py
+      tools:
+        - tool_registry.py
+        - tool_resolver.py
+        - tool_wrappers.py
+        
+  simulation:
+    - __init__.py
+    - simulation_engine.py  # Core simulation execution
+    - scenario_loader.py    # Load simulation scenarios
+    - outcome_evaluator.py  # Evaluate simulation results
+        
+  world_model:
+    - engine.py
+    - state.py
+    - causal_graph.py
+    - registry.py
+    - loader.py
+    - updater.py
+    - interfaces.py
+    nodes:
+      - update_world_model_node.py
+
+# =============================================================================
+# Unified Controller Architecture
+# =============================================================================
+unified_controller:
+  description: "GOD-MODE orchestration layer coordinating all L9 subsystems"
+  
+  components:
+    unified_controller:
+      purpose: "Main façade - handle_request(text, context) → ControllerResult"
+      modes: ["normal", "god_mode", "debug", "safe", "fast"]
+      
+    orchestrator_kernel:
+      purpose: "Core IR Engine pipeline execution"
+      phases: ["ingest", "compile", "validate", "challenge", "simulate", "plan", "execute", "reflect"]
+      
+    task_router:
+      purpose: "Route tasks by complexity and risk"
+      complexity_levels: ["trivial", "simple", "moderate", "complex", "critical"]
+      risk_levels: ["low", "medium", "high", "critical"]
+      targets: ["ir_engine_only", "ir_with_simulation", "ir_with_cells", "architect_cell", "coder_cell", "reviewer_cell"]
+      
+    cell_orchestrator:
+      purpose: "Coordinate collaborative cell workflows"
+      cells: ["architect", "coder", "reviewer", "reflection"]
+      workflows: ["design_to_code", "review_and_improve", "full_pipeline"]
+      
+    plan_executor:
+      purpose: "Execute plans with memory and world model hooks"
+      features: ["parallel_execution", "dependency_awareness", "retry_logic", "packet_emission"]
+
+  deterministic_chain: "routing → compiling → validating → challenging → deliberating → simulating → planning → executing → reflecting"
+
+# =============================================================================
+# Notes
+# =============================================================================
+notes:
+  - "Memory Substrate integrated as black-box service"
+  - "World Model scaffold complete (no implementation logic)"
+  - "Orchestrator Layer integrated (7 orchestrators)"
+  - "Research Graph has store_insights node wired to memory client"
+  - "IR Engine complete with 9 components"
+  - "Collaborative Cells complete with 5 specialized cells"
+  - "Unified Controller orchestrates all subsystems in GOD-MODE"
+  - "Deterministic phase chain enforced in orchestrator_kernel"
+  - "Task routing by complexity/risk with NLP pattern matching"
+  - "All imports use relative paths within L9 package"
+  - "Python 3.9+ compatible (Optional[] syntax)"

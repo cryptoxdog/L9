@@ -1,0 +1,105 @@
+version: "3.9"
+
+# =============================================================================
+# L9 Memory Substrate - Docker Compose
+# Version: 1.0.0
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # PostgreSQL with pgvector
+  # ===========================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: l9-memory-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-l9_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-l9_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-l9_memory}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-l9_user} -d ${POSTGRES_DB:-l9_memory}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - l9-memory-network
+
+  # ===========================================================================
+  # Memory Substrate API
+  # ===========================================================================
+  memory_api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.memory_api_v1.0.0
+    container_name: l9-memory-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-l9_secure_password}@postgres:5432/${POSTGRES_DB:-l9_memory}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-large}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      API_HOST: 0.0.0.0
+      API_PORT: 8080
+      API_PREFIX: /api/v1/memory
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      SUBSTRATE_NAMESPACE: plasticos
+      SYNC_INTERVAL_MINUTES: 10
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - l9-memory-network
+    labels:
+      - "com.l9.service=memory-substrate"
+      - "com.l9.version=1.0.0"
+
+  # ===========================================================================
+  # Memory Worker (Optional - for async DAG execution)
+  # ===========================================================================
+  # memory_worker:
+  #   build:
+  #     context: ..
+  #     dockerfile: deploy/Dockerfile.memory_worker_v1.0.0
+  #   container_name: l9-memory-worker
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-l9_secure_password}@postgres:5432/${POSTGRES_DB:-l9_memory}
+  #     EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-large}
+  #     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  #   networks:
+  #     - l9-memory-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: l9-memory-postgres-data
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  l9-memory-network:
+    driver: bridge
+    name: l9-memory-network
+

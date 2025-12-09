@@ -1,0 +1,28 @@
+[0;1;32m●[0m docker.service - Docker Application Container Engine
+     Loaded: loaded (]8;;file://L9/usr/lib/systemd/system/docker.service/usr/lib/systemd/system/docker.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Mon 2025-11-24 02:21:02 UTC; 2h 15min ago
+TriggeredBy: [0;1;32m●[0m docker.socket
+       Docs: ]8;;https://docs.docker.comhttps://docs.docker.com]8;;
+   Main PID: 906 (dockerd)
+      Tasks: 56
+     Memory: 135.6M (peak: 161.3M)
+        CPU: 35.091s
+     CGroup: /system.slice/docker.service
+             ├─[0;38;5;245m  906 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock[0m
+             ├─[0;38;5;245m33033 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 80 -container-ip 172.19.0.3 -container-port 80 -use-listen-fd[0m
+             ├─[0;38;5;245m33040 /usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 80 -container-ip 172.19.0.3 -container-port 80 -use-listen-fd[0m
+             ├─[0;38;5;245m33054 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 443 -container-ip 172.19.0.3 -container-port 443 -use-listen-fd[0m
+             ├─[0;38;5;245m33059 /usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 443 -container-ip 172.19.0.3 -container-port 443 -use-listen-fd[0m
+             ├─[0;38;5;245m34063 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 8000 -container-ip 172.19.0.2 -container-port 8000 -use-listen-fd[0m
+             └─[0;38;5;245m34068 /usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 8000 -container-ip 172.19.0.2 -container-port 8000 -use-listen-fd[0m
+
+Nov 24 04:14:17 L9 dockerd[906]: time="2025-11-24T04:14:17.507573090Z" level=info msg="ignoring event" container=ab07b4a3bb27c8151b1290592860d5cc3fff01a10828139f29d11c11b75ce269 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Nov 24 04:14:17 L9 dockerd[906]: time="2025-11-24T04:14:17.519253704Z" level=warning msg="ShouldRestart failed, container will not be restarted" container=ab07b4a3bb27c8151b1290592860d5cc3fff01a10828139f29d11c11b75ce269 daemonShuttingDown=false error="restart canceled" execDuration=12m34.552757008s exitStatus="{0 2025-11-24 04:14:17.495071967 +0000 UTC}" hasBeenManuallyStopped=true restartCount=0
+Nov 24 04:14:18 L9 dockerd[906]: time="2025-11-24T04:14:18.165527007Z" level=info msg="sbJoin: gwep4 ''->'394e3bb22c46', gwep6 ''->''" eid=394e3bb22c46 ep=l9-runtime net=l9_traefik_deployment_with_api_key_l9net nid=e3b77da9a058 spanID=e56e98ee61f572c4 traceID=6ad75583d75d282c9661d48ce5f221a8
+Nov 24 04:14:18 L9 dockerd[906]: time="2025-11-24T04:14:18.169648930Z" level=info msg="sbJoin: gwep4 ''->'f4d7f686c8a9', gwep6 ''->''" eid=f4d7f686c8a9 ep=traefik net=l9_traefik_deployment_with_api_key_l9net nid=e3b77da9a058 spanID=6aead16b115dba4e traceID=6ad75583d75d282c9661d48ce5f221a8
+Nov 24 04:17:42 L9 dockerd[906]: time="2025-11-24T04:17:42.736744153Z" level=error msg="copy stream failed" error="reading from a closed fifo" stream=stdout
+Nov 24 04:17:42 L9 dockerd[906]: time="2025-11-24T04:17:42.736746347Z" level=error msg="copy stream failed" error="reading from a closed fifo" stream=stderr
+Nov 24 04:17:42 L9 dockerd[906]: time="2025-11-24T04:17:42.739078842Z" level=error msg="Error running exec bb4aa3d4fca72f8250b56d31e3baf677edf3b67dcc616d18f63fff47773c0700 in container: OCI runtime exec failed: exec failed: unable to start container process: exec: \"curl\": executable file not found in $PATH"
+Nov 24 04:19:05 L9 dockerd[906]: time="2025-11-24T04:19:05.101221481Z" level=info msg="ignoring event" container=f9f6133b3c9f209abe05c51f18e5208d3a1d304409c582504d8f0809bf6ba428 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Nov 24 04:19:05 L9 dockerd[906]: time="2025-11-24T04:19:05.119356928Z" level=warning msg="ShouldRestart failed, container will not be restarted" container=f9f6133b3c9f209abe05c51f18e5208d3a1d304409c582504d8f0809bf6ba428 daemonShuttingDown=false error="restart canceled" execDuration=4m47.06701169s exitStatus="{0 2025-11-24 04:19:05.087167089 +0000 UTC}" hasBeenManuallyStopped=true restartCount=0
+Nov 24 04:19:05 L9 dockerd[906]: time="2025-11-24T04:19:05.414621961Z" level=info msg="sbJoin: gwep4 ''->'70c87d32aa6c', gwep6 ''->''" eid=70c87d32aa6c ep=l9-runtime net=l9_traefik_deployment_with_api_key_l9net nid=e3b77da9a058 spanID=6e06671af6fb7adf traceID=2236e496aae84c6f0b3abe3810aa0ebd

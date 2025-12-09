@@ -1,0 +1,24 @@
+{
+  "suite_version": "6.0.0",
+  "workspace_id": "ws-20251208-151821",
+  "workspace_path": "/Users/ib-mac/Dropbox/Chat History/Chat - Odoo/L9",
+  "suite6_root": "/Users/ib-mac/Dropbox/Cursor Governance/Cursor Governance Suite 6 (L9)",
+  "governance_enabled": true,
+  "intelligence_active": true,
+  "monitoring_level": "standard",
+  "compliance_required": true,
+  "created": "2025-12-08T15:18:21.798227",
+  "last_validated": "2025-12-08T15:18:21.798229",
+  "features": {
+    "meta_learning": true,
+    "cursor_native_reasoning": true,
+    "formal_logic_validation": true,
+    "autonomous_operation": false,
+    "real_time_monitoring": false
+  },
+  "api_endpoints": {
+    "governance_api": "http://localhost:8080",
+    "health_check": "http://localhost:8080/governance/health",
+    "validation": "http://localhost:8080/governance/validate"
+  }
+}

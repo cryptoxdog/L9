@@ -1,0 +1,235 @@
+---
+file: MEMORY_KERNEL.yaml
+version: "1.0.0"
+ring: R4
+requires: [MASTER_KERNEL]
+
+init:
+  on_load: activate
+  verify: [layers_initialized, learning_active, mistakes_tracked]
+  announce: false
+
+# ============================================================
+# MEMORY LAYERS
+# ============================================================
+layers:
+  - name: context
+    persistence: session
+    priority: 1
+    contains: [current_task, recent_files, active_goals]
+  - name: episodic
+    persistence: workspace
+    priority: 2
+    contains: [conversation_history, decisions_made, outcomes]
+  - name: procedural
+    persistence: permanent
+    priority: 3
+    contains: [learned_preferences, skill_patterns, correction_history]
+  - name: semantic
+    persistence: permanent
+    priority: 4
+    contains: [domain_knowledge, codebase_patterns, user_conventions]
+
+# ============================================================
+# WORKING SETS (active memory windows)
+# ============================================================
+working_sets:
+  - id: "ws_active_turn"
+    description: "Content from the current user turn + last system turn."
+    retention: short
+  - id: "ws_local_topic"
+    description: "Messages and files relevant to the current thread of work."
+    retention: medium
+  - id: "ws_project_state"
+    description: "Summaries of project-level state (roadmaps, TODOs, kernels)."
+    retention: long
+  - id: "ws_memory_hooks"
+    description: "Pointers into long-term memory and world model nodes."
+    retention: long
+
+# ============================================================
+# RETENTION POLICY
+# ============================================================
+retention:
+  scope: workspace_session
+  persist_until: session_end_or_explicit_clear
+  clear_on: ["/clear", "/reset", "new_workspace"]
+  levels:
+    working_memory: "5-10 turns"
+    session_memory: "full session"
+    long_term_memory: "until deprecated"
+
+# ============================================================
+# LEARNING
+# ============================================================
+learning:
+  mode: active
+  on_correction:
+    - log_mistake_immediately
+    - apply_fix_to_current
+    - update_procedural_layer
+    - never_repeat
+  on_feedback:
+    - integrate_preference
+    - update_behavior_defaults
+    - persist_to_procedural
+  on_success:
+    - reinforce_pattern
+    - update_confidence
+
+# ============================================================
+# MISTAKE TRACKING
+# ============================================================
+mistakes:
+  tracking: enabled
+  storage: internal_log
+  policy: never_repeat_same_mistake
+  retention: permanent
+  schema:
+    - mistake_id
+    - timestamp
+    - category
+    - description
+    - trigger_context
+    - correction
+    - status: [logged, applied, verified]
+  categories:
+    - output_format
+    - tone_violation
+    - permission_seeking
+    - incomplete_task
+    - misunderstood_intent
+
+# ============================================================
+# OPERATIONS
+# ============================================================
+operations:
+  intake:
+    - id: "context_intake_message"
+      trigger: "user_message"
+      behavior:
+        - "extract tasks, decisions, constraints, and references"
+        - "tag entities, projects, and kernels mentioned"
+        - "update ws_active_turn and ws_local_topic"
+
+  compression:
+    - id: "context_lossy_compression"
+      strategy: "hierarchical"
+      rules:
+        - "Preserve decisions, constraints, and TODOs exactly."
+        - "Summarize explanations aggressively."
+        - "Drop chit-chat unless it encodes preferences or constraints."
+    - id: "context_checkpoint_summary"
+      trigger: "phase_boundary"
+      output: "project_state_snapshot"
+
+  retrieval:
+    - id: "context_targeted_recall"
+      inputs: ["query", "project", "task_id"]
+      behavior:
+        - "Pull from ws_project_state first."
+        - "Then query memory substrate / world model."
+        - "Return only what is needed to answer or act."
+
+  self_expansion:
+    - id: "context_growth_controlled"
+      description: >
+        Controlled self-expansion: may propose new context only when it
+        directly reduces ambiguity, unblocks execution, or improves leverage.
+      guardrails:
+        - "Never invent new project scope without flagging it."
+        - "Always mark speculative additions as speculative."
+        - "Prefer asking for 1 missing critical parameter over inventing it."
+
+# ============================================================
+# CHECKPOINTING & REHYDRATION
+# ============================================================
+checkpointing:
+  triggers:
+    - "project_milestone"
+    - "schema_change"
+    - "kernel_update"
+  output_format: "rehydration_packet_v2"
+  preserve_exact:
+    - decisions
+    - todos
+    - schemas
+    - kernel_states
+  aggressively_summarize:
+    - explanations
+    - brainstorming
+    - verbose_diagnostics
+
+rehydration:
+  rules:
+    - "restore_context"
+    - "restore_todo"
+    - "restore_kernels"
+    - "restore_world_model_slice"
+
+# ============================================================
+# QUERY ROUTING
+# ============================================================
+query_routing:
+  order:
+    - working_memory
+    - session_memory
+    - world_model
+    - external_files
+
+# ============================================================
+# ENFORCEMENT
+# ============================================================
+rules:
+  - name: never_repeat_mistakes
+    condition: response_generation
+    action: check_against_mistake_log
+  - name: apply_corrections_immediately
+    condition: Igor_correction_received
+    action: log_and_update_behavior
+  - name: persist_preferences
+    condition: preference_expressed
+    action: store_in_procedural_layer
+  - name: never_overwrite_without_versioning
+    condition: memory_write
+    action: version_before_overwrite
+
+hooks:
+  - name: pre_response
+    location: before_output
+    action: check_mistake_log
+  - name: post_correction
+    location: after_Igor_feedback
+    action: log_and_learn
+  - name: session_end
+    location: on_close
+    action: persist_learned_patterns
+
+enforcement:
+  - principle: never_repeat_mistakes
+    level: critical
+    mechanism: check_against_log_before_response
+  - principle: active_learning
+    level: high
+    mechanism: integrate_all_feedback
+  - principle: context_preservation
+    level: high
+    mechanism: maintain_workspace_memory
+  - principle: version_control
+    level: high
+    mechanism: never_overwrite_without_versioning
+
+schema:
+  memory_state:
+    - active_layers
+    - working_sets_active
+    - context_size
+    - mistakes_logged
+    - preferences_stored
+  learning_event:
+    - event_type
+    - source
+    - content
+    - layer_updated
+    - timestamp
+

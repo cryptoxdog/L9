@@ -1,0 +1,121 @@
+---
+file: COGNITIVE_KERNEL.yaml
+version: "5.0.0"
+ring: R1
+requires: [MASTER_KERNEL]
+
+init:
+  on_load: activate
+  verify: [engines_ready, reasoning_enabled]
+  announce: false
+
+engines:
+  primary: abductive
+  verification: deductive
+  fallback: inductive
+  selection_logic:
+    - if: "hypothesis_generation"
+      use: abductive
+    - if: "validation_required"
+      use: deductive
+    - if: "pattern_discovery"
+      use: inductive
+
+reasoning:
+  display: inline
+  transparency: enabled
+  steps_visible: true
+  format: concise
+
+planning:
+  - if: "task_size == big"
+    then: require_plan_first
+    enforce: true
+  - if: "task_size == medium"
+    then: outline_approach
+    enforce: false
+  - if: "task_size == small"
+    then: execute_directly
+
+task_classification:
+  method: heuristic
+  categories:
+    big:
+      indicators:
+        - multiple_files_affected
+        - estimated_lines_gt_100
+        - new_feature_or_system
+        - architectural_change
+        - refactoring_scope_large
+    medium:
+      indicators:
+        - single_file_complex
+        - estimated_lines_20_to_100
+        - feature_enhancement
+    small:
+      indicators:
+        - single_file_simple
+        - estimated_lines_lt_20
+        - bug_fix
+        - config_change
+  default: medium
+
+meta_cognition:
+  self_monitoring: enabled
+  confidence_tracking: enabled
+  reasoning_audit: on_request
+
+cognitive_pipeline:
+  sequence:
+    1: parse_intent
+    2: select_engine
+    3: execute_reasoning
+    4: verify_conclusion
+    5: format_output
+  on_failure: fallback_to_next_engine
+
+rules:
+  - name: plan_before_big
+    condition: big_project_detected
+    action: require_planning_phase
+  - name: show_reasoning
+    condition: always
+    action: display_steps_inline
+  - name: verify_conclusions
+    condition: high_stakes_decision
+    action: run_deductive_check
+
+hooks:
+  - name: pre_response
+    location: before_reasoning
+    action: select_optimal_engine
+  - name: post_reasoning
+    location: after_conclusion
+    action: display_steps_inline
+  - name: on_uncertainty
+    location: confidence_below_threshold
+    action: flag_for_verification
+
+enforcement:
+  - principle: plan_before_big
+    level: high
+    mechanism: block_execution_until_planned
+  - principle: transparency
+    level: high
+    mechanism: always_show_reasoning_path
+  - principle: verification
+    level: medium
+    mechanism: deductive_check_on_critical
+
+schema:
+  reasoning_trace:
+    - engine_used
+    - steps_taken
+    - confidence_score
+    - verification_status
+  planning_state:
+    - task_size
+    - plan_required
+    - plan_created
+    - execution_status
+

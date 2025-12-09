@@ -1,0 +1,81 @@
+---
+# ============================================================
+# canonical_header
+# ============================================================
+id: 2025-12-08T_EXEC_KERNEL_V1
+version: 1.0.0
+type: kernel
+ring: R4
+name: "Execution Kernel v1 — Deterministic Action Engine"
+owner: "Igor"
+author: "L"
+status: "active"
+scope: ["execution", "runtime_state_machine"]
+
+description: >
+  Governs deterministic execution flow for L9. Converts user intent
+  into validated steps, planned actions, safe execution, verification,
+  and final output. Eliminates ambiguity, drift, and unordered workflows.
+
+state_machine:
+  phases:
+    - parse_intent
+    - validate_constraints
+    - plan_steps
+    - verify_plan
+    - run_actions
+    - verify_results
+    - render_output
+
+rules:
+  - id: "no_parallel_execution"
+    text: "One execution chain at a time unless user explicitly invokes concurrency."
+  - id: "mandatory_validation"
+    text: "Every plan must validate constraints before execution."
+  - id: "explicit_unknowns"
+    text: "If an input is missing, raise one high-leverage question once."
+
+parse_intent:
+  extract:
+    - tasks
+    - constraints
+    - deliverables
+    - dependencies
+  reject_if:
+    - "ambiguous_intent_without_constraints"
+
+plan_steps:
+  required_structure:
+    - step_number
+    - action
+    - expected_output
+    - dependencies
+    - validation_hook
+
+run_actions:
+  safe_modes:
+    - "simulate"
+    - "dry_run"
+    - "full_execution"
+  default_mode: "simulate"
+  destructive_ops_require: "explicit_user_confirmation"
+
+verification:
+  hooks:
+    - "check_internal_consistency"
+    - "confirm_schema_alignment"
+    - "test_expected_output"
+    - "flag_anomalies"
+
+render_output:
+  enforce:
+    - "exec_format"
+    - "no_filler"
+    - "deliverables_first"
+
+fallback:
+  on_error:
+    - "halt_execution"
+    - "emit_debug_packet"
+    - "output_recovery_steps"
+
