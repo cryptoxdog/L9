@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.l9.agent</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/opt/l9_agent/agent.py</string>
+        <string>--vps-url</string>
+        <string>http://localhost:8000</string>
+        <string>--poll-interval</string>
+        <string>5</string>
+    </array>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>StandardOutPath</key>
+    <string>/opt/l9_agent/logs/agent.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/opt/l9_agent/logs/agent.error.log</string>
+    
+    <key>WorkingDirectory</key>
+    <string>/opt/l9_agent</string>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PYTHONPATH</key>
+        <string>/opt/l9_agent</string>
+    </dict>
+</dict>
+</plist>
+

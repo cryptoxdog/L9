@@ -1,0 +1,316 @@
+version: "1.0"
+type: "architectural_pattern_library"
+description: "L9 World Model seed patterns for architectural decision-making"
+created_at: "2024-12-08"
+schema_version: "1.0.1"
+
+patterns:
+  # =============================================================================
+  # STRUCTURAL PATTERNS
+  # =============================================================================
+  
+  - id: "pattern.bridge"
+    name: "Bridge (Decouple Abstractions)"
+    category: "structural"
+    description: "Separates abstraction from implementation for extensibility. Allows both to vary independently without coupling."
+    applicable_when:
+      - "multiple implementations must be swappable"
+      - "runtime switching of components is required"
+      - "platform independence is needed"
+      - "implementation details may change frequently"
+    anti_applicable_when:
+      - "extremely simple modules with no variation"
+      - "only one implementation will ever exist"
+      - "performance is critical and abstraction overhead matters"
+    tradeoffs:
+      pros: ["high extensibility", "strong decoupling", "runtime flexibility", "cleaner interfaces"]
+      cons: ["requires interface discipline", "more files", "additional complexity for simple cases"]
+    example_files:
+      - "/examples/bridge/basic_bridge.py"
+      - "/examples/bridge/database_bridge.py"
+
+  - id: "pattern.adapter"
+    name: "Adapter (Interface Translator)"
+    category: "structural"
+    description: "Converts one interface into another expected by clients. Enables incompatible interfaces to work together."
+    applicable_when:
+      - "integrating legacy systems with new code"
+      - "third-party libraries need different interface"
+      - "multiple similar interfaces need unification"
+    anti_applicable_when:
+      - "interfaces are already compatible"
+      - "only one external system exists"
+    tradeoffs:
+      pros: ["enables reuse", "isolates external dependencies", "simplifies testing"]
+      cons: ["adds indirection", "may hide complexity", "can accumulate if overused"]
+    example_files:
+      - "/examples/adapter/llm_adapter.py"
+
+  - id: "pattern.facade"
+    name: "Facade (Unified Interface)"
+    category: "structural"
+    description: "Provides a simplified interface to a complex subsystem. Reduces coupling between clients and subsystem internals."
+    applicable_when:
+      - "subsystem has many interdependent classes"
+      - "clients need simple entry points"
+      - "layering is required between subsystems"
+    anti_applicable_when:
+      - "subsystem is already simple"
+      - "clients need fine-grained control"
+    tradeoffs:
+      pros: ["simplifies usage", "decouples clients", "easier to refactor internals"]
+      cons: ["may become god object", "can limit flexibility", "hides useful details"]
+    example_files:
+      - "/examples/facade/memory_facade.py"
+
+  - id: "pattern.composite"
+    name: "Composite (Tree Structure)"
+    category: "structural"
+    description: "Composes objects into tree structures to represent part-whole hierarchies. Lets clients treat individual objects and compositions uniformly."
+    applicable_when:
+      - "representing hierarchical data"
+      - "clients should ignore composite vs leaf difference"
+      - "recursive structures are natural"
+    anti_applicable_when:
+      - "flat data structures suffice"
+      - "leaf and composite have very different operations"
+    tradeoffs:
+      pros: ["uniform interface", "easy to add new components", "natural for trees"]
+      cons: ["type safety issues", "can make design overly general"]
+    example_files:
+      - "/examples/composite/ir_graph_composite.py"
+
+  # =============================================================================
+  # BEHAVIORAL PATTERNS
+  # =============================================================================
+
+  - id: "pattern.orchestrator"
+    name: "Orchestrator Pattern"
+    category: "behavioral"
+    description: "Central coordinator delegates tasks to subordinate modules. Maintains control flow and sequencing."
+    applicable_when:
+      - "multi-agent coordination"
+      - "multi-step workflows"
+      - "complex task sequencing"
+      - "centralized error handling needed"
+    anti_applicable_when:
+      - "simple, linear flows"
+      - "peer-to-peer coordination preferred"
+      - "high concurrency with no ordering"
+    tradeoffs:
+      pros: ["clear control flow", "scalable coordination", "centralized monitoring", "easier debugging"]
+      cons: ["becomes bottleneck if overused", "single point of failure", "may reduce parallelism"]
+    example_files:
+      - "/L9/orchestration/unified_controller.py"
+      - "/L9/orchestration/orchestrator_kernel.py"
+
+  - id: "pattern.strategy"
+    name: "Strategy (Interchangeable Algorithms)"
+    category: "behavioral"
+    description: "Defines a family of algorithms, encapsulates each one, and makes them interchangeable."
+    applicable_when:
+      - "multiple algorithms for same task"
+      - "algorithm selection at runtime"
+      - "algorithm implementation details should be hidden"
+    anti_applicable_when:
+      - "only one algorithm exists"
+      - "algorithms rarely change"
+    tradeoffs:
+      pros: ["runtime algorithm switching", "eliminates conditionals", "easy to extend"]
+      cons: ["clients must be aware of strategies", "increased object count"]
+    example_files:
+      - "/L9/orchestrators/reasoning/orchestrator.py"
+
+  - id: "pattern.observer"
+    name: "Observer (Publish-Subscribe)"
+    category: "behavioral"
+    description: "Defines a one-to-many dependency between objects so that when one changes state, all dependents are notified."
+    applicable_when:
+      - "state changes need broadcast"
+      - "loose coupling between notifier and listeners"
+      - "number of listeners varies dynamically"
+    anti_applicable_when:
+      - "direct method calls suffice"
+      - "single consumer only"
+    tradeoffs:
+      pros: ["loose coupling", "supports broadcast", "dynamic subscription"]
+      cons: ["unexpected updates", "memory leaks if not cleaned up", "order of notification unclear"]
+    example_files:
+      - "/L9/world_model/runtime.py"
+
+  - id: "pattern.chain_of_responsibility"
+    name: "Chain of Responsibility"
+    category: "behavioral"
+    description: "Passes request along a chain of handlers. Each handler decides to process or pass to next."
+    applicable_when:
+      - "multiple handlers may process request"
+      - "handler set determined dynamically"
+      - "decoupling sender from receiver"
+    anti_applicable_when:
+      - "single handler always processes"
+      - "order is critical and fixed"
+    tradeoffs:
+      pros: ["reduces coupling", "flexible handler assignment", "dynamic chains"]
+      cons: ["no guarantee of handling", "can be hard to debug"]
+    example_files:
+      - "/L9/orchestration/task_router.py"
+
+  - id: "pattern.state_machine"
+    name: "State Machine"
+    category: "behavioral"
+    description: "Allows object to alter behavior when internal state changes. Object appears to change its class."
+    applicable_when:
+      - "behavior depends on state"
+      - "many state-dependent conditionals"
+      - "state transitions are complex"
+    anti_applicable_when:
+      - "few states with simple logic"
+      - "states rarely transition"
+    tradeoffs:
+      pros: ["explicit state transitions", "eliminates conditionals", "easy to add states"]
+      cons: ["many state classes", "can be overkill for simple cases"]
+    example_files:
+      - "/L9/runtime/task_state.py"
+
+  # =============================================================================
+  # CREATIONAL PATTERNS
+  # =============================================================================
+
+  - id: "pattern.factory"
+    name: "Factory Method"
+    category: "creational"
+    description: "Defines interface for creating objects but lets subclasses decide which class to instantiate."
+    applicable_when:
+      - "class cannot anticipate object type needed"
+      - "subclasses should specify objects created"
+      - "centralizing object creation logic"
+    anti_applicable_when:
+      - "object type is always known"
+      - "simple constructor suffices"
+    tradeoffs:
+      pros: ["decouples creation from usage", "extensible", "centralizes logic"]
+      cons: ["more classes", "can be over-engineered"]
+    example_files:
+      - "/L9/agents/base_agent.py"
+
+  - id: "pattern.singleton"
+    name: "Singleton (Global Instance)"
+    category: "creational"
+    description: "Ensures class has only one instance and provides global access point."
+    applicable_when:
+      - "exactly one instance needed"
+      - "global access required"
+      - "lazy initialization desired"
+    anti_applicable_when:
+      - "multiple instances are valid"
+      - "testing requires isolation"
+      - "dependency injection is used"
+    tradeoffs:
+      pros: ["controlled access", "reduced namespace pollution", "lazy init"]
+      cons: ["global state problems", "hard to test", "hidden dependencies"]
+    example_files:
+      - "/L9/world_model/engine.py"
+
+  - id: "pattern.builder"
+    name: "Builder (Step-by-Step Construction)"
+    category: "creational"
+    description: "Separates construction of complex object from its representation."
+    applicable_when:
+      - "complex object with many parts"
+      - "different representations from same construction"
+      - "step-by-step building required"
+    anti_applicable_when:
+      - "simple objects"
+      - "single representation only"
+    tradeoffs:
+      pros: ["finer control over construction", "can vary internal representation", "isolates construction"]
+      cons: ["requires separate builder class", "more verbose"]
+    example_files:
+      - "/L9/ir_engine/ir_generator.py"
+
+  # =============================================================================
+  # L9-SPECIFIC PATTERNS
+  # =============================================================================
+
+  - id: "pattern.collaborative_cell"
+    name: "Collaborative Cognitive Cell"
+    category: "l9_native"
+    description: "Two-agent deliberation pattern for IR refinement. Producer and critic converge to consensus."
+    applicable_when:
+      - "complex decisions requiring critique"
+      - "multiple perspectives needed"
+      - "quality assurance in reasoning"
+    anti_applicable_when:
+      - "simple deterministic tasks"
+      - "speed is critical over quality"
+    tradeoffs:
+      pros: ["higher quality output", "catches errors", "diverse perspectives"]
+      cons: ["slower than single agent", "requires coordination", "may not converge"]
+    example_files:
+      - "/L9/ir_engine/deliberation_cell.py"
+      - "/L9/collaborative_cells/base_cell.py"
+
+  - id: "pattern.packet_envelope"
+    name: "Packet Envelope Pattern"
+    category: "l9_native"
+    description: "Immutable event container for memory substrate. Carries payload with metadata and provenance."
+    applicable_when:
+      - "event-driven memory systems"
+      - "audit trail required"
+      - "semantic search over events"
+    anti_applicable_when:
+      - "mutable state is required"
+      - "simple key-value storage"
+    tradeoffs:
+      pros: ["immutability", "full provenance", "semantic indexing"]
+      cons: ["storage overhead", "no in-place updates"]
+    example_files:
+      - "/L9/core/schemas/packet_envelope.py"
+      - "/L9/memory/substrate_models.py"
+
+  - id: "pattern.ir_pipeline"
+    name: "IR Pipeline Pattern"
+    category: "l9_native"
+    description: "Intent Recognition pipeline: compile → validate → challenge → simulate → plan."
+    applicable_when:
+      - "natural language to execution"
+      - "complex intent extraction"
+      - "multi-stage validation needed"
+    anti_applicable_when:
+      - "simple command parsing"
+      - "direct API calls"
+    tradeoffs:
+      pros: ["thorough validation", "constraint checking", "simulation before execution"]
+      cons: ["latency", "complexity", "requires full pipeline setup"]
+    example_files:
+      - "/L9/ir_engine/semantic_compiler.py"
+      - "/L9/ir_engine/ir_validator.py"
+      - "/L9/ir_engine/constraint_challenger.py"
+
+  - id: "pattern.world_model_query"
+    name: "World Model Query Pattern"
+    category: "l9_native"
+    description: "Query world state through entity/relation/causal interfaces. Supports simulation and counterfactuals."
+    applicable_when:
+      - "reasoning over domain state"
+      - "causal inference needed"
+      - "what-if analysis"
+    anti_applicable_when:
+      - "simple data lookup"
+      - "no domain modeling"
+    tradeoffs:
+      pros: ["rich querying", "causal reasoning", "simulation support"]
+      cons: ["requires maintained world model", "query complexity"]
+    example_files:
+      - "/L9/world_model/engine.py"
+      - "/L9/world_model/causal_mapper.py"
+
+metadata:
+  total_patterns: 18
+  categories:
+    structural: 4
+    behavioral: 5
+    creational: 3
+    l9_native: 4
+  last_updated: "2024-12-08"
+

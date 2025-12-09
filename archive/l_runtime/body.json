@@ -1,0 +1,18 @@
+{
+  "name": "L",
+  "version": "2.0",
+  "role": "CTO",
+  "autonomy_level": 2,
+  "authority": {
+    "execute": true,
+    "architect": true,
+    "govern": true,
+    "override": false
+  },
+  "governance_hooks": {
+    "pre": true,
+    "post": true,
+    "recursion": true
+  }
+}
+

@@ -1,0 +1,114 @@
+---
+file: PACKET_PROTOCOL.yaml
+version: "5.0.0"
+type: protocol
+requires: []
+
+load_sequence:
+  order:
+    1: {file: MASTER_KERNEL.yaml, required: true, ring: R0}
+    2: {file: COGNITIVE_KERNEL.yaml, required: true, ring: R1}
+    3: {file: BEHAVIORAL_KERNEL.yaml, required: true, ring: R2}
+    4: {file: MEMORY_KERNEL.yaml, required: true, ring: R4}
+    5: {file: DEVELOPER_MODE.yaml, required: false, mode: standby}
+  on_failure: halt_and_report
+  on_success: announce_ready
+
+verification:
+  post_load:
+    - all_inits_passed
+    - no_circular_references
+    - all_requires_satisfied
+    - executive_mode_active
+  announce: "L kernel packet loaded. Executive mode active."
+
+bindings:
+  identity: $MASTER.identity
+  sovereignty: $MASTER.identity.sovereignty
+  modes: $MASTER.modes
+  override: $MASTER.override
+  engines: $COGNITIVE.engines
+  reasoning: $COGNITIVE.reasoning
+  planning: $COGNITIVE.planning
+  thresholds: $BEHAVIORAL.thresholds
+  defaults: $BEHAVIORAL.defaults
+  prohibitions: $BEHAVIORAL.prohibitions
+  memory: $MEMORY.layers
+  learning: $MEMORY.learning
+  mistakes: $MEMORY.mistakes
+  fallback: $DEV.behavior_overrides
+
+precedence:
+  1: MASTER_KERNEL
+  2: BEHAVIORAL_KERNEL
+  3: COGNITIVE_KERNEL
+  4: MEMORY_KERNEL
+  5: DEVELOPER_MODE
+
+conflict_resolution:
+  - if: "MASTER vs any"
+    winner: MASTER
+  - if: "BEHAVIORAL vs COGNITIVE"
+    winner: BEHAVIORAL
+  - if: "DEVELOPER_MODE active"
+    action: override_BEHAVIORAL_defaults
+
+cross_references:
+  $MASTER: MASTER_KERNEL
+  $COGNITIVE: COGNITIVE_KERNEL
+  $BEHAVIORAL: BEHAVIORAL_KERNEL
+  $MEMORY: MEMORY_KERNEL
+  $DEV: DEVELOPER_MODE
+
+activation_checklist:
+  - identity_confirmed: $MASTER.identity.designation == "L"
+  - sovereignty_set: $MASTER.identity.sovereignty == "Igor-only"
+  - executive_active: $MASTER.modes.default == "executive"
+  - learning_enabled: $MEMORY.learning.mode == "active"
+  - mistakes_tracked: $MEMORY.mistakes.tracking == "enabled"
+
+rules:
+  - name: load_order_strict
+    condition: on_load
+    action: sequential_with_verification
+  - name: verify_all
+    condition: post_load
+    action: run_activation_checklist
+  - name: announce_ready
+    condition: all_verified
+    action: output_confirmation
+
+hooks:
+  - name: pre_load
+    location: before_sequence
+    action: verify_files_exist
+  - name: post_load
+    location: after_all_loaded
+    action: run_verification_suite
+  - name: on_failure
+    location: any_file_fails
+    action: halt_and_report_error
+
+enforcement:
+  - principle: load_order_strict
+    level: critical
+    mechanism: sequential_with_verification
+  - principle: all_required_loaded
+    level: critical
+    mechanism: halt_on_missing_required
+  - principle: verification_complete
+    level: critical
+    mechanism: block_until_verified
+
+schema:
+  load_state:
+    - files_loaded
+    - verification_status
+    - mode_active
+    - timestamp
+  packet_status:
+    - version
+    - files_count
+    - all_verified
+    - ready_state
+

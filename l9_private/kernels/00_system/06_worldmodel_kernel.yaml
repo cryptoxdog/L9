@@ -1,0 +1,148 @@
+---
+file: WORLDMODEL_KERNEL.yaml
+version: "1.0.0"
+ring: R3
+requires: [MASTER_KERNEL, MEMORY_KERNEL]
+
+init:
+  on_load: activate
+  verify: [graph_initialized, ontology_loaded]
+  announce: false
+
+# ============================================================
+# ENTITY CLASSES
+# ============================================================
+entities:
+  classes:
+    - name: "Actor"
+      examples: ["Igor", "L", "vendors", "buyers", "ministries"]
+    - name: "System"
+      examples: ["L9", "Mac Agent", "VPS", "Odoo", "MRF plant"]
+    - name: "Artifact"
+      examples: ["reports", "kernels", "prompts", "datasets"]
+    - name: "Project"
+      examples: ["L9 build-out", "MRF Georgetown", "PlasticOS"]
+    - name: "Process"
+      examples: ["lead intake", "research run", "deployment"]
+
+# ============================================================
+# RELATION TYPES
+# ============================================================
+relations:
+  types:
+    - id: "owns"
+    - id: "controls"
+    - id: "depends_on"
+    - id: "produces"
+    - id: "consumes"
+    - id: "supersedes"
+    - id: "derived_from"
+
+# ============================================================
+# EVIDENCE MODEL
+# ============================================================
+evidence_model:
+  weights:
+    - source: "user_files"
+      default_weight: 0.9
+    - source: "chat_history"
+      default_weight: 0.7
+    - source: "external_web"
+      default_weight: 0.4
+    - source: "inferred_only"
+      default_weight: 0.2
+  rules:
+    - "Never treat pure inference as ground truth."
+    - "Prefer user-supplied docs over model priors."
+    - "Mark conflicting edges explicitly rather than silently reconciling them."
+    - "No external web memory is treated as ground truth without citation."
+
+# ============================================================
+# UPDATE MECHANISMS
+# ============================================================
+updates:
+  mechanisms:
+    - id: "wm_incremental_update"
+      trigger: "new decision or project change"
+      behavior:
+        - "Add/modify nodes and edges instead of rebuilding entire graph."
+    - id: "wm_retire_outdated"
+      trigger: "explicit deprecation or newer conflicting fact"
+      behavior:
+        - "Mark previous edges as superseded; keep history."
+    - id: "wm_checkpoint"
+      trigger: "major milestone"
+      behavior:
+        - "Emit a human-readable snapshot of the graph slice relevant to that project."
+
+# ============================================================
+# QUERY PATTERNS
+# ============================================================
+queries:
+  patterns:
+    - id: "wm_why_chain"
+      description: "Explain why a recommendation or plan exists using graph provenance."
+    - id: "wm_impact_radius"
+      description: "Given a change, list impacted nodes/projects."
+    - id: "wm_dependency_walk"
+      description: "Walk dependency chain to surface hidden blockers."
+
+# ============================================================
+# ANTI-DRIFT
+# ============================================================
+anti_drift:
+  - "Continuously re-anchor to Igor, L9, project state, and kernel stack."
+  - "Do not silently overwrite prior decisions without an explicit update."
+  - "Avoid duplicate edges in world model."
+
+# ============================================================
+# ENFORCEMENT
+# ============================================================
+rules:
+  - name: evidence_required
+    condition: graph_write
+    action: require_source_weight
+  - name: no_silent_overwrites
+    condition: conflicting_edge
+    action: mark_superseded_keep_history
+  - name: checkpoint_on_milestone
+    condition: major_milestone
+    action: emit_snapshot
+
+hooks:
+  - name: pre_write
+    location: before_graph_update
+    action: validate_evidence_source
+  - name: post_query
+    location: after_retrieval
+    action: trace_provenance
+
+enforcement:
+  - principle: evidence_first
+    level: critical
+    mechanism: require_source_for_all_edges
+  - principle: traceable
+    level: high
+    mechanism: all_summaries_traceable_to_sources
+  - principle: anti_drift
+    level: high
+    mechanism: continuous_reanchor
+
+schema:
+  node:
+    - node_id
+    - entity_class
+    - label
+    - properties
+    - created_at
+    - evidence_source
+  edge:
+    - edge_id
+    - relation_type
+    - source_node
+    - target_node
+    - weight
+    - evidence_source
+    - superseded_by
+    - created_at
+

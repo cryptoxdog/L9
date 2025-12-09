@@ -1,0 +1,395 @@
+"""
+L9 Memory Substrate - Ingestion Pipeline
+Version: 1.1.0
+
+Real PacketEnvelope ingestion with:
+- Validation
+- Embedding generation via substrate_semantic
+- Structured packet storage
+- Vector storage
+- Artifact handling
+- Lineage tracking
+- Tag assignment
+
+All operations are async-safe with proper logging.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime
+from typing import Any, Optional
+from uuid import UUID, uuid4
+
+from memory.substrate_models import (
+    PacketEnvelope,
+    PacketEnvelopeIn,
+    PacketWriteResult,
+    PacketLineage,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class IngestionPipeline:
+    """
+    PacketEnvelope ingestion pipeline.
+    
+    Handles the full lifecycle of packet ingestion:
+    1. Validation
+    2. Content embedding
+    3. Structured storage
+    4. Vector storage
+    5. Lineage updates
+    6. Tag assignment
+    """
+    
+    def __init__(
+        self,
+        repository=None,
+        semantic_service=None,
+        auto_embed: bool = True,
+        auto_tag: bool = True,
+    ):
+        """
+        Initialize ingestion pipeline.
+        
+        Args:
+            repository: SubstrateRepository instance
+            semantic_service: SemanticService for embeddings
+            auto_embed: Automatically embed text content
+            auto_tag: Automatically generate tags from content
+        """
+        self._repository = repository
+        self._semantic_service = semantic_service
+        self._auto_embed = auto_embed
+        self._auto_tag = auto_tag
+        logger.info("IngestionPipeline initialized")
+    
+    def set_repository(self, repository) -> None:
+        """Set or update the repository reference."""
+        self._repository = repository
+    
+    def set_semantic_service(self, service) -> None:
+        """Set or update the semantic service reference."""
+        self._semantic_service = service
+    
+    async def ingest(
+        self,
+        packet_in: PacketEnvelopeIn,
+        embed: Optional[bool] = None,
+        generate_tags: Optional[bool] = None,
+    ) -> PacketWriteResult:
+        """
+        Ingest a PacketEnvelope into the memory substrate.
+        
+        Full pipeline:
+        1. Validate packet structure
+        2. Convert to full envelope
+        3. Store structured packet
+        4. Generate and store embedding (if applicable)
+        5. Store artifacts
+        6. Update lineage graph
+        7. Generate and assign tags
+        
+        Args:
+            packet_in: Input packet envelope
+            embed: Override auto_embed setting
+            generate_tags: Override auto_tag setting
+            
+        Returns:
+            PacketWriteResult with status and written tables
+        """
+        logger.info(f"Ingesting packet: type={packet_in.packet_type}")
+        
+        should_embed = embed if embed is not None else self._auto_embed
+        should_tag = generate_tags if generate_tags is not None else self._auto_tag
+        
+        written_tables = []
+        errors = []
+        
+        # Validate
+        validation_errors = self._validate_packet(packet_in)
+        if validation_errors:
+            return PacketWriteResult(
+                packet_id=packet_in.packet_id or uuid4(),
+                written_tables=[],
+                status="error",
+                error_message="; ".join(validation_errors),
+            )
+        
+        # Convert to envelope
+        envelope = packet_in.to_envelope()
+        
+        # Auto-generate tags if enabled
+        if should_tag:
+            auto_tags = self._generate_tags(envelope)
+            envelope.tags = list(set(envelope.tags + auto_tags))
+        
+        # Store structured packet
+        try:
+            await self._store_packet(envelope)
+            written_tables.append("packet_store")
+        except Exception as e:
+            logger.error(f"Failed to store packet: {e}")
+            errors.append(f"packet_store: {str(e)}")
+        
+        # Store memory event
+        try:
+            await self._store_memory_event(envelope)
+            written_tables.append("agent_memory_events")
+        except Exception as e:
+            logger.error(f"Failed to store memory event: {e}")
+            errors.append(f"agent_memory_events: {str(e)}")
+        
+        # Generate and store embedding
+        if should_embed and self._semantic_service:
+            try:
+                embedded = await self._embed_content(envelope)
+                if embedded:
+                    written_tables.append("semantic_memory")
+            except Exception as e:
+                logger.error(f"Failed to embed content: {e}")
+                errors.append(f"embedding: {str(e)}")
+        
+        # Store artifacts
+        try:
+            artifact_count = await self._store_artifacts(envelope)
+            if artifact_count > 0:
+                written_tables.append("artifacts")
+        except Exception as e:
+            logger.error(f"Failed to store artifacts: {e}")
+            errors.append(f"artifacts: {str(e)}")
+        
+        # Update lineage
+        try:
+            await self._update_lineage(envelope)
+        except Exception as e:
+            logger.error(f"Failed to update lineage: {e}")
+            errors.append(f"lineage: {str(e)}")
+        
+        status = "ok" if not errors else "partial" if written_tables else "error"
+        
+        logger.info(f"Ingestion complete: packet_id={envelope.packet_id}, status={status}")
+        
+        return PacketWriteResult(
+            packet_id=envelope.packet_id,
+            written_tables=written_tables,
+            status=status,
+            error_message="; ".join(errors) if errors else None,
+        )
+    
+    def _validate_packet(self, packet: PacketEnvelopeIn) -> list[str]:
+        """
+        Validate packet structure.
+        
+        Returns list of validation errors (empty if valid).
+        """
+        errors = []
+        
+        if not packet.packet_type:
+            errors.append("packet_type is required")
+        
+        if not packet.payload:
+            errors.append("payload is required")
+        
+        if packet.packet_type and len(packet.packet_type) > 100:
+            errors.append("packet_type exceeds maximum length (100)")
+        
+        # Validate TTL is in future
+        if packet.ttl and packet.ttl < datetime.utcnow():
+            errors.append("ttl must be in the future")
+        
+        # Validate confidence score range
+        if packet.confidence:
+            score = packet.confidence.score
+            if score is not None and (score < 0 or score > 1):
+                errors.append("confidence.score must be between 0 and 1")
+        
+        return errors
+    
+    def _generate_tags(self, envelope: PacketEnvelope) -> list[str]:
+        """
+        Auto-generate tags from packet content.
+        
+        Heuristic tag generation:
+        - packet_type as tag
+        - agent as tag
+        - domain as tag
+        - Extract keywords from payload
+        """
+        tags = []
+        
+        # Add packet type as tag
+        if envelope.packet_type:
+            tags.append(f"type:{envelope.packet_type}")
+        
+        # Add agent as tag
+        if envelope.metadata and envelope.metadata.agent:
+            tags.append(f"agent:{envelope.metadata.agent}")
+        
+        # Add domain as tag
+        if envelope.metadata and envelope.metadata.domain:
+            tags.append(f"domain:{envelope.metadata.domain}")
+        
+        # Extract keywords from payload keys
+        payload = envelope.payload
+        for key in list(payload.keys())[:5]:  # Limit to first 5 keys
+            if isinstance(key, str) and len(key) < 30:
+                tags.append(f"field:{key}")
+        
+        return tags
+    
+    async def _store_packet(self, envelope: PacketEnvelope) -> None:
+        """Store packet in packet_store table."""
+        if self._repository is None:
+            raise RuntimeError("Repository not configured")
+        
+        await self._repository.insert_packet(envelope)
+    
+    async def _store_memory_event(self, envelope: PacketEnvelope) -> None:
+        """Store memory event in agent_memory_events table."""
+        if self._repository is None:
+            return
+        
+        agent_id = envelope.metadata.agent if envelope.metadata else "default"
+        
+        await self._repository.insert_memory_event(
+            agent_id=agent_id or "default",
+            event_type=envelope.packet_type,
+            content=envelope.payload,
+            packet_id=envelope.packet_id,
+            timestamp=envelope.timestamp,
+        )
+    
+    async def _embed_content(self, envelope: PacketEnvelope) -> bool:
+        """
+        Generate and store embedding for packet content.
+        
+        Returns True if embedding was created.
+        """
+        if self._semantic_service is None:
+            return False
+        
+        # Determine text to embed
+        payload = envelope.payload
+        text_to_embed = (
+            payload.get("text") or
+            payload.get("content") or
+            payload.get("description") or
+            payload.get("summary") or
+            payload.get("message")
+        )
+        
+        if not text_to_embed:
+            # Skip packets without embeddable text
+            return False
+        
+        if not isinstance(text_to_embed, str):
+            text_to_embed = str(text_to_embed)
+        
+        # Minimum text length
+        if len(text_to_embed) < 10:
+            return False
+        
+        # Generate and store embedding
+        agent_id = envelope.metadata.agent if envelope.metadata else None
+        
+        await self._semantic_service.embed_and_store(
+            text=text_to_embed,
+            payload={
+                "packet_id": str(envelope.packet_id),
+                "packet_type": envelope.packet_type,
+                "thread_id": str(envelope.thread_id) if envelope.thread_id else None,
+                "timestamp": envelope.timestamp.isoformat(),
+            },
+            agent_id=agent_id,
+        )
+        
+        return True
+    
+    async def _store_artifacts(self, envelope: PacketEnvelope) -> int:
+        """
+        Store any artifacts associated with the packet.
+        
+        Artifacts are extracted from payload.artifacts field.
+        
+        Returns count of stored artifacts.
+        """
+        artifacts = envelope.payload.get("artifacts", [])
+        
+        if not artifacts or not isinstance(artifacts, list):
+            return 0
+        
+        # For now, artifacts are stored inline in packet payload
+        # Future: separate artifact storage
+        return len(artifacts)
+    
+    async def _update_lineage(self, envelope: PacketEnvelope) -> None:
+        """
+        Update lineage graph for the packet.
+        
+        If packet has parent_ids, verify they exist and update
+        the lineage tracking.
+        """
+        if not envelope.lineage:
+            return
+        
+        parent_ids = envelope.lineage.parent_ids
+        if not parent_ids:
+            return
+        
+        # Verify parent packets exist (logging only, don't fail)
+        if self._repository:
+            for parent_id in parent_ids:
+                parent = await self._repository.get_packet(parent_id)
+                if parent is None:
+                    logger.warning(f"Lineage parent {parent_id} not found for packet {envelope.packet_id}")
+    
+    async def ingest_batch(
+        self,
+        packets: list[PacketEnvelopeIn],
+    ) -> list[PacketWriteResult]:
+        """
+        Ingest multiple packets in batch.
+        
+        Args:
+            packets: List of input packets
+            
+        Returns:
+            List of results for each packet
+        """
+        results = []
+        
+        for packet in packets:
+            result = await self.ingest(packet)
+            results.append(result)
+        
+        success_count = sum(1 for r in results if r.status == "ok")
+        logger.info(f"Batch ingestion complete: {success_count}/{len(packets)} succeeded")
+        
+        return results
+
+
+# =============================================================================
+# Singleton / Factory
+# =============================================================================
+
+_pipeline: Optional[IngestionPipeline] = None
+
+
+def get_ingestion_pipeline() -> IngestionPipeline:
+    """Get or create the ingestion pipeline singleton."""
+    global _pipeline
+    if _pipeline is None:
+        _pipeline = IngestionPipeline()
+    return _pipeline
+
+
+def init_ingestion_pipeline(repository, semantic_service=None) -> IngestionPipeline:
+    """Initialize the ingestion pipeline with dependencies."""
+    pipeline = get_ingestion_pipeline()
+    pipeline.set_repository(repository)
+    if semantic_service:
+        pipeline.set_semantic_service(semantic_service)
+    return pipeline
+

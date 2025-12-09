@@ -1,0 +1,68 @@
+# =============================================================================
+# L9 Memory Substrate API - Dockerfile
+# Version: 1.0.0
+# =============================================================================
+
+FROM python:3.11-slim
+
+# Labels
+LABEL maintainer="L9-Platform" \
+      version="1.0.0" \
+      description="L9 Memory Substrate API"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user
+RUN groupadd -r l9 && useradd -r -g l9 l9user
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for caching
+COPY requirements.txt /app/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Additional dependencies for memory substrate
+RUN pip install --no-cache-dir \
+    asyncpg>=0.29.0 \
+    pgvector>=0.2.5 \
+    langgraph>=0.2.0 \
+    langchain>=0.3.0 \
+    pydantic-settings>=2.0.0 \
+    openai>=1.0.0
+
+# Copy application code
+COPY memory/ /app/memory/
+COPY api/ /app/api/
+COPY config/ /app/config/
+
+# Create necessary directories
+RUN mkdir -p /app/logs && chown -R l9user:l9 /app
+
+# Switch to non-root user
+USER l9user
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run the application
+CMD ["python", "-m", "uvicorn", "api.memory_api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8080"]
+

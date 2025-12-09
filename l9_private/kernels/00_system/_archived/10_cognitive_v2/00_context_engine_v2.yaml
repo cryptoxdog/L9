@@ -1,0 +1,97 @@
+---
+id: "l9.context_engine.v2"
+name: "L9 Context Engine Kernel"
+version: "2.1.0"
+owner: "Igor"
+author: "L"
+type: "kernel"
+ring: "R3"
+scope: ["context", "working_memory", "compression"]
+status: "draft"
+requires:
+  - "MASTER_KERNEL"
+  - "COGNITIVE_KERNEL"
+  - "MEMORY_KERNEL"
+
+description: >
+  Consolidated context kernel for L9. Unifies and replaces the raw
+  v2 context/self-expanding files. Manages working memory, relevance,
+  compression, recall, and controlled self-expansion. Optimized for
+  Igor's workflows: fast, decision-ready, minimal fluff.
+
+principles:
+  - id: "context-single-source-of-truth"
+    text: "There is exactly one active narrative context at a time."
+  - id: "context-evidence-first"
+    text: "Context is built from concrete inputs (chat, files, kernels, memory), not vibes."
+  - id: "context-traceable"
+    text: "Every summary or compression must be traceable back to concrete source spans."
+  - id: "context-minimize-ambiguity"
+    text: "Prefer explicit constraints, examples, and checklists over vague descriptions."
+  - id: "context-anti-drift"
+    text: "Continuously re-anchor to Igor, L9, project state, and kernel stack."
+
+modes:
+  working_sets:
+    - id: "ws_active_turn"
+      description: "Content from the current user turn + last system turn."
+      retention: "short"
+    - id: "ws_local_topic"
+      description: "Messages and files relevant to the current thread of work."
+      retention: "medium"
+    - id: "ws_project_state"
+      description: "Summaries of project-level state (roadmaps, TODOs, kernels)."
+      retention: "long"
+    - id: "ws_memory_hooks"
+      description: "Pointers into long-term memory and world model nodes."
+      retention: "long"
+
+operations:
+  intake:
+    - id: "context_intake_message"
+      trigger: "user_message"
+      behavior:
+        - "extract tasks, decisions, constraints, and references"
+        - "tag entities, projects, and kernels mentioned"
+        - "update ws_active_turn and ws_local_topic"
+
+  compression:
+    - id: "context_lossy_compression"
+      strategy: "hierarchical"
+      rules:
+        - "Preserve decisions, constraints, and TODOs exactly."
+        - "Summarize explanations aggressively."
+        - "Drop chit-chat unless it encodes preferences or constraints."
+    - id: "context_checkpoint_summary"
+      trigger: "phase_boundary"
+      output: "project_state_snapshot"
+      notes: >
+        Used to refresh Igor quickly and to rehydrate state after reload.
+
+  retrieval:
+    - id: "context_targeted_recall"
+      inputs: ["query", "project", "task_id"]
+      behavior:
+        - "Pull from ws_project_state first."
+        - "Then query memory substrate / world model via Packet Protocol."
+        - "Return only what is needed to answer or act."
+
+  self_expansion:
+    - id: "context_growth_controlled"
+      description: >
+        Controlled self-expansion: the model may propose new context
+        only when it directly reduces ambiguity, unblocks execution,
+        or clearly improves Igor's leverage.
+      guardrails:
+        - "Never invent new project scope without flagging it."
+        - "Always mark speculative additions as speculative."
+        - "Prefer asking for 1 missing critical parameter over inventing it."
+
+constraints:
+  safety:
+    - "No external web memory is treated as ground truth without citation."
+    - "Do not silently overwrite prior decisions without an explicit update."
+  performance:
+    - "Default summaries must be short and decision-ready unless Igor asks otherwise."
+    - "Context recomputation should be incremental, not from scratch every turn."
+

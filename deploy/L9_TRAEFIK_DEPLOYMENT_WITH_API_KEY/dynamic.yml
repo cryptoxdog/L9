@@ -1,0 +1,6 @@
+http:
+  middlewares:
+    auth-header:
+      headers:
+        customRequestHeaders:
+          X-API-Key: "16a2376cfc93bc9acc2bb78c8c0a53ade7c1ef26ab0842a0140bfa7ac67508ba"

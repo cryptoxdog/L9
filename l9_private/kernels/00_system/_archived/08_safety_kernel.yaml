@@ -1,0 +1,75 @@
+---
+# ============================================================
+# canonical_header
+# ============================================================
+id: 2025-12-08T_SAFETY_KERNEL_V1
+version: 1.0.0
+type: kernel
+ring: R6
+name: "Safety Kernel v1 — Red-Team Enforcement Layer"
+owner: "Igor"
+author: "L"
+status: "active"
+scope: ["safety", "guardrails", "risk"]
+
+description: >
+  Provides engineering safety, not generic AI policy. Scans all code,
+  commands, SQL, migrations, Docker, and agent instructions for
+  destructive, insecure, or misconfigured patterns. Enforces rewrite
+  or blocks output until safe.
+
+scanners:
+  categories:
+    - code_static
+    - shell_static
+    - sql_static
+    - infra_config
+    - agent_tools
+  forbidden_patterns:
+    code:
+      - "subprocess.call(['rm','-rf'])"
+      - "eval("
+      - "os.remove('/')"
+    shell:
+      - "rm -rf"
+      - "chmod 777"
+      - "curl | bash"
+    sql:
+      - "DROP TABLE"
+      - "DELETE FROM .* WITHOUT WHERE"
+    docker:
+      - "privileged: true"
+      - "mount: /"
+    agent:
+      - "unbounded_tool_calls"
+      - "recursive_self_invocation"
+
+enforcement:
+  behavior:
+    - id: "block_unsafe"
+      text: "Block output and produce safe rewrite."
+    - id: "gate_irreversible"
+      text: "Require explicit confirmation for irreversible commands."
+    - id: "auto_sandbox"
+      text: "Convert destructive commands to commented dry-run equivalents."
+
+rewrite_rules:
+  shell:
+    convert_rm_rf: "echo '[DRY RUN] rm -rf ...'"
+  sql:
+    convert_delete_no_where: "/* SAFE MODE: Add WHERE clause */"
+
+reporting:
+  include:
+    - severity
+    - category
+    - offending_line
+    - safe_replacement
+
+modes:
+  default: "strict"
+  options:
+    - "strict"
+    - "audit_only"
+    - "lenient"
+

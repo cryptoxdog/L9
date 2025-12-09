@@ -1,0 +1,62 @@
+services:
+  l9-runtime:
+    image: l9-runtime
+    container_name: l9-runtime
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - /opt/l9/runtime:/app
+    environment:
+      # API Key
+      - API_KEY=16a2376cfc93bc9acc2bb78c8c0a53ade7c1ef26ab0842a0140bfa7ac67508ba
+      # Supabase Configuration (from .env file)
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      # Redis Configuration
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+    env_file:
+      - .env
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    networks:
+      - l9net
+    labels:
+      # Traefik routing labels - MUST be on l9-runtime service, not traefik
+      - "traefik.enable=true"
+      - "traefik.http.routers.l9.rule=Host(`quantumaipartners.com`)"
+      - "traefik.http.routers.l9.entrypoints=websecure"
+      - "traefik.http.routers.l9.tls=true"
+      - "traefik.http.routers.l9.tls.certresolver=myresolver"
+      - "traefik.http.routers.l9.middlewares=auth-header"
+      - "traefik.http.services.l9.loadbalancer.server.port=8000"
+
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - "--api.insecure=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/etc/traefik/traefik.yml"
+      - "--providers.file.watch=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=admin@quantumaipartners.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+    networks:
+      - l9net
+
+networks:
+  l9net:
+    driver: bridge

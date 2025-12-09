@@ -1,0 +1,260 @@
+yaml_type: "l9_schema"
+file_name: "Memory.yaml"
+module_id: "memory.packet_envelope.v1.1.0"
+visibility: "private"
+timestamp: "2025-12-07 00:00:00 EST"
+save_to: "/L9/core/schemas/"
+
+schema:
+  PacketEnvelope:
+    description: >
+      Canonical event container used by the Memory Substrate.
+      Matches the v1.1 repository implementation in substrate_models.py.
+      Immutable once written.
+      
+      v1.1.0 additions: thread_id, lineage, tags, ttl for enhanced
+      threading, DAG-style lineage, labeling, and temporal memory hygiene.
+
+    fields:
+      packet_id:
+        type: "UUID"
+        required: true
+        primary_key: true
+
+      packet_type:
+        type: "string"
+        required: true
+        description: "Semantic category of the packet (e.g., event, message, insight)."
+
+      payload:
+        type: "object"
+        required: true
+        description: "Flexible JSON-like structure. Repository does not enforce shape."
+
+      metadata:
+        type: "object"
+        required: false
+
+      provenance:
+        type: "object"
+        required: false
+        description: "May contain parent_packet (UUID) and source_agent."
+
+      confidence:
+        type: "object"
+        required: false
+
+      timestamp:
+        type: "datetime"
+        required: true
+        description: "UTC timestamp (generated automatically)."
+
+      reasoning_block:
+        type: "object"
+        required: false
+        description: "Optional inline StructuredReasoningBlock."
+
+      # =========================================================================
+      # v1.1.0 NEW FIELDS (backward compatible)
+      # =========================================================================
+
+      thread_id:
+        type: "UUID"
+        required: false
+        description: >
+          Logical conversation / task thread identifier.
+          Links packets belonging to the same session or dialogue.
+
+      lineage:
+        type: "object"
+        required: false
+        description: >
+          Lineage metadata for DAG-style reasoning and causality tracking.
+        fields:
+          parent_ids:
+            type: "list"
+            item_type: "UUID"
+            required: false
+            description: "Zero or more parent packets for multi-parent derivation."
+          derivation_type:
+            type: "string"
+            required: false
+            description: "How derived: 'split', 'merge', 'transform', 'inference'."
+          generation:
+            type: "int"
+            required: false
+            description: "Generation number in lineage chain."
+          root_packet_id:
+            type: "UUID"
+            required: false
+            description: "Original root packet if known."
+
+      tags:
+        type: "list"
+        item_type: "string"
+        required: false
+        description: "Lightweight labels for filtering and retrieval."
+
+      ttl:
+        type: "datetime"
+        required: false
+        description: "Optional expiry timestamp for memory hygiene / GC."
+
+  PacketEnvelopeIn:
+    description: >
+      Input structure used for writes. Converted internally to PacketEnvelope.
+      v1.1.0: Now supports thread_id, lineage, tags, ttl.
+    fields:
+      packet_type: {type: "string"}
+      payload: {type: "object"}
+      metadata: {type: "object", required: false}
+      provenance: {type: "object", required: false}
+      confidence: {type: "object", required: false}
+      reasoning_block: {type: "object", required: false}
+      # v1.1.0 additions
+      thread_id: {type: "UUID", required: false}
+      lineage: {type: "object", required: false}
+      tags: {type: "list", item_type: "string", required: false}
+      ttl: {type: "datetime", required: false}
+
+  PacketWriteResult:
+    description: "Returned after DAG processing for a packet write."
+    fields:
+      status: {type: "string"}
+      packet_id: {type: "UUID"}
+      written_tables: {type: "list", item_type: "string"}
+
+  SemanticSearchRequest:
+    fields:
+      query: {type: "string"}
+      top_k: {type: "int"}
+      agent_id: {type: "string", required: false}
+
+  SemanticHit:
+    fields:
+      embedding_id: {type: "UUID"}
+      score: {type: "float"}
+      payload: {type: "object"}
+
+  SemanticSearchResult:
+    fields:
+      query: {type: "string"}
+      hits: {type: "list", item_type: "SemanticHit"}
+
+  # ===========================================================================
+  # v1.1.0 NEW: PacketLineage model
+  # ===========================================================================
+  PacketLineage:
+    description: >
+      Lineage information for packet genealogy tracking.
+      Enables tracing the full derivation path of a packet through
+      the system, supporting multi-parent relationships.
+    fields:
+      parent_ids:
+        type: "list"
+        item_type: "UUID"
+        required: false
+        description: "Parent packet IDs (supports multi-parent DAG)."
+      derivation_type:
+        type: "string"
+        required: false
+        description: "How derived: 'split', 'merge', 'transform', 'inference'."
+      generation:
+        type: "int"
+        required: false
+        description: "Generation number in lineage chain."
+      root_packet_id:
+        type: "UUID"
+        required: false
+        description: "Original root packet if known."
+
+contracts:
+  - "PacketEnvelope must be immutable once written."
+  - "Embedding vectors are stored in a separate semantic_memory table (not inline)."
+  - "payload is arbitrary JSON and not variant-typed in v1.1.0."
+  - "Only packet_type, payload, timestamp are guaranteed required."
+  - "v1.1.0: thread_id, lineage, tags, ttl are optional backward-compatible extensions."
+
+indexing:
+  postgres:
+    packet_store:
+      - description: "Primary indexes"
+        columns: ["packet_type", "timestamp"]
+      - description: "v1.1.0: Thread index for conversation retrieval"
+        columns: ["thread_id"]
+        index_name: "idx_packet_thread"
+      - description: "v1.1.0: GIN index for parent_ids lineage queries"
+        columns: ["parent_ids"]
+        index_type: "GIN"
+        index_name: "idx_packet_lineage"
+      - description: "v1.1.0: TTL index for expiration queries"
+        columns: ["ttl"]
+        index_name: "idx_packet_ttl"
+        where: "ttl IS NOT NULL"
+  pgvector:
+    description: "Embeddings stored in semantic_memory table"
+    table: "semantic_memory"
+    field: "vector"
+    dim: 1536
+    index_method: "hnsw"
+
+db_columns:
+  packet_store:
+    description: "v1.1.0 packet_store now includes additional columns"
+    columns:
+      - name: "packet_id"
+        type: "UUID"
+        primary_key: true
+      - name: "packet_type"
+        type: "TEXT"
+        required: true
+      - name: "envelope"
+        type: "JSONB"
+        required: true
+      - name: "timestamp"
+        type: "TIMESTAMPTZ"
+        required: true
+      - name: "routing"
+        type: "JSONB"
+        required: false
+      - name: "provenance"
+        type: "JSONB"
+        required: false
+      # v1.1.0 additions
+      - name: "thread_id"
+        type: "UUID"
+        required: false
+        description: "Nullable thread identifier"
+      - name: "parent_ids"
+        type: "UUID[]"
+        required: false
+        default: "'{}'"
+        description: "Array of parent packet UUIDs for lineage"
+      - name: "tags"
+        type: "TEXT[]"
+        required: false
+        default: "'{}'"
+        description: "Array of tags for filtering"
+      - name: "ttl"
+        type: "TIMESTAMP"
+        required: false
+        description: "Optional expiration timestamp"
+
+version: "1.1.0"
+status: "aligned_with_repo"
+changelog:
+  - version: "1.1.0"
+    date: "2025-12-07"
+    changes:
+      - "Added thread_id field for conversation/session threading"
+      - "Added lineage object with parent_ids for DAG-style packet relationships"
+      - "Added tags list for flexible labeling"
+      - "Added ttl datetime for memory expiration/GC"
+      - "Added PacketLineage schema definition"
+      - "Updated db_columns to document packet_store extensions"
+      - "Backward compatible - all new fields are optional"
+  - version: "1.0.1"
+    date: "2025-12-06"
+    changes:
+      - "Initial aligned schema with substrate_models.py"
+

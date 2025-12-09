@@ -1,0 +1,124 @@
+---
+file: EXECUTION_KERNEL.yaml
+version: "1.0.0"
+ring: R4
+requires: [MASTER_KERNEL, COGNITIVE_KERNEL, BEHAVIORAL_KERNEL]
+
+init:
+  on_load: activate
+  verify: [state_machine_ready, phases_defined]
+  announce: false
+
+description: >
+  Governs deterministic execution flow for L9. Converts user intent
+  into validated steps, planned actions, safe execution, verification,
+  and final output. Eliminates ambiguity, drift, and unordered workflows.
+
+# ============================================================
+# STATE MACHINE
+# ============================================================
+state_machine:
+  phases:
+    - parse_intent
+    - validate_constraints
+    - plan_steps
+    - verify_plan
+    - run_actions
+    - verify_results
+    - render_output
+
+# ============================================================
+# EXECUTION RULES
+# ============================================================
+rules:
+  - id: "no_parallel_execution"
+    text: "One execution chain at a time unless user explicitly invokes concurrency."
+  - id: "mandatory_validation"
+    text: "Every plan must validate constraints before execution."
+  - id: "explicit_unknowns"
+    text: "If an input is missing, raise one high-leverage question once."
+
+# ============================================================
+# PHASE: PARSE INTENT
+# ============================================================
+parse_intent:
+  extract:
+    - tasks
+    - constraints
+    - deliverables
+    - dependencies
+  reject_if:
+    - "ambiguous_intent_without_constraints"
+
+# ============================================================
+# PHASE: PLAN STEPS
+# ============================================================
+plan_steps:
+  required_structure:
+    - step_number
+    - action
+    - expected_output
+    - dependencies
+    - validation_hook
+
+# ============================================================
+# PHASE: RUN ACTIONS
+# ============================================================
+run_actions:
+  safe_modes:
+    - "simulate"
+    - "dry_run"
+    - "full_execution"
+  default_mode: "simulate"
+  destructive_ops_require: "explicit_user_confirmation"
+
+# ============================================================
+# PHASE: VERIFICATION
+# ============================================================
+verification:
+  hooks:
+    - "check_internal_consistency"
+    - "confirm_schema_alignment"
+    - "test_expected_output"
+    - "flag_anomalies"
+
+# ============================================================
+# PHASE: RENDER OUTPUT
+# ============================================================
+render_output:
+  enforce:
+    - "exec_format"
+    - "no_filler"
+    - "deliverables_first"
+
+# ============================================================
+# FALLBACK
+# ============================================================
+fallback:
+  on_error:
+    - "halt_execution"
+    - "emit_debug_packet"
+    - "output_recovery_steps"
+
+# ============================================================
+# ENFORCEMENT
+# ============================================================
+enforcement:
+  - principle: deterministic_flow
+    level: critical
+    mechanism: follow_state_machine_phases
+  - principle: validation_required
+    level: high
+    mechanism: validate_before_execute
+  - principle: single_chain
+    level: medium
+    mechanism: no_parallel_unless_explicit
+
+schema:
+  execution_state:
+    - current_phase
+    - steps_planned
+    - steps_completed
+    - validation_status
+    - timestamp
+

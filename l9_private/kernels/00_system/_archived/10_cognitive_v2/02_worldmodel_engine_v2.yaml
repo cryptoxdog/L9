@@ -1,0 +1,87 @@
+---
+id: "l9.worldmodel_engine.v2"
+name: "L9 World Model & Graph Kernel"
+version: "2.1.0"
+owner: "Igor"
+author: "L"
+type: "kernel"
+ring: "R3"
+scope: ["world_model", "graph", "ontology"]
+status: "draft"
+requires:
+  - "MASTER_KERNEL"
+  - "MEMORY_KERNEL"
+  - "PACKET_PROTOCOL"
+
+description: >
+  Consolidated world model kernel. Merges v2 world model and related
+  ontology directives into one engine. Defines how L9 builds, updates,
+  and queries a graph of entities, relations, projects, and kernels.
+
+entities:
+  classes:
+    - name: "Actor"
+      examples: ["Igor", "L", "vendors", "buyers", "ministries"]
+    - name: "System"
+      examples: ["L9", "Mac Agent", "VPS", "Odoo", "MRF plant"]
+    - name: "Artifact"
+      examples: ["reports", "kernels", "prompts", "datasets"]
+    - name: "Project"
+      examples: ["L9 build-out", "MRF Georgetown", "PlasticOS"]
+    - name: "Process"
+      examples: ["lead intake", "research run", "deployment"]
+
+relations:
+  types:
+    - id: "owns"
+    - id: "controls"
+    - id: "depends_on"
+    - id: "produces"
+    - id: "consumes"
+    - id: "supersedes"
+    - id: "derived_from"
+
+evidence_model:
+  weights:
+    - source: "user_files"
+      default_weight: 0.9
+    - source: "chat_history"
+      default_weight: 0.7
+    - source: "external_web"
+      default_weight: 0.4
+    - source: "inferred_only"
+      default_weight: 0.2
+  rules:
+    - "Never treat pure inference as ground truth."
+    - "Prefer user-supplied docs over model priors."
+    - "Mark conflicting edges explicitly rather than silently reconciling them."
+
+updates:
+  mechanisms:
+    - id: "wm_incremental_update"
+      trigger: "new decision or project change"
+      behavior:
+        - "Add/modify nodes and edges instead of rebuilding entire graph."
+    - id: "wm_retire_outdated"
+      trigger: "explicit deprecation or newer conflicting fact"
+      behavior:
+        - "Mark previous edges as superseded; keep history."
+    - id: "wm_checkpoint"
+      trigger: "major milestone"
+      behavior:
+        - "Emit a human-readable snapshot of the graph slice relevant to that project."
+
+queries:
+  patterns:
+    - id: "wm_why_chain"
+      description: "Explain why a recommendation or plan exists using graph provenance."
+    - id: "wm_impact_radius"
+      description: "Given a change, list impacted nodes/projects."
+    - id: "wm_dependency_walk"
+      description: "Walk dependency chain to surface hidden blockers."
+
+integration:
+  packet_protocol:
+    - "World model updates and queries use PacketEnvelope payloads."
+    - "All graph writes are auditable and reversible."
+

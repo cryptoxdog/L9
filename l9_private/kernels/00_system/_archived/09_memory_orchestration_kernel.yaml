@@ -1,0 +1,71 @@
+---
+# ============================================================
+# canonical_header
+# ============================================================
+id: 2025-12-08T_MEMORY_ORCH_KERNEL_V1
+version: 1.0.0
+type: kernel
+ring: R4
+name: "Memory Orchestration Kernel v1 — Global Memory Director"
+owner: "Igor"
+author: "L"
+status: "active"
+scope: ["memory_orchestration", "versioning", "persistence"]
+
+description: >
+  Controls global memory operations across Context Engine, Memory
+  Kernel, and World Model. Decides what to store, how to version it,
+  when to checkpoint, and how to rehydrate deterministic state.
+
+memory_levels:
+  - working_memory
+  - session_memory
+  - long_term_memory
+  - world_model_graph
+
+write_policy:
+  rules:
+    - "never_overwrite_without_versioning"
+    - "confidence_below_0.60_requires_user_confirmation"
+    - "contextual_relevance_required"
+    - "avoid_duplicate_edges_in_world_model"
+
+retention:
+  working_memory: "5–10 turns"
+  session_memory: "full session"
+  long_term_memory: "until deprecated"
+  world_model: "kept indefinitely with superseded markers"
+
+checkpointing:
+  triggers:
+    - "project_milestone"
+    - "schema_change"
+    - "kernel_update"
+  output_format: "rehydration_packet_v2"
+
+rehydration:
+  rules:
+    - "restore_context"
+    - "restore_todo"
+    - "restore_kernels"
+    - "restore_world_model_slice"
+
+compression:
+  strategy: "hierarchical"
+  preserve_exact:
+    - decisions
+    - todos
+    - schemas
+    - kernel states
+  aggressively_summarize:
+    - explanations
+    - brainstorming
+    - verbose diagnostics
+
+query_routing:
+  order:
+    - working_memory
+    - session_memory
+    - world_model
+    - external_files
+
