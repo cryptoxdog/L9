@@ -1,9 +1,33 @@
+# Secrets
 .env
+
+# Virtualenvs
+venv/
+.envrc
+
+# Python cache / build artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+
+# macOS trash
 .DS_Store
+._*
+.__MACOSX
 
-
-# Secrets
-twilio_config.env
-.env
+# Runtime data (never in repo)
+logs/
+data/
+runtime/
+staging/
+production/
+qdrant/collections/
+neo4j/data/
