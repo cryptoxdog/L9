@@ -12,6 +12,9 @@ Provides:
 Version: 0.3.1
 """
 
+import os
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from api.memory.router import router as memory_router
 import api.db as db
@@ -25,11 +28,77 @@ try:
 except ImportError:
     _has_world_model = False
 
+# Memory system imports
+from memory.migration_runner import run_migrations
+from memory.substrate_service import init_service, close_service
+
+logger = logging.getLogger(__name__)
+
 # Initialize DB
 db.init_db()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan context manager.
+    Handles startup (migrations + memory init) and shutdown.
+    """
+    # ========================================================================
+    # STARTUP: Run migrations and initialize memory service
+    # ========================================================================
+    logger.info("Starting L9 API server...")
+    
+    # Get database URL
+    database_url = os.getenv("MEMORY_DSN") or os.getenv("DATABASE_URL")
+    if not database_url:
+        logger.warning(
+            "MEMORY_DSN/DATABASE_URL not set. Memory system will not be available. "
+            "Set MEMORY_DSN environment variable to enable memory."
+        )
+    else:
+        try:
+            # Run migrations
+            logger.info("Running database migrations...")
+            migration_result = await run_migrations(database_url)
+            logger.info(
+                f"Migrations complete: {migration_result['applied']} applied, "
+                f"{migration_result['skipped']} skipped, {migration_result['errors']} errors"
+            )
+            if migration_result["errors"]:
+                logger.error(f"Migration errors: {migration_result['error_details']}")
+            
+            # Initialize memory service
+            logger.info("Initializing memory service...")
+            await init_service(
+                database_url=database_url,
+                embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "stub"),
+                embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-large"),
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+            )
+            logger.info("Memory service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize memory system: {e}", exc_info=True)
+            # Don't fail startup, but log error
+    
+    yield
+    
+    # ========================================================================
+    # SHUTDOWN: Clean up memory service
+    # ========================================================================
+    logger.info("Shutting down L9 API server...")
+    try:
+        await close_service()
+        logger.info("Memory service closed")
+    except Exception as e:
+        logger.error(f"Error closing memory service: {e}")
+
+
 # FastAPI App
-app = FastAPI(title="L9 Phase 2 Secure AI OS")
+app = FastAPI(
+    title="L9 Phase 2 Secure AI OS",
+    lifespan=lifespan,
+)
 
 # Basic Root
 @app.get("/")
@@ -52,6 +121,7 @@ if _has_world_model:
 
 
 # Startup + Shutdown events (if the modules expose them)
+# NOTE: Migrations and memory init are handled in lifespan() above
 @app.on_event("startup")
 async def on_startup():
     if hasattr(agent_routes, "startup"):
@@ -127,6 +197,22 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
         # Step 2: Message loop
         while True:
             data = await websocket.receive_json()
+            
+            # Ingest WebSocket event as packet (canonical memory entrypoint)
+            try:
+                from memory.ingestion import ingest_packet
+                from memory.substrate_models import PacketEnvelopeIn
+                
+                packet_in = PacketEnvelopeIn(
+                    packet_type="websocket_event",
+                    payload=data,
+                    metadata={"agent": agent_id, "source": "websocket"},
+                )
+                await ingest_packet(packet_in)
+            except Exception as e:
+                # Log but don't fail WebSocket handling if memory ingestion fails
+                logger.warning(f"Failed to ingest WebSocket event: {e}")
+            
             await ws_orchestrator.handle_incoming(agent_id, data)
             
     except WebSocketDisconnect:

@@ -4,6 +4,8 @@ Version: 1.0.0
 
 Embedding generation and vector search helpers.
 Provides a pluggable embedding provider interface.
+
+# bound to memory-yaml2.0 semantic layer
 """
 
 import logging
@@ -148,6 +150,8 @@ class SemanticService:
     Service for semantic operations on the memory substrate.
     
     Wraps embedding provider and repository for semantic search.
+    
+    # bound to memory-yaml2.0 semantic layer (embedding_storage, semantic_recall, similarity_ranking)
     """
     
     def __init__(

@@ -10,6 +10,8 @@ Heuristic insight extraction (no ML dependencies):
 - Source packet linking
 
 All operations are async-safe with proper logging.
+
+# bound to memory-yaml2.0 extraction pipeline (entrypoint: insight_extraction.py, outputs: entities, topics, decisions, facts)
 """
 from __future__ import annotations
 

@@ -6,6 +6,8 @@ Implements the substrate processing pipeline as a LangGraph DAG:
   intake_node → reasoning_node → memory_write_node → semantic_embed_node → checkpoint_node
 
 The DAG routes PacketEnvelopes through processing stages with state accumulation.
+
+# bound to memory-yaml2.0 structural layer (NOTE: YAML specifies Neo4j backend, but current implementation uses LangGraph DAG for entity_graph/relationship_traversal/event_timeline)
 """
 
 import logging
@@ -43,7 +45,7 @@ class SubstrateGraphState(TypedDict):
     reasoning_block: dict[str, Any] | None  # StructuredReasoningBlock if generated
     written_tables: list[str]
     embedding_id: str | None
-    checkpoint_id: str | None
+    saved_checkpoint_id: str | None  # Renamed from checkpoint_id (reserved in LangGraph)
     
     # Insight extraction results (v1.1.0+)
     insights: list[dict[str, Any]]  # ExtractedInsight objects as dicts
@@ -61,7 +63,7 @@ def _default_state() -> SubstrateGraphState:
         "reasoning_block": None,
         "written_tables": [],
         "embedding_id": None,
-        "checkpoint_id": None,
+        "saved_checkpoint_id": None,
         "insights": [],
         "facts": [],
         "world_model_triggered": False,
@@ -359,7 +361,7 @@ async def checkpoint_node(state: SubstrateGraphState, repository=None) -> Substr
         logger.warning("checkpoint_node: No repository, skipping checkpoint")
         return {
             **state,
-            "checkpoint_id": "skipped",
+            "saved_checkpoint_id": "skipped",
         }
     
     try:
@@ -383,7 +385,7 @@ async def checkpoint_node(state: SubstrateGraphState, repository=None) -> Substr
     
     return {
         **state,
-        "checkpoint_id": str(checkpoint_id) if checkpoint_id else None,
+        "saved_checkpoint_id": str(checkpoint_id) if checkpoint_id else None,
         "written_tables": written_tables,
         "errors": errors,
     }
@@ -713,7 +715,7 @@ class SubstrateDAG:
             "reasoning_block": None,
             "written_tables": [],
             "embedding_id": None,
-            "checkpoint_id": None,
+            "saved_checkpoint_id": None,
             "insights": [],
             "facts": [],
             "world_model_triggered": False,

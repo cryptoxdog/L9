@@ -741,7 +741,7 @@ async def init_world_model_engine(
     _engine = WorldModelEngine()
     
     if spec_paths:
-    _engine.load_specs(spec_paths)
+        _engine.load_specs(spec_paths)
     
     await _engine.initialize_state(initial_state)
     return _engine
