@@ -1,0 +1,47 @@
+# Entry Points
+
+agent/agent.py
+  Type: FastAPI
+  Title: L9 CTO Agent
+  Address: 127.0.0.1:8100
+  Routes (2):
+    - GET /agent/health
+    - POST /agent/exec
+api/server.py
+  Type: FastAPI
+  Title: L9 Phase 2 Secure AI OS
+  Routes (5):
+    - GET /
+    - WEBSOCKET /ws/agent
+    - ROUTER /os/*
+    - ROUTER /agent/*
+    - ROUTER /memory/*
+api/server_memory.py
+  Type: FastAPI
+  Title: L9 Phase 2 Secure AI OS
+  Routes (4):
+    - GET /
+    - GET /health
+    - POST /chat
+    - ROUTER /memory/*
+dev/tools/global_state_audit.py
+  Type: Script
+  Has __main__ block: Yes
+email_agent/oauth_server.py
+  Type: Script
+  Has __main__ block: Yes
+mac_agent/runner.py
+  Type: Script
+  Has __main__ block: Yes
+mac_agent/websocket_client.py
+  Type: Script
+  Has __main__ block: Yes
+os/runtime.py
+  Type: Script
+  Has __main__ block: Yes
+tools/export_repo_indexes.py
+  Type: Script
+  Has __main__ block: Yes
+world_model/seed_loader.py
+  Type: Script
+  Has __main__ block: Yes

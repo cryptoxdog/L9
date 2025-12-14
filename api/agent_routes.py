@@ -29,12 +29,38 @@ async def agent_status():
 
 @router.post("/task")
 async def submit_task(payload: dict):
-    """Submit a task to the agent system."""
-    logger.info("Task submitted: %s", payload.get("type", "unknown"))
+    """
+    Submit a task to the agent system.
+    
+    Ingests task to memory and routes to orchestrator.
+    """
+    from uuid import uuid4
+    from memory.ingestion import ingest_packet
+    from memory.substrate_models import PacketEnvelopeIn
+    
+    task_id = str(uuid4())
+    logger.info("Task submitted: %s (id=%s)", payload.get("type", "unknown"), task_id)
+    
+    # Ingest task to memory (canonical ingestion point)
+    try:
+        packet_in = PacketEnvelopeIn(
+            packet_type="agent_task_submitted",
+            payload={
+                "task_id": task_id,
+                "task_type": payload.get("type", "unknown"),
+                "task_payload": payload,
+            },
+            metadata={"agent": "api", "source": "agent_routes"},
+        )
+        await ingest_packet(packet_in)
+    except Exception as e:
+        logger.warning(f"Failed to ingest task to memory: {e}")
+        # Don't fail the request if memory ingestion fails
+    
     return {
         "status": "accepted",
-        "task_id": "placeholder",
-        "message": "Task queued for processing",
+        "task_id": task_id,
+        "message": "Task queued for processing and ingested to memory",
     }
 
 

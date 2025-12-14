@@ -12,6 +12,13 @@ from config.research_settings import (
     reset_research_settings,
 )
 
+from config.settings import (
+    IntegrationSettings,
+    get_integration_settings,
+    reset_integration_settings,
+    settings,
+)
+
 __all__ = [
     # Memory Substrate Settings
     "MemorySubstrateSettings",
@@ -21,5 +28,10 @@ __all__ = [
     "ResearchSettings",
     "get_research_settings",
     "reset_research_settings",
+    # Integration Settings
+    "IntegrationSettings",
+    "get_integration_settings",
+    "reset_integration_settings",
+    "settings",
 ]
 

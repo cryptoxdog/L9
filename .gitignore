@@ -31,3 +31,46 @@ staging/
 production/
 qdrant/collections/
 neo4j/data/
+
+# --- Editor / Agent tooling ---
+.cursor/
+.cursor-commands/
+.dora/
+
+# --- Python caches ---
+__pycache__/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+*.pyc
+
+# --- Secrets & env ---
+.secrets/
+.env
+.env.*
+
+# --- Quarantine ---
+dev/_quarantine/
+
+# --- OS ---
+.DS_Store
+entrypoints.txt
+env_refs.txt
+fastapi_routes.txt
+function_signatures.txt
+imports.txt
+config_files.txt
+api_surfaces.txt
+architecture.txt
+class_definitions.txt
+_l9_GHOST_REPO-DON'T USE/
+entrypoints.txt
+env_refs.txt
+fastapi_routes.txt
+function_signatures.txt
+imports.txt
+config_files.txt
+api_surfaces.txt
+architecture.txt
+class_definitions.txt
+_l9_GHOST_REPO-DON'T USE/

@@ -1,123 +1,149 @@
+"""
+L9 Memory API Router
+Version: 1.1.0
+
+Memory substrate API endpoints using MemorySubstrateService.
+All packets are automatically ingested via canonical ingest_packet().
+"""
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from api.auth import verify_api_key
-import psycopg
-import os
 from typing import Optional, List
+import logging
+
+from memory.substrate_service import get_service
+from memory.substrate_models import PacketEnvelopeIn, SemanticSearchRequest
+from memory.ingestion import ingest_packet
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-MEMORY_DSN = os.environ.get("MEMORY_DSN", "postgresql://postgres:8e4fXWM6Q3M87*b3@127.0.0.1:5432/l9_memory")
 
-class EmbeddingRequest(BaseModel):
-    source: str
-    content: str
-    embedding: Optional[List[float]] = None
+class PacketRequest(BaseModel):
+    """Request model for packet ingestion."""
+    packet_type: str
+    payload: dict
+    metadata: Optional[dict] = None
+    provenance: Optional[dict] = None
+    confidence: Optional[dict] = None
 
-class EmbeddingResponse(BaseModel):
-    id: int
-    source: str
-    content: str
-    created_at: str
+
+class PacketResponse(BaseModel):
+    """Response model for packet ingestion."""
+    packet_id: str
+    status: str
+    written_tables: List[str]
+    error_message: Optional[str] = None
+
 
 @router.post("/test")
 async def memory_test(
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),
 ):
+    """Test endpoint to verify memory router is reachable."""
     return {"ok": True, "msg": "memory endpoint reachable"}
 
-@router.post("/embeddings", response_model=dict)
-async def create_embedding(
-    request: EmbeddingRequest,
-    authorization: str = Header(None),
-    _: bool = Depends(verify_api_key),
-):
-    """Create and store an embedding"""
-    try:
-        with psycopg.connect(MEMORY_DSN) as conn:
-            with conn.cursor() as cur:
-                # Convert embedding list to pgvector format if provided
-                embedding_str = None
-                if request.embedding:
-                    embedding_str = f"[{','.join(map(str, request.embedding))}]"
-                
-                cur.execute(
-                    """
-                    INSERT INTO memory.embeddings (source, content, embedding)
-                    VALUES (%s, %s, %s)
-                    RETURNING id, source, content, created_at;
-                    """,
-                    (request.source, request.content, embedding_str)
-                )
-                result = cur.fetchone()
-                conn.commit()
-                
-                return {
-                    "success": True,
-                    "id": result[0],
-                    "source": result[1],
-                    "content": result[2],
-                    "created_at": str(result[3])
-                }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create embedding: {str(e)}")
 
-@router.get("/embeddings", response_model=dict)
-async def list_embeddings(
-    limit: int = 10,
+@router.post("/packet", response_model=PacketResponse)
+async def create_packet(
+    request: PacketRequest,
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),
 ):
-    """List stored embeddings"""
+    """
+    Ingest a packet into memory substrate.
+    
+    This is the canonical entrypoint for all packet ingestion.
+    All packets pass through ingest_packet() which runs the full DAG pipeline.
+    """
     try:
-        with psycopg.connect(MEMORY_DSN) as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT id, source, content, created_at
-                    FROM memory.embeddings
-                    ORDER BY created_at DESC
-                    LIMIT %s;
-                    """,
-                    (limit,)
-                )
-                results = cur.fetchall()
-                
-                return {
-                    "count": len(results),
-                    "embeddings": [
-                        {
-                            "id": r[0],
-                            "source": r[1],
-                            "content": r[2][:100] + "..." if len(r[2]) > 100 else r[2],
-                            "created_at": str(r[3])
-                        }
-                        for r in results
-                    ]
-                }
+        # Convert request to PacketEnvelopeIn
+        packet_in = PacketEnvelopeIn(
+            packet_type=request.packet_type,
+            payload=request.payload,
+            metadata=request.metadata,
+            provenance=request.provenance,
+            confidence=request.confidence,
+        )
+        
+        # Canonical ingestion entrypoint
+        result = await ingest_packet(packet_in)
+        
+        return PacketResponse(
+            packet_id=str(result.packet_id),
+            status=result.status,
+            written_tables=result.written_tables,
+            error_message=result.error_message,
+        )
+    except RuntimeError as e:
+        # Memory system not initialized
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Memory system not available. Check server logs for initialization errors."
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list embeddings: {str(e)}")
+        logger.error(f"Packet ingestion failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Packet ingestion failed: {str(e)}")
+
+
+@router.post("/semantic/search")
+async def semantic_search(
+    request: SemanticSearchRequest,
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Perform semantic search on memory substrate."""
+    try:
+        service = await get_service()
+        result = await service.semantic_search(request)
+        return result.model_dump(mode="json")
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Memory system not available."
+        )
+    except Exception as e:
+        logger.error(f"Semantic search failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
 
 @router.get("/stats")
 async def get_stats(
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),
 ):
-    """Get memory system statistics"""
+    """Get memory system statistics."""
     try:
-        with psycopg.connect(MEMORY_DSN) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM memory.embeddings;")
-                embedding_count = cur.fetchone()[0]
-                
-                cur.execute("SELECT COUNT(*) FROM memory.raw_text;")
-                raw_text_count = cur.fetchone()[0]
-                
-                return {
-                    "embeddings": embedding_count,
-                    "raw_text": raw_text_count,
-                    "status": "operational"
-                }
+        service = await get_service()
+        health = await service.health_check()
+        
+        # Get packet count
+        from memory.substrate_repository import SubstrateRepository
+        repo = service._repository
+        
+        async with repo.acquire() as conn:
+            packet_count = await conn.fetchval("SELECT COUNT(*) FROM packet_store")
+            embedding_count = await conn.fetchval("SELECT COUNT(*) FROM semantic_memory")
+            fact_count = await conn.fetchval("SELECT COUNT(*) FROM knowledge_facts")
+        
+        return {
+            "status": "operational",
+            "packets": packet_count,
+            "embeddings": embedding_count,
+            "facts": fact_count,
+            "health": health,
+        }
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        return {
+            "status": "unavailable",
+            "error": "Memory system not initialized",
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+        logger.error(f"Stats retrieval failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Stats failed: {str(e)}")

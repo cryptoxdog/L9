@@ -1376,8 +1376,7 @@ class WorldModelRuntime:
                 self._stats.errors_encountered += 1
                 return {"success": False, "error": str(e)}
             
-        finally:
-            self._mode = RuntimeMode.RUNNING
+        self._mode = RuntimeMode.RUNNING
     
     def _record_update(self, record: UpdateRecord) -> None:
         """Record an update in history."""
@@ -1570,11 +1569,11 @@ class WorldModelRuntime:
             for packet in packets:
                 try:
                     result = await self.update_from_packet(packet)
-                        if result.get("success"):
-                            packets_processed += 1
-                        else:
-                            packets_failed += 1
-                            errors.extend(result.get("errors", []))
+                    if result.get("success"):
+                        packets_processed += 1
+                    else:
+                        packets_failed += 1
+                        errors.extend(result.get("errors", []))
                         
                 except Exception as e:
                     packets_failed += 1

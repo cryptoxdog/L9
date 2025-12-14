@@ -1,0 +1,200 @@
+clients/memory_client.py::__init__(self, base_url, timeout) - Initialize memory client.
+clients/memory_client.py::get_memory_client() - Get or create singleton MemoryClient ins
+clients/world_model_client.py::__init__(self, base_url, timeout) - Initialize World Model client.
+clients/world_model_client.py::get_world_model_client() - Get or create singleton client.
+core/boundary/enforcer.py::__init__(self, boundary_file, enabled, log_enforcement) - Initialize the enforcer.
+core/boundary/enforcer.py::__init__(self, raw_content, redaction_patterns, protected_fields) - 
+core/boundary/enforcer.py::_load_spec(self) - Load the boundary specification.
+core/boundary/enforcer.py::apply_redactions(self, text) - Apply all redaction patterns to text.
+core/boundary/enforcer.py::enforce(self, text, context) - Apply boundary enforcement to text.
+core/boundary/enforcer.py::enforce_boundary(prompt, context) - Apply PRIVATE_BOUNDARY enforcement to a 
+core/boundary/enforcer.py::enforce_dict(self, data, string_fields) - Apply boundary enforcement to string fie
+core/boundary/enforcer.py::enforce_payload_boundary(payload, protected_fields) - Apply PRIVATE_BOUNDARY enforcement to a 
+core/boundary/enforcer.py::enforce_response_boundary(response, context) - Apply PRIVATE_BOUNDARY enforcement to a 
+core/boundary/enforcer.py::get_default_enforcer() - Get the default singleton enforcer insta
+core/boundary/enforcer.py::has_spec(self) - Check if a boundary spec is loaded.
+core/boundary/enforcer.py::load_boundary_spec(boundary_file) - Load the PRIVATE_BOUNDARY.md specificati
+core/boundary/enforcer.py::parse_boundary_spec(content) - Parse PRIVATE_BOUNDARY.md content into a
+core/boundary/enforcer.py::reload_spec(self) - Reload the boundary specification from d
+core/kernel_wiring/__init__.py::__getattr__(name) - Lazy import accessor functions.
+core/kernel_wiring/behavioral_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/behavioral_wiring.py::get_output_verbosity() - 
+core/kernel_wiring/behavioral_wiring.py::is_topic_blocked(topic) - 
+core/kernel_wiring/cognitive_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/cognitive_wiring.py::get_reasoning_mode() - 
+core/kernel_wiring/cognitive_wiring.py::should_enable_meta_cognition() - 
+core/kernel_wiring/developer_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/developer_wiring.py::get_dev_policies() - 
+core/kernel_wiring/execution_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/execution_wiring.py::get_allowed_transitions(state) - 
+core/kernel_wiring/execution_wiring.py::get_execution_state_machine() - 
+core/kernel_wiring/identity_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/identity_wiring.py::apply_identity_to_response(text) - 
+core/kernel_wiring/identity_wiring.py::get_identity_profile() - 
+core/kernel_wiring/master_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/master_wiring.py::get_active_mode() - 
+core/kernel_wiring/memory_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/memory_wiring.py::get_memory_layers_config() - 
+core/kernel_wiring/memory_wiring.py::should_checkpoint_now(event_type) - 
+core/kernel_wiring/packet_protocol_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/packet_protocol_wiring.py::get_allowed_event_types() - 
+core/kernel_wiring/packet_protocol_wiring.py::get_default_channel() - 
+core/kernel_wiring/packet_protocol_wiring.py::get_packet_protocol() - 
+core/kernel_wiring/safety_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/safety_wiring.py::get_safety_policies() - 
+core/kernel_wiring/safety_wiring.py::is_destructive_action(action) - 
+core/kernel_wiring/worldmodel_wiring.py::_get_kernels() - Lazy load kernel stack.
+core/kernel_wiring/worldmodel_wiring.py::get_worldmodel_schema() - 
+core/kernels/integrity.py::__init__(self, path, change_type, old_hash, new_hash) - 
+core/kernels/integrity.py::__repr__(self) - 
+core/kernels/integrity.py::check_kernel_integrity(base_path, auto_update) - Check integrity of kernel files against 
+core/kernels/integrity.py::compute_kernel_hashes(base_path) - Compute hashes for all kernel YAML files
+core/kernels/integrity.py::get_detailed_changes(base_path) - Get detailed change information for kern
+core/kernels/integrity.py::hash_file(path) - Compute SHA256 hash of a file.
+core/kernels/integrity.py::initialize_kernel_hashes(base_path, force) - Initialize kernel hash file from current
+core/kernels/integrity.py::load_kernel_hashes(hash_file) - Load stored kernel hashes from file.
+core/kernels/integrity.py::save_kernel_hashes(hashes, hash_file) - Save kernel hashes to file.
+core/kernels/integrity.py::verify_specific_file(file_path) - Verify a specific kernel file against st
+core/kernels/kernel_loader_v3.py::__init__(self, kernels_by_id, kernels_by_file, hashes, base_dir) - 
+core/kernels/kernel_loader_v3.py::_load_yaml(path) - 
+core/kernels/kernel_loader_v3.py::_sha256_of_file(path) - 
+core/kernels/kernel_loader_v3.py::as_dict(self) - 
+core/kernels/kernel_loader_v3.py::get_hash(self, filename) - 
+core/kernels/kernel_loader_v3.py::get_kernel(self, kernel_id) - 
+core/kernels/kernel_loader_v3.py::get_rule(self, kernel_id, path, default) - Convenience accessor.
+core/kernels/kernel_loader_v3.py::load_kernel_stack(base_dir) - Deterministically load the 10 consolidat
+core/kernels/private_loader.py::_sort_key(k) - 
+core/kernels/private_loader.py::get_enabled_rules(base_path) - Get all enabled rules from all kernels.
+core/kernels/private_loader.py::get_kernel_by_name(name, base_path) - Get a specific kernel by name.
+core/kernels/private_loader.py::get_rules_by_type(rule_type, base_path) - Get all enabled rules of a specific type
+core/kernels/private_loader.py::load_all_private_kernels(base_path, check_integrity, fail_on_tamper) - Load all private kernel YAML files from 
+core/kernels/private_loader.py::load_kernel_file(file_path) - Load a single kernel YAML file.
+core/kernels/private_loader.py::load_layered_kernels(base_path, check_integrity) - Convenience alias for load_all_private_k
+core/kernels/private_loader.py::validate_all_kernels(base_path) - Validate all kernels in a directory.
+core/kernels/private_loader.py::validate_kernel_structure(kernel) - Validate kernel structure against expect
+core/retrievers/substrate_retriever.py::__init__(self, service, agent_id, top_k) - 
+core/retrievers/substrate_retriever.py::_get_relevant_documents(self, query) - Synchronous wrapper required by BaseRetr
+core/schemas/capabilities.py::get_capability(self, tool) - Get the capability for a specific tool.
+core/schemas/capabilities.py::is_tool_allowed(self, tool) - Check if a specific tool is allowed for 
+core/schemas/capabilities.py::list_allowed_tools(self) - List all explicitly allowed tools.
+core/schemas/capabilities.py::list_denied_tools(self) - List all explicitly denied tools.
+core/schemas/event_stream.py::create_handshake_event(handshake) - Create a security event for an agent han
+core/schemas/event_stream.py::create_violation_event(violation) - Create a security event for a capability
+core/schemas/event_stream.py::has_capability(self, tool) - Check if agent declared a capability.
+core/schemas/packet_envelope.py::to_envelope(self) - Convert input to full PacketEnvelope wit
+core/schemas/packet_envelope.py::with_update(self) - Create a new PacketEnvelope with updates
+core/schemas/research_factory_models.py::success_rate(self) - Calculate success rate of parsed objects
+core/schemas/research_factory_models.py::validate_regions(cls, v) - 
+core/schemas/research_factory_nodes.py::build_research_graph() - Build the LangGraph StateGraph for the R
+core/schemas/research_factory_state.py::add_error(self, error) - Add an error to the state.
+core/schemas/research_factory_state.py::add_warning(self, warning) - Add a warning to the state.
+core/schemas/research_factory_state.py::complete_pass(self, pass_num, error) - Mark a pass as completed or failed.
+core/schemas/research_factory_state.py::has_errors(self) - Check if any errors occurred.
+core/schemas/research_factory_state.py::is_complete(self) - Check if all passes are complete.
+core/schemas/research_factory_state.py::start_pass(self, pass_num) - Mark a pass as started and update state.
+core/schemas/research_factory_state.py::to_metrics(self) - Generate metrics from current state.
+core/schemas/tasks.py::assign_to(self, agent_id) - Assign this envelope to a specific agent
+core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
+core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
+core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
+core/schemas/tests/test_discriminators.py::test_all_validation_statuses(self) - Verify all ValidationStatus values are v
+core/schemas/tests/test_discriminators.py::test_metadata_extra_fields(self) - Verify metadata allows extra fields (ext
+core/schemas/tests/test_discriminators.py::test_optional_fields_truly_optional(self) - Verify optional fields can be omitted.
+core/schemas/tests/test_discriminators.py::test_packet_type_min_length(self) - Verify packet_type has minimum length.
+core/schemas/tests/test_discriminators.py::test_packet_type_required(self) - Verify packet_type is required on input.
+core/schemas/tests/test_discriminators.py::test_packet_type_required(self) - Verify packet_type is required.
+core/schemas/tests/test_discriminators.py::test_payload_accepts_any_structure(self) - Verify payload is arbitrary JSON (v1.0.1
+core/schemas/tests/test_discriminators.py::test_payload_empty_dict_allowed(self) - Verify empty payload dict is allowed.
+core/schemas/tests/test_discriminators.py::test_payload_is_dict(self) - Verify payload accepts dictionary.
+core/schemas/tests/test_discriminators.py::test_payload_required(self) - Verify payload is required on input.
+core/schemas/tests/test_discriminators.py::test_query_min_length(self) - Verify query has minimum length.
+core/schemas/tests/test_discriminators.py::test_top_k_bounds(self) - Verify top_k bounds (1-100).
+core/schemas/tests/test_discriminators.py::test_valid_packet_types(self) - Verify various valid packet types.
+core/schemas/tests/test_discriminators.py::test_validation_status_values(self) - Verify ValidationStatus enum values.
+core/schemas/tests/test_packet_envelope.py::test_cannot_modify_packet_id(self) - Verify packet_id cannot be changed after
+core/schemas/tests/test_packet_envelope.py::test_cannot_modify_payload(self) - Verify payload cannot be changed after c
+core/schemas/tests/test_packet_envelope.py::test_confidence_above_one(self) - Verify confidence above 1 is rejected.
+core/schemas/tests/test_packet_envelope.py::test_confidence_below_zero(self) - Verify confidence below 0 is rejected.
+core/schemas/tests/test_packet_envelope.py::test_confidence_optional(self) - Verify confidence is optional.
+core/schemas/tests/test_packet_envelope.py::test_confidence_valid_range(self) - Verify valid confidence scores.
+core/schemas/tests/test_packet_envelope.py::test_confidence_with_values(self) - Verify confidence can be set.
+core/schemas/tests/test_packet_envelope.py::test_error_result(self) - Verify error result creation.
+core/schemas/tests/test_packet_envelope.py::test_metadata_optional(self) - Verify metadata is optional.
+core/schemas/tests/test_packet_envelope.py::test_metadata_with_values(self) - Verify metadata can be set.
+core/schemas/tests/test_packet_envelope.py::test_packet_id_auto_generated(self) - Verify packet_id is auto-generated.
+core/schemas/tests/test_packet_envelope.py::test_packet_type_required(self) - Verify packet_type is required.
+core/schemas/tests/test_packet_envelope.py::test_payload_required(self) - Verify payload is required.
+core/schemas/tests/test_packet_envelope.py::test_provenance_optional(self) - Verify provenance is optional.
+core/schemas/tests/test_packet_envelope.py::test_provenance_with_parent(self) - Verify provenance can link to parent.
+core/schemas/tests/test_packet_envelope.py::test_search_request(self) - Verify search request creation.
+core/schemas/tests/test_packet_envelope.py::test_search_request_with_agent_filter(self) - Verify search request with agent filter.
+core/schemas/tests/test_packet_envelope.py::test_search_result(self) - Verify search result creation.
+core/schemas/tests/test_packet_envelope.py::test_semantic_hit(self) - Verify semantic hit creation.
+core/schemas/tests/test_packet_envelope.py::test_success_result(self) - Verify success result creation.
+core/schemas/tests/test_packet_envelope.py::test_timestamp_auto_generated(self) - Verify timestamp is auto-generated.
+core/schemas/tests/test_packet_envelope.py::test_to_envelope_basic(self) - Verify basic conversion to PacketEnvelop
+core/schemas/tests/test_packet_envelope.py::test_to_envelope_with_all_fields(self) - Verify conversion with all optional fiel
+core/schemas/tests/test_packet_envelope.py::test_with_update_creates_new_packet(self) - Verify with_update creates a new packet 
+core/schemas/tests/test_research_factory.py::test_add_error(self) - Verify error addition.
+core/schemas/tests/test_research_factory.py::test_complete_pass_failure(self) - Verify failed pass completion.
+core/schemas/tests/test_research_factory.py::test_complete_pass_success(self) - Verify successful pass completion.
+core/schemas/tests/test_research_factory.py::test_confidence_bounds(self) - Verify confidence bounds are enforced.
+core/schemas/tests/test_research_factory.py::test_empty_queries_rejected(self) - Verify empty queries list is rejected.
+core/schemas/tests/test_research_factory.py::test_empty_regions_rejected(self) - Verify empty regions list is rejected.
+core/schemas/tests/test_research_factory.py::test_initial_state(self) - Verify initial state creation.
+core/schemas/tests/test_research_factory.py::test_is_complete(self) - Verify is_complete property.
+core/schemas/tests/test_research_factory.py::test_max_results_bounds(self) - Verify max_results bounds are enforced.
+core/schemas/tests/test_research_factory.py::test_regions_normalized_to_uppercase(self) - Verify regions are normalized to upperca
+core/schemas/tests/test_research_factory.py::test_start_pass(self) - Verify pass start updates state.
+core/schemas/tests/test_research_factory.py::test_success_rate_property(self) - Verify success_rate calculation.
+core/schemas/tests/test_research_factory.py::test_valid_job_spec(self) - Verify valid job spec creation.
+core/schemas/tests/test_research_factory.py::test_valid_metrics(self) - Verify valid metrics creation.
+core/schemas/tests/test_research_factory.py::test_valid_parsed_object(self) - Verify valid parsed object creation.
+core/schemas/tests/test_research_factory.py::test_valid_query_plan(self) - Verify valid query plan creation.
+core/schemas/universal_schema.py::get_schema_info() - Return schema version information.
+memory/housekeeping.py::get_housekeeping_engine() - Get or create the housekeeping engine si
+memory/index_syncer.py::__init__(self, repository) - 
+memory/ingestion.py::__init__(self, repository, semantic_service, auto_embed, auto_tag) - Initialize ingestion pipeline.
+memory/ingestion.py::_generate_tags(self, envelope) - Auto-generate tags from packet content.
+memory/ingestion.py::_validate_packet(self, packet) - Validate packet structure.
+memory/ingestion.py::get_ingestion_pipeline() - Get or create the ingestion pipeline sin
+memory/ingestion.py::init_ingestion_pipeline(repository, semantic_service) - Initialize the ingestion pipeline with d
+memory/ingestion.py::set_repository(self, repository) - Set or update the repository reference.
+memory/ingestion.py::set_semantic_service(self, service) - Set or update the semantic service refer
+memory/state_manager.py::__init__(self, service, agent_id) - 
+memory/state_manager.py::agent_id(self) - 
+memory/substrate_graph.py::__init__(self, repository, semantic_service, world_model_orchestrator) - Initialize DAG with dependencies.
+memory/substrate_graph.py::_default_state() - Create default state.
+memory/substrate_graph.py::build_substrate_graph() - Build the LangGraph DAG for memory subst
+memory/substrate_models.py::to_envelope(self) - Convert input to full PacketEnvelope wit
+memory/substrate_semantic.py::__init__(self, dimensions) - 
+memory/substrate_semantic.py::__init__(self, embedding_provider, repository) - Initialize semantic service.
+memory/substrate_semantic.py::__init__(self, model, dimensions, api_key) - 
+memory/substrate_semantic.py::_get_client(self) - Lazy initialization of OpenAI client.
+memory/substrate_semantic.py::create_embedding_provider(provider_type, model, dimensions, api_key) - Factory function to create embedding pro
+memory/substrate_semantic.py::dimensions(self) - 
+memory/substrate_semantic.py::dimensions(self) - 
+memory/substrate_semantic.py::dimensions(self) - Return the embedding dimensions.
+memory/substrate_service.py::__init__(self, repository, embedding_provider) - Initialize the substrate service.
+memory/timeline_service.py::__init__(self, repository) - 
+tools/cursor_client.py::__init__(self, host, port, timeout) - 
+tools/cursor_client.py::_request(self, endpoint, method, data) - Make HTTP request to Cursor API.
+tools/cursor_client.py::health_check(self) - Check Cursor API health.
+tools/cursor_client.py::send_code(self, code) - Send code to Cursor.
+tools/cursor_client.py::send_command(self, command) - Send command to Cursor.
+tools/export_repo_indexes.py::generate_api_surfaces() - Map all callable interfaces across diffe
+tools/export_repo_indexes.py::generate_class_definitions() - Extract class definitions with docstring
+tools/export_repo_indexes.py::generate_config_files() - List all configuration files.
+tools/export_repo_indexes.py::generate_dependencies() - Parse requirements.txt and show actual v
+tools/export_repo_indexes.py::generate_entrypoints() - Identify app entrypoints with useful met
+tools/export_repo_indexes.py::generate_env_refs() - Extract environment variable references.
+tools/export_repo_indexes.py::generate_function_signatures() - Extract function names and signatures.
+tools/export_repo_indexes.py::generate_imports() - Extract top-level Python imports from so
+tools/export_repo_indexes.py::generate_module_architecture() - Map module structure and purposes from _
+tools/export_repo_indexes.py::generate_tree() - Generate tree.txt using actual directory
+tools/export_repo_indexes.py::is_ignored(rel_path, patterns, is_dir) - Check if a path matches any gitignore pa
+tools/export_repo_indexes.py::load_gitignore_patterns() - Load and parse .gitignore patterns.
+tools/export_repo_indexes.py::main() - Generate index files and export them.
+tools/export_repo_indexes.py::walk_dir(path, prefix, max_depth, current_depth, rel_path_prefix) - 
+tools/mac_protocol.py::create_mac_response(success, output, error, exit_code, timestamp) - Create Mac protocol response dict.
+tools/mac_protocol.py::parse_mac_message(data) - Parse and validate Mac protocol message.

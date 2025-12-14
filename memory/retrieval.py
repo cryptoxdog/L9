@@ -11,6 +11,8 @@ Hybrid and structured search features:
 - Replay chain reconstruction
 
 All operations are async-safe with proper logging.
+
+# bound to memory-yaml2.0 retrieval bundle (entrypoint: retrieval.py)
 """
 from __future__ import annotations
 
@@ -39,6 +41,8 @@ class RetrievalPipeline:
     - Thread reconstruction
     - Lineage graph traversal
     - Knowledge fact queries
+    
+    # bound to memory-yaml2.0 retrieval bundle: recent (postgres, limit:20), semantic_hits (pgvector, k:10), graph_context (neo4j, depth:2), facts (state_manager)
     """
     
     def __init__(

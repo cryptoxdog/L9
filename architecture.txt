@@ -1,0 +1,57 @@
+_l9_GHOST_REPO-DON'T USE/ - 
+agent/ - L9 Agent module.
+agents/ - 
+api/ - 
+api/memory/ - Memory API module.
+clients/ - 
+collaborative_cells/ - 
+config/ - L9 Configuration Module.
+core/ - 
+core/boundary/ - 
+core/kernel_wiring/ - 
+core/kernels/ - 
+core/retrievers/ - L9 Core Retrievers
+core/schemas/ - 
+core/schemas/tests/ - L9 Core Schemas Test Suite.
+dev/ - No module docstring
+dev/tools/ - No module docstring
+email_agent/ - L9 Email Agent - Gmail API integration.
+ir_engine/ - 
+l9_langgraph/ - L9 LangGraph Integration - local helpers (renamed from langg
+l9_private/ - 
+l9_private/security/ - 
+mac_agent/ - L9 Mac Agent package.
+mac_agent/helpers/ - Mac Agent helper utilities.
+memory/ - 
+memory/extractor/ - 
+memory/extractor/ingestion/ - Memory extractor ingestion module.
+memory/validators/ - L9 Memory Validators
+orchestration/ - 
+orchestrators/ - 
+orchestrators/action_tool/ - 
+orchestrators/evolution/ - 
+orchestrators/memory/ - 
+orchestrators/meta/ - 
+orchestrators/reasoning/ - 
+orchestrators/research_swarm/ - 
+orchestrators/world_model/ - 
+os/ - 
+runtime/ - 
+services/ - 
+services/research/ - 
+services/research/agents/ - 
+services/research/tools/ - 
+simulation/ - 
+telemetry/ - L9 Telemetry module.
+tests/ - 
+tests/ir_engine/ - 
+tests/kernel/ - Kernel Tests
+tests/memory/ - Memory Tests
+tests/mocks/ - 
+tests/orchestrator/ - Orchestrator Tests
+tests/performance/ - Performance Tests
+tests/runtime/ - No module docstring
+tests/world_model/ - World Model Tests
+tools/ - 
+world_model/ - 
+world_model/nodes/ - 

@@ -5,6 +5,8 @@ Version: 1.0.0
 Thin abstraction over MemorySubstrateService for LangGraph and higher-level
 agents that need to load/save state + append events without touching the
 repository directly.
+
+# bound to memory-yaml2.0 state layer (module: state_manager.py, responsibilities: agent_state, long_term_flags, contradiction_tracking)
 """
 
 from __future__ import annotations

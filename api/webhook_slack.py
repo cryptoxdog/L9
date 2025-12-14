@@ -1,0 +1,501 @@
+import os
+import hmac
+import hashlib
+import time
+import logging
+from fastapi import APIRouter, Request, HTTPException, Header
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
+
+SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
+SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+
+router = APIRouter()
+
+
+@router.post("/slack/commands")
+async def slack_commands(request: Request):
+    """
+    Handle Slack slash commands.
+    
+    Supported commands:
+    - /l9 do <task> - Execute a task
+    - /l9 email <instruction> - Email operation
+    - /l9 extract <artifact> - Extract data from artifact
+    """
+    if not SLACK_APP_ENABLED:
+        raise HTTPException(status_code=503, detail="Slack integration disabled")
+    
+    # Slash commands come as form data
+    form_data = await request.form()
+    command_text = form_data.get("text", "")
+    command = form_data.get("command", "")
+    user_id = form_data.get("user_id", "")
+    channel_id = form_data.get("channel_id", "")
+    response_url = form_data.get("response_url", "")
+    
+    logger.info(f"[SLACK] Slash command: {command} from {user_id} in {channel_id}")
+    
+    try:
+        from services.slack_client import slack_post
+        from orchestration.slack_task_router import route_slack_message
+        from services.mac_tasks import enqueue_task
+        
+        # Parse command
+        parts = command_text.split(maxsplit=1)
+        subcommand = parts[0].lower() if parts else ""
+        instruction = parts[1] if len(parts) > 1 else ""
+        
+        if subcommand == "do":
+            # Route to task planner
+            task_dict = route_slack_message(instruction, [], user_id)
+            task_dict["metadata"]["channel"] = channel_id
+            
+            task_id = enqueue_task(task_dict)
+            
+            return JSONResponse(content={
+                "response_type": "ephemeral",
+                "text": f"Task accepted and queued (ID: {task_id}). I'll post the result here when it's done."
+            })
+        
+        elif subcommand == "email":
+            # Email operation - parse subcommands
+            email_parts = instruction.split(maxsplit=1)
+            email_subcommand = email_parts[0].lower() if email_parts else ""
+            email_args = email_parts[1] if len(email_parts) > 1 else ""
+            
+            try:
+                from email_agent.gmail_client import GmailClient
+                client = GmailClient()
+                
+                if email_subcommand == "search":
+                    # /l9 email search <query>
+                    messages = client.list_messages(email_args, limit=10)
+                    if messages:
+                        result_text = f"Found {len(messages)} messages:\n"
+                        for msg in messages[:5]:  # Show first 5
+                            result_text += f"• {msg.get('subject', 'No subject')} from {msg.get('from', 'Unknown')}\n"
+                        if len(messages) > 5:
+                            result_text += f"... and {len(messages) - 5} more"
+                    else:
+                        result_text = "No messages found"
+                    
+                    return JSONResponse(content={
+                        "response_type": "in_channel",
+                        "text": result_text
+                    })
+                
+                elif email_subcommand == "read":
+                    # /l9 email read <id>
+                    message = client.get_message(email_args)
+                    if message:
+                        result_text = f"📧 {message.get('subject', 'No subject')}\n"
+                        result_text += f"From: {message.get('from', 'Unknown')}\n"
+                        result_text += f"Date: {message.get('date', 'Unknown')}\n\n"
+                        body = message.get('body_plain', message.get('body_html', ''))
+                        result_text += body[:500] + ("..." if len(body) > 500 else "")
+                        
+                        attachments = message.get('attachments', [])
+                        if attachments:
+                            result_text += f"\n\n📎 {len(attachments)} attachment(s)"
+                    else:
+                        result_text = f"Message {email_args} not found"
+                    
+                    return JSONResponse(content={
+                        "response_type": "in_channel",
+                        "text": result_text
+                    })
+                
+                elif email_subcommand == "draft":
+                    # /l9 email draft <natural language>
+                    # Route through planner
+                    task_dict = route_slack_message(f"draft email: {email_args}", [], user_id)
+                    task_dict["metadata"]["channel"] = channel_id
+                    task_id = enqueue_task(task_dict)
+                    
+                    return JSONResponse(content={
+                        "response_type": "ephemeral",
+                        "text": f"Email draft task queued (ID: {task_id}). I'll post the draft here when ready."
+                    })
+                
+                elif email_subcommand == "send":
+                    # /l9 email send <draft_id>
+                    # This would need to be handled via task execution
+                    task_dict = route_slack_message(f"send email draft: {email_args}", [], user_id)
+                    task_dict["metadata"]["channel"] = channel_id
+                    task_id = enqueue_task(task_dict)
+                    
+                    return JSONResponse(content={
+                        "response_type": "ephemeral",
+                        "text": f"Email send task queued (ID: {task_id}). Processing..."
+                    })
+                
+                else:
+                    # Default: route through planner
+                    task_dict = route_slack_message(f"email: {instruction}", [], user_id)
+                    task_dict["metadata"]["channel"] = channel_id
+                    task_id = enqueue_task(task_dict)
+                    
+                    return JSONResponse(content={
+                        "response_type": "ephemeral",
+                        "text": f"Email task queued (ID: {task_id}). Processing..."
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Email command error: {e}", exc_info=True)
+                return JSONResponse(content={
+                    "response_type": "ephemeral",
+                    "text": f"Email error: {str(e)}"
+                })
+        
+        elif subcommand == "extract":
+            # Extract from artifact (requires artifact ID or name)
+            return JSONResponse(content={
+                "response_type": "ephemeral",
+                "text": "Extract command requires an artifact attachment. Please attach a file and use /l9 do <instruction>."
+            })
+        
+        else:
+            return JSONResponse(content={
+                "response_type": "ephemeral",
+                "text": "Unknown command. Use /l9 do <task>, /l9 email <instruction>, or /l9 extract <artifact>"
+            })
+    
+    except Exception as e:
+        logger.error(f"[SLACK] Slash command error: {e}", exc_info=True)
+        return JSONResponse(content={
+            "response_type": "ephemeral",
+            "text": f"Error processing command: {str(e)}"
+        })
+
+def verify_slack_signature(
+    body: str,
+    timestamp: str,
+    signature: str,
+    signing_secret: str
+) -> bool:
+    """
+    Verify Slack request signature.
+    Rejects replay attacks (>5 minutes skew).
+    """
+    if not timestamp or not signature:
+        return False
+    
+    # Check timestamp to prevent replay attacks
+    try:
+        request_time = int(timestamp)
+        current_time = int(time.time())
+        if abs(current_time - request_time) > 300:  # 5 minutes
+            logger.warning(f"Slack request timestamp too old: {request_time} (current: {current_time})")
+            return False
+    except ValueError:
+        return False
+    
+    # Create signature base string
+    sig_basestring = f"v0:{timestamp}:{body}"
+    
+    # Compute expected signature
+    expected_signature = hmac.new(
+        signing_secret.encode(),
+        sig_basestring.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    expected_sig_string = f"v0={expected_signature}"
+    
+    # Compare signatures using constant-time comparison
+    return hmac.compare_digest(expected_sig_string, signature)
+
+@router.post("/slack/events")
+async def slack_events(
+    request: Request,
+    x_slack_signature: str = Header(None, alias="X-Slack-Signature"),
+    x_slack_request_timestamp: str = Header(None, alias="X-Slack-Request-Timestamp")
+):
+    """
+    Slack Events API webhook handler.
+    Handles:
+    - url_verification: Echoes challenge
+    - event_callback: Processes app_mention and messages containing "l9"
+    """
+    # Check if Slack is enabled
+    if not SLACK_APP_ENABLED:
+        raise HTTPException(status_code=503, detail="Slack integration disabled")
+    
+    # Read raw body for signature verification
+    body_raw = await request.body()
+    body_str = body_raw.decode('utf-8')
+    
+    # Verify signature
+    if not SLACK_SIGNING_SECRET:
+        logger.error("[SLACK] SLACK_SIGNING_SECRET not configured")
+        raise HTTPException(status_code=500, detail="Slack signing secret not configured")
+    
+    if not verify_slack_signature(
+        body_str,
+        x_slack_request_timestamp or "",
+        x_slack_signature or "",
+        SLACK_SIGNING_SECRET
+    ):
+        logger.warning("[SLACK] Invalid signature")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+    
+    # Parse JSON payload (reuse body_str since we already read it)
+    try:
+        import json
+        data = json.loads(body_str)
+    except json.JSONDecodeError as e:
+        logger.error(f"[SLACK] Failed to parse JSON: {e}")
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    
+    # Handle URL verification challenge
+    if data.get("type") == "url_verification":
+        challenge = data.get("challenge")
+        if challenge:
+            logger.info("[SLACK] URL verification challenge received")
+            return JSONResponse(content={"challenge": challenge})
+        else:
+            raise HTTPException(status_code=400, detail="Missing challenge")
+    
+    # Handle event callbacks
+    if data.get("type") == "event_callback":
+        event = data.get("event", {})
+        event_type = event.get("type")
+        event_subtype = event.get("subtype")
+        
+        # Ignore bot messages
+        if event_subtype == "bot_message":
+            logger.debug("[SLACK] Ignoring bot message")
+            return JSONResponse(content={"status": "ok"})
+        
+        # Handle app_mention events
+        if event_type == "app_mention":
+            channel = event.get("channel")
+            user = event.get("user")
+            text = event.get("text", "")
+            files = event.get("files", [])  # File attachments
+            
+            if channel and user:
+                # Process file attachments if present
+                file_artifacts = []
+                if files:
+                    try:
+                        from services.slack_files import process_file_attachments
+                        file_artifacts = process_file_attachments(files)
+                        logger.info(
+                            f"[SLACK] Processed {len(file_artifacts)} file attachments from app_mention"
+                        )
+                    except Exception as e:
+                        logger.error(f"[SLACK] Failed to process file attachments: {e}", exc_info=True)
+                        # Continue processing message even if files fail
+                
+                # Check for !mac command
+                if text.strip().startswith("!mac"):
+                    command = text.replace("!mac", "", 1).strip()
+                    if command:
+                        from services.mac_tasks import enqueue_mac_task
+                        from services.slack_client import slack_post
+                        
+                        # Enhance command context with file artifacts if present
+                        enhanced_command = command
+                        if file_artifacts:
+                            # Append file artifact metadata to command context
+                            file_context = "\n\n[File attachments available:"
+                            for artifact in file_artifacts:
+                                file_context += f"\n- {artifact['name']} ({artifact['type']}) at {artifact['path']}"
+                            file_context += "]"
+                            enhanced_command = command + file_context
+                            logger.info(
+                                f"[SLACK] Enhanced command with {len(file_artifacts)} file attachments"
+                            )
+                        
+                        task_id = enqueue_mac_task(
+                            source="slack",
+                            channel=channel,
+                            user=user,
+                            command=enhanced_command,
+                            attachments=file_artifacts if file_artifacts else None
+                        )
+                        
+                        file_msg = f" ({len(file_artifacts)} file{'s' if len(file_artifacts) != 1 else ''})" if file_artifacts else ""
+                        slack_post(channel, f"📨 Mac task queued (id={task_id}){file_msg}. I'll post the result here when it's done.")
+                        logger.info(f"[SLACK] Enqueued Mac task {task_id} from {user} in {channel}: {command}")
+                    else:
+                        from services.slack_client import slack_post
+                        slack_post(channel, "❌ Please provide a command after `!mac` (e.g., `!mac echo hello`)")
+                    return JSONResponse(content={"status": "ok"})
+                
+                # Check for email-related commands in app_mention
+                text_lower = text.strip().lower()
+                email_keywords = [
+                    "email:", "mail:", "send email", "reply to",
+                    "draft email", "search email", "forward email"
+                ]
+                is_email_command = any(text_lower.startswith(kw.lower()) for kw in email_keywords) or \
+                                  any(kw.lower() in text_lower for kw in ["send email to", "reply to", "forward to"])
+                
+                # NEW: Route app_mention through task planner if files present or email command
+                if file_artifacts or is_email_command:
+                    try:
+                        from orchestration.slack_task_router import route_slack_message
+                        from services.mac_tasks import enqueue_task
+                        from services.slack_client import slack_post
+                        
+                        # If email command detected, ensure proper routing
+                        routing_text = text
+                        if is_email_command and not text_lower.startswith("email:"):
+                            routing_text = f"email: {text}"
+                        
+                        # Route message + artifacts to task structure
+                        task_dict = route_slack_message(routing_text, file_artifacts, user)
+                        
+                        # Store channel in metadata for result posting
+                        if "metadata" not in task_dict:
+                            task_dict["metadata"] = {}
+                        task_dict["metadata"]["channel"] = channel
+                        
+                        # Enqueue task
+                        task_id = enqueue_task(task_dict)
+                        
+                        # Respond in Slack
+                        task_type = task_dict.get("type", "task")
+                        if task_type == "email_task":
+                            slack_post(channel, f"📧 Email task recognized and queued (ID: {task_id}).")
+                        else:
+                            slack_post(channel, f"Task accepted and queued (ID: {task_id}). I'll let you know when it's done.")
+                        logger.info(f"[SLACK] Routed app_mention to {task_type} {task_id} from {user} in {channel}")
+                        return JSONResponse(content={"status": "ok"})
+                    except Exception as e:
+                        logger.error(f"[SLACK] Failed to route app_mention: {e}", exc_info=True)
+                        # Fall through to default response
+                
+                from services.slack_client import slack_post
+                file_msg = f" I received {len(file_artifacts)} file attachment{'s' if len(file_artifacts) != 1 else ''}." if file_artifacts else ""
+                slack_post(channel, f"👋 Hey <@{user}> — L9 is online and connected.{file_msg}")
+                logger.info(f"[SLACK] Responded to app_mention from {user} in {channel}")
+                return JSONResponse(content={"status": "ok"})
+        
+        # Handle messages containing "l9" (case-insensitive) or !mac commands
+        if event_type == "message":
+            channel = event.get("channel")
+            user = event.get("user")
+            text_original = event.get("text", "")
+            text = text_original.lower()
+            files = event.get("files", [])  # File attachments
+            
+            # Process file attachments if present
+            file_artifacts = []
+            if files:
+                try:
+                    from services.slack_files import process_file_attachments
+                    file_artifacts = process_file_attachments(files)
+                    logger.info(
+                        f"[SLACK] Processed {len(file_artifacts)} file attachments from {user} in {channel}"
+                    )
+                except Exception as e:
+                    logger.error(f"[SLACK] Failed to process file attachments: {e}", exc_info=True)
+                    # Continue processing message even if files fail
+            
+            # Check for email-related commands (enhanced detection)
+            email_keywords = [
+                "email:",
+                "mail:",
+                "send email",
+                "reply to",
+                "draft email",
+                "search email",
+                "forward email"
+            ]
+            # Check if text starts with any email keyword (case-insensitive)
+            text_lower = text.strip().lower()
+            is_email_command = any(text_lower.startswith(kw.lower()) for kw in email_keywords) or \
+                              any(kw.lower() in text_lower for kw in ["send email to", "reply to", "forward to"])
+            
+            # NEW: Route Slack message through task planner (when files present or message directed at L9 or email command)
+            if user and channel and text_original.strip() and (file_artifacts or "l9" in text or is_email_command):
+                try:
+                    from orchestration.slack_task_router import route_slack_message
+                    from services.mac_tasks import enqueue_task
+                    from services.slack_client import slack_post
+                    
+                    # If email command detected, prepend "email:" to ensure routing
+                    routing_text = text_original
+                    if is_email_command and not text_original.lower().startswith("email:"):
+                        routing_text = f"email: {text_original}"
+                    
+                    # Route message + artifacts to task structure
+                    task_dict = route_slack_message(routing_text, file_artifacts, user)
+                    
+                    # Store channel in metadata for result posting
+                    if "metadata" not in task_dict:
+                        task_dict["metadata"] = {}
+                    task_dict["metadata"]["channel"] = channel
+                    
+                    # Enqueue task
+                    task_id = enqueue_task(task_dict)
+                    
+                    # Respond in Slack
+                    task_type = task_dict.get("type", "task")
+                    response_msg = f"Task accepted and queued (ID: {task_id}). I'll let you know when it's done."
+                    if task_type == "email_task":
+                        response_msg = f"📧 Email task recognized and queued (ID: {task_id})."
+                    
+                    slack_post(channel, response_msg)
+                    logger.info(f"[SLACK] Routed message to {task_type} {task_id} from {user} in {channel}")
+                    return JSONResponse(content={"status": "ok"})
+                except Exception as e:
+                    logger.error(f"[SLACK] Failed to route message: {e}", exc_info=True)
+                    # Fall through to existing handlers
+            
+            # Check for !mac command
+            if user and channel and text.strip().startswith("!mac"):
+                command = text_original.replace("!mac", "", 1).strip()
+                if command:
+                    from services.mac_tasks import enqueue_mac_task
+                    from services.slack_client import slack_post
+                    
+                    # Enhance command context with file artifacts if present
+                    enhanced_command = command
+                    if file_artifacts:
+                        # Append file artifact metadata to command context
+                        file_context = "\n\n[File attachments available:"
+                        for artifact in file_artifacts:
+                            file_context += f"\n- {artifact['name']} ({artifact['type']}) at {artifact['path']}"
+                        file_context += "]"
+                        enhanced_command = command + file_context
+                        logger.info(
+                            f"[SLACK] Enhanced command with {len(file_artifacts)} file attachments"
+                        )
+                    
+                    task_id = enqueue_mac_task(
+                        source="slack",
+                        channel=channel,
+                        user=user,
+                        command=enhanced_command,
+                        attachments=file_artifacts if file_artifacts else None
+                    )
+                    
+                    file_msg = f" ({len(file_artifacts)} file{'s' if len(file_artifacts) != 1 else ''})" if file_artifacts else ""
+                    slack_post(channel, f"📨 Mac task queued (id={task_id}){file_msg}. I'll post the result here when it's done.")
+                    logger.info(f"[SLACK] Enqueued Mac task {task_id} from {user} in {channel}: {command}")
+                else:
+                    from services.slack_client import slack_post
+                    slack_post(channel, "❌ Please provide a command after `!mac` (e.g., `!mac echo hello`)")
+                return JSONResponse(content={"status": "ok"})
+            
+            # Check if message contains "l9" and is not from a bot
+            if user and channel and "l9" in text:
+                from services.slack_client import slack_post
+                file_msg = f" I received {len(file_artifacts)} file attachment{'s' if len(file_artifacts) != 1 else ''}." if file_artifacts else ""
+                slack_post(channel, f"👋 Hey <@{user}> — L9 is online and connected.{file_msg}")
+                logger.info(f"[SLACK] Responded to message containing 'l9' from {user} in {channel}")
+                return JSONResponse(content={"status": "ok"})
+        
+        # Acknowledge other events
+        logger.debug(f"[SLACK] Received event type: {event_type}")
+        return JSONResponse(content={"status": "ok"})
+    
+    # Unknown event type
+    logger.warning(f"[SLACK] Unknown event type: {data.get('type')}")
+    return JSONResponse(content={"status": "ok"})
