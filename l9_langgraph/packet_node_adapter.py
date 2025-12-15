@@ -9,11 +9,20 @@ Helpers to wrap arbitrary LangGraph node functions so they:
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional, TYPE_CHECKING
 from uuid import uuid4
 
 from memory.substrate_models import PacketEnvelopeIn
-from memory.substrate_service import MemorySubstrateService
+
+# Lazy import to avoid circular dependency with memory module
+if TYPE_CHECKING:
+    from memory.substrate_service import MemorySubstrateService
+
+
+def _get_memory_service():
+    """Lazy import of MemorySubstrateService to avoid circular imports."""
+    from memory.substrate_service import MemorySubstrateService
+    return MemorySubstrateService
 
 
 GraphState = Dict[str, Any]
