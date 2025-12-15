@@ -24,36 +24,43 @@ from memory.substrate_models import (
     ExtractedInsight,
 )
 
-from memory.substrate_repository import (
-    SubstrateRepository,
-    get_repository,
-    init_repository,
-    close_repository,
-)
+# NOTE: Avoid eager imports here to prevent circular dependencies.
+# These modules can be imported directly when needed:
+#   from memory.substrate_repository import SubstrateRepository, ...
+#   from memory.substrate_graph import SubstrateDAG, ...
+#   from memory.substrate_service import MemorySubstrateService, ...
+#   from memory.substrate_semantic import SemanticService, ...
 
-from memory.substrate_semantic import (
-    EmbeddingProvider,
-    OpenAIEmbeddingProvider,
-    StubEmbeddingProvider,
-    SemanticService,
-    create_embedding_provider,
-    embed_text,
-)
+# from memory.substrate_repository import (
+#     SubstrateRepository,
+#     get_repository,
+#     init_repository,
+#     close_repository,
+# )
 
-from memory.substrate_graph import (
-    SubstrateDAG,
-    SubstrateGraphState,
-    run_substrate_flow,
-    build_substrate_graph,
-)
+# from memory.substrate_semantic import (
+#     EmbeddingProvider,
+#     OpenAIEmbeddingProvider,
+#     StubEmbeddingProvider,
+#     SemanticService,
+#     create_embedding_provider,
+#     embed_text,
+# )
 
-from memory.substrate_service import (
-    MemorySubstrateService,
-    create_substrate_service,
-    get_service,
-    init_service,
-    close_service,
-)
+# from memory.substrate_graph import (
+#     SubstrateDAG,
+#     SubstrateGraphState,
+#     run_substrate_flow,
+#     build_substrate_graph,
+# )
+
+# from memory.substrate_service import (
+#     MemorySubstrateService,
+#     create_substrate_service,
+#     get_service,
+#     init_service,
+#     close_service,
+# )
 
 # v1.1.0+ Pipelines
 from memory.housekeeping import (
@@ -81,7 +88,7 @@ from memory.insight_extraction import (
 )
 
 __all__ = [
-    # Models
+    # Models (always available)
     "PacketEnvelope",
     "PacketEnvelopeIn",
     "PacketWriteResult",
@@ -94,29 +101,6 @@ __all__ = [
     "KnowledgeFact",
     "KnowledgeFactRow",
     "ExtractedInsight",
-    # Repository
-    "SubstrateRepository",
-    "get_repository",
-    "init_repository",
-    "close_repository",
-    # Semantic
-    "EmbeddingProvider",
-    "OpenAIEmbeddingProvider",
-    "StubEmbeddingProvider",
-    "SemanticService",
-    "create_embedding_provider",
-    "embed_text",
-    # Graph
-    "SubstrateDAG",
-    "SubstrateGraphState",
-    "run_substrate_flow",
-    "build_substrate_graph",
-    # Service
-    "MemorySubstrateService",
-    "create_substrate_service",
-    "get_service",
-    "init_service",
-    "close_service",
     # v1.1.0+ Pipelines
     "HousekeepingEngine",
     "get_housekeeping_engine",
@@ -130,6 +114,11 @@ __all__ = [
     "InsightExtractionPipeline",
     "get_insight_pipeline",
     "init_insight_pipeline",
+    # NOTE: These are available via direct import to avoid circular deps:
+    # from memory.substrate_repository import SubstrateRepository, ...
+    # from memory.substrate_graph import SubstrateDAG, ...
+    # from memory.substrate_service import MemorySubstrateService, ...
+    # from memory.substrate_semantic import SemanticService, ...
 ]
 
 __version__ = "1.1.0"
