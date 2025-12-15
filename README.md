@@ -154,6 +154,30 @@ Apply in order:
                     └─────────────────────────────────────────────┘
 ```
 
+## VPS Deploy
+
+```bash
+# 1. Local pre-flight
+venv/bin/python tests/smoke_test_root.py && venv/bin/python tests/smoke_email.py
+
+# 2. Push to main
+git push origin main
+
+# 3. SSH to VPS
+ssh your-vps-alias
+
+# 4. Run release gate
+cd /opt/l9 && sudo bash ops/vps_release_gate.sh
+
+# 5. Verify
+curl -sS http://127.0.0.1:8000/health | jq .
+
+# 6. Reboot test (optional)
+sudo reboot  # then reconnect and verify services auto-start
+```
+
+See [Go-Live.md](Go-Live.md) for full deployment documentation.
+
 ## Documentation
 
 - [Memory Substrate Guide](docs/memory_substrate_readme_v1.0.0.md)
