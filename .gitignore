@@ -54,23 +54,25 @@ dev/_quarantine/
 
 # --- OS ---
 .DS_Store
-entrypoints.txt
+
+# --- local/dev junk ---
+.venv/
+openapi.json
+tree.txt
+*_REPORT*.md
+*.bak.*
+
+# --- generated index files ---
+api_surfaces.txt
+architecture.txt
+class_definitions.txt
+config_files.txt
+dependencies.txt
 env_refs.txt
 fastapi_routes.txt
 function_signatures.txt
 imports.txt
-config_files.txt
-api_surfaces.txt
-architecture.txt
-class_definitions.txt
-_l9_GHOST_REPO-DON'T USE/
 entrypoints.txt
-env_refs.txt
-fastapi_routes.txt
-function_signatures.txt
-imports.txt
-config_files.txt
-api_surfaces.txt
-architecture.txt
-class_definitions.txt
+
+# --- quarantine ---
 _l9_GHOST_REPO-DON'T USE/
