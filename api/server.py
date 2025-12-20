@@ -15,8 +15,11 @@ Version: 0.5.0 (Research Factory Integration)
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header
+from pydantic import BaseModel
+from openai import OpenAI
 from api.memory.router import router as memory_router
+from api.auth import verify_api_key
 import api.db as db
 import api.os_routes as os_routes
 import api.agent_routes as agent_routes
@@ -132,6 +135,9 @@ except ImportError:
 # Memory system imports
 from memory.migration_runner import run_migrations
 from memory.substrate_service import init_service, close_service, get_service
+
+# Integration settings
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -450,6 +456,79 @@ async def health():
     """
     return {"status": "ok", "service": "l9-api"}
 
+
+# Chat endpoint (from server_memory.py for compatibility)
+class ChatRequest(BaseModel):
+    message: str
+    system_prompt: str | None = None
+
+class ChatResponse(BaseModel):
+    reply: str
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if OPENAI_API_KEY:
+    chat_client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    chat_client = None
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(
+    payload: ChatRequest,
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """
+    Basic LLM chat endpoint using OpenAI.
+    Ingests both request and response to memory for audit trail.
+    """
+    if not chat_client:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+    
+    from memory.ingestion import ingest_packet
+    from memory.substrate_models import PacketEnvelopeIn
+    
+    try:
+        messages = []
+        if payload.system_prompt:
+            messages.append({"role": "system", "content": payload.system_prompt})
+        else:
+            messages.append({
+                "role": "system",
+                "content": (
+                    "You are L, an infrastructure-focused assistant connected to an L9 "
+                    "backend and memory system. Be concise, precise, and avoid destructive "
+                    "actions. When appropriate, suggest using tools like the CTO agent."
+                ),
+            })
+        messages.append({"role": "user", "content": payload.message})
+
+        completion = chat_client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=messages,
+        )
+        reply = completion.choices[0].message.content
+        
+        # Ingest chat interaction to memory (audit trail)
+        try:
+            packet_in = PacketEnvelopeIn(
+                packet_type="chat_interaction",
+                payload={
+                    "user_message": payload.message,
+                    "system_prompt": payload.system_prompt,
+                    "assistant_reply": reply,
+                    "model": "gpt-4.1-mini",
+                },
+                metadata={"agent": "chat_api", "source": "server"},
+            )
+            await ingest_packet(packet_in)
+        except Exception as mem_err:
+            # Log but don't fail the request if memory ingestion fails
+            logger.warning(f"Failed to ingest chat to memory: {mem_err}")
+        
+        return ChatResponse(reply=reply)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat backend error: {e}")
+
 # --- Routers ---
 # OS health + metrics + routing
 app.include_router(os_routes.router, prefix="/os")
@@ -491,6 +570,59 @@ if _has_twilio_adapter:
 # Slack Webhook Adapter router (v2.6+)
 if _has_slack_webhook_adapter:
     app.include_router(slack_webhook_adapter_router)
+
+# === Legacy Webhook Routers (gated by toggle flags) ===
+# These are the older webhook routers from server_memory.py for backward compatibility
+
+# Slack Events API (legacy)
+if settings.slack_app_enabled:
+    try:
+        from api.webhook_slack import router as webhook_slack_router
+        app.include_router(webhook_slack_router)
+    except Exception as e:
+        logger.warning(f"Failed to load legacy Slack webhook router: {e}")
+
+# Mac Agent API
+if settings.mac_agent_enabled:
+    try:
+        from api.webhook_mac_agent import router as mac_agent_router
+        app.include_router(mac_agent_router)
+    except Exception as e:
+        logger.warning(f"Failed to load Mac Agent router: {e}")
+
+# Twilio webhook router (legacy)
+if settings.twilio_enabled:
+    try:
+        from api.webhook_twilio import router as twilio_webhook_router
+        app.include_router(twilio_webhook_router)
+    except Exception as e:
+        logger.warning(f"Failed to load legacy Twilio webhook router: {e}")
+
+# WABA (WhatsApp Business Account - native Meta) (legacy)
+if settings.waba_enabled:
+    try:
+        from api.webhook_waba import router as waba_router
+        app.include_router(waba_router)
+    except Exception as e:
+        logger.warning(f"Failed to load WABA router: {e}")
+
+# Email integration (legacy)
+if settings.email_enabled:
+    try:
+        from api.webhook_email import router as email_webhook_router
+        app.include_router(email_webhook_router)
+    except ImportError:
+        # webhook_email.py might not exist - that's okay
+        pass
+    except Exception as e:
+        logger.warning(f"Failed to load legacy Email webhook router: {e}")
+    
+    # Email Agent API
+    try:
+        from email_agent.router import router as email_agent_router
+        app.include_router(email_agent_router)
+    except Exception as e:
+        logger.warning(f"Failed to load Email Agent router: {e}")
 
 
 # Startup + Shutdown events (if the modules expose them)
