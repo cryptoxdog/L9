@@ -32,9 +32,14 @@ logger = logging.getLogger(__name__)
 # Database Configuration
 # =============================================================================
 
+# Get database URL from environment - use service DNS for Docker
+# Default uses 'postgres' hostname which resolves in Docker network
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/l9"
+    os.getenv(
+        "MEMORY_DSN",
+        "postgresql://postgres:postgres@postgres:5432/l9"
+    )
 )
 
 

@@ -1,12 +1,20 @@
 """
 L9 Research Factory - Tool Registry
-Version: 1.0.0
+Version: 2.0.0
 
 In-memory tool registry for research tools.
 NO database persistence - tools are registered at startup.
+
+Production-ready features (v2.0.0):
+- Time-based sliding window rate limiting
+- Tool schema support for OpenAI function calling
+- Async execution with timeout handling
 """
 
+import asyncio
 import logging
+from collections import defaultdict
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Callable, Optional
 
@@ -21,6 +29,17 @@ class ToolType(str, Enum):
     HTTP = "http"
     PERPLEXITY = "perplexity"
     MOCK = "mock"
+    CUSTOM = "custom"
+
+
+class ToolSchema(BaseModel):
+    """JSON Schema for tool parameters (OpenAI function calling compatible)."""
+    type: str = Field(default="object")
+    properties: dict[str, Any] = Field(default_factory=dict)
+    required: list[str] = Field(default_factory=list)
+    
+    class Config:
+        extra = "allow"
 
 
 class ToolMetadata(BaseModel):
@@ -29,8 +48,8 @@ class ToolMetadata(BaseModel):
     
     Describes tool capabilities, access control, and rate limits.
     """
-    id: str = Field(..., description="Unique tool identifier")
-    name: str = Field(..., description="Human-readable name")
+    id: str = Field(..., description="Unique tool identifier (canonical identity)")
+    name: str = Field(..., description="Human-readable name (display only)")
     description: str = Field("", description="Tool description")
     tool_type: ToolType = Field(..., description="Type of tool")
     allowed_roles: list[str] = Field(
@@ -39,7 +58,7 @@ class ToolMetadata(BaseModel):
     )
     rate_limit: int = Field(
         default=60,
-        description="Max calls per minute"
+        description="Max calls per minute (sliding window)"
     )
     timeout_seconds: int = Field(
         default=30,
@@ -53,9 +72,70 @@ class ToolMetadata(BaseModel):
         default=False,
         description="Whether tool requires API key"
     )
+    input_schema: Optional[ToolSchema] = Field(
+        default=None,
+        description="JSON Schema for tool parameters"
+    )
     
     class Config:
         use_enum_values = True
+
+
+class RateLimitWindow:
+    """
+    Sliding window rate limiter.
+    
+    Tracks calls within a time window and enforces limits.
+    """
+    
+    def __init__(self, window_seconds: int = 60):
+        """
+        Initialize rate limiter.
+        
+        Args:
+            window_seconds: Size of sliding window
+        """
+        self._window_seconds = window_seconds
+        self._calls: dict[str, list[datetime]] = defaultdict(list)
+    
+    def check_and_increment(self, key: str, limit: int) -> bool:
+        """
+        Check if under rate limit and increment if so.
+        
+        Args:
+            key: Rate limit key (e.g., tool_id)
+            limit: Maximum calls per window
+            
+        Returns:
+            True if allowed, False if rate limited
+        """
+        now = datetime.utcnow()
+        cutoff = now - timedelta(seconds=self._window_seconds)
+        
+        # Prune old calls
+        self._calls[key] = [t for t in self._calls[key] if t > cutoff]
+        
+        # Check limit
+        if len(self._calls[key]) >= limit:
+            return False
+        
+        # Record call
+        self._calls[key].append(now)
+        return True
+    
+    def get_remaining(self, key: str, limit: int) -> int:
+        """Get remaining calls in current window."""
+        now = datetime.utcnow()
+        cutoff = now - timedelta(seconds=self._window_seconds)
+        current = len([t for t in self._calls[key] if t > cutoff])
+        return max(0, limit - current)
+    
+    def reset(self, key: Optional[str] = None) -> None:
+        """Reset rate limits for a key or all keys."""
+        if key:
+            self._calls[key] = []
+        else:
+            self._calls.clear()
 
 
 class ToolRegistry:
@@ -64,13 +144,23 @@ class ToolRegistry:
     
     Stores tool metadata and tool instances for execution.
     No database persistence - tools are registered at runtime.
+    
+    Production features:
+    - Time-based sliding window rate limiting (1-minute window)
+    - Async tool execution with timeout
+    - Tool schema extraction for function calling
     """
     
-    def __init__(self):
-        """Initialize empty registry."""
+    def __init__(self, rate_window_seconds: int = 60):
+        """
+        Initialize empty registry.
+        
+        Args:
+            rate_window_seconds: Sliding window for rate limiting
+        """
         self._tools: dict[str, ToolMetadata] = {}
         self._executors: dict[str, Any] = {}  # Tool instances
-        self._rate_counters: dict[str, int] = {}
+        self._rate_limiter = RateLimitWindow(rate_window_seconds)
     
     def register(
         self,
@@ -134,25 +224,160 @@ class ToolRegistry:
     
     def check_rate_limit(self, tool_id: str) -> bool:
         """
-        Check if tool is within rate limit.
+        Check if tool is within rate limit (sliding window).
         
-        Returns True if allowed, False if rate limited.
-        Note: Simple counter, should use time-based window in production.
+        Uses time-based sliding window rate limiting.
+        
+        Returns:
+            True if allowed (and increments counter), False if rate limited
         """
         metadata = self._tools.get(tool_id)
         if not metadata:
             return False
         
-        current = self._rate_counters.get(tool_id, 0)
-        if current >= metadata.rate_limit:
-            return False
-        
-        self._rate_counters[tool_id] = current + 1
-        return True
+        return self._rate_limiter.check_and_increment(tool_id, metadata.rate_limit)
     
-    def reset_rate_limits(self) -> None:
-        """Reset all rate limit counters."""
-        self._rate_counters.clear()
+    def get_rate_limit_remaining(self, tool_id: str) -> int:
+        """Get remaining calls in current rate limit window."""
+        metadata = self._tools.get(tool_id)
+        if not metadata:
+            return 0
+        return self._rate_limiter.get_remaining(tool_id, metadata.rate_limit)
+    
+    def reset_rate_limits(self, tool_id: Optional[str] = None) -> None:
+        """Reset rate limit counters for a tool or all tools."""
+        self._rate_limiter.reset(tool_id)
+    
+    def get_tool_schema(self, tool_id: str) -> dict[str, Any]:
+        """
+        Get OpenAI function calling schema for a tool.
+        
+        Args:
+            tool_id: Tool identifier
+            
+        Returns:
+            JSON Schema dict for function parameters
+        """
+        metadata = self._tools.get(tool_id)
+        if not metadata:
+            return {"type": "object", "properties": {}}
+        
+        if metadata.input_schema:
+            return metadata.input_schema.model_dump()
+        
+        # Return default schema
+        return {"type": "object", "properties": {}}
+    
+    async def execute_tool(
+        self,
+        tool_id: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Execute a tool with timeout handling.
+        
+        Args:
+            tool_id: Tool to execute
+            arguments: Arguments for tool
+            
+        Returns:
+            Dict with success, result/error, duration_ms
+        """
+        start_time = datetime.utcnow()
+        
+        metadata = self._tools.get(tool_id)
+        if not metadata:
+            return {
+                "success": False,
+                "error": f"Tool not found: {tool_id}",
+                "duration_ms": 0,
+            }
+        
+        if not metadata.enabled:
+            return {
+                "success": False,
+                "error": f"Tool is disabled: {tool_id}",
+                "duration_ms": 0,
+            }
+        
+        # Check rate limit
+        if not self.check_rate_limit(tool_id):
+            return {
+                "success": False,
+                "error": f"Rate limit exceeded for {tool_id}",
+                "duration_ms": 0,
+            }
+        
+        executor = self._executors.get(tool_id)
+        if not executor:
+            return {
+                "success": False,
+                "error": f"No executor for tool: {tool_id}",
+                "duration_ms": 0,
+            }
+        
+        try:
+            # Execute with timeout
+            timeout = metadata.timeout_seconds
+            
+            if hasattr(executor, "execute"):
+                if asyncio.iscoroutinefunction(executor.execute):
+                    result = await asyncio.wait_for(
+                        executor.execute(**arguments),
+                        timeout=timeout,
+                    )
+                else:
+                    # Wrap sync in executor
+                    loop = asyncio.get_event_loop()
+                    result = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: executor.execute(**arguments)),
+                        timeout=timeout,
+                    )
+            elif callable(executor):
+                if asyncio.iscoroutinefunction(executor):
+                    result = await asyncio.wait_for(
+                        executor(**arguments),
+                        timeout=timeout,
+                    )
+                else:
+                    loop = asyncio.get_event_loop()
+                    result = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: executor(**arguments)),
+                        timeout=timeout,
+                    )
+            else:
+                return {
+                    "success": False,
+                    "error": f"Executor not callable: {tool_id}",
+                    "duration_ms": 0,
+                }
+            
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            
+            logger.info(f"Tool {tool_id} completed in {duration_ms}ms")
+            
+            return {
+                "success": True,
+                "result": result,
+                "duration_ms": duration_ms,
+            }
+            
+        except asyncio.TimeoutError:
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            logger.warning(f"Tool {tool_id} timed out after {timeout}s")
+            return {
+                "success": False,
+                "error": f"Tool execution timed out after {timeout}s",
+                "duration_ms": duration_ms,
+            }
+        except Exception as e:
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            logger.exception(f"Tool {tool_id} failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "duration_ms": duration_ms,
+            }
 
 
 # Singleton instance
@@ -169,7 +394,7 @@ def get_tool_registry() -> ToolRegistry:
 
 
 def _initialize_default_tools(registry: ToolRegistry) -> None:
-    """Initialize default tools in registry."""
+    """Initialize default tools in registry with schemas."""
     from services.research.tools.tool_wrappers import (
         PerplexityTool,
         HTTPTool,
@@ -186,6 +411,21 @@ def _initialize_default_tools(registry: ToolRegistry) -> None:
         rate_limit=20,
         timeout_seconds=60,
         requires_api_key=True,
+        input_schema=ToolSchema(
+            type="object",
+            properties={
+                "query": {
+                    "type": "string",
+                    "description": "Search query to send to Perplexity",
+                },
+                "focus": {
+                    "type": "string",
+                    "description": "Search focus area",
+                    "enum": ["internet", "academic", "writing", "wolfram", "youtube", "reddit"],
+                },
+            },
+            required=["query"],
+        ),
     )
     registry.register(perplexity_meta, PerplexityTool())
     
@@ -198,6 +438,30 @@ def _initialize_default_tools(registry: ToolRegistry) -> None:
         allowed_roles=["researcher"],
         rate_limit=100,
         timeout_seconds=30,
+        input_schema=ToolSchema(
+            type="object",
+            properties={
+                "url": {
+                    "type": "string",
+                    "description": "URL to request",
+                },
+                "method": {
+                    "type": "string",
+                    "description": "HTTP method",
+                    "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+                    "default": "GET",
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "Request headers",
+                },
+                "body": {
+                    "type": "object",
+                    "description": "Request body (for POST/PUT/PATCH)",
+                },
+            },
+            required=["url"],
+        ),
     )
     registry.register(http_meta, HTTPTool())
     
@@ -210,8 +474,51 @@ def _initialize_default_tools(registry: ToolRegistry) -> None:
         allowed_roles=["researcher", "planner"],
         rate_limit=1000,
         timeout_seconds=5,
+        input_schema=ToolSchema(
+            type="object",
+            properties={
+                "query": {
+                    "type": "string",
+                    "description": "Search query",
+                },
+            },
+            required=["query"],
+        ),
     )
     registry.register(mock_meta, MockSearchTool())
+    
+    # Calculator (commonly needed)
+    calc_meta = ToolMetadata(
+        id="calculate",
+        name="Calculator",
+        description="Perform mathematical calculations",
+        tool_type=ToolType.MOCK,
+        allowed_roles=["researcher", "planner"],
+        rate_limit=1000,
+        timeout_seconds=5,
+        input_schema=ToolSchema(
+            type="object",
+            properties={
+                "expression": {
+                    "type": "string",
+                    "description": "Mathematical expression to evaluate",
+                },
+            },
+            required=["expression"],
+        ),
+    )
+    
+    # Simple calculator executor
+    def calculate_executor(expression: str) -> dict:
+        try:
+            # Safe eval for simple math
+            allowed_names = {"abs": abs, "round": round, "min": min, "max": max}
+            result = eval(expression, {"__builtins__": {}}, allowed_names)
+            return {"result": result, "expression": expression}
+        except Exception as e:
+            return {"error": str(e), "expression": expression}
+    
+    registry.register(calc_meta, calculate_executor)
     
     logger.info(f"Initialized {len(registry.list_all())} default tools")
 

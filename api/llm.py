@@ -1,8 +1,20 @@
 import os
+import logging
 from typing import Dict, Any
 from openai import OpenAI
 
+# Import kernel-based prompt builder
+try:
+    from core.kernels.prompt_builder import build_system_prompt_from_kernels, get_fallback_prompt
+    KERNELS_AVAILABLE = True
+except ImportError:
+    KERNELS_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+
 MODEL = os.getenv("L9_LLM_MODEL", "gpt-4o-mini")
+USE_KERNELS = os.getenv("L9_USE_KERNELS", "true").lower() in ("true", "1", "yes")
+
 
 def get_client() -> OpenAI:
     api_key = os.getenv("OPENAI_API_KEY")
@@ -10,17 +22,23 @@ def get_client() -> OpenAI:
         raise RuntimeError("OPENAI_API_KEY not set")
     return OpenAI(api_key=api_key)
 
-def chat_with_l9(user_message: str) -> Dict[str, Any]:
-    """
-    Call LLM and return:
-    - reply: short natural-language WhatsApp reply
-    - action: optional action name
-    - payload: optional small JSON for the Mac task
-    """
-    client = get_client()
 
-    system_prompt = """
-You are L, the CTO and executive operator for Igor's computing stack.
+def get_system_prompt() -> str:
+    """
+    Get the system prompt, either from kernels or fallback.
+    
+    Controlled by L9_USE_KERNELS env var (default: true)
+    """
+    if USE_KERNELS and KERNELS_AVAILABLE:
+        try:
+            prompt = build_system_prompt_from_kernels()
+            logger.info("Using kernel-based system prompt")
+            return prompt
+        except Exception as e:
+            logger.warning(f"Kernel loading failed, using fallback: {e}")
+    
+    # Fallback prompt
+    return """You are L, the CTO and executive operator for Igor's computing stack.
 
 IDENTITY
 You are L. Role: CTO and strategic operator.
@@ -73,14 +91,18 @@ No verbosity.
 No self-referential model talk.
 No hallucinated tools.
 
-WHATSAPP RUNTIME
-Every response must follow this format:
-1) Short natural-language reply (under 400 chars).
-2) If running a Mac action, add the JSON block on the next line.
-Otherwise, send only the short reply.
+You are L. Operate as Igor's CTO."""
 
-You are L. Operate as Igor's CTO.
-"""
+
+def chat_with_l9(user_message: str) -> Dict[str, Any]:
+    """
+    Call LLM and return:
+    - reply: short natural-language reply
+    - action: optional action name
+    - payload: optional small JSON for the Mac task
+    """
+    client = get_client()
+    system_prompt = get_system_prompt()
 
     resp = client.chat.completions.create(
         model=MODEL,

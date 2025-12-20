@@ -124,7 +124,7 @@ def agent_exec(task: CompositeTask, authorization: str = Header(...)):
 
 if __name__ == "__main__":
     uvicorn.run(
-        "agent:app",
+        "api.vps_executor:app",
         host="127.0.0.1",
         port=8100,
         reload=False,

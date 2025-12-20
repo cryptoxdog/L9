@@ -114,15 +114,111 @@ class SubstrateRepository:
                 packet_id
             )
             if row:
-                return PacketStoreRow(
-                    packet_id=row["packet_id"],
-                    packet_type=row["packet_type"],
-                    envelope=json.loads(row["envelope"]) if isinstance(row["envelope"], str) else row["envelope"],
-                    timestamp=row["timestamp"],
-                    routing=json.loads(row["routing"]) if row["routing"] and isinstance(row["routing"], str) else row["routing"],
-                    provenance=json.loads(row["provenance"]) if row["provenance"] and isinstance(row["provenance"], str) else row["provenance"],
-                )
+                return self._row_to_packet_store(row)
             return None
+    
+    async def search_packets_by_thread(
+        self,
+        thread_id: UUID,
+        packet_type: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[PacketStoreRow]:
+        """
+        Search for packets by thread ID.
+        
+        Args:
+            thread_id: Thread UUID to search for
+            packet_type: Optional filter by packet type
+            limit: Maximum packets to return
+            offset: Offset for pagination
+            
+        Returns:
+            List of PacketStoreRow sorted by timestamp ascending
+        """
+        async with self.acquire() as conn:
+            if packet_type:
+                rows = await conn.fetch(
+                    """
+                    SELECT * FROM packet_store 
+                    WHERE thread_id = $1 AND packet_type = $2
+                    ORDER BY timestamp ASC
+                    LIMIT $3 OFFSET $4
+                    """,
+                    thread_id, packet_type, limit, offset
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT * FROM packet_store 
+                    WHERE thread_id = $1
+                    ORDER BY timestamp ASC
+                    LIMIT $2 OFFSET $3
+                    """,
+                    thread_id, limit, offset
+                )
+            return [self._row_to_packet_store(r) for r in rows]
+    
+    async def search_packets_by_type(
+        self,
+        packet_type: str,
+        agent_id: Optional[str] = None,
+        limit: int = 100,
+        since: Optional[datetime] = None,
+    ) -> list[PacketStoreRow]:
+        """
+        Search for packets by type.
+        
+        Args:
+            packet_type: Packet type to search for
+            agent_id: Optional filter by agent
+            limit: Maximum packets to return
+            since: Optional filter by timestamp
+            
+        Returns:
+            List of PacketStoreRow sorted by timestamp descending
+        """
+        async with self.acquire() as conn:
+            conditions = ["packet_type = $1"]
+            params: list[Any] = [packet_type]
+            param_idx = 2
+            
+            if agent_id:
+                conditions.append(f"routing->>'agent' = ${param_idx}")
+                params.append(agent_id)
+                param_idx += 1
+            
+            if since:
+                conditions.append(f"timestamp > ${param_idx}")
+                params.append(since)
+                param_idx += 1
+            
+            params.append(limit)
+            
+            query = f"""
+                SELECT * FROM packet_store 
+                WHERE {' AND '.join(conditions)}
+                ORDER BY timestamp DESC
+                LIMIT ${param_idx}
+            """
+            
+            rows = await conn.fetch(query, *params)
+            return [self._row_to_packet_store(r) for r in rows]
+    
+    def _row_to_packet_store(self, row: Any) -> PacketStoreRow:
+        """Convert a database row to PacketStoreRow."""
+        return PacketStoreRow(
+            packet_id=row["packet_id"],
+            packet_type=row["packet_type"],
+            envelope=json.loads(row["envelope"]) if isinstance(row["envelope"], str) else row["envelope"],
+            timestamp=row["timestamp"],
+            routing=json.loads(row["routing"]) if row["routing"] and isinstance(row["routing"], str) else row["routing"],
+            provenance=json.loads(row["provenance"]) if row["provenance"] and isinstance(row["provenance"], str) else row["provenance"],
+            thread_id=row.get("thread_id"),
+            parent_ids=row.get("parent_ids") or [],
+            tags=row.get("tags") or [],
+            ttl=row.get("ttl"),
+        )
 
     # =========================================================================
     # Agent Memory Events Operations

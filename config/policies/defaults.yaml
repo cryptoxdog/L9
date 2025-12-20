@@ -1,0 +1,29 @@
+# L9 Governance - Default Policies
+# =================================
+# These policies define the baseline security posture.
+# IMPORTANT: Deny-by-default is enforced even without explicit deny policies.
+#
+# Policy evaluation is first-match-wins, sorted by priority (highest first).
+
+policies:
+  # Default deny-all policy (lowest priority, matches everything)
+  - id: "default-deny-all"
+    name: "Default Deny All"
+    description: "Fallback policy that denies any action not explicitly allowed. This ensures deny-by-default."
+    effect: "deny"
+    priority: 0
+    subjects: ["*"]
+    actions: []  # Empty = matches all
+    resources: ["*"]
+    enabled: true
+
+  # Allow system internals (high priority)
+  - id: "allow-system-internal"
+    name: "Allow System Internal Actions"
+    description: "Allows internal system operations needed for basic functionality."
+    effect: "allow"
+    priority: 1000
+    subjects: ["system", "system:*"]
+    actions: ["system.*", "internal.*"]
+    resources: ["*"]
+    enabled: true

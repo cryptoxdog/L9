@@ -1,0 +1,24 @@
+# L9 Module List for Batch Spec Generation
+# Format: module_name | description
+# Lines starting with # are comments
+
+# === Core Services ===
+memory_substrate | PostgreSQL-backed memory storage with vector search and fact persistence
+world_model_service | Entity relationship tracking and state management for L9 context
+
+# === API Layer ===
+slack_webhook_adapter | Inbound Slack webhook handler for message routing and event processing
+email_triage_service | Gmail integration for email classification and automated responses
+agent_routes | REST API endpoints for agent orchestration and task management
+
+# === Agents ===
+planner_agent | Research query decomposition and step planning using LLM
+researcher_agent | Evidence gathering with Perplexity tool integration
+critic_agent | Quality evaluation and approval gating for research outputs
+
+# === Infrastructure ===
+health_check_service | Unified health monitoring across all L9 services
+config_loader | Environment and YAML configuration management with validation
+
+# Add your 35 modules here...
+

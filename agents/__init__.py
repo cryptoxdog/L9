@@ -32,6 +32,7 @@ from agents.coder_agent_a import CoderAgentA
 from agents.coder_agent_b import CoderAgentB
 from agents.qa_agent import QAAgent
 from agents.reflection_agent import ReflectionAgent
+from agents.l_cto import LCTOAgent, create_l_cto_agent
 
 __all__ = [
     # Base
@@ -40,6 +41,9 @@ __all__ = [
     "AgentMessage",
     "AgentResponse",
     "AgentRole",
+    # L-CTO (Primary)
+    "LCTOAgent",
+    "create_l_cto_agent",
     # Architects
     "ArchitectAgentA",
     "ArchitectAgentB",

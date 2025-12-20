@@ -1,14 +1,54 @@
 """
 L9 Agent Routes
 Background agent tasking and management endpoints.
+
+Includes:
+- /health - Agent system health check
+- /status - Agent system status
+- /task - Submit task to memory queue
+- /execute - Execute task via AgentExecutorService (v2.2+)
+
+Version: 1.1.0
 """
 
 import logging
-from fastapi import APIRouter
+from typing import Any, Optional
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["agent"])
+
+
+# =============================================================================
+# Request/Response Models
+# =============================================================================
+
+class ExecuteTaskRequest(BaseModel):
+    """Request model for /execute endpoint."""
+    agent_id: Optional[str] = Field(None, description="Target agent ID (uses default if not specified)")
+    kind: str = Field(default="query", description="Task kind: query, command, research, execution")
+    message: str = Field(..., description="User message or query")
+    source_id: str = Field(default="api", description="Source identifier")
+    thread_id: Optional[str] = Field(None, description="Thread identifier for conversation continuity")
+    context: dict[str, Any] = Field(default_factory=dict, description="Additional context")
+    max_iterations: int = Field(default=10, ge=1, le=50, description="Max reasoning iterations")
+    
+    model_config = {"extra": "forbid"}
+
+
+class ExecuteTaskResponse(BaseModel):
+    """Response model for /execute endpoint."""
+    ok: bool = Field(..., description="Whether execution succeeded")
+    task_id: str = Field(..., description="Task identifier")
+    status: str = Field(..., description="Execution status: completed, failed, terminated, duplicate")
+    result: Optional[str] = Field(None, description="Agent response if completed")
+    iterations: int = Field(default=0, description="Number of reasoning iterations")
+    duration_ms: int = Field(default=0, description="Execution duration in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    
+    model_config = {"extra": "forbid"}
 
 
 @router.get("/health")
@@ -62,6 +102,107 @@ async def submit_task(payload: dict):
         "task_id": task_id,
         "message": "Task queued for processing and ingested to memory",
     }
+
+
+@router.post("/execute", response_model=ExecuteTaskResponse)
+async def execute_task(request: Request, body: ExecuteTaskRequest) -> ExecuteTaskResponse:
+    """
+    Execute a task via the AgentExecutorService.
+    
+    This endpoint provides synchronous agent execution:
+    1. Creates an AgentTask from the request
+    2. Submits to AgentExecutorService
+    3. Waits for completion
+    4. Returns the result
+    
+    For long-running tasks, consider using /task for async submission.
+    
+    Example:
+        POST /agent/execute
+        {
+            "message": "What is the capital of France?",
+            "agent_id": "l9-standard-v1",
+            "max_iterations": 5
+        }
+    
+    Returns:
+        ExecuteTaskResponse with result or error
+    """
+    # Check if executor is available
+    executor = getattr(request.app.state, "agent_executor", None)
+    if executor is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent executor not initialized. Check server startup logs.",
+        )
+    
+    try:
+        # Import here to avoid circular imports
+        from core.agents.schemas import AgentTask, TaskKind
+        
+        # Map string kind to enum
+        kind_map = {
+            "query": TaskKind.QUERY,
+            "command": TaskKind.COMMAND,
+            "research": TaskKind.RESEARCH,
+            "execution": TaskKind.EXECUTION,
+            "conversation": TaskKind.CONVERSATION,
+        }
+        task_kind = kind_map.get(body.kind.lower(), TaskKind.QUERY)
+        
+        # Create AgentTask
+        task = AgentTask(
+            kind=task_kind,
+            agent_id=body.agent_id or "l9-standard-v1",
+            source_id=body.source_id,
+            thread_identifier=body.thread_id,
+            payload={
+                "message": body.message,
+                **body.context,
+            },
+            max_iterations=body.max_iterations,
+        )
+        
+        logger.info(
+            "Executing task via executor: task_id=%s, agent_id=%s",
+            str(task.id),
+            task.agent_id,
+        )
+        
+        # Execute task
+        result = await executor.start_agent_task(task)
+        
+        # Check if duplicate response
+        if hasattr(result, "ok") and result.status == "duplicate":
+            return ExecuteTaskResponse(
+                ok=True,
+                task_id=str(result.task_id),
+                status="duplicate",
+                result=None,
+                iterations=0,
+                duration_ms=0,
+                error=None,
+            )
+        
+        # Normal execution result
+        return ExecuteTaskResponse(
+            ok=result.status == "completed",
+            task_id=str(result.task_id),
+            status=result.status,
+            result=result.result,
+            iterations=result.iterations,
+            duration_ms=result.duration_ms,
+            error=result.error,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error executing task: %s", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Task execution failed: {str(e)}",
+        )
 
 
 async def startup():
