@@ -26,7 +26,6 @@ __pycache__/
 # Runtime data (never in repo)
 logs/
 data/
-runtime/
 staging/
 production/
 qdrant/collections/

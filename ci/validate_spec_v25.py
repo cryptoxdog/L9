@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-L9 Module Spec v2.5 Validator
-=============================
-Strict schema + checklist validation for Module-Spec v2.5.
+L9 Module Spec v2.5/v2.6 Validator
+===================================
+Strict schema + checklist validation for Module-Spec v2.5 and v2.6.
 
 BEHAVIOR:
 - Fail loudly on ANY missing or invalid field
@@ -160,6 +160,15 @@ class ValidationResult:
     def is_valid(self) -> bool:
         return len(self.errors) == 0
     
+    def _get_schema_version(self) -> str:
+        """Get schema version from spec file."""
+        try:
+            with open(self.spec_path, 'r') as f:
+                spec = yaml.safe_load(f)
+                return str(spec.get("schema_version", "unknown"))
+        except:
+            return "unknown"
+    
     def print_report(self) -> None:
         """Print validation report."""
         print(f"\n{'='*70}")
@@ -167,7 +176,8 @@ class ValidationResult:
         print(f"{'='*70}")
         
         if self.is_valid:
-            print("✅ PASSED - All v2.5 requirements satisfied")
+            version = self._get_schema_version()
+            print(f"✅ PASSED - All v{version} requirements satisfied")
         else:
             print(f"❌ FAILED - {len(self.errors)} error(s) found\n")
             for i, error in enumerate(self.errors, 1):
@@ -186,14 +196,17 @@ class ValidationResult:
 # =============================================================================
 
 def validate_schema_version(spec: dict, result: ValidationResult) -> None:
-    """Validate schema_version is exactly 2.5."""
+    """Validate schema_version is 2.5 or 2.6."""
     version = spec.get("schema_version")
     if version is None:
         result.add_error("MISSING: schema_version (REQUIRED)")
         return
     
-    if str(version) != "2.5":
-        result.add_error(f"INVALID: schema_version must be '2.5', got '{version}'")
+    version_str = str(version)
+    # Accept 2.5, 2.6, 2.6.0
+    valid_versions = ["2.5", "2.6", "2.6.0"]
+    if version_str not in valid_versions:
+        result.add_error(f"INVALID: schema_version must be one of {valid_versions}, got '{version}'")
 
 
 def validate_required_sections(spec: dict, result: ValidationResult) -> None:
@@ -435,7 +448,7 @@ def _is_placeholder(value: Any) -> bool:
 
 def validate_spec(spec_path: str) -> ValidationResult:
     """
-    Validate a Module-Spec v2.5 file.
+    Validate a Module-Spec v2.5 or v2.6 file.
     
     Args:
         spec_path: Path to the spec YAML file
