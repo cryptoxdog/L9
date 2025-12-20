@@ -14,8 +14,12 @@ import pytest
 # Add project root and tests directory to path
 PROJECT_ROOT = Path(__file__).parent.parent
 TESTS_ROOT = Path(__file__).parent
-sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(TESTS_ROOT))
+
+# CRITICAL: Insert project root FIRST for real imports to work
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+if str(TESTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TESTS_ROOT))
 
 # Import mocks
 from mocks.kernel_mocks import (

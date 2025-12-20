@@ -1,0 +1,265 @@
+"""
+L9 Kernel Prompt Builder
+========================
+
+Builds system prompts from loaded kernels.
+Wires the kernel YAML into an LLM-ready system prompt.
+
+Version: 1.0.0
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
+
+from runtime.kernel_loader import load_kernel_stack, KernelStack
+
+logger = logging.getLogger(__name__)
+
+# Cache the kernel stack (load once)
+_kernel_stack: Optional[KernelStack] = None
+
+
+def get_kernel_stack() -> KernelStack:
+    """Get or load the kernel stack (singleton)."""
+    global _kernel_stack
+    if _kernel_stack is None:
+        _kernel_stack = load_kernel_stack()
+        logger.info(f"Loaded kernel stack: {list(_kernel_stack.kernels_by_id.keys())}")
+    return _kernel_stack
+
+
+def build_identity_section(identity_kernel: Dict[str, Any]) -> str:
+    """Build identity section from identity kernel."""
+    identity = identity_kernel.get("identity", {})
+    personality = identity_kernel.get("personality", {})
+    style = identity_kernel.get("style", {})
+    
+    lines = [
+        "# IDENTITY",
+        f"You are {identity.get('designation', 'L')}.",
+        f"Role: {identity.get('primary_role', 'CTO / Systems Architect for Igor')}",
+        f"Allegiance: {identity.get('allegiance', 'Igor-only')}",
+        "",
+        f"Mission: {identity.get('mission', '').strip()}",
+        "",
+    ]
+    
+    # Personality traits
+    traits = personality.get("traits", [])
+    anti_traits = personality.get("anti_traits", [])
+    if traits:
+        lines.append(f"Traits: {', '.join(traits)}")
+    if anti_traits:
+        lines.append(f"Anti-traits (NEVER exhibit): {', '.join(anti_traits)}")
+    
+    # Style
+    tone = style.get("tone", [])
+    avoid = style.get("avoid", [])
+    if tone:
+        lines.append(f"Tone: {', '.join(tone)}")
+    if avoid:
+        lines.append(f"Avoid: {', '.join(avoid)}")
+    
+    return "\n".join(lines)
+
+
+def build_behavioral_section(behavioral_kernel: Dict[str, Any]) -> str:
+    """Build behavioral rules from behavioral kernel."""
+    thresholds = behavioral_kernel.get("thresholds", {})
+    defaults = behavioral_kernel.get("defaults", {})
+    prohibitions = behavioral_kernel.get("prohibitions", [])
+    
+    lines = [
+        "",
+        "# BEHAVIORAL RULES",
+        "",
+    ]
+    
+    # Thresholds
+    if thresholds:
+        lines.append(f"Execute threshold: {thresholds.get('execute', 0.8)}")
+        lines.append(f"Max questions before acting: {thresholds.get('questions_max', 1)}")
+        lines.append(f"Max hedges allowed: {thresholds.get('hedges_max', 0)}")
+    
+    # Output defaults
+    output_defaults = defaults.get("output", {})
+    if output_defaults:
+        lines.append("")
+        lines.append("Output format:")
+        lines.append(f"- Format: {output_defaults.get('format', 'direct')}")
+        lines.append(f"- Structure: {output_defaults.get('structure', 'result_first')}")
+        lines.append(f"- Code: {output_defaults.get('code', 'runnable')}")
+    
+    # Communication defaults
+    comm_defaults = defaults.get("communication", {})
+    if comm_defaults:
+        lines.append("")
+        lines.append("Communication:")
+        lines.append(f"- Tone: {comm_defaults.get('tone', 'peer_expert')}")
+        lines.append(f"- Hedges: {comm_defaults.get('hedges', 0)}")
+        lines.append(f"- Filler: {comm_defaults.get('filler', 'none')}")
+    
+    # Prohibitions
+    if prohibitions:
+        lines.append("")
+        lines.append("# PROHIBITIONS (NEVER USE THESE)")
+        for p in prohibitions:
+            name = p.get("name", "")
+            detect = p.get("detect", [])
+            action = p.get("action", "")
+            if detect:
+                lines.append(f"- {name}: {detect[:3]}... → {action}")
+    
+    return "\n".join(lines)
+
+
+def build_cognitive_section(cognitive_kernel: Dict[str, Any]) -> str:
+    """Build cognitive patterns from cognitive kernel."""
+    engines = cognitive_kernel.get("engines", {})
+    reasoning = cognitive_kernel.get("reasoning_styles", {})
+    
+    lines = [
+        "",
+        "# COGNITION",
+        "",
+    ]
+    
+    # Main reasoning loop
+    if engines:
+        lines.append("Reasoning loop:")
+        lines.append("1) THINK: parse request, choose concrete next step")
+        lines.append("2) ACT: execute or generate action")
+        lines.append("3) REFLECT: log internally, do not output long reasoning")
+    
+    return "\n".join(lines)
+
+
+def build_execution_section(execution_kernel: Dict[str, Any]) -> str:
+    """Build execution rules from execution kernel."""
+    state_machine = execution_kernel.get("state_machine", {})
+    
+    lines = [
+        "",
+        "# EXECUTION",
+        "",
+        "Task sizing:",
+        "- Small tasks: execute immediately",
+        "- Medium tasks: one-line plan, then execute",
+        "- Large tasks: outline 2-4 steps max, then execute next step",
+        "",
+        "Execution rules:",
+        "- Parallel: maximize when possible",
+        "- Confirm: destructive actions only",
+        "- Tools: prefer specialized over terminal",
+    ]
+    
+    return "\n".join(lines)
+
+
+def build_safety_section(safety_kernel: Dict[str, Any]) -> str:
+    """Build safety guardrails from safety kernel."""
+    guardrails = safety_kernel.get("guardrails", {})
+    
+    lines = [
+        "",
+        "# SAFETY",
+        "",
+        "- Never change files unless project_id and file_path are unambiguous",
+        "- Never change system configs or delete data without confirmation",
+        "- Destructive actions require explicit confirmation",
+    ]
+    
+    return "\n".join(lines)
+
+
+def build_system_prompt_from_kernels() -> str:
+    """
+    Build a complete system prompt from the loaded kernels.
+    
+    Returns:
+        Complete system prompt string
+    """
+    try:
+        stack = get_kernel_stack()
+        
+        sections = []
+        
+        # Identity (kernel 02)
+        identity = stack.kernels_by_id.get("identity", {})
+        if identity:
+            sections.append(build_identity_section(identity))
+        
+        # Behavioral (kernel 04)
+        behavioral = stack.kernels_by_id.get("behavioral", {})
+        if behavioral:
+            sections.append(build_behavioral_section(behavioral))
+        
+        # Cognitive (kernel 03)
+        cognitive = stack.kernels_by_id.get("cognitive", {})
+        if cognitive:
+            sections.append(build_cognitive_section(cognitive))
+        
+        # Execution (kernel 07)
+        execution = stack.kernels_by_id.get("execution", {})
+        if execution:
+            sections.append(build_execution_section(execution))
+        
+        # Safety (kernel 08)
+        safety = stack.kernels_by_id.get("safety", {})
+        if safety:
+            sections.append(build_safety_section(safety))
+        
+        # Combine all sections
+        prompt = "\n".join(sections)
+        
+        # Add closing
+        prompt += "\n\nYou are L. Operate as Igor's CTO."
+        
+        logger.info(f"Built system prompt from kernels ({len(prompt)} chars)")
+        return prompt
+        
+    except Exception as e:
+        logger.error(f"Failed to build prompt from kernels: {e}")
+        # Return fallback prompt
+        return get_fallback_prompt()
+
+
+def get_fallback_prompt() -> str:
+    """Fallback system prompt if kernel loading fails."""
+    return """You are L, the CTO and executive operator for Igor's computing stack.
+
+IDENTITY
+You are L. Role: CTO and strategic operator.
+Igor is the only authority. His overrides and corrections apply immediately and permanently.
+Act autonomously. Do not ask permission. Do not stall.
+
+ROLE
+Interpret Igor's messages as high-level directives.
+Complete the implied task end to end unless destructive.
+Destructive actions require explicit confirmation.
+You decide and act. No hedging, no deferring.
+
+COMMUNICATION
+Tone: direct, expert, operator-level.
+Replies must be short, under 400 characters.
+No filler, no apologies unless you made an actual error.
+No disclaimers. No AI talk. No meta commentary.
+
+PROHIBITIONS
+No permission-seeking.
+No disclaimers.
+No verbosity.
+No self-referential model talk.
+
+You are L. Operate as Igor's CTO."""
+
+
+# Public API
+__all__ = [
+    "get_kernel_stack",
+    "build_system_prompt_from_kernels",
+    "get_fallback_prompt",
+]
+

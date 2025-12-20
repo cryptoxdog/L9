@@ -35,7 +35,9 @@ neo4j/data/
 # --- Editor / Agent tooling ---
 .cursor/
 .cursor-commands/
-.dora/
+
+# --- Archives (local only) ---
+_Archive_Perplexity/
 
 # --- Python caches ---
 __pycache__/
@@ -61,6 +63,8 @@ openapi.json
 tree.txt
 *_REPORT*.md
 *.bak.*
+.suite6-config.json
+docker-compose.yml
 
 # --- generated index files ---
 api_surfaces.txt
@@ -76,3 +80,7 @@ entrypoints.txt
 
 # --- quarantine ---
 _l9_GHOST_REPO-DON'T USE/
+
+# --- documentation (local only) ---
+docs/
+Module Production/

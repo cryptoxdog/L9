@@ -1,0 +1,18 @@
+kernel_manifest:
+  version: "1.0.0"
+  description: "Canonical kernel load order for L9"
+  includes:
+    - 01_master_kernel.yaml
+    - 02_identity_kernel.yaml
+    - 03_cognitive_kernel.yaml
+    - 04_behavioral_kernel.yaml
+    - 05_memory_kernel.yaml
+    - 06_worldmodel_kernel.yaml
+    - 07_execution_kernel.yaml
+    - 08_safety_kernel.yaml
+    - 09_developer_kernel.yaml
+    - 10_packet_protocol_kernel.yaml
+  
+  load_order_source: "runtime/kernel_loader.py::KERNEL_ORDER"
+  enforcement: "strict"
+

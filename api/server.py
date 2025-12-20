@@ -9,7 +9,7 @@ Provides:
 - WebSocket endpoint for real-time agent communication
 - World model API (optional, v1.1.0+)
 
-Version: 0.3.1
+Version: 0.5.0 (Research Factory Integration)
 """
 
 import os
@@ -28,9 +28,110 @@ try:
 except ImportError:
     _has_world_model = False
 
+# Optional: Slack Adapter (v2.0+)
+try:
+    from api.routes.slack import router as slack_router
+    from api.slack_adapter import SlackRequestValidator
+    from api.slack_client import SlackAPIClient
+    import httpx
+    _has_slack = True
+except ImportError:
+    _has_slack = False
+
+# Optional: Quantum Research Factory (v2.1+)
+try:
+    from services.research.research_api import router as research_router
+    from services.research.graph_runtime import init_runtime, shutdown_runtime
+    _has_research = True
+except ImportError:
+    _has_research = False
+
+# Optional: Agent Executor (v2.2+)
+try:
+    from core.agents.executor import AgentExecutorService
+    from core.agents.schemas import AgentConfig, ToolBinding
+    _has_agent_executor = True
+except ImportError:
+    _has_agent_executor = False
+
+# Optional: AIOS Runtime (v2.2+)
+try:
+    from core.aios.runtime import AIOSRuntime, create_aios_runtime
+    _has_aios_runtime = True
+except ImportError:
+    _has_aios_runtime = False
+
+# Optional: Tool Registry Adapter (v2.2+)
+try:
+    from core.tools.registry_adapter import ExecutorToolRegistry, create_executor_tool_registry
+    _has_tool_registry = True
+except ImportError:
+    _has_tool_registry = False
+
+# Optional: Research Factory (v2.3+)
+try:
+    from api.routes.factory import router as factory_router
+    _has_factory = True
+except ImportError:
+    _has_factory = False
+
+# Optional: Governance Engine (v2.4+)
+try:
+    from core.governance.engine import GovernanceEngineService, create_governance_engine
+    from core.governance.loader import PolicyLoadError, InvalidPolicyError
+    _has_governance = True
+except ImportError:
+    _has_governance = False
+
+# Optional: Kernel-Aware Agent Registry (v2.5+)
+try:
+    from core.agents.kernel_registry import create_kernel_aware_registry, KernelAwareAgentRegistry
+    _has_kernel_registry = True
+except ImportError:
+    _has_kernel_registry = False
+
+# Optional: Calendar Adapter (v2.6+)
+try:
+    from api.adapters.calendar_adapter.routes.calendar_adapter import router as calendar_adapter_router
+    from api.adapters.calendar_adapter.config import get_config as get_calendar_config
+    _has_calendar_adapter = True
+except ImportError:
+    _has_calendar_adapter = False
+
+# Optional: Email Adapter (v2.6+)
+try:
+    from api.adapters.email_adapter.routes.email_adapter import router as email_adapter_router
+    from api.adapters.email_adapter.config import get_config as get_email_config
+    _has_email_adapter = True
+except ImportError:
+    _has_email_adapter = False
+
+# Optional: Twilio Adapter (v2.6+)
+try:
+    from api.adapters.twilio_adapter.routes.twilio_adapter import router as twilio_adapter_router
+    from api.adapters.twilio_adapter.config import get_config as get_twilio_config
+    _has_twilio_adapter = True
+except ImportError:
+    _has_twilio_adapter = False
+
+# Optional: Slack Webhook Adapter (v2.6+)
+try:
+    from api.adapters.slack_adapter.routes.slack_webhook import router as slack_webhook_adapter_router
+    from api.adapters.slack_adapter.config import get_config as get_slack_webhook_config
+    _has_slack_webhook_adapter = True
+except ImportError:
+    _has_slack_webhook_adapter = False
+
+# Optional: Housekeeping Engine (v2.4+)
+try:
+    from memory.housekeeping import HousekeepingEngine, init_housekeeping_engine
+    _has_housekeeping = True
+except ImportError:
+    _has_housekeeping = False
+
 # Memory system imports
 from memory.migration_runner import run_migrations
-from memory.substrate_service import init_service, close_service
+from memory.substrate_service import init_service, close_service, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -70,23 +171,240 @@ async def lifespan(app: FastAPI):
             
             # Initialize memory service
             logger.info("Initializing memory service...")
-            await init_service(
+            substrate_service = await init_service(
                 database_url=database_url,
                 embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "stub"),
                 embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-large"),
                 openai_api_key=os.getenv("OPENAI_API_KEY"),
             )
             logger.info("Memory service initialized")
+            
+            # Store in app state for route dependencies
+            app.state.substrate_service = substrate_service
         except Exception as e:
             logger.error(f"Failed to initialize memory system: {e}", exc_info=True)
             # Don't fail startup, but log error
+            app.state.substrate_service = None
+    
+    # Initialize Quantum Research Factory (if enabled)
+    if _has_research and database_url:
+        try:
+            logger.info("Initializing Quantum Research Factory...")
+            await init_runtime(database_url)
+            app.state.research_enabled = True
+            logger.info("Quantum Research Factory initialized at /research")
+        except Exception as e:
+            logger.error(f"Failed to initialize Research Factory: {e}", exc_info=True)
+            app.state.research_enabled = False
+    elif _has_research:
+        logger.warning("Research Factory not initialized: database_url required")
+        app.state.research_enabled = False
+    
+    # Initialize Governance Engine (if enabled)
+    if _has_governance:
+        try:
+            policy_dir = os.getenv("POLICY_MANIFEST_DIR", "config/policies")
+            logger.info("Initializing Governance Engine from %s...", policy_dir)
+            
+            substrate = getattr(app.state, "substrate_service", None)
+            governance_engine = create_governance_engine(
+                policy_dir=policy_dir,
+                substrate_service=substrate,
+            )
+            
+            app.state.governance_engine = governance_engine
+            logger.info(
+                "Governance Engine initialized: %d policies loaded",
+                governance_engine.policy_count,
+            )
+        except (PolicyLoadError, InvalidPolicyError) as e:
+            # Governance failure is critical - log but allow startup for dev
+            logger.critical("Governance Engine failed to initialize: %s", str(e))
+            app.state.governance_engine = None
+        except Exception as e:
+            logger.error("Failed to initialize Governance Engine: %s", str(e), exc_info=True)
+            app.state.governance_engine = None
+    else:
+        app.state.governance_engine = None
+    
+    # Initialize Housekeeping Engine (if enabled and substrate available)
+    if _has_housekeeping and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+        try:
+            logger.info("Initializing Housekeeping Engine...")
+            housekeeping = init_housekeeping_engine(app.state.substrate_service._repository)
+            app.state.housekeeping_engine = housekeeping
+            logger.info("Housekeeping Engine initialized")
+        except Exception as e:
+            logger.error("Failed to initialize Housekeeping Engine: %s", str(e))
+            app.state.housekeeping_engine = None
+    else:
+        app.state.housekeeping_engine = None
+    
+    # Initialize Agent Executor (if enabled and substrate available)
+    if _has_agent_executor and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+        try:
+            logger.info("Initializing Agent Executor...")
+            
+            # Use real AIOS runtime if available, otherwise stub
+            if _has_aios_runtime:
+                aios_runtime = create_aios_runtime()
+                logger.info("Using real AIOSRuntime")
+            else:
+                class StubAIOSRuntime:
+                    """Stub AIOS runtime - returns direct responses."""
+                    async def execute_reasoning(self, context):
+                        from core.agents.schemas import AIOSResult
+                        return AIOSResult.response(
+                            "AIOS runtime not yet implemented. Context received.",
+                            tokens_used=0
+                        )
+                aios_runtime = StubAIOSRuntime()
+                logger.info("Using stub AIOSRuntime")
+            
+            # Use real tool registry if available, otherwise stub
+            if _has_tool_registry:
+                # Connect governance engine if available
+                gov_engine = getattr(app.state, "governance_engine", None)
+                tool_registry = create_executor_tool_registry(
+                    governance_enabled=True,
+                    governance_engine=gov_engine,
+                )
+                logger.info(
+                    "Using real ExecutorToolRegistry (governance=%s)",
+                    "attached" if gov_engine else "legacy",
+                )
+            else:
+                class StubToolRegistry:
+                    """Stub tool registry - no tools available."""
+                    async def dispatch_tool_call(self, tool_id, arguments, context):
+                        from core.agents.schemas import ToolCallResult
+                        from uuid import uuid4
+                        return ToolCallResult(
+                            call_id=uuid4(),
+                            tool_id=tool_id,
+                            success=False,
+                            error="Tool registry not yet implemented"
+                        )
+                    
+                    def get_approved_tools(self, agent_id, principal_id):
+                        return []
+                tool_registry = StubToolRegistry()
+                logger.info("Using stub ToolRegistry")
+            
+            # Initialize agent registry with kernel loading
+            if _has_kernel_registry:
+                try:
+                    logger.info("Initializing Kernel-Aware Agent Registry...")
+                    agent_registry = create_kernel_aware_registry()
+                    app.state.agent_registry = agent_registry
+                    logger.info(
+                        "Kernel-Aware Agent Registry initialized: kernel_state=%s",
+                        agent_registry.get_kernel_state(),
+                    )
+                except RuntimeError as e:
+                    # Kernel loading failed - this is critical
+                    logger.critical("FATAL: %s", str(e))
+                    # In production, you might want to crash here
+                    # For dev, fall back to stub
+                    logger.warning("Falling back to stub agent registry")
+                    agent_registry = None
+            else:
+                agent_registry = None
+            
+            # Fallback stub registry if kernel registry unavailable
+            if agent_registry is None:
+                class StubAgentRegistry:
+                    """Stub agent registry with default agent."""
+                    def get_agent_config(self, agent_id):
+                        return AgentConfig(
+                            agent_id=agent_id,
+                            personality_id=agent_id,
+                            system_prompt="You are a helpful L9 AI assistant.",
+                        )
+                    
+                    def agent_exists(self, agent_id):
+                        return True
+                agent_registry = StubAgentRegistry()
+                logger.warning("Using stub agent registry (kernels not loaded)")
+            
+            # Create executor
+            executor = AgentExecutorService(
+                aios_runtime=aios_runtime,
+                tool_registry=tool_registry,
+                substrate_service=app.state.substrate_service,
+                agent_registry=agent_registry,
+            )
+            
+            app.state.agent_executor = executor
+            app.state.aios_runtime = aios_runtime
+            app.state.tool_registry = tool_registry
+            logger.info("Agent Executor initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Agent Executor: {e}", exc_info=True)
+            app.state.agent_executor = None
+    elif _has_agent_executor:
+        logger.warning("Agent Executor not initialized: substrate_service required")
+        app.state.agent_executor = None
+    
+    # Initialize Slack adapter (if enabled)
+    if _has_slack:
+        try:
+            slack_signing_secret = os.getenv("SLACK_SIGNING_SECRET")
+            slack_bot_token = os.getenv("SLACK_BOT_TOKEN")
+            
+            if slack_signing_secret and slack_bot_token:
+                logger.info("Initializing Slack adapter...")
+                
+                # Initialize Slack components
+                validator = SlackRequestValidator(slack_signing_secret)
+                http_client = httpx.AsyncClient()
+                slack_client = SlackAPIClient(
+                    bot_token=slack_bot_token,
+                    http_client=http_client,
+                )
+                
+                # Store in app state for route dependencies
+                app.state.slack_validator = validator
+                app.state.slack_client = slack_client
+                app.state.aios_base_url = os.getenv("AIOS_BASE_URL", "http://localhost:8000")
+                app.state.http_client = http_client
+                
+                logger.info("Slack adapter initialized")
+            else:
+                logger.warning(
+                    "Slack adapter not initialized: SLACK_SIGNING_SECRET or SLACK_BOT_TOKEN not set"
+                )
+                app.state.slack_validator = None
+                app.state.slack_client = None
+        except Exception as e:
+            logger.error(f"Failed to initialize Slack adapter: {e}", exc_info=True)
+            app.state.slack_validator = None
+            app.state.slack_client = None
     
     yield
     
     # ========================================================================
-    # SHUTDOWN: Clean up memory service
+    # SHUTDOWN: Clean up memory service and Slack adapter
     # ========================================================================
     logger.info("Shutting down L9 API server...")
+    
+    # Cleanup Research Factory
+    if _has_research and getattr(app.state, "research_enabled", False):
+        try:
+            await shutdown_runtime()
+            logger.info("Research Factory shutdown")
+        except Exception as e:
+            logger.error(f"Error shutting down Research Factory: {e}")
+    
+    # Cleanup Slack HTTP client
+    if _has_slack and hasattr(app.state, "http_client") and app.state.http_client:
+        try:
+            await app.state.http_client.aclose()
+            logger.info("Slack HTTP client closed")
+        except Exception as e:
+            logger.error(f"Error closing Slack HTTP client: {e}")
+    
+    # Cleanup memory service
     try:
         await close_service()
         logger.info("Memory service closed")
@@ -103,7 +421,34 @@ app = FastAPI(
 # Basic Root
 @app.get("/")
 def root():
-    return {"status": "L9 Phase 2 AI OS", "version": "0.3.1"}
+    return {
+        "status": "L9 Phase 2 AI OS", 
+        "version": "0.5.0",
+        "features": {
+            "memory_substrate": True,
+            "quantum_research": _has_research,
+            "slack_adapter": _has_slack,
+            "world_model": _has_world_model,
+            "agent_executor": _has_agent_executor,
+            "aios_runtime": _has_aios_runtime,
+            "tool_registry": _has_tool_registry,
+            "research_factory": _has_factory,
+            "calendar_adapter": _has_calendar_adapter,
+            "email_adapter": _has_email_adapter,
+            "twilio_adapter": _has_twilio_adapter,
+            "slack_webhook_adapter": _has_slack_webhook_adapter,
+        }
+    }
+
+
+# Health Check (Docker healthcheck endpoint)
+@app.get("/health")
+async def health():
+    """
+    Root health check endpoint for Docker healthchecks and load balancers.
+    Returns basic status without requiring authentication.
+    """
+    return {"status": "ok", "service": "l9-api"}
 
 # --- Routers ---
 # OS health + metrics + routing
@@ -118,6 +463,34 @@ app.include_router(memory_router, prefix="/memory")
 # World Model router (v1.1.0+)
 if _has_world_model:
     app.include_router(world_model_router)
+
+# Slack adapter router (v2.0+)
+if _has_slack:
+    app.include_router(slack_router)
+
+# Quantum Research Factory router (v2.1+)
+if _has_research:
+    app.include_router(research_router)
+
+# Research Factory router (v2.3+)
+if _has_factory:
+    app.include_router(factory_router)
+
+# Calendar Adapter router (v2.6+)
+if _has_calendar_adapter:
+    app.include_router(calendar_adapter_router)
+
+# Email Adapter router (v2.6+)
+if _has_email_adapter:
+    app.include_router(email_adapter_router)
+
+# Twilio Adapter router (v2.6+)
+if _has_twilio_adapter:
+    app.include_router(twilio_adapter_router)
+
+# Slack Webhook Adapter router (v2.6+)
+if _has_slack_webhook_adapter:
+    app.include_router(slack_webhook_adapter_router)
 
 
 # Startup + Shutdown events (if the modules expose them)

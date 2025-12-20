@@ -19,7 +19,7 @@ class ToolSafetyLevel(str, Enum):
 
 class ActionToolRequest(BaseModel):
     """Request to action_tool orchestrator."""
-    tool_name: str = Field(default="", description="Tool to execute")
+    tool_id: str = Field(default="", description="Canonical tool identity")
     arguments: Dict[str, Any] = Field(default_factory=dict, description="Tool arguments")
     max_retries: int = Field(default=3, description="Max retry attempts")
     require_approval: bool = Field(default=False, description="Require human approval")

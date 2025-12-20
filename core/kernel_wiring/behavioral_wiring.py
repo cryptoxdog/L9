@@ -11,7 +11,7 @@ def _get_kernels():
     """Lazy load kernel stack."""
     global _KERNELS
     if _KERNELS is None:
-        from core.kernels.kernel_loader_v3 import load_kernel_stack
+        from runtime.kernel_loader import load_kernel_stack
         _KERNELS = load_kernel_stack()
     return _KERNELS
 

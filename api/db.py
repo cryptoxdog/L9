@@ -1,7 +1,17 @@
+import os
 import psycopg
 from psycopg.rows import dict_row
 
-MEMORY_DSN = "postgresql://postgres:8e4fXWM6Q3M87*b3@127.0.0.1:5432/l9_memory"
+# Get DSN from environment - NEVER hardcode localhost in Docker!
+# Inside containers, use service DNS (e.g., postgres:5432)
+# Outside containers, use host networking or published ports
+MEMORY_DSN = os.getenv(
+    "MEMORY_DSN",
+    os.getenv(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@postgres:5432/l9_memory"
+    )
+)
 
 def init_db():
     with psycopg.connect(MEMORY_DSN, autocommit=True) as conn:

@@ -1,6 +1,6 @@
 """L9 Mac Agent package."""
 
-from .agent import MacAgent
+from .executor import AutomationExecutor
 from .websocket_client import (
     MacAgentClient,
     AgentConfig,
@@ -9,7 +9,7 @@ from .websocket_client import (
 )
 
 __all__ = [
-    "MacAgent",
+    "AutomationExecutor",
     "MacAgentClient",
     "AgentConfig",
     "TaskExecutor",

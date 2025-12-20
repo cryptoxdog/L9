@@ -1,9 +1,9 @@
 """
-L9 Research Factory - Tools Module
-Version: 1.0.0
+L9 Research Department - Tools Module
+Version: 2.0.0
 
 In-memory tool registry and wrappers for research tools.
-NO database tables - tools are registered in memory only.
+Includes production Perplexity client with best practices codified.
 """
 
 from services.research.tools.tool_registry import (
@@ -22,6 +22,14 @@ from services.research.tools.tool_wrappers import (
     HTTPTool,
     MockSearchTool,
 )
+from services.research.tools.perplexity_client import (
+    PerplexityClient,
+    PerplexityRequest,
+    PerplexityResponse,
+    PerplexityModel,
+    SearchContextSize,
+    get_perplexity_client,
+)
 
 __all__ = [
     # Registry
@@ -37,5 +45,12 @@ __all__ = [
     "PerplexityTool",
     "HTTPTool",
     "MockSearchTool",
+    # Perplexity Client (production)
+    "PerplexityClient",
+    "PerplexityRequest",
+    "PerplexityResponse",
+    "PerplexityModel",
+    "SearchContextSize",
+    "get_perplexity_client",
 ]
 

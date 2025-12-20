@@ -1,6 +1,6 @@
 # =============================================================================
 # L9 Memory Substrate - Python Dependencies
-# Version: 1.0.0
+# Version: 1.1.0 - Matches VPS configuration
 # =============================================================================
 
 # Core Framework
@@ -12,6 +12,7 @@ uvicorn>=0.30.0
 # Database
 asyncpg>=0.29.0
 psycopg2-binary>=2.9.0
+psycopg[binary]>=3.1.0
 pgvector>=0.2.5
 
 # LangGraph & LangChain
@@ -19,7 +20,7 @@ langgraph>=0.2.0
 langchain>=0.3.0
 langchain-core>=0.3.0
 
-# Embeddings (optional - for OpenAI provider)
+# Embeddings
 openai>=1.0.0
 
 # Utilities
@@ -29,6 +30,3 @@ httpx>=0.27.0
 # Development
 pytest>=7.0
 pytest-asyncio>=0.23.0
-ruff>=0.5.0
-mypy>=1.8.0
-

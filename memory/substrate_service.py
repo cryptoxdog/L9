@@ -130,6 +130,63 @@ class MemorySubstrateService:
             logger.error(f"Error retrieving packet {packet_id}: {e}")
             return None
     
+    async def search_packets_by_thread(
+        self,
+        thread_id: str,
+        packet_type: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search for packets by thread ID.
+        
+        Args:
+            thread_id: Thread UUID string
+            packet_type: Optional filter by packet type
+            limit: Maximum packets to return
+            
+        Returns:
+            List of packet envelopes as dicts
+        """
+        from uuid import UUID
+        try:
+            rows = await self._repository.search_packets_by_thread(
+                thread_id=UUID(thread_id),
+                packet_type=packet_type,
+                limit=limit,
+            )
+            return [row.envelope for row in rows]
+        except Exception as e:
+            logger.error(f"Error searching packets by thread {thread_id}: {e}")
+            return []
+    
+    async def search_packets_by_type(
+        self,
+        packet_type: str,
+        agent_id: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search for packets by type.
+        
+        Args:
+            packet_type: Packet type to search for
+            agent_id: Optional filter by agent
+            limit: Maximum packets to return
+            
+        Returns:
+            List of packet envelopes as dicts
+        """
+        try:
+            rows = await self._repository.search_packets_by_type(
+                packet_type=packet_type,
+                agent_id=agent_id,
+                limit=limit,
+            )
+            return [row.envelope for row in rows]
+        except Exception as e:
+            logger.error(f"Error searching packets by type {packet_type}: {e}")
+            return []
+    
     # =========================================================================
     # Semantic Search Operations
     # =========================================================================

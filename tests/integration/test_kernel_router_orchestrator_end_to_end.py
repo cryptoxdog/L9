@@ -16,7 +16,7 @@ Everything runs with local mocks.
 import pytest
 
 # Kernel loader (direct import to avoid lazy import issues)
-from core.kernels.kernel_loader_v3 import load_kernel_stack
+from runtime.kernel_loader import load_kernel_stack
 
 # Wiring layer (direct imports)
 from core.kernel_wiring.packet_protocol_wiring import (

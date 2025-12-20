@@ -1,19 +1,27 @@
 """
-L9 Research Factory - Tool Wrappers
-Version: 1.0.0
+L9 Research Department - Tool Wrappers
+Version: 2.0.0
 
 Concrete tool implementations for research.
+Uses production Perplexity client with best practices codified.
 """
 
-import logging
+import structlog
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 import httpx
 
 from config.research_settings import get_research_settings
+from services.research.tools.perplexity_client import (
+    PerplexityClient,
+    PerplexityRequest,
+    PerplexityModel,
+    SearchContextSize,
+    get_perplexity_client,
+)
 
-logger = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 class BaseTool(ABC):
@@ -37,83 +45,80 @@ class PerplexityTool(BaseTool):
     """
     Perplexity AI search tool.
     
-    Uses Perplexity API for web search and synthesis.
+    Uses production PerplexityClient with best practices codified:
+    - Correct model selection (sonar, sonar-pro, sonar-deep-research)
+    - API parameters for search control (not prompt-based)
+    - Structured request validation
+    - Proper rate limit awareness
+    
     Requires PERPLEXITY_API_KEY environment variable.
     """
     
-    PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions"
-    
     def __init__(self):
         """Initialize Perplexity tool."""
-        self._client: Optional[httpx.AsyncClient] = None
-    
-    def _get_api_key(self) -> Optional[str]:
-        """Get API key from settings."""
-        try:
-            settings = get_research_settings()
-            return settings.perplexity_api_key
-        except Exception:
-            return None
+        self._client: Optional[PerplexityClient] = None
     
     async def execute(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Execute Perplexity search.
         
         Args:
-            args: {"query": str} - The search query
+            args: {
+                "query": str - The search query (required)
+                "mode": str - "quick", "research", "analyze", "deep" (default: "research")
+                "domains": list[str] - Domain filter (optional)
+            }
             
         Returns:
-            {"result": str, "sources": list} - Search result and sources
+            {"result": str, "sources": list, "model": str, "cost": float}
         """
         query = args.get("query", "")
         if not query:
-            return {"result": "No query provided", "sources": []}
+            return {"result": "No query provided", "sources": [], "error": "missing_query"}
         
-        api_key = self._get_api_key()
-        if not api_key:
-            logger.warning("Perplexity API key not configured, using mock response")
+        mode = args.get("mode", "research")
+        domains = args.get("domains", [])
+        
+        client = get_perplexity_client()
+        if not client:
+            log.warning("perplexity_not_configured", fallback="mock")
             return {
                 "result": f"[Mock] Research results for: {query}",
                 "sources": ["mock://source1", "mock://source2"],
+                "model": "mock",
+                "cost": 0.0,
             }
         
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.PERPLEXITY_URL,
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "llama-3.1-sonar-small-128k-online",
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are a helpful research assistant. Provide detailed, accurate information with sources.",
-                            },
-                            {
-                                "role": "user",
-                                "content": query,
-                            },
-                        ],
-                    },
-                    timeout=60.0,
-                )
+            async with client:
+                # Route to appropriate method based on mode
+                if mode == "quick":
+                    response = await client.quick_search(query)
+                elif mode == "analyze":
+                    response = await client.analyze(query)
+                elif mode == "deep":
+                    response = await client.deep_research(query)
+                else:  # default: research
+                    response = await client.research(query, domains=domains if domains else None)
                 
-                response.raise_for_status()
-                data = response.json()
-                
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                citations = data.get("citations", [])
-                
-                return {
-                    "result": content,
-                    "sources": citations,
-                }
+                if response.success:
+                    return {
+                        "result": response.content,
+                        "sources": response.citations,
+                        "model": response.model,
+                        "tokens": response.tokens_used,
+                        "cost": response.cost,
+                    }
+                else:
+                    return {
+                        "result": f"Search failed: {response.error}",
+                        "sources": [],
+                        "model": response.model,
+                        "error": response.error,
+                    }
                 
         except Exception as e:
-            logger.error(f"Perplexity search failed: {e}")
+            log.error("perplexity_tool_error", error=str(e))
             return {
                 "result": f"Search failed: {str(e)}",
                 "sources": [],
@@ -173,7 +178,7 @@ class HTTPTool(BaseTool):
                 }
                 
         except Exception as e:
-            logger.error(f"HTTP request failed: {e}")
+            log.error("http_request_failed", error=str(e))
             return {
                 "status": 500,
                 "body": str(e),
@@ -217,6 +222,6 @@ class MockSearchTool(BaseTool):
             "is_mock": True,
         }
         
-        logger.debug(f"Mock search executed for: {query[:50]}")
+        log.debug("mock_search_executed", query_preview=query[:50])
         return mock_results
 

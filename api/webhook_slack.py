@@ -383,6 +383,10 @@ async def slack_events(
             text_original = event.get("text", "")
             text = text_original.lower()
             files = event.get("files", [])  # File attachments
+            channel_type = event.get("channel_type", "")  # "im" for DMs
+            
+            # Detect if this is a DM (direct message)
+            is_dm = channel_type == "im" or (channel and channel.startswith("D"))
             
             # Process file attachments if present
             file_artifacts = []
@@ -412,8 +416,22 @@ async def slack_events(
             is_email_command = any(text_lower.startswith(kw.lower()) for kw in email_keywords) or \
                               any(kw.lower() in text_lower for kw in ["send email to", "reply to", "forward to"])
             
+            # Handle DMs: Respond to ALL messages in direct messages
+            # In channels: Only respond when mentioned or "l9" in text
+            should_respond = is_dm or file_artifacts or "l9" in text or is_email_command
+            
+            # For simple DMs without commands/files, give a quick conversational response
+            # Only route to task planner for actionable requests
+            is_simple_dm = is_dm and not file_artifacts and not is_email_command and not text.strip().startswith("!mac")
+            
+            if is_simple_dm and user and channel:
+                from services.slack_client import slack_post
+                slack_post(channel, f"👋 Hey! L9 here. You said: \"{text_original[:100]}{'...' if len(text_original) > 100 else ''}\"\n\nTry:\n• `!mac <command>` - Run a Mac automation\n• `email: <request>` - Email operations\n• Attach a file for processing")
+                logger.info(f"[SLACK] Simple DM response to {user}")
+                return JSONResponse(content={"status": "ok"})
+            
             # NEW: Route Slack message through task planner (when files present or message directed at L9 or email command)
-            if user and channel and text_original.strip() and (file_artifacts or "l9" in text or is_email_command):
+            if user and channel and text_original.strip() and should_respond:
                 try:
                     from orchestration.slack_task_router import route_slack_message
                     from services.mac_tasks import enqueue_task
@@ -484,8 +502,8 @@ async def slack_events(
                     slack_post(channel, "❌ Please provide a command after `!mac` (e.g., `!mac echo hello`)")
                 return JSONResponse(content={"status": "ok"})
             
-            # Check if message contains "l9" and is not from a bot
-            if user and channel and "l9" in text:
+            # Check if message contains "l9" in a channel (not DM - DMs handled above)
+            if user and channel and "l9" in text and not is_dm:
                 from services.slack_client import slack_post
                 file_msg = f" I received {len(file_artifacts)} file attachment{'s' if len(file_artifacts) != 1 else ''}." if file_artifacts else ""
                 slack_post(channel, f"👋 Hey <@{user}> — L9 is online and connected.{file_msg}")

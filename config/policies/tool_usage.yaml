@@ -1,0 +1,75 @@
+# L9 Governance - Tool Usage Policies
+# ====================================
+# Policies controlling which tools agents can execute.
+# 
+# Tools are categorized by risk level:
+# - Low: Information retrieval (search, read)
+# - Medium: External communication (http requests)
+# - High: System modification (file write, shell exec, database write)
+
+policies:
+  # Allow all agents to use low-risk tools
+  - id: "allow-low-risk-tools"
+    name: "Allow Low-Risk Tools"
+    description: "Permits all agents to use information retrieval tools."
+    effect: "allow"
+    priority: 100
+    subjects: ["*"]
+    actions: ["tool.execute"]
+    resources:
+      - "perplexity_search"
+      - "web_search"
+      - "search_web"
+      - "mock_search"
+      - "calculate"
+      - "calculator"
+    enabled: true
+
+  # Allow standard agents to use medium-risk tools
+  - id: "allow-medium-risk-tools-standard"
+    name: "Allow Medium-Risk Tools for Standard Agents"
+    description: "Permits standard agents to use external communication tools."
+    effect: "allow"
+    priority: 90
+    subjects:
+      - "l9-standard-v1"
+      - "l9-research-v1"
+      - "agent:standard:*"
+    actions: ["tool.execute"]
+    resources:
+      - "http_request"
+      - "fetch_url"
+      - "api_call"
+    enabled: true
+
+  # Deny high-risk tools by default (explicit deny for clarity)
+  - id: "deny-high-risk-tools"
+    name: "Deny High-Risk Tools"
+    description: "Explicitly denies high-risk tools unless specifically approved."
+    effect: "deny"
+    priority: 50
+    subjects: ["*"]
+    actions: ["tool.execute"]
+    resources:
+      - "shell_exec"
+      - "file_write"
+      - "database_write"
+      - "system_modify"
+    enabled: true
+
+  # Allow elevated agents to use high-risk tools (requires explicit approval)
+  - id: "allow-high-risk-tools-elevated"
+    name: "Allow High-Risk Tools for Elevated Agents"
+    description: "Permits elevated agents to use system modification tools."
+    effect: "allow"
+    priority: 200
+    subjects:
+      - "l9-admin-v1"
+      - "agent:elevated:*"
+      - "system"
+    actions: ["tool.execute"]
+    resources:
+      - "shell_exec"
+      - "file_write"
+      - "database_write"
+    enabled: true
