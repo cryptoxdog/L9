@@ -1,38 +1,16 @@
 # =============================================================================
 # L9 Unified - Docker Compose
-# Services: L9 API, PostgreSQL+pgvector, Redis, Neo4j
-# Version: 2.4.0 (Redis + Neo4j enabled by default)
+# Services: L9 API, Redis, Neo4j
+# Version: 2.5.0 (Uses host PostgreSQL on port 5432)
 #
 # SECURITY: All API ports bind to 127.0.0.1 (localhost only)
 #           External access via Caddy reverse proxy (/etc/caddy/Caddyfile)
+#
+# NOTE: PostgreSQL runs as HOST SERVICE on 127.0.0.1:5432
+#       L9 API connects via host.docker.internal (macOS/Windows) or 172.17.0.1 (Linux)
 # =============================================================================
 
 services:
-  # ===========================================================================
-  # PostgreSQL with pgvector (Memory Substrate DB)
-  # ===========================================================================
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: l9-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-l9_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}
-      POSTGRES_DB: ${POSTGRES_DB:-l9_memory}
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-l9_user} -d ${POSTGRES_DB:-l9_memory}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - l9-network
-
   # ===========================================================================
   # Redis (Task queues, rate limiting, caching)
   # ===========================================================================
@@ -82,6 +60,10 @@ services:
   # ===========================================================================
   # L9 Main API (FastAPI Application)
   # Includes: Agents, Kernels, Memory, Webhooks - all in one service
+  #
+  # NOTE: Connects to HOST PostgreSQL via:
+  #   - host.docker.internal (macOS/Windows)
+  #   - 172.17.0.1 (Linux Docker gateway)
   # ===========================================================================
   l9-api:
     build:
@@ -90,15 +72,16 @@ services:
     container_name: l9-api
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@postgres:5432/${POSTGRES_DB:-l9_memory}
-      MEMORY_DSN: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@postgres:5432/${POSTGRES_DB:-l9_memory}
+      # PostgreSQL on HOST (not container) - use 172.17.0.1 for Linux VPS
+      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@172.17.0.1:5432/${POSTGRES_DB:-l9_memory}
+      MEMORY_DSN: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@172.17.0.1:5432/${POSTGRES_DB:-l9_memory}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-YOUR_OPENAI_KEY_HERE}
       L9_API_KEY: ${L9_API_KEY:-YOUR_API_KEY_HERE}
       L9_EXECUTOR_API_KEY: ${L9_EXECUTOR_API_KEY:-YOUR_API_KEY_HERE}
