@@ -12,6 +12,8 @@ Provides:
 Version: 0.5.0 (Research Factory Integration)
 """
 
+from config.settings import settings
+
 import os
 import logging
 from contextlib import asynccontextmanager
