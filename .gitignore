@@ -63,7 +63,6 @@ tree.txt
 *_REPORT*.md
 *.bak.*
 .suite6-config.json
-docker-compose.yml
 
 # --- generated index files ---
 api_surfaces.txt

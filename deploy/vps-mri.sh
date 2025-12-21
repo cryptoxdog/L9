@@ -2,8 +2,11 @@
 # =============================================================================
 # L9 VPS MRI - Comprehensive System Diagnostic
 # Version: 1.0.0
-# Usage: ssh l9 'bash -s' < deploy/vps-mri.sh
-#    or: Copy/paste into VPS terminal
+#
+# USAGE (run on VPS):
+#   cd /opt/l9 && bash deploy/vps-mri.sh
+#
+# Or paste entire script into terminal
 # =============================================================================
 
 set -euo pipefail
