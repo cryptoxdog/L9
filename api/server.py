@@ -132,6 +132,12 @@ try:
 except ImportError:
     _has_housekeeping = False
 
+# Optional: Mac Agent API (env-driven)
+_has_mac_agent = os.getenv("MAC_AGENT_ENABLED", "false").lower() == "true"
+
+# Optional: WABA/WhatsApp (env-driven)
+_has_waba = os.getenv("WABA_ENABLED", "false").lower() == "true"
+
 # Memory system imports
 from memory.migration_runner import run_migrations
 from memory.substrate_service import init_service, close_service, get_service
@@ -794,7 +800,7 @@ if _has_slack_webhook_adapter:
 # These are the older webhook routers from server_memory.py for backward compatibility
 
 # Slack Events API (legacy)
-if settings.slack_app_enabled:
+if _has_slack:
     try:
         from api.webhook_slack import router as webhook_slack_router
         app.include_router(webhook_slack_router)
@@ -802,7 +808,7 @@ if settings.slack_app_enabled:
         logger.warning(f"Failed to load legacy Slack webhook router: {e}")
 
 # Mac Agent API
-if settings.mac_agent_enabled:
+if _has_mac_agent:
     try:
         from api.webhook_mac_agent import router as mac_agent_router
         app.include_router(mac_agent_router)
@@ -810,7 +816,7 @@ if settings.mac_agent_enabled:
         logger.warning(f"Failed to load Mac Agent router: {e}")
 
 # Twilio webhook router (legacy)
-if settings.twilio_enabled:
+if _has_twilio_adapter:
     try:
         from api.webhook_twilio import router as twilio_webhook_router
         app.include_router(twilio_webhook_router)
@@ -818,7 +824,7 @@ if settings.twilio_enabled:
         logger.warning(f"Failed to load legacy Twilio webhook router: {e}")
 
 # WABA (WhatsApp Business Account - native Meta) (legacy)
-if settings.waba_enabled:
+if _has_waba:
     try:
         from api.webhook_waba import router as waba_router
         app.include_router(waba_router)
@@ -826,7 +832,7 @@ if settings.waba_enabled:
         logger.warning(f"Failed to load WABA router: {e}")
 
 # Email integration (legacy)
-if settings.email_enabled:
+if _has_email_adapter:
     try:
         from api.webhook_email import router as email_webhook_router
         app.include_router(email_webhook_router)
