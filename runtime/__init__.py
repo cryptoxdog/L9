@@ -1,0 +1,100 @@
+"""
+L9 Runtime Package
+==================
+
+Runtime components for L9 execution environment.
+
+Includes:
+- Task queue (Redis-backed with in-memory fallback)
+- Rate limiter (Redis-backed with in-memory fallback)
+- Redis client (production-ready with graceful fallback)
+- Kernel loader (THE choke point for kernel loading)
+- WebSocket orchestrator (agent connection management)
+
+Version: 2.2.0 (consolidated from runtime-local)
+"""
+
+__version__ = "2.2.0"
+
+# Task Queue
+from runtime.task_queue import TaskQueue, QueuedTask
+
+# Rate Limiter
+from runtime.rate_limiter import RateLimiter
+
+# Redis Client
+from runtime.redis_client import RedisClient, get_redis_client, close_redis_client
+
+# Kernel Loader (consolidated from private_loader.py)
+from runtime.kernel_loader import (
+    # Configuration
+    DEFAULT_KERNEL_PATH,
+    KERNEL_EXTENSIONS,
+    KERNEL_ORDER,
+    KERNEL_ID_MAP,
+    # Agent loading
+    load_kernels,
+    load_kernel_stack,
+    KernelStack,
+    # Dynamic discovery
+    load_kernel_file,
+    load_all_private_kernels,
+    load_layered_kernels,
+    # Query functions
+    get_kernel_by_name,
+    get_enabled_rules,
+    get_rules_by_type,
+    # Validation
+    validate_kernel_structure,
+    validate_all_kernels,
+    # Enforcement
+    guarded_execute,
+    verify_kernel_activation,
+    require_kernel_activation,
+)
+
+# WebSocket Orchestrator
+from runtime.websocket_orchestrator import (
+    WebSocketOrchestrator,
+    ws_orchestrator,
+)
+
+__all__ = [
+    # Task Queue
+    "TaskQueue",
+    "QueuedTask",
+    # Rate Limiter
+    "RateLimiter",
+    # Redis Client
+    "RedisClient",
+    "get_redis_client",
+    "close_redis_client",
+    # Kernel Loader - Configuration
+    "DEFAULT_KERNEL_PATH",
+    "KERNEL_EXTENSIONS",
+    "KERNEL_ORDER",
+    "KERNEL_ID_MAP",
+    # Kernel Loader - Agent loading
+    "load_kernels",
+    "load_kernel_stack",
+    "KernelStack",
+    # Kernel Loader - Dynamic discovery
+    "load_kernel_file",
+    "load_all_private_kernels",
+    "load_layered_kernels",
+    # Kernel Loader - Query functions
+    "get_kernel_by_name",
+    "get_enabled_rules",
+    "get_rules_by_type",
+    # Kernel Loader - Validation
+    "validate_kernel_structure",
+    "validate_all_kernels",
+    # Kernel Loader - Enforcement
+    "guarded_execute",
+    "verify_kernel_activation",
+    "require_kernel_activation",
+    # WebSocket Orchestrator
+    "WebSocketOrchestrator",
+    "ws_orchestrator",
+]
+
