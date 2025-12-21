@@ -137,13 +137,14 @@ from memory.migration_runner import run_migrations
 from memory.substrate_service import init_service, close_service, get_service
 
 # Integration settings
-from config.settings import settings
-
 logger = logging.getLogger(__name__)
 
-# Initialize DB
-db.init_db()
+# Development mode flag
+LOCAL_DEV = os.getenv("LOCAL_DEV", "false").lower() == "true"
 
+# Initialize DB
+if not LOCAL_DEV:
+    db.init_db()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
