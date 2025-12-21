@@ -51,11 +51,11 @@ class TestWebSocketOrchestratorBasic:
 
         await orch.register("agent-1", ws, metadata={"role": "mac"})
 
-        assert await orch.is_connected("agent-1") is True
-        agents = await orch.get_connected_agents()
+        assert orch.is_connected("agent-1") is True
+        agents = orch.get_connected_agents()
         assert "agent-1" in agents
 
-        meta = await orch.get_agent_metadata("agent-1")
+        meta = orch.get_metadata("agent-1")
         assert meta["role"] == "mac"
 
     async def test_send_to_agent_and_unregistered_error(self):
@@ -69,16 +69,16 @@ class TestWebSocketOrchestratorBasic:
             payload={"task_id": "t-1"},
         )
 
-        await orch.send_to_agent("agent-1", event)
+        await orch.dispatch_event("agent-1", event)
 
         assert len(ws.sent) == 1
         frame = ws.sent[0]
-        assert frame["type"] == EventType.TASK_ASSIGNED
+        assert frame["type"] == EventType.TASK_ASSIGNED.value
         assert frame["payload"]["task_id"] == "t-1"
 
         # Unregistered agent should raise
         with pytest.raises(RuntimeError):
-            await orch.send_to_agent("agent-2", event)
+            await orch.dispatch_event("agent-2", event)
 
     async def test_broadcast_exclude(self):
         orch = WebSocketOrchestrator()
@@ -108,5 +108,5 @@ class TestWebSocketOrchestratorBasic:
         await orch.register("agent-1", ws)
 
         await orch.unregister("agent-1")
-        assert await orch.is_connected("agent-1") is False
-        assert await orch.get_agent_metadata("agent-1") is None
+        assert orch.is_connected("agent-1") is False
+        assert orch.get_metadata("agent-1") == {}

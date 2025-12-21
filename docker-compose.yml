@@ -7,7 +7,7 @@
 #           External access via Caddy reverse proxy (/etc/caddy/Caddyfile)
 #
 # NOTE: PostgreSQL runs as HOST SERVICE on 127.0.0.1:5432
-#       L9 API connects via host.docker.internal (macOS/Windows) or 172.17.0.1 (Linux)
+#       L9 API connects via host.docker.internal (macOS/Windows) or host.docker.internal (Linux)
 # =============================================================================
 
 services:
@@ -63,7 +63,7 @@ services:
   #
   # NOTE: Connects to HOST PostgreSQL via:
   #   - host.docker.internal (macOS/Windows)
-  #   - 172.17.0.1 (Linux Docker gateway)
+  #   - host.docker.internal (Linux Docker gateway)
   # ===========================================================================
   l9-api:
     build:
@@ -79,9 +79,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      # PostgreSQL on HOST (not container) - use 172.17.0.1 for Linux VPS
-      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@172.17.0.1:5432/${POSTGRES_DB:-l9_memory}
-      MEMORY_DSN: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@172.17.0.1:5432/${POSTGRES_DB:-l9_memory}
+      # PostgreSQL on HOST (not container) - use host.docker.internal for Linux VPS
+      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@host.docker.internal:5432/${POSTGRES_DB:-l9_memory}
+      MEMORY_DSN: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@host.docker.internal:5432/${POSTGRES_DB:-l9_memory}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-YOUR_OPENAI_KEY_HERE}
       L9_API_KEY: ${L9_API_KEY:-YOUR_API_KEY_HERE}
       L9_EXECUTOR_API_KEY: ${L9_EXECUTOR_API_KEY:-YOUR_API_KEY_HERE}
@@ -103,6 +103,28 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Slack Adapter
+      SLACK_APP_ID: ${SLACK_APP_ID:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_VERIFICATION_TOKEN: ${SLACK_VERIFICATION_TOKEN:-}
+      SLACK_APP_ENABLED: ${SLACK_APP_ENABLED:-false}
+      # Email Adapter
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      EMAIL_ADAPTER_SIGNING_SECRET: ${EMAIL_ADAPTER_SIGNING_SECRET:-}
+      GMAIL_API_KEY: ${GMAIL_API_KEY:-}
+      # Calendar Adapter
+      CALENDAR_ADAPTER_ENABLED: ${CALENDAR_ADAPTER_ENABLED:-false}
+      GOOGLE_CALENDAR_API_KEY: ${GOOGLE_CALENDAR_API_KEY:-}
+      GOOGLE_CALENDAR_WEBHOOK_SECRET: ${GOOGLE_CALENDAR_WEBHOOK_SECRET:-}
+      # Twilio Adapter
+      TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_SMS_NUMBER: ${TWILIO_SMS_NUMBER:-}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER:-}
     ports:
       - "127.0.0.1:${L9_API_PORT:-8000}:8000"
     # Explicit command (matches VPS deployment)

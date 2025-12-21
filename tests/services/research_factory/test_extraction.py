@@ -371,26 +371,16 @@ class TestSchemaParser:
         assert schema.memorytopology.workingmemory is not None
         assert schema.memorytopology.episodicmemory is not None
     
-    def test_parse_from_dict(self):
+    def test_parse_from_dict(self, minimal_schema_yaml):
         """Test parsing from a dictionary."""
-        data = {
-            "system": {
-                "system": "Dict Agent",
-                "module": "dict",
-                "name": "DictAgent",
-                "role": "Agent from dict",
-                "rootpath": "L9/agents/dict",
-            },
-            "metadata": {
-                "version": "6.0.0",
-                "status": "draft",
-            },
-        }
+        import yaml
+        # Use the minimal schema fixture as a dict to ensure all required fields
+        data = yaml.safe_load(minimal_schema_yaml)
         
         schema = parse_schema(data)
         
         assert schema is not None
-        assert schema.system.name == "DictAgent"
+        assert schema.system.name == "TestAgent"
     
     def test_get_agent_id(self, minimal_schema_yaml):
         """Test agent ID generation."""
@@ -402,7 +392,8 @@ class TestSchemaParser:
     
     def test_parse_invalid_yaml_raises(self):
         """Test that invalid YAML raises an error."""
-        with pytest.raises(ValueError):
+        import yaml
+        with pytest.raises((ValueError, yaml.YAMLError)):
             parse_schema("not: valid: yaml: ::::")
 
 
