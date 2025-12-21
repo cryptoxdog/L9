@@ -1,18 +1,31 @@
+Module Production/Module-Pipeline-Complete/module.calendar_adapter/ - No module docstring
+Module Production/Module-Pipeline-Complete/module.email_adapter/ - No module docstring
+Module Production/Module-Pipeline-Complete/module.twilio_adapter/ - No module docstring
 _l9_GHOST_REPO-DON'T USE/ - 
-agent/ - L9 Agent module.
 agents/ - 
 api/ - 
+api/adapters/calendar_adapter/ - No module docstring
+api/adapters/email_adapter/ - No module docstring
+api/adapters/slack_adapter/ - No module docstring
+api/adapters/twilio_adapter/ - No module docstring
 api/memory/ - Memory API module.
+api/routes/ - API routes package.
+ci/ - 
 clients/ - 
 collaborative_cells/ - 
 config/ - L9 Configuration Module.
 core/ - 
+core/agents/ - 
+core/aios/ - 
 core/boundary/ - 
+core/governance/ - 
 core/kernel_wiring/ - 
 core/kernels/ - 
 core/retrievers/ - L9 Core Retrievers
 core/schemas/ - 
 core/schemas/tests/ - L9 Core Schemas Test Suite.
+core/security/ - 
+core/tools/ - 
 dev/ - No module docstring
 dev/tools/ - No module docstring
 email_agent/ - L9 Email Agent - Gmail API integration.
@@ -41,9 +54,14 @@ services/ -
 services/research/ - 
 services/research/agents/ - 
 services/research/tools/ - 
+services/research_factory/ - 
+services/research_factory/templates/ - 
 simulation/ - 
 telemetry/ - L9 Telemetry module.
 tests/ - 
+tests/core/agents/ - Tests for core.agents module.
+tests/core/governance/ - Tests for governance engine.
+tests/docker/ - Docker smoke tests for L9 stack validation.
 tests/ir_engine/ - 
 tests/kernel/ - Kernel Tests
 tests/memory/ - Memory Tests
@@ -51,6 +69,7 @@ tests/mocks/ -
 tests/orchestrator/ - Orchestrator Tests
 tests/performance/ - Performance Tests
 tests/runtime/ - No module docstring
+tests/services/research_factory/ - 
 tests/world_model/ - World Model Tests
 tools/ - 
 world_model/ - 

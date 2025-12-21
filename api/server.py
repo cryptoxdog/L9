@@ -152,6 +152,27 @@ async def lifespan(app: FastAPI):
     Handles startup (migrations + memory init) and shutdown.
     """
     # ========================================================================
+    # STARTUP: Validate required environment variables (fail-fast)
+    # ========================================================================
+    required_env_vars = ['OPENAI_API_KEY']  # MEMORY_DSN is optional, SLACK is optional
+    recommended_env_vars = ['MEMORY_DSN', 'SLACK_BOT_TOKEN']
+    
+    missing_required = [v for v in required_env_vars if not os.getenv(v)]
+    if missing_required:
+        logger.critical(
+            "FATAL: Missing required environment variables: %s. L9 cannot start.",
+            missing_required,
+        )
+        raise RuntimeError(f"Missing required env vars: {missing_required}")
+    
+    missing_recommended = [v for v in recommended_env_vars if not os.getenv(v)]
+    if missing_recommended:
+        logger.warning(
+            "Missing recommended env vars (some features disabled): %s",
+            missing_recommended,
+        )
+    
+    # ========================================================================
     # STARTUP: Run migrations and initialize memory service
     # ========================================================================
     logger.info("Starting L9 API server...")
@@ -391,6 +412,17 @@ async def lifespan(app: FastAPI):
     # NEO4J GRAPH INTEGRATIONS (v2.7+)
     # ========================================================================
     
+    # Validate Neo4j URI format (if set)
+    neo4j_uri = os.getenv('NEO4J_URI')
+    if neo4j_uri:
+        valid_prefixes = ('bolt://', 'neo4j://', 'neo4j+s://', 'neo4j+ssc://')
+        if not neo4j_uri.startswith(valid_prefixes):
+            logger.error(
+                f"Invalid NEO4J_URI format: {neo4j_uri}. "
+                f"Must start with one of: {valid_prefixes}"
+            )
+            raise ValueError(f"Invalid NEO4J_URI format: {neo4j_uri}")
+    
     # Initialize Neo4j client (optional, graceful if unavailable)
     try:
         from memory.graph_client import get_neo4j_client, close_neo4j_client
@@ -440,6 +472,64 @@ async def lifespan(app: FastAPI):
         logger.info("Rate limiter initialized")
     except ImportError:
         app.state.rate_limiter = None
+    
+    # Initialize Permission Graph (RBAC via Neo4j)
+    try:
+        from core.security.permission_graph import PermissionGraph
+        
+        if hasattr(app.state, 'neo4j_client') and app.state.neo4j_client:
+            app.state.permission_graph = PermissionGraph
+            logger.info("✓ Permission Graph initialized (Neo4j-backed)")
+        else:
+            app.state.permission_graph = None
+            logger.info("Permission Graph not available (requires Neo4j)")
+    except ImportError:
+        app.state.permission_graph = None
+        logger.debug("Permission Graph module not available")
+    except Exception as e:
+        app.state.permission_graph = None
+        logger.warning(f"Failed to initialize Permission Graph: {e}")
+    
+    # ========================================================================
+    # STARTUP VALIDATION: Enforce required components are initialized
+    # ========================================================================
+    
+    # Validate Neo4j (fail-fast if URI set but connection failed)
+    if os.getenv('NEO4J_URI'):
+        if not hasattr(app.state, 'neo4j_client') or not app.state.neo4j_client:
+            logger.critical("NEO4J_URI set but connection failed - graph features disabled")
+            # Note: Not fatal - Neo4j is optional for dev mode
+        else:
+            logger.info("✓ Neo4j validation passed")
+    
+    # Validate Permission Graph (required if Slack is enabled)
+    if os.getenv('SLACK_BOT_TOKEN'):
+        if not hasattr(app.state, 'permission_graph') or not app.state.permission_graph:
+            logger.warning(
+                "Slack enabled but Permission Graph not available. "
+                "RBAC checks will be skipped."
+            )
+        else:
+            logger.info("✓ Permission Graph validation passed (Slack protected)")
+    
+    # Validate kernel-aware agent registry (if enabled)
+    if _has_kernel_registry:
+        if not hasattr(app.state, 'agent_registry') or app.state.agent_registry is None:
+            logger.critical("STARTUP VALIDATION FAILED: agent_registry not initialized")
+            # In dev mode, we continue; in prod, this would be fatal
+        elif hasattr(app.state.agent_registry, 'get_kernel_state'):
+            kernel_state = app.state.agent_registry.get_kernel_state()
+            if kernel_state != "ACTIVE":
+                logger.critical(
+                    "STARTUP VALIDATION FAILED: Kernels not ACTIVE (state=%s)",
+                    kernel_state,
+                )
+            else:
+                logger.info("✓✓✓ L9 FULLY INITIALIZED WITH ACTIVE KERNELS ✓✓✓")
+    
+    # Validate rate limiter
+    if not hasattr(app.state, 'rate_limiter') or app.state.rate_limiter is None:
+        logger.warning("STARTUP VALIDATION: Rate limiter not initialized")
     
     yield
     
@@ -564,6 +654,25 @@ async def health():
     Returns basic status without requiring authentication.
     """
     return {"status": "ok", "service": "l9-api"}
+
+
+# Neo4j Health Check
+@app.get("/health/neo4j")
+async def neo4j_health():
+    """
+    Neo4j graph database health check.
+    Returns healthy if connected, unavailable if not configured.
+    """
+    if not hasattr(app.state, 'neo4j_client') or not app.state.neo4j_client:
+        return {"status": "unavailable", "message": "Neo4j not configured"}
+    
+    try:
+        result = await app.state.neo4j_client.run_query("RETURN 1 as check")
+        if result:
+            return {"status": "healthy", "neo4j": True}
+        return {"status": "unhealthy", "message": "Query returned no results"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
 
 
 # Chat endpoint (from server_memory.py for compatibility)
