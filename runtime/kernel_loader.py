@@ -94,6 +94,26 @@ def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
         # Default to repo root (runtime/ is one level down from root)
         base_path = Path(__file__).resolve().parent.parent
     
+    # Validate kernel paths exist (fail-fast on missing kernels)
+    missing_kernels = []
+    for kernel_path in KERNEL_ORDER:
+        full_path = base_path / kernel_path
+        if not full_path.exists():
+            missing_kernels.append(kernel_path)
+    
+    if missing_kernels:
+        logger.error(
+            "kernel_loader.missing_kernels: %d kernel files not found: %s",
+            len(missing_kernels),
+            missing_kernels[:3],  # Show first 3
+        )
+        raise RuntimeError(
+            f"Required kernel files missing: {missing_kernels}. "
+            f"Verify l9_private/kernels/00_system/ exists and contains all 10 kernels."
+        )
+    
+    logger.info("kernel_loader.path_validation_passed: all %d kernel files present", len(KERNEL_ORDER))
+    
     # Load boot overlay if exists (BEFORE kernel loading)
     boot_overlay_path = base_path / "config" / "boot_overlay.yaml"
     if boot_overlay_path.exists():
@@ -149,11 +169,19 @@ def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
         # No event loop, skip graph sync (will happen at startup)
         pass
     
+    # Validate kernel loading completion
+    if not agent.kernels or agent.kernel_state != "ACTIVE":
+        raise RuntimeError(
+            f"Kernel loading incomplete: kernels={len(agent.kernels) if agent.kernels else 0}, "
+            f"state={agent.kernel_state}"
+        )
+    
     logger.info(
         "kernel_loader.complete: state=%s, kernels=%d",
         agent.kernel_state,
         loaded_count,
     )
+    logger.info("kernel_loader.validation_passed: %d kernels loaded, state=ACTIVE", loaded_count)
     
     return agent
 

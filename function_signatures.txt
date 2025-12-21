@@ -2,6 +2,70 @@ clients/memory_client.py::__init__(self, base_url, timeout) - Initialize memory 
 clients/memory_client.py::get_memory_client() - Get or create singleton MemoryClient ins
 clients/world_model_client.py::__init__(self, base_url, timeout) - Initialize World Model client.
 clients/world_model_client.py::get_world_model_client() - Get or create singleton client.
+core/agents/__init__.py::__getattr__(name) - Lazy import for heavy dependency modules
+core/agents/agent_instance.py::__init__(self, config, task) - Initialize a new agent instance.
+core/agents/agent_instance.py::add_assistant_message(self, content, metadata) - Add an assistant message to history.
+core/agents/agent_instance.py::add_tokens(self, tokens) - Add to total token count.
+core/agents/agent_instance.py::add_tool_result(self, tool_id, call_id, result, success) - Add a tool result to history.
+core/agents/agent_instance.py::add_user_message(self, content, metadata) - Add a user message to history.
+core/agents/agent_instance.py::assemble_context(self) - Assemble full context bundle for AIOS ca
+core/agents/agent_instance.py::config(self) - Get agent configuration.
+core/agents/agent_instance.py::get_bound_tools(self) - Get list of tools bound to this agent.
+core/agents/agent_instance.py::get_history(self) - Get message history.
+core/agents/agent_instance.py::get_messages_for_aios(self) - Get messages formatted for AIOS call.
+core/agents/agent_instance.py::get_tool_definitions(self) - Get tool definitions in OpenAI function 
+core/agents/agent_instance.py::has_tool(self, tool_id) - Check if a tool is bound to this agent.
+core/agents/agent_instance.py::increment_iteration(self) - Increment iteration counter.
+core/agents/agent_instance.py::instance_id(self) - Get instance ID.
+core/agents/agent_instance.py::iteration(self) - Get current iteration number.
+core/agents/agent_instance.py::state(self) - Get current executor state.
+core/agents/agent_instance.py::task(self) - Get the task being executed.
+core/agents/agent_instance.py::thread_id(self) - Get the thread ID for this task.
+core/agents/agent_instance.py::to_trace_dict(self) - Serialize instance state for trace loggi
+core/agents/agent_instance.py::total_tokens(self) - Get total tokens used.
+core/agents/agent_instance.py::transition_to(self, new_state) - Transition to a new state.
+core/agents/executor.py::__init__(self, aios_runtime, tool_registry, substrate_service, agent_registry, default_agent_id, max_iterations) - Initialize the executor service.
+core/agents/executor.py::_validate_task(self, task) - Validate an incoming task. Does NOT muta
+core/agents/executor.py::agent_exists(self, agent_id) - Check if an agent is registered.
+core/agents/executor.py::get_agent_config(self, agent_id) - Get configuration for an agent.
+core/agents/executor.py::get_approved_tools(self, agent_id, principal_id) - Get list of tools approved for an agent.
+core/agents/kernel_registry.py::__init__(self) - Initialize the registry with kernel-load
+core/agents/kernel_registry.py::_initialize_fallback(self) - Initialize with fallback prompt (no kern
+core/agents/kernel_registry.py::_initialize_with_kernels(self) - Initialize L-CTO agent with kernels.
+core/agents/kernel_registry.py::agent_exists(self, agent_id) - Check if agent exists.
+core/agents/kernel_registry.py::create_kernel_aware_registry() - Create a kernel-aware agent registry.
+core/agents/kernel_registry.py::get_agent_config(self, agent_id) - Get agent configuration by ID.
+core/agents/kernel_registry.py::get_kernel_state(self) - Get kernel state.
+core/agents/kernel_registry.py::get_l_cto_agent(self) - Get the L-CTO agent instance (if loaded 
+core/agents/registry.py::__contains__(self, agent_id) - Check if agent is registered.
+core/agents/registry.py::__init__(self, config_dir) - Initialize the registry.
+core/agents/registry.py::__len__(self) - Return number of registered agents.
+core/agents/registry.py::_get_kernel_system_prompt() - Get kernel-based system prompt if availa
+core/agents/registry.py::_load_agent_file(self, filepath) - Load a single agent configuration file.
+core/agents/registry.py::_load_sync(self) - Synchronously load agents from config di
+core/agents/registry.py::_parse_agent_config(self, data, source) - Parse agent configuration from YAML data
+core/agents/registry.py::agent_exists(self, agent_id) - Check if an agent is registered.
+core/agents/registry.py::create_agent_registry(config_dir) - Create an agent registry.
+core/agents/registry.py::create_default_registry() - Create a registry with the default confi
+core/agents/registry.py::ensure_default_agent(self) - Ensure a default agent exists, creating 
+core/agents/registry.py::get_agent_config(self, agent_id) - Get configuration for an agent.
+core/agents/registry.py::get_all_configs(self) - Get all agent configurations.
+core/agents/registry.py::get_default_agent(self) - Get the default agent configuration.
+core/agents/registry.py::list_agents(self) - List all registered agent IDs.
+core/agents/registry.py::register_agent(self, config) - Register an agent configuration.
+core/agents/registry.py::register_from_dict(self, data) - Register an agent from a dictionary.
+core/agents/registry.py::to_dict(self) - Convert registry to dictionary represent
+core/agents/registry.py::unregister_agent(self, agent_id) - Unregister an agent.
+core/agents/schemas.py::error_result(cls, error) - Create an error result.
+core/agents/schemas.py::get_dedupe_key(self) - Get deduplication key for idempotency ch
+core/agents/schemas.py::get_thread_id(self) - Generate deterministic thread UUID from 
+core/agents/schemas.py::response(cls, content, tokens_used) - Create a response result.
+core/agents/schemas.py::tool_request(cls, tool_call, tokens_used) - Create a tool call result.
+core/aios/runtime.py::__init__(self, api_key, model, temperature, max_tokens, default_system_prompt) - Initialize AIOS Runtime.
+core/aios/runtime.py::_get_client(self) - Get or create OpenAI client.
+core/aios/runtime.py::create_aios_runtime(api_key, model) - Factory function to create an AIOS runti
+core/aios/runtime.py::model(self) - Get model name.
+core/aios/runtime.py::temperature(self) - Get default temperature.
 core/boundary/enforcer.py::__init__(self, boundary_file, enabled, log_enforcement) - Initialize the enforcer.
 core/boundary/enforcer.py::__init__(self, raw_content, redaction_patterns, protected_fields) - 
 core/boundary/enforcer.py::_load_spec(self) - Load the boundary specification.
@@ -45,6 +109,7 @@ core/kernel_wiring/safety_wiring.py::get_safety_policies() -
 core/kernel_wiring/safety_wiring.py::is_destructive_action(action) - 
 core/kernel_wiring/worldmodel_wiring.py::_get_kernels() - Lazy load kernel stack.
 core/kernel_wiring/worldmodel_wiring.py::get_worldmodel_schema() - 
+core/kernels/__init__.py::__getattr__(name) - 
 core/kernels/integrity.py::__init__(self, path, change_type, old_hash, new_hash) - 
 core/kernels/integrity.py::__repr__(self) - 
 core/kernels/integrity.py::check_kernel_integrity(base_path, auto_update) - Check integrity of kernel files against 
@@ -55,23 +120,14 @@ core/kernels/integrity.py::initialize_kernel_hashes(base_path, force) - Initiali
 core/kernels/integrity.py::load_kernel_hashes(hash_file) - Load stored kernel hashes from file.
 core/kernels/integrity.py::save_kernel_hashes(hashes, hash_file) - Save kernel hashes to file.
 core/kernels/integrity.py::verify_specific_file(file_path) - Verify a specific kernel file against st
-core/kernels/kernel_loader_v3.py::__init__(self, kernels_by_id, kernels_by_file, hashes, base_dir) - 
-core/kernels/kernel_loader_v3.py::_load_yaml(path) - 
-core/kernels/kernel_loader_v3.py::_sha256_of_file(path) - 
-core/kernels/kernel_loader_v3.py::as_dict(self) - 
-core/kernels/kernel_loader_v3.py::get_hash(self, filename) - 
-core/kernels/kernel_loader_v3.py::get_kernel(self, kernel_id) - 
-core/kernels/kernel_loader_v3.py::get_rule(self, kernel_id, path, default) - Convenience accessor.
-core/kernels/kernel_loader_v3.py::load_kernel_stack(base_dir) - Deterministically load the 10 consolidat
-core/kernels/private_loader.py::_sort_key(k) - 
-core/kernels/private_loader.py::get_enabled_rules(base_path) - Get all enabled rules from all kernels.
-core/kernels/private_loader.py::get_kernel_by_name(name, base_path) - Get a specific kernel by name.
-core/kernels/private_loader.py::get_rules_by_type(rule_type, base_path) - Get all enabled rules of a specific type
-core/kernels/private_loader.py::load_all_private_kernels(base_path, check_integrity, fail_on_tamper) - Load all private kernel YAML files from 
-core/kernels/private_loader.py::load_kernel_file(file_path) - Load a single kernel YAML file.
-core/kernels/private_loader.py::load_layered_kernels(base_path, check_integrity) - Convenience alias for load_all_private_k
-core/kernels/private_loader.py::validate_all_kernels(base_path) - Validate all kernels in a directory.
-core/kernels/private_loader.py::validate_kernel_structure(kernel) - Validate kernel structure against expect
+core/kernels/prompt_builder.py::build_behavioral_section(behavioral_kernel) - Build behavioral rules from behavioral k
+core/kernels/prompt_builder.py::build_cognitive_section(cognitive_kernel) - Build cognitive patterns from cognitive 
+core/kernels/prompt_builder.py::build_execution_section(execution_kernel) - Build execution rules from execution ker
+core/kernels/prompt_builder.py::build_identity_section(identity_kernel) - Build identity section from identity ker
+core/kernels/prompt_builder.py::build_safety_section(safety_kernel) - Build safety guardrails from safety kern
+core/kernels/prompt_builder.py::build_system_prompt_from_kernels() - Build a complete system prompt from the 
+core/kernels/prompt_builder.py::get_fallback_prompt() - Fallback system prompt if kernel loading
+core/kernels/prompt_builder.py::get_kernel_stack() - Get or load the kernel stack (singleton)
 core/retrievers/substrate_retriever.py::__init__(self, service, agent_id, top_k) - 
 core/retrievers/substrate_retriever.py::_get_relevant_documents(self, query) - Synchronous wrapper required by BaseRetr
 core/schemas/capabilities.py::get_capability(self, tool) - Get the capability for a specific tool.
@@ -97,86 +153,30 @@ core/schemas/tasks.py::assign_to(self, agent_id) - Assign this envelope to a spe
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
-core/schemas/tests/test_discriminators.py::test_all_validation_statuses(self) - Verify all ValidationStatus values are v
-core/schemas/tests/test_discriminators.py::test_metadata_extra_fields(self) - Verify metadata allows extra fields (ext
-core/schemas/tests/test_discriminators.py::test_optional_fields_truly_optional(self) - Verify optional fields can be omitted.
-core/schemas/tests/test_discriminators.py::test_packet_type_min_length(self) - Verify packet_type has minimum length.
-core/schemas/tests/test_discriminators.py::test_packet_type_required(self) - Verify packet_type is required on input.
-core/schemas/tests/test_discriminators.py::test_packet_type_required(self) - Verify packet_type is required.
-core/schemas/tests/test_discriminators.py::test_payload_accepts_any_structure(self) - Verify payload is arbitrary JSON (v1.0.1
-core/schemas/tests/test_discriminators.py::test_payload_empty_dict_allowed(self) - Verify empty payload dict is allowed.
-core/schemas/tests/test_discriminators.py::test_payload_is_dict(self) - Verify payload accepts dictionary.
-core/schemas/tests/test_discriminators.py::test_payload_required(self) - Verify payload is required on input.
-core/schemas/tests/test_discriminators.py::test_query_min_length(self) - Verify query has minimum length.
-core/schemas/tests/test_discriminators.py::test_top_k_bounds(self) - Verify top_k bounds (1-100).
-core/schemas/tests/test_discriminators.py::test_valid_packet_types(self) - Verify various valid packet types.
-core/schemas/tests/test_discriminators.py::test_validation_status_values(self) - Verify ValidationStatus enum values.
-core/schemas/tests/test_packet_envelope.py::test_cannot_modify_packet_id(self) - Verify packet_id cannot be changed after
-core/schemas/tests/test_packet_envelope.py::test_cannot_modify_payload(self) - Verify payload cannot be changed after c
-core/schemas/tests/test_packet_envelope.py::test_confidence_above_one(self) - Verify confidence above 1 is rejected.
-core/schemas/tests/test_packet_envelope.py::test_confidence_below_zero(self) - Verify confidence below 0 is rejected.
-core/schemas/tests/test_packet_envelope.py::test_confidence_optional(self) - Verify confidence is optional.
-core/schemas/tests/test_packet_envelope.py::test_confidence_valid_range(self) - Verify valid confidence scores.
-core/schemas/tests/test_packet_envelope.py::test_confidence_with_values(self) - Verify confidence can be set.
-core/schemas/tests/test_packet_envelope.py::test_error_result(self) - Verify error result creation.
-core/schemas/tests/test_packet_envelope.py::test_metadata_optional(self) - Verify metadata is optional.
-core/schemas/tests/test_packet_envelope.py::test_metadata_with_values(self) - Verify metadata can be set.
-core/schemas/tests/test_packet_envelope.py::test_packet_id_auto_generated(self) - Verify packet_id is auto-generated.
-core/schemas/tests/test_packet_envelope.py::test_packet_type_required(self) - Verify packet_type is required.
-core/schemas/tests/test_packet_envelope.py::test_payload_required(self) - Verify payload is required.
-core/schemas/tests/test_packet_envelope.py::test_provenance_optional(self) - Verify provenance is optional.
-core/schemas/tests/test_packet_envelope.py::test_provenance_with_parent(self) - Verify provenance can link to parent.
-core/schemas/tests/test_packet_envelope.py::test_search_request(self) - Verify search request creation.
-core/schemas/tests/test_packet_envelope.py::test_search_request_with_agent_filter(self) - Verify search request with agent filter.
-core/schemas/tests/test_packet_envelope.py::test_search_result(self) - Verify search result creation.
-core/schemas/tests/test_packet_envelope.py::test_semantic_hit(self) - Verify semantic hit creation.
-core/schemas/tests/test_packet_envelope.py::test_success_result(self) - Verify success result creation.
-core/schemas/tests/test_packet_envelope.py::test_timestamp_auto_generated(self) - Verify timestamp is auto-generated.
-core/schemas/tests/test_packet_envelope.py::test_to_envelope_basic(self) - Verify basic conversion to PacketEnvelop
-core/schemas/tests/test_packet_envelope.py::test_to_envelope_with_all_fields(self) - Verify conversion with all optional fiel
-core/schemas/tests/test_packet_envelope.py::test_with_update_creates_new_packet(self) - Verify with_update creates a new packet 
-core/schemas/tests/test_research_factory.py::test_add_error(self) - Verify error addition.
-core/schemas/tests/test_research_factory.py::test_complete_pass_failure(self) - Verify failed pass completion.
 core/schemas/tests/test_research_factory.py::test_complete_pass_success(self) - Verify successful pass completion.
 core/schemas/tests/test_research_factory.py::test_confidence_bounds(self) - Verify confidence bounds are enforced.
 core/schemas/tests/test_research_factory.py::test_empty_queries_rejected(self) - Verify empty queries list is rejected.
 core/schemas/tests/test_research_factory.py::test_empty_regions_rejected(self) - Verify empty regions list is rejected.
 core/schemas/tests/test_research_factory.py::test_initial_state(self) - Verify initial state creation.
-core/schemas/tests/test_research_factory.py::test_is_complete(self) - Verify is_complete property.
 core/schemas/tests/test_research_factory.py::test_max_results_bounds(self) - Verify max_results bounds are enforced.
 core/schemas/tests/test_research_factory.py::test_regions_normalized_to_uppercase(self) - Verify regions are normalized to upperca
 core/schemas/tests/test_research_factory.py::test_start_pass(self) - Verify pass start updates state.
-core/schemas/tests/test_research_factory.py::test_success_rate_property(self) - Verify success_rate calculation.
 core/schemas/tests/test_research_factory.py::test_valid_job_spec(self) - Verify valid job spec creation.
 core/schemas/tests/test_research_factory.py::test_valid_metrics(self) - Verify valid metrics creation.
 core/schemas/tests/test_research_factory.py::test_valid_parsed_object(self) - Verify valid parsed object creation.
 core/schemas/tests/test_research_factory.py::test_valid_query_plan(self) - Verify valid query plan creation.
 core/schemas/universal_schema.py::get_schema_info() - Return schema version information.
-memory/housekeeping.py::get_housekeeping_engine() - Get or create the housekeeping engine si
-memory/index_syncer.py::__init__(self, repository) - 
-memory/ingestion.py::__init__(self, repository, semantic_service, auto_embed, auto_tag) - Initialize ingestion pipeline.
-memory/ingestion.py::_generate_tags(self, envelope) - Auto-generate tags from packet content.
-memory/ingestion.py::_validate_packet(self, packet) - Validate packet structure.
-memory/ingestion.py::get_ingestion_pipeline() - Get or create the ingestion pipeline sin
-memory/ingestion.py::init_ingestion_pipeline(repository, semantic_service) - Initialize the ingestion pipeline with d
-memory/ingestion.py::set_repository(self, repository) - Set or update the repository reference.
-memory/ingestion.py::set_semantic_service(self, service) - Set or update the semantic service refer
-memory/state_manager.py::__init__(self, service, agent_id) - 
-memory/state_manager.py::agent_id(self) - 
-memory/substrate_graph.py::__init__(self, repository, semantic_service, world_model_orchestrator) - Initialize DAG with dependencies.
-memory/substrate_graph.py::_default_state() - Create default state.
-memory/substrate_graph.py::build_substrate_graph() - Build the LangGraph DAG for memory subst
-memory/substrate_models.py::to_envelope(self) - Convert input to full PacketEnvelope wit
-memory/substrate_semantic.py::__init__(self, dimensions) - 
-memory/substrate_semantic.py::__init__(self, embedding_provider, repository) - Initialize semantic service.
-memory/substrate_semantic.py::__init__(self, model, dimensions, api_key) - 
-memory/substrate_semantic.py::_get_client(self) - Lazy initialization of OpenAI client.
-memory/substrate_semantic.py::create_embedding_provider(provider_type, model, dimensions, api_key) - Factory function to create embedding pro
-memory/substrate_semantic.py::dimensions(self) - 
-memory/substrate_semantic.py::dimensions(self) - 
-memory/substrate_semantic.py::dimensions(self) - Return the embedding dimensions.
-memory/substrate_service.py::__init__(self, repository, embedding_provider) - Initialize the substrate service.
-memory/timeline_service.py::__init__(self, repository) - 
+core/tools/registry_adapter.py::__init__(self, base_registry, governance_enabled, governance_engine) - Initialize the adapter.
+core/tools/registry_adapter.py::_get_tool_schema(self, tool_id) - Get JSON Schema for a tool's parameters.
+core/tools/registry_adapter.py::_is_approved(self, agent_id, tool_id) - Check if a tool is explicitly approved f
+core/tools/registry_adapter.py::approve_tool(self, agent_id, tool_id) - Explicitly approve a tool for an agent.
+core/tools/registry_adapter.py::create_executor_tool_registry(governance_enabled, base_registry, governance_engine) - Factory function to create an ExecutorTo
+core/tools/registry_adapter.py::get_approved_tools(self, agent_id, principal_id) - Get list of tools approved for an agent.
+core/tools/registry_adapter.py::get_tool_registry_adapter() - Get a default ExecutorToolRegistry insta
+core/tools/registry_adapter.py::list_tools(self) - List all registered tools.
+core/tools/registry_adapter.py::register_tool(self, tool_id, name, description, executor, tool_type) - Register a new tool.
+core/tools/registry_adapter.py::revoke_tool(self, agent_id, tool_id) - Revoke approval for a tool.
+core/tools/registry_adapter.py::set_governance_engine(self, engine) - Attach a governance engine for policy ev
 tools/cursor_client.py::__init__(self, host, port, timeout) - 
 tools/cursor_client.py::_request(self, endpoint, method, data) - Make HTTP request to Cursor API.
 tools/cursor_client.py::health_check(self) - Check Cursor API health.

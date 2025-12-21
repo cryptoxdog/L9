@@ -1,8 +1,14 @@
 
 # API Surface:
+  api/adapters/calendar_adapter/routes/calendar_adapter.py::router
+  api/adapters/email_adapter/routes/email_adapter.py::router
+  api/adapters/slack_adapter/routes/slack_webhook.py::router
+  api/adapters/twilio_adapter/routes/twilio_adapter.py::router
   api/agent_routes.py::router
   api/memory/router.py::router
   api/os_routes.py::router
+  api/routes/factory.py::router
+  api/routes/slack.py::router
   api/webhook_mac_agent.py::router
   api/webhook_slack.py::router
   api/webhook_twilio.py::router
