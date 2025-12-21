@@ -387,6 +387,60 @@ async def lifespan(app: FastAPI):
             app.state.slack_validator = None
             app.state.slack_client = None
     
+    # ========================================================================
+    # NEO4J GRAPH INTEGRATIONS (v2.7+)
+    # ========================================================================
+    
+    # Initialize Neo4j client (optional, graceful if unavailable)
+    try:
+        from memory.graph_client import get_neo4j_client, close_neo4j_client
+        neo4j = await get_neo4j_client()
+        if neo4j and neo4j.is_available():
+            app.state.neo4j_client = neo4j
+            logger.info("Neo4j graph client initialized")
+            
+            # Register L9 tools in graph (for dependency tracking)
+            try:
+                from core.tools.tool_graph import register_l9_tools
+                tool_count = await register_l9_tools()
+                logger.info(f"Registered {tool_count} tools in Neo4j graph")
+            except Exception as e:
+                logger.warning(f"Failed to register tools in Neo4j: {e}")
+        else:
+            app.state.neo4j_client = None
+            logger.info("Neo4j not available - graph features disabled")
+    except ImportError:
+        app.state.neo4j_client = None
+        logger.debug("Neo4j client not available")
+    except Exception as e:
+        app.state.neo4j_client = None
+        logger.warning(f"Failed to initialize Neo4j: {e}")
+    
+    # Initialize Redis client (optional, graceful if unavailable)
+    try:
+        from runtime.redis_client import get_redis_client, close_redis_client
+        redis = await get_redis_client()
+        if redis and redis.is_available():
+            app.state.redis_client = redis
+            logger.info("Redis client initialized")
+        else:
+            app.state.redis_client = None
+            logger.info("Redis not available - using in-memory fallbacks")
+    except ImportError:
+        app.state.redis_client = None
+        logger.debug("Redis client not available")
+    except Exception as e:
+        app.state.redis_client = None
+        logger.warning(f"Failed to initialize Redis: {e}")
+    
+    # Store rate limiter in app state
+    try:
+        from runtime.rate_limiter import RateLimiter
+        app.state.rate_limiter = RateLimiter()
+        logger.info("Rate limiter initialized")
+    except ImportError:
+        app.state.rate_limiter = None
+    
     yield
     
     # ========================================================================
@@ -410,6 +464,24 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Error closing Slack HTTP client: {e}")
     
+    # Cleanup Neo4j client
+    if hasattr(app.state, "neo4j_client") and app.state.neo4j_client:
+        try:
+            from memory.graph_client import close_neo4j_client
+            await close_neo4j_client()
+            logger.info("Neo4j client closed")
+        except Exception as e:
+            logger.error(f"Error closing Neo4j client: {e}")
+    
+    # Cleanup Redis client
+    if hasattr(app.state, "redis_client") and app.state.redis_client:
+        try:
+            from runtime.redis_client import close_redis_client
+            await close_redis_client()
+            logger.info("Redis client closed")
+        except Exception as e:
+            logger.error(f"Error closing Redis client: {e}")
+    
     # Cleanup memory service
     try:
         await close_service()
@@ -423,6 +495,43 @@ app = FastAPI(
     title="L9 Phase 2 Secure AI OS",
     lifespan=lifespan,
 )
+
+
+# =============================================================================
+# Global Exception Handler with Neo4j Error Tracking
+# =============================================================================
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler that logs errors to Neo4j for causality tracking.
+    """
+    # Log to Neo4j (best-effort, non-blocking)
+    try:
+        from core.error_tracking import log_error_to_graph
+        import asyncio
+        asyncio.create_task(log_error_to_graph(
+            error=exc,
+            context={
+                "endpoint": str(request.url.path),
+                "method": request.method,
+            },
+            source=f"api:{request.url.path}",
+        ))
+    except ImportError:
+        pass  # Error tracking not available
+    except Exception:
+        pass  # Don't fail request due to error tracking
+    
+    # Standard error response
+    logger.error(f"Unhandled exception at {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 # Basic Root
 @app.get("/")

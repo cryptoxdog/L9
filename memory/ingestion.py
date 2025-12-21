@@ -29,6 +29,7 @@ from memory.substrate_models import (
     PacketLineage,
 )
 from memory.substrate_service import MemorySubstrateService
+from memory.graph_client import get_neo4j_client
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +172,14 @@ class IngestionPipeline:
         except Exception as e:
             logger.error(f"Failed to update lineage: {e}")
             errors.append(f"lineage: {str(e)}")
+        
+        # Sync to Neo4j knowledge graph (non-blocking, best-effort)
+        try:
+            await self._sync_to_graph(envelope)
+            written_tables.append("neo4j_graph")
+        except Exception as e:
+            logger.warning(f"Neo4j graph sync failed (non-critical): {e}")
+            # Don't add to errors - Neo4j is optional enhancement
         
         status = "ok" if not errors else "partial" if written_tables else "error"
         
@@ -349,6 +358,75 @@ class IngestionPipeline:
                 parent = await self._repository.get_packet(parent_id)
                 if parent is None:
                     logger.warning(f"Lineage parent {parent_id} not found for packet {envelope.packet_id}")
+    
+    async def _sync_to_graph(self, envelope: PacketEnvelope) -> None:
+        """
+        Sync packet to Neo4j knowledge graph.
+        
+        Creates:
+        - Event node for the packet
+        - Relationships to agent, thread, and parent events
+        
+        This is best-effort - failures don't block ingestion.
+        """
+        neo4j = await get_neo4j_client()
+        if not neo4j:
+            return  # Neo4j not available, skip silently
+        
+        packet_id = str(envelope.packet_id)
+        agent_id = envelope.metadata.agent if envelope.metadata else None
+        thread_id = str(envelope.thread_id) if envelope.thread_id else None
+        
+        # Extract parent event ID from lineage
+        parent_event_id = None
+        if envelope.lineage and envelope.lineage.parent_ids:
+            parent_event_id = str(envelope.lineage.parent_ids[0])
+        
+        # Create event node for this packet
+        await neo4j.create_event(
+            event_id=packet_id,
+            event_type=envelope.packet_type,
+            timestamp=envelope.timestamp.isoformat(),
+            properties={
+                "packet_type": envelope.packet_type,
+                "agent": agent_id,
+                "thread_id": thread_id,
+                "tags": envelope.tags,
+            },
+            parent_event_id=parent_event_id,
+        )
+        
+        # Link to agent entity (create if not exists)
+        if agent_id:
+            await neo4j.create_entity(
+                entity_type="Agent",
+                entity_id=agent_id,
+                properties={"name": agent_id, "type": "agent"},
+            )
+            await neo4j.create_relationship(
+                from_type="Event",
+                from_id=packet_id,
+                to_type="Agent",
+                to_id=agent_id,
+                rel_type="PROCESSED_BY",
+            )
+        
+        # Link to thread (conversation grouping)
+        if thread_id:
+            await neo4j.create_entity(
+                entity_type="Thread",
+                entity_id=thread_id,
+                properties={"id": thread_id, "type": "conversation"},
+            )
+            await neo4j.create_relationship(
+                from_type="Event",
+                from_id=packet_id,
+                to_type="Thread",
+                to_id=thread_id,
+                rel_type="PART_OF",
+            )
+        
+        logger.debug(f"Synced packet {packet_id} to Neo4j graph")
     
     async def ingest_batch(
         self,

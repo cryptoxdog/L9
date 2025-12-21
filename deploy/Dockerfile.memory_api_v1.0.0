@@ -17,16 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY requirements_memory_substrate.txt /app/
 COPY requirements.txt /app/
-
-# Install dependencies - prefer memory substrate requirements if exists
 RUN python -m pip install --upgrade pip \
-    && if [ -f requirements_memory_substrate.txt ]; then \
-         pip install --no-cache-dir -r requirements_memory_substrate.txt; \
-       else \
-         pip install --no-cache-dir -r requirements.txt; \
-       fi
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . /app/
