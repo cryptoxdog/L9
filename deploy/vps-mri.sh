@@ -9,7 +9,7 @@
 # Or paste entire script into terminal
 # =============================================================================
 
-set -euo pipefail
+set -uo pipefail  # Removed -e to continue on errors (diagnostic script should be resilient)
 
 # Colors for output
 RED='\033[0;31m'
