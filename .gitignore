@@ -82,3 +82,6 @@ _l9_GHOST_REPO-DON'T USE/
 # --- documentation (local only) ---
 docs/
 Module Production/
+
+# Local Docker overrides (machine-specific)
+docker-compose.override.yml

@@ -135,7 +135,7 @@ class MemoryLayerConfig(BaseModel):
     retention: Optional[str] = Field(None, description="Data retention policy")
     indexby: Optional[list[str]] = Field(None, description="Index fields")
     structure: Optional[list[dict[str, Any]]] = Field(None, description="Graph structure definition")
-    schema: Optional[list[dict[str, Any]]] = Field(None, description="Causal schema definition")
+    schema_definition: Optional[list[dict[str, Any]]] = Field(None, alias="schema", description="Causal schema definition")
 
 
 class CrossAgentSharingConfig(BaseModel):
@@ -476,16 +476,34 @@ def parse_schema(source: str | Path | dict[str, Any]) -> AgentSchema:
     # Handle different input types
     if isinstance(source, dict):
         data = source
-    elif isinstance(source, Path) or (isinstance(source, str) and Path(source).exists()):
-        path = Path(source)
-        if not path.exists():
-            raise FileNotFoundError(f"Schema file not found: {path}")
-        with open(path, "r") as f:
+    elif isinstance(source, Path):
+        if not source.exists():
+            raise FileNotFoundError(f"Schema file not found: {source}")
+        with open(source, "r") as f:
             content = f.read()
         data = yaml.safe_load(content)
+    elif isinstance(source, str):
+        # Check if it looks like a file path (short, no newlines, has extension)
+        # Avoid calling Path.exists() on long YAML strings which causes OSError
+        looks_like_path = (
+            len(source) < 500 
+            and "\n" not in source 
+            and ("/" in source or "\\" in source or source.endswith((".yaml", ".yml")))
+        )
+        if looks_like_path:
+            path = Path(source)
+            if path.exists():
+                with open(path, "r") as f:
+                    content = f.read()
+                data = yaml.safe_load(content)
+            else:
+                # Not a valid file path, try parsing as YAML
+                data = yaml.safe_load(source)
+        else:
+            # Parse as YAML string
+            data = yaml.safe_load(source)
     else:
-        # Assume it's a YAML string
-        data = yaml.safe_load(source)
+        raise ValueError(f"Unsupported source type: {type(source)}")
     
     if data is None:
         raise ValueError("Empty schema")
