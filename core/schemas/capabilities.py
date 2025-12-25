@@ -52,6 +52,16 @@ class ToolName(str, Enum):
     OS_CONTROL = "os_control"
     FILE_ACCESS = "file_access"
     NETWORK = "network"
+    
+    # Governance and execution tools
+    GMP_RUN = "gmp_run"
+    GIT_COMMIT = "git_commit"
+    MCP_CALL_TOOL = "mcp_call_tool"
+    MAC_AGENT_EXEC_TASK = "mac_agent_exec_task"
+    
+    # Long plan orchestration tools
+    LONG_PLAN_EXECUTE = "long_plan.execute"
+    LONG_PLAN_SIMULATE = "long_plan.simulate"
 
 
 class Capability(BaseModel):
@@ -62,12 +72,21 @@ class Capability(BaseModel):
         tool: The tool this capability governs
         allowed: Whether the tool is allowed (True) or denied (False)
         rate_limit: Optional rate limit (invocations per minute)
-        scope: Optional scope restriction (e.g., "read_only", "local_only")
+        scope: Optional scope restriction (e.g., "read_only", "local_only", "requires_igor_approval")
     """
     tool: ToolName = Field(..., description="Tool this capability governs")
     allowed: bool = Field(default=True, description="Whether tool is allowed")
     rate_limit: Optional[int] = Field(None, ge=0, description="Max invocations/minute")
-    scope: Optional[str] = Field(None, description="Scope restriction")
+    scope: Optional[str] = Field(None, description="Scope restriction (e.g., 'read_only', 'local_only', 'requires_igor_approval')")
+    
+    def requires_igor_approval(self) -> bool:
+        """
+        Check if this capability requires Igor's explicit approval.
+        
+        Returns:
+            True if scope is "requires_igor_approval"
+        """
+        return self.scope == "requires_igor_approval"
 
     model_config = {"frozen": True}
 
@@ -201,6 +220,29 @@ DEFAULT_ARCHITECT_CAPABILITIES = AgentCapabilities(
     default_allowed=False,
 )
 
+DEFAULT_L_CAPABILITIES = AgentCapabilities(
+    agent_id="L",
+    capabilities=[
+        # Memory and knowledge tools (fully allowed)
+        Capability(tool=ToolName.MEMORY_READ, allowed=True),
+        Capability(tool=ToolName.MEMORY_WRITE, allowed=True),
+        Capability(tool=ToolName.WORLD_MODEL_QUERY, allowed=True),
+        Capability(tool=ToolName.KERNEL_READ, allowed=True),
+        # Integration tools (fully allowed)
+        Capability(tool=ToolName.MCP_CALL_TOOL, allowed=True),
+        Capability(tool=ToolName.MAC_AGENT_EXEC_TASK, allowed=True),
+        # Long plan orchestration tools (fully allowed)
+        Capability(tool=ToolName.LONG_PLAN_EXECUTE, allowed=True),
+        Capability(tool=ToolName.LONG_PLAN_SIMULATE, allowed=True),
+        # Governance tools (allowed but require Igor approval)
+        Capability(tool=ToolName.GMP_RUN, allowed=True, scope="requires_igor_approval"),
+        Capability(tool=ToolName.GIT_COMMIT, allowed=True, scope="requires_igor_approval"),
+        # Network remains gated
+        Capability(tool=ToolName.NETWORK, allowed=False),
+    ],
+    default_allowed=False,
+)
+
 
 # =============================================================================
 # Public API
@@ -213,5 +255,6 @@ __all__ = [
     "DEFAULT_READER_CAPABILITIES",
     "DEFAULT_CODER_CAPABILITIES",
     "DEFAULT_ARCHITECT_CAPABILITIES",
+    "DEFAULT_L_CAPABILITIES",
 ]
 

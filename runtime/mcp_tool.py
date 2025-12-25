@@ -1,0 +1,159 @@
+"""
+L9 Runtime - MCP Tool Implementation
+====================================
+
+Tool implementation for mcp.call_tool that validates and calls MCP tools.
+
+This tool is called by agent L to invoke MCP tools on external servers.
+
+Version: 1.0.0
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any, Dict
+
+from runtime.mcp_client import get_mcp_client
+
+logger = logging.getLogger(__name__)
+
+
+async def mcp_call_tool(
+    server_id: str,
+    tool_name: str,
+    arguments: Dict[str, Any] | None = None,
+    agent_id: str = "L",
+) -> Dict[str, Any]:
+    """
+    MCP call tool implementation.
+    
+    Validates server_id and tool_name against registry, then calls the MCP client.
+    Logs tool calls via ToolGraph.log_tool_call.
+    
+    Args:
+        server_id: MCP server identifier (e.g., "github", "notion", "vercel", "godaddy")
+        tool_name: Tool name (e.g., "github.create_issue", "notion.create_page")
+        arguments: Tool arguments dictionary
+        agent_id: Agent identifier (default: "L")
+        
+    Returns:
+        Dictionary with:
+            - success: bool
+            - result: Tool result (if successful)
+            - error: Error message (if failed)
+    """
+    if not server_id:
+        return {
+            "success": False,
+            "error": "server_id is required",
+        }
+    
+    if not tool_name:
+        return {
+            "success": False,
+            "error": "tool_name is required",
+        }
+    
+    arguments = arguments or {}
+    
+    # Get MCP client
+    mcp_client = get_mcp_client()
+    
+    # Validate server is available
+    if not mcp_client.is_server_available(server_id):
+        return {
+            "success": False,
+            "error": f"MCP server {server_id} is not configured or available",
+        }
+    
+    # Validate tool is allowed
+    if not mcp_client.is_tool_allowed(server_id, tool_name):
+        return {
+            "success": False,
+            "error": f"Tool {tool_name} is not allowed for server {server_id}",
+        }
+    
+    # Call tool with timing
+    start_time = time.time()
+    success = False
+    result = None
+    error = None
+    
+    try:
+        result = await mcp_client.call_tool(
+            server_id=server_id,
+            tool_name=tool_name,
+            arguments=arguments,
+        )
+        
+        success = result.get("success", False)
+        if not success:
+            error = result.get("error", "Unknown error")
+        
+        logger.info(
+            f"MCP tool call: server={server_id}, tool={tool_name}, success={success}"
+        )
+        
+    except Exception as e:
+        success = False
+        error = str(e)
+        logger.error(
+            f"MCP tool call failed: server={server_id}, tool={tool_name}, error={error}",
+            exc_info=True,
+        )
+    
+    duration_ms = int((time.time() - start_time) * 1000)
+    
+    # Log tool call via ToolGraph
+    try:
+        from core.tools.tool_graph import ToolGraph
+        
+        await ToolGraph.log_tool_call(
+            tool_name=tool_name,
+            agent_id=agent_id,
+            success=success,
+            duration_ms=duration_ms,
+            error=error,
+        )
+        
+        # Also write to tool_audit memory segment
+        try:
+            from runtime.memory_helpers import memory_write
+            
+            await memory_write(
+                segment="tool_audit",
+                payload={
+                    "tool_name": tool_name,
+                    "server_id": server_id,
+                    "agent_id": agent_id,
+                    "success": success,
+                    "duration_ms": duration_ms,
+                    "error": error,
+                },
+                agent_id=agent_id,
+            )
+        except Exception as mem_err:
+            logger.warning(f"Failed to write MCP tool audit to memory: {mem_err}")
+            
+    except Exception as e:
+        logger.warning(f"Failed to log MCP tool call: {e}")
+    
+    # Return result
+    if success:
+        return {
+            "success": True,
+            "result": result.get("result") if result else None,
+            "error": None,
+        }
+    else:
+        return {
+            "success": False,
+            "result": None,
+            "error": error or "Unknown error",
+        }
+
+
+__all__ = ["mcp_call_tool"]
+

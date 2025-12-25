@@ -25,6 +25,14 @@ Version: 2.0.0
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Add project root to path before any imports
+project_root = Path(__file__).parent.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -199,6 +207,32 @@ class MockSubstrateService:
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Search mock packets."""
+        return self._search_results
+    
+    async def search_packets_by_type(
+        self,
+        packet_type: str,
+        agent_id: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Search packets by type - searches stored packets."""
+        # If explicit search results set, use those
+        if self._search_results:
+            return self._search_results
+        # Otherwise search stored packets
+        results = []
+        for p in self.packets:
+            if hasattr(p, 'packet_type') and p.packet_type == packet_type:
+                results.append({"payload": p.payload if hasattr(p, 'payload') else {}})
+        return results[:limit]
+    
+    async def search_packets_by_thread(
+        self,
+        thread_id: str,
+        packet_type: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Search packets by thread."""
         return self._search_results
     
     def get_packets_by_type(self, packet_type: str) -> list[Any]:

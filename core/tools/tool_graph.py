@@ -32,6 +32,8 @@ class ToolDefinition:
     category: str = "general"
     is_destructive: bool = False
     requires_confirmation: bool = False
+    scope: str = "internal"  # "internal" | "external" | "requires_igor_approval"
+    risk_level: str = "low"  # "low" | "medium" | "high"
 
 
 class ToolGraph:
@@ -87,6 +89,8 @@ class ToolGraph:
                     "category": tool.category,
                     "is_destructive": tool.is_destructive,
                     "requires_confirmation": tool.requires_confirmation,
+                    "scope": tool.scope,
+                    "risk_level": tool.risk_level,
                     "registered_at": datetime.utcnow().isoformat(),
                 },
             )
@@ -339,6 +343,121 @@ class ToolGraph:
 
 
 # =============================================================================
+# Tool Registration Helpers
+# =============================================================================
+
+def create_tool_definition(
+    name: str,
+    description: str = "",
+    category: str = "general",
+    scope: str = "internal",
+    risk_level: str = "low",
+    is_destructive: bool = False,
+    requires_confirmation: bool = False,
+    external_apis: list[str] | None = None,
+    internal_dependencies: list[str] | None = None,
+    agent_id: str | None = None,
+) -> ToolDefinition:
+    """
+    Convenience helper to create a ToolDefinition with full metadata.
+    
+    Args:
+        name: Tool name/identifier
+        description: Human-readable description
+        category: Tool category (e.g., "memory", "execution", "integration", "governance")
+        scope: Tool scope ("internal", "external", "requires_igor_approval")
+        risk_level: Risk level ("low", "medium", "high")
+        is_destructive: Whether tool can cause data loss or system changes
+        requires_confirmation: Whether tool requires user confirmation
+        external_apis: List of external API dependencies
+        internal_dependencies: List of internal tool dependencies
+        agent_id: Optional agent identifier
+        
+    Returns:
+        ToolDefinition instance
+        
+    Example:
+        tool = create_tool_definition(
+            name="gmp_run",
+            description="Run GMP (General Module Production) workflow",
+            category="governance",
+            scope="requires_igor_approval",
+            risk_level="high",
+            requires_confirmation=True,
+        )
+    """
+    return ToolDefinition(
+        name=name,
+        description=description,
+        category=category,
+        scope=scope,
+        risk_level=risk_level,
+        is_destructive=is_destructive,
+        requires_confirmation=requires_confirmation,
+        external_apis=external_apis or [],
+        internal_dependencies=internal_dependencies or [],
+        agent_id=agent_id,
+    )
+
+
+async def register_tool_with_metadata(
+    name: str,
+    description: str = "",
+    category: str = "general",
+    scope: str = "internal",
+    risk_level: str = "low",
+    is_destructive: bool = False,
+    requires_confirmation: bool = False,
+    external_apis: list[str] | None = None,
+    internal_dependencies: list[str] | None = None,
+    agent_id: str | None = None,
+) -> bool:
+    """
+    Register a tool with full metadata in one call.
+    
+    Convenience wrapper around create_tool_definition + register_tool.
+    
+    Args:
+        name: Tool name/identifier
+        description: Human-readable description
+        category: Tool category
+        scope: Tool scope
+        risk_level: Risk level
+        is_destructive: Whether tool can cause data loss
+        requires_confirmation: Whether tool requires confirmation
+        external_apis: External API dependencies
+        internal_dependencies: Internal tool dependencies
+        agent_id: Optional agent identifier
+        
+    Returns:
+        True if registered successfully
+        
+    Example:
+        await register_tool_with_metadata(
+            name="git_commit",
+            description="Commit changes to git repository",
+            category="governance",
+            scope="requires_igor_approval",
+            risk_level="medium",
+            requires_confirmation=True,
+        )
+    """
+    tool = create_tool_definition(
+        name=name,
+        description=description,
+        category=category,
+        scope=scope,
+        risk_level=risk_level,
+        is_destructive=is_destructive,
+        requires_confirmation=requires_confirmation,
+        external_apis=external_apis,
+        internal_dependencies=internal_dependencies,
+        agent_id=agent_id,
+    )
+    return await ToolGraph.register_tool(tool)
+
+
+# =============================================================================
 # Pre-defined L9 Tool Definitions
 # =============================================================================
 
@@ -407,10 +526,252 @@ async def register_l9_tools() -> int:
     return count
 
 
+# =============================================================================
+# L Agent Internal Tool Definitions
+# =============================================================================
+
+L_INTERNAL_TOOLS = [
+    # Memory & World Model tools
+    ToolDefinition(
+        name="memory_read",
+        description="Read from L9 memory substrate",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_search",
+        description="Search L9 memory with embeddings",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL", "OpenAI"],
+        internal_dependencies=["memory_read"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_write",
+        description="Write to L9 memory substrate",
+        category="memory",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_query",
+        description="Query the world model for knowledge",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="kernel_read",
+        description="Read kernel definitions and constraints",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        agent_id="L",
+    ),
+    # Mac Agent & Diagnostics
+    ToolDefinition(
+        name="mac_agent_exec_task",
+        description="Execute task via Mac Agent (backed by vps_executor.py)",
+        category="execution",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="medium",
+        agent_id="L",
+    ),
+    # GMP Execution (God Mode Prompt)
+    ToolDefinition(
+        name="gmp_run",
+        description="Run GMP (General Module Production) workflow - requires Igor's explicit approval",
+        category="execution",
+        scope="requires_igor_approval",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="high",
+        external_apis=["Cursor"],
+        agent_id="L",
+    ),
+    # Git Commit
+    ToolDefinition(
+        name="git_commit",
+        description="Commit changes to git repository - requires Igor's explicit approval",
+        category="execution",
+        scope="requires_igor_approval",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="high",
+        agent_id="L",
+    ),
+    # MCP Meta-tool
+    ToolDefinition(
+        name="mcp_call_tool",
+        description="Call a tool on an MCP server (GitHub, Notion, Vercel, GoDaddy)",
+        category="integration",
+        scope="external",
+        is_destructive=False,  # Meta-tool itself is not destructive, but may call destructive tools
+        requires_confirmation=False,
+        risk_level="medium",
+        external_apis=["MCP"],
+        agent_id="L",
+    ),
+    # GitHub MCP Tools
+    ToolDefinition(
+        name="github.create_issue",
+        description="Create a GitHub issue via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="low",
+        external_apis=["GitHub", "MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="github.create_pull_request",
+        description="Create a GitHub pull request via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="medium",
+        external_apis=["GitHub", "MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="github.merge_pull_request",
+        description="Merge a GitHub pull request via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="high",
+        external_apis=["GitHub", "MCP"],
+        agent_id="L",
+    ),
+    # Notion MCP Tools
+    ToolDefinition(
+        name="notion.create_page",
+        description="Create a Notion page via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="low",
+        external_apis=["Notion", "MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="notion.update_page",
+        description="Update a Notion page via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="low",
+        external_apis=["Notion", "MCP"],
+        agent_id="L",
+    ),
+    # Vercel MCP Tools
+    ToolDefinition(
+        name="vercel.trigger_deploy",
+        description="Trigger a Vercel deployment via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="high",
+        external_apis=["Vercel", "MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="vercel.get_deploy_status",
+        description="Get Vercel deployment status via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Vercel", "MCP"],
+        agent_id="L",
+    ),
+    # GoDaddy MCP Tools
+    ToolDefinition(
+        name="godaddy.update_dns_record",
+        description="Update a GoDaddy DNS record via MCP",
+        category="integration",
+        scope="external",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="high",
+        external_apis=["GoDaddy", "MCP"],
+        agent_id="L",
+    ),
+    # Long Plan DAG Tools
+    ToolDefinition(
+        name="long_plan.execute",
+        description="Execute a long plan through LangGraph DAG (orchestrates memory, MCP, Mac Agent, GMP)",
+        category="orchestration",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=True,
+        risk_level="medium",
+        internal_dependencies=["memory_search", "mcp_call_tool", "gmp_run"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="long_plan.simulate",
+        description="Simulate a long plan without executing (dry run)",
+        category="orchestration",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        internal_dependencies=["memory_search", "mcp_call_tool"],
+        agent_id="L",
+    ),
+]
+
+
+async def register_l_tools() -> int:
+    """
+    Register all L agent internal tools in the graph.
+    
+    Call this at startup to populate L's tool graph with proper metadata.
+    Tools are linked to agent L via HAS_TOOL relationships.
+    
+    Returns:
+        Number of tools registered
+    """
+    count = 0
+    for tool in L_INTERNAL_TOOLS:
+        if await ToolGraph.register_tool(tool):
+            count += 1
+    
+    logger.info(f"Registered {count}/{len(L_INTERNAL_TOOLS)} L agent tools in Neo4j graph")
+    return count
+
+
 __all__ = [
     "ToolDefinition",
     "ToolGraph",
+    "create_tool_definition",
+    "register_tool_with_metadata",
     "L9_TOOLS",
     "register_l9_tools",
+    "L_INTERNAL_TOOLS",
+    "register_l_tools",
 ]
 
