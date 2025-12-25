@@ -1,0 +1,152 @@
+"""
+L9 Runtime - Tool Call Wrapper
+===============================
+
+Wrapper to ensure all tool calls are logged via ToolGraph.log_tool_call.
+
+This ensures consistent audit logging for:
+- Internal tools
+- MCP tools
+- Mac Agent tools
+- GMP tools
+
+Version: 1.0.0
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from typing import Any, Callable, Coroutine, Dict, Optional
+
+logger = logging.getLogger(__name__)
+
+
+async def tool_call_wrapper(
+    tool_name: str,
+    tool_func: Callable[..., Coroutine[Any, Any, Any]],
+    agent_id: str = "L",
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    """
+    Wrap a tool call to ensure it's logged via ToolGraph.log_tool_call.
+    
+    Args:
+        tool_name: Name of the tool being called
+        tool_func: Async function to execute
+        agent_id: Agent identifier (default: "L")
+        *args: Positional arguments for tool_func
+        **kwargs: Keyword arguments for tool_func
+        
+    Returns:
+        Result from tool_func
+        
+    Usage:
+        result = await tool_call_wrapper(
+            "gmp_run",
+            gmp_run_tool,
+            agent_id="L",
+            gmp_markdown=markdown,
+            repo_root=repo,
+        )
+    """
+    start_time = time.time()
+    success = False
+    error = None
+    result = None
+    
+    try:
+        # Execute the tool
+        result = await tool_func(*args, **kwargs)
+        
+        # Determine success from result
+        if isinstance(result, dict):
+            success = result.get("success", True)  # Default to True if no success field
+            error = result.get("error")
+        else:
+            success = True  # Assume success if not a dict
+        
+        logger.debug(f"Tool call {tool_name} completed: success={success}")
+        
+    except Exception as e:
+        success = False
+        error = str(e)
+        logger.error(f"Tool call {tool_name} failed: {error}", exc_info=True)
+        raise
+    
+    finally:
+        # Log the tool call
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        try:
+            from core.tools.tool_graph import ToolGraph
+            
+            await ToolGraph.log_tool_call(
+                tool_name=tool_name,
+                agent_id=agent_id,
+                success=success,
+                duration_ms=duration_ms,
+                error=error,
+            )
+            
+            # Also write to tool_audit memory segment
+            try:
+                from runtime.memory_helpers import memory_write
+                
+                await memory_write(
+                    segment="tool_audit",
+                    payload={
+                        "tool_name": tool_name,
+                        "agent_id": agent_id,
+                        "success": success,
+                        "duration_ms": duration_ms,
+                        "error": error,
+                        "timestamp": time.time(),
+                    },
+                    agent_id=agent_id,
+                )
+            except Exception as mem_err:
+                logger.warning(f"Failed to write tool audit to memory: {mem_err}")
+                
+        except Exception as log_err:
+            logger.warning(f"Failed to log tool call: {log_err}")
+    
+    return result
+
+
+def wrap_tool_function(
+    tool_name: str,
+    agent_id: str = "L",
+) -> Callable:
+    """
+    Decorator to wrap a tool function with automatic logging.
+    
+    Args:
+        tool_name: Name of the tool
+        agent_id: Agent identifier (default: "L")
+        
+    Usage:
+        @wrap_tool_function("gmp_run", agent_id="L")
+        async def gmp_run_tool(...):
+            ...
+    """
+    def decorator(func: Callable[..., Coroutine[Any, Any, Any]]) -> Callable:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return await tool_call_wrapper(
+                tool_name=tool_name,
+                tool_func=func,
+                agent_id=agent_id,
+                *args,
+                **kwargs,
+            )
+        return wrapper
+    return decorator
+
+
+__all__ = [
+    "tool_call_wrapper",
+    "wrap_tool_function",
+]
+

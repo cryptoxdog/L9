@@ -15,6 +15,36 @@ This class does NOT:
 - Execute tools (that's tool registry)
 - Define agent personalities (that's loaded from registry)
 
+L Memory Usage Rules
+====================
+
+For agent L (agent_id="L"), the following memory usage rules apply:
+
+1. governance_meta:
+   - Use memory_search(governance_meta, ...) to look up rules, authority, policies
+   - Use memory_write(governance_meta, ...) to record new governance rules (rare)
+   - Example: "What are the approval requirements for GMP runs?"
+
+2. project_history:
+   - Use memory_search(project_history, ...) before executing long plans
+   - Use memory_write(project_history, ...) after major decisions or milestones
+   - Example: "What architecture decisions were made for the tool system?"
+
+3. tool_audit:
+   - Automatically populated by tool call logging (ToolGraph.log_tool_call)
+   - Use memory_search(tool_audit, ...) to review past actions
+   - Example: "What tools did I call in the last session?"
+
+4. session_context:
+   - Use memory_write(session_context, ...) to store current session state
+   - Use memory_search(session_context, ...) to retrieve session context
+   - Example: "What was I working on in this session?"
+
+Tool Call Logging:
+- All tool calls (internal, MCP, Mac Agent, GMP) must call ToolGraph.log_tool_call
+- This automatically populates tool_audit segment
+- Use tool_call_wrapper() helper to ensure consistent logging
+
 Version: 1.0.0
 """
 

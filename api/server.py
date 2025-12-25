@@ -442,11 +442,23 @@ async def lifespan(app: FastAPI):
             
             # Register L9 tools in graph (for dependency tracking)
             try:
-                from core.tools.tool_graph import register_l9_tools
+                from core.tools.tool_graph import register_l9_tools, register_l_tools
                 tool_count = await register_l9_tools()
                 logger.info(f"Registered {tool_count} tools in Neo4j graph")
+                
+                # Register L agent internal tools
+                l_tool_count = await register_l_tools()
+                logger.info(f"Registered {l_tool_count} L agent tools in Neo4j graph")
             except Exception as e:
                 logger.warning(f"Failed to register tools in Neo4j: {e}")
+        
+        # Start GMP worker (for processing approved GMP tasks)
+        try:
+            from runtime.gmp_worker import start_gmp_worker
+            await start_gmp_worker(poll_interval=2.0)
+            logger.info("GMP worker started")
+        except Exception as e:
+            logger.warning(f"Failed to start GMP worker: {e}")
         else:
             app.state.neo4j_client = None
             logger.info("Neo4j not available - graph features disabled")
@@ -546,6 +558,14 @@ async def lifespan(app: FastAPI):
     # SHUTDOWN: Clean up memory service and Slack adapter
     # ========================================================================
     logger.info("Shutting down L9 API server...")
+    
+    # Stop GMP worker
+    try:
+        from runtime.gmp_worker import stop_gmp_worker
+        await stop_gmp_worker()
+        logger.info("GMP worker stopped")
+    except Exception as e:
+        logger.warning(f"Error stopping GMP worker: {e}")
     
     # Cleanup Research Factory
     if _has_research and getattr(app.state, "research_enabled", False):
