@@ -3,9 +3,10 @@
 api/server.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
-  Routes (7):
+  Routes (8):
     - GET /
     - GET /health
+    - GET /health/neo4j
     - POST /chat
     - WEBSOCKET /ws/agent
     - ROUTER /os/*
@@ -33,6 +34,27 @@ ci/validate_spec_v25.py
   Type: Script
   Has __main__ block: Yes
 dev/tools/global_state_audit.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script_1.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script_2.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/HOW_TO_USE_SUPER_PROMPT.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/SUPER_PROMPT_TEMPLATE.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/production-config.py
   Type: Script
   Has __main__ block: Yes
 email_agent/oauth_server.py

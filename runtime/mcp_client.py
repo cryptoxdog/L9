@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
+import structlog
 import os
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ToolMeta:
@@ -215,22 +215,13 @@ class MCPClient:
             f"Calling MCP tool {tool_name} on server {server_id} with args: {arguments}"
         )
         
-        # Stub implementation - in production, this would:
-        # 1. Connect to MCP server (stdio/HTTP/WebSocket)
-        # 2. Send JSON-RPC request: {"jsonrpc": "2.0", "method": "tools/call", "params": {...}}
-        # 3. Wait for response
-        # 4. Return result
-        
-        # For now, return a mock success response
+        # MCP protocol implementation deferred to Stage 2
+        # Currently, return explicit error to prevent false success
+        logger.warning(f"MCP tool call requested but not implemented: {server_id}/{tool_name}")
         return {
-            "success": True,
-            "result": {
-                "message": f"MCP tool {tool_name} called (stub implementation)",
-                "server": server_id,
-                "tool": tool_name,
-                "arguments": arguments,
-            },
-            "error": None,
+            "success": False,
+            "error": "MCP protocol not yet implemented — available in Stage 2",
+            "result": None,
         }
 
 

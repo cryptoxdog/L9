@@ -22,10 +22,10 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import os
 from datetime import datetime
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol
 from uuid import UUID
 
 from core.agents.schemas import (
@@ -42,8 +42,86 @@ from core.agents.schemas import (
 )
 from core.agents.agent_instance import AgentInstance
 from memory.substrate_models import PacketEnvelopeIn, PacketMetadata
+from core.governance.approvals import ApprovalManager
+from core.tools.tool_graph import ToolGraph
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
+
+
+# =============================================================================
+# Reactive Task Generation
+# =============================================================================
+
+async def _generate_tasks_from_query(query: str) -> List[Dict[str, Any]]:
+    """
+    Parse user requests into task specifications.
+    
+    Analyzes query text, extracts intent, and generates task specs.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        List of task spec dicts with: name, payload, handler, priority
+    """
+    if not query or not query.strip():
+        return []
+    
+    query_lower = query.lower().strip()
+    task_specs = []
+    
+    # Simple intent detection (can be enhanced with LLM in future)
+    if "gmp" in query_lower or "governance" in query_lower:
+        # GMP task
+        task_specs.append({
+            "name": f"GMP Run: {query[:50]}",
+            "payload": {
+                "type": "gmp_run",
+                "query": query,
+                "status": "pending_igor_approval",
+            },
+            "handler": "gmp_worker",
+            "priority": 5,
+        })
+    elif "git" in query_lower or "commit" in query_lower:
+        # Git commit task
+        task_specs.append({
+            "name": f"Git Commit: {query[:50]}",
+            "payload": {
+                "type": "git_commit",
+                "query": query,
+                "status": "pending_igor_approval",
+            },
+            "handler": "git_worker",
+            "priority": 5,
+        })
+    elif "plan" in query_lower or "long" in query_lower:
+        # Long plan task
+        task_specs.append({
+            "name": f"Long Plan: {query[:50]}",
+            "payload": {
+                "type": "long_plan",
+                "goal": query,
+                "status": "pending",
+            },
+            "handler": "long_plan_worker",
+            "priority": 5,
+        })
+    else:
+        # Default: general agent task
+        task_specs.append({
+            "name": f"Agent Task: {query[:50]}",
+            "payload": {
+                "type": "agent_task",
+                "query": query,
+                "status": "pending",
+            },
+            "handler": "agent_executor",
+            "priority": 5,
+        })
+    
+    logger.info(f"Generated {len(task_specs)} task(s) from query: {query[:100]}")
+    return task_specs
 
 
 # =============================================================================
@@ -341,6 +419,204 @@ class AgentExecutorService:
                 start_time,
                 "execution_error",
             )
+    
+    async def _bind_memory_context(self, task_id: str, agent_id: str) -> Dict[str, Any]:
+        """
+        Load and inject memory state into executor.
+        
+        Retrieves task context from memory substrate (Postgres/Redis) and
+        returns context dict for use in task execution.
+        
+        Args:
+            task_id: Task identifier
+            agent_id: Agent identifier
+            
+        Returns:
+            Context dict with memory state (governance rules, project history, etc.)
+        """
+        context = {}
+        
+        try:
+            # Try to get task context from Redis cache first
+            from runtime.redis_client import get_redis_client
+            
+            redis_client = get_redis_client()
+            if redis_client and redis_client.is_available():
+                cached_context = await redis_client.get_task_context(task_id)
+                if cached_context:
+                    context.update(cached_context)
+                    logger.debug(f"Loaded task context from Redis cache: {task_id}")
+            
+            # Load from memory substrate (Postgres)
+            if self._substrate_service:
+                # Search for task-related packets
+                packets = await self._substrate_service.search_packets_by_thread(
+                    thread_id=task_id,
+                    packet_type="task_execution",
+                    limit=10,
+                )
+                
+                if packets:
+                    # Extract context from recent packets
+                    for packet in packets[-5:]:  # Last 5 packets
+                        payload = packet.get("payload", {})
+                        if payload:
+                            context.setdefault("history", []).append(payload)
+                    
+                    logger.debug(f"Loaded {len(packets)} packets for task context: {task_id}")
+            
+            # Load governance rules and project history via memory_helpers
+            try:
+                from runtime.memory_helpers import memory_search, MEMORY_SEGMENT_GOVERNANCE_META, MEMORY_SEGMENT_PROJECT_HISTORY
+                
+                governance_rules = await memory_search(
+                    segment=MEMORY_SEGMENT_GOVERNANCE_META,
+                    query=f"task {task_id}",
+                    agent_id=agent_id,
+                    top_k=5,
+                )
+                if governance_rules:
+                    context["governance_rules"] = governance_rules
+                
+                project_history = await memory_search(
+                    segment=MEMORY_SEGMENT_PROJECT_HISTORY,
+                    query=f"task {task_id}",
+                    agent_id=agent_id,
+                    top_k=5,
+                )
+                if project_history:
+                    context["project_history"] = project_history
+            except Exception as e:
+                logger.warning(f"Failed to load memory segments for task {task_id}: {e}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to bind memory context for task {task_id}: {e}")
+        
+        return context
+    
+    async def _persist_task_result(self, task_id: str, result: dict) -> bool:
+        """
+        Write execution results to Postgres via memory substrate.
+        
+        Persists task execution results to memory substrate for later retrieval.
+        
+        Args:
+            task_id: Task identifier
+            result: Execution result dict with status, iterations, duration_ms, error, etc.
+            
+        Returns:
+            True if persisted successfully, False otherwise
+        """
+        if not self._substrate_service:
+            logger.warning("Memory substrate service not available - cannot persist task result")
+            return False
+        
+        try:
+            from memory.substrate_models import PacketEnvelopeIn
+            
+            # Write task result packet
+            packet = PacketEnvelopeIn(
+                packet_type="task_execution_result",
+                agent_id=result.get("agent_id", "L"),
+                payload={
+                    "task_id": task_id,
+                    "status": result.get("status", "unknown"),
+                    "iterations": result.get("iterations", 0),
+                    "duration_ms": result.get("duration_ms", 0),
+                    "error": result.get("error"),
+                    "completed_at": result.get("completed_at"),
+                },
+            )
+            
+            write_result = await self._substrate_service.write_packet(packet)
+            
+            if write_result.success:
+                logger.info(f"Persisted task result to memory substrate: {task_id}")
+                
+                # Also cache in Redis for fast retrieval
+                try:
+                    from runtime.redis_client import get_redis_client
+                    
+                    redis_client = get_redis_client()
+                    if redis_client and redis_client.is_available():
+                        await redis_client.set_task_context(task_id, result, ttl=3600)  # 1 hour TTL
+                except Exception as e:
+                    logger.warning(f"Failed to cache task result in Redis: {e}")
+                
+                return True
+            else:
+                logger.warning(f"Failed to persist task result: {task_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error persisting task result {task_id}: {e}", exc_info=True)
+            return False
+    
+    async def _reactive_dispatch_loop(self) -> None:
+        """
+        Continuously process user messages and execute generated tasks.
+        
+        Reactive dispatch loop that polls for user messages, generates tasks,
+        and dispatches them immediately with approval gate enforcement.
+        """
+        import asyncio
+        from runtime.websocket_orchestrator import ws_orchestrator
+        from runtime.task_queue import dispatch_task_immediate, QueuedTask
+        from core.governance.approvals import ApprovalManager
+        from uuid import uuid4
+        
+        logger.info("Reactive dispatch loop started")
+        approval_manager = ApprovalManager(self._substrate_service)
+        
+        # Message queue (in-memory for now, could be Redis-backed)
+        message_queue = []
+        
+        while True:
+            try:
+                # Poll for messages (placeholder - would integrate with actual message source)
+                # For now, this is a stub that can be extended
+                await asyncio.sleep(1.0)  # Poll interval
+                
+                # Process any pending messages
+                while message_queue:
+                    message = message_queue.pop(0)
+                    
+                    # Generate tasks from query
+                    task_specs = await _generate_tasks_from_query(message)
+                    
+                    for spec in task_specs:
+                        # Check if task requires approval
+                        task_type = spec["payload"].get("type", "")
+                        if task_type in ["gmp_run", "git_commit"]:
+                            # High-risk task - check approval
+                            task_id = str(uuid4())
+                            is_approved = await approval_manager.is_approved(task_id)
+                            
+                            if not is_approved:
+                                logger.info(f"Task {task_id} requires approval, skipping immediate dispatch")
+                                continue
+                        
+                        # Dispatch immediately
+                        task = QueuedTask(
+                            task_id=str(uuid4()),
+                            name=spec["name"],
+                            payload=spec["payload"],
+                            handler=spec["handler"],
+                            agent_id="L",
+                            priority=spec.get("priority", 5),
+                            tags=["reactive"],
+                        )
+                        
+                        await dispatch_task_immediate(task)
+                        logger.info(f"Dispatched reactive task {task.task_id}")
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in reactive dispatch loop: {e}", exc_info=True)
+                await asyncio.sleep(1.0)
+        
+        logger.info("Reactive dispatch loop stopped")
     
     # =========================================================================
     # Validation
@@ -649,6 +925,36 @@ class AgentExecutorService:
                 error=f"Tool not bound to agent: {tool_call.tool_id}",
             )
         
+        # Bind memory context before execution
+        memory_context = await self._bind_memory_context(
+            task_id=str(instance.task.id),
+            agent_id=instance.config.agent_id,
+        )
+        if memory_context:
+            logger.debug(f"Loaded memory context for task {instance.task.id}: {len(memory_context)} keys")
+        
+        # Check if tool requires Igor approval
+        catalog = await ToolGraph.get_l_tool_catalog()
+        tool_def = next((t for t in catalog if t["name"] == tool_call.tool_id), None)
+        
+        if tool_def and tool_def.get("requires_igor_approval"):
+            approval_manager = ApprovalManager(self._substrate_service)
+            is_approved = await approval_manager.is_approved(str(tool_call.call_id))
+            
+            if not is_approved:
+                logger.warning(
+                    f"Tool {tool_call.tool_id} requires approval but not approved. task_id=%s, call_id=%s",
+                    str(instance.task.id),
+                    str(tool_call.call_id),
+                )
+                return ToolCallResult(
+                    call_id=tool_call.call_id,
+                    tool_id=tool_call.tool_id,
+                    success=False,
+                    error="PENDING_IGOR_APPROVAL",
+                    result={"status": "pending", "message": "Awaiting Igor approval"},
+                )
+        
         # Dispatch through registry using tool_id
         try:
             result = await self._tool_registry.dispatch_tool_call(
@@ -659,8 +965,24 @@ class AgentExecutorService:
                     "agent_id": instance.config.agent_id,
                     "thread_id": str(instance.thread_id),
                     "iteration": instance.iteration,
+                    "memory_context": memory_context,  # Inject memory context
                 },
             )
+            
+            # Persist task result after execution
+            await self._persist_task_result(
+                task_id=str(instance.task.id),
+                result={
+                    "agent_id": instance.config.agent_id,
+                    "tool_id": tool_call.tool_id,
+                    "call_id": str(tool_call.call_id),
+                    "status": "completed" if result.success else "failed",
+                    "error": result.error,
+                    "duration_ms": result.duration_ms or 0,
+                    "completed_at": datetime.utcnow().isoformat(),
+                },
+            )
+            
             return result
             
         except Exception as e:
@@ -676,6 +998,101 @@ class AgentExecutorService:
                 success=False,
                 error=str(e),
             )
+    
+    async def _execute_plan_sequence(self, plan_id: str) -> Dict[str, Any]:
+        """
+        Dequeue and execute tasks from a plan in order, with approval checks.
+        
+        Args:
+            plan_id: Plan identifier (thread_id)
+            
+        Returns:
+            Dict with execution summary: completed, failed, pending_approvals
+        """
+        from runtime.task_queue import TaskQueue
+        from core.governance.approvals import ApprovalManager
+        
+        task_queue = TaskQueue(queue_name="l9:tasks", use_redis=True)
+        approval_manager = ApprovalManager(self._substrate_service)
+        
+        completed = []
+        failed = []
+        pending_approvals = []
+        
+        # Dequeue tasks with plan tag
+        max_iterations = 100  # Safety limit
+        iteration = 0
+        
+        while iteration < max_iterations:
+            task = await task_queue.dequeue()
+            if task is None:
+                break
+            
+            # Check if task belongs to this plan
+            plan_tag = f"plan:{plan_id}"
+            if plan_tag not in task.tags:
+                # Re-enqueue if not for this plan
+                await task_queue.enqueue(
+                    name=task.name,
+                    payload=task.payload,
+                    handler=task.handler,
+                    agent_id=task.agent_id,
+                    priority=task.priority,
+                    tags=task.tags,
+                )
+                iteration += 1
+                continue
+            
+            # Check if task requires approval
+            task_type = task.payload.get("type", "")
+            if task_type in ["gmp_run", "git_commit"]:
+                is_approved = await approval_manager.is_approved(task.task_id)
+                if not is_approved:
+                    pending_approvals.append({
+                        "task_id": task.task_id,
+                        "name": task.name,
+                        "type": task_type,
+                    })
+                    logger.info(f"Task {task.task_id} requires approval, skipping")
+                    iteration += 1
+                    continue
+            
+            # Execute task via handler
+            try:
+                handler = task_queue._handlers.get(task.handler)
+                if handler:
+                    result = await handler(task)
+                    completed.append({
+                        "task_id": task.task_id,
+                        "name": task.name,
+                        "result": str(result)[:200] if result else "success",
+                    })
+                else:
+                    failed.append({
+                        "task_id": task.task_id,
+                        "name": task.name,
+                        "error": f"No handler for {task.handler}",
+                    })
+            except Exception as e:
+                failed.append({
+                    "task_id": task.task_id,
+                    "name": task.name,
+                    "error": str(e),
+                })
+            
+            iteration += 1
+        
+        return {
+            "plan_id": plan_id,
+            "completed": completed,
+            "failed": failed,
+            "pending_approvals": pending_approvals,
+            "summary": {
+                "total_completed": len(completed),
+                "total_failed": len(failed),
+                "total_pending": len(pending_approvals),
+            },
+        }
     
     # =========================================================================
     # Packet Emission (best-effort, non-blocking)

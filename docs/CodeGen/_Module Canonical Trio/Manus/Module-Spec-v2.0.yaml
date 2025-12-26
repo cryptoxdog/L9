@@ -1,0 +1,293 @@
+# ============================================================================
+# L9 UNIVERSAL MODULE SPEC — v2.0.0
+# ============================================================================
+# Purpose: Define WHAT to build (P generates HOW)
+# Audience: User fills → P consumes → C wires
+# Part of Trio: [Spec] → [P-Prompt] → [C-Prompt]
+# ============================================================================
+
+# ============================================================================
+# SECTION 1: MODULE IDENTITY (REQUIRED)
+# ============================================================================
+module:
+  # REQUIRED — Unique identifier (lowercase, snake_case)
+  id: "{{module_id}}"
+  
+  # REQUIRED — Human-readable name
+  name: "{{Module Name}}"
+  
+  # REQUIRED — One-line purpose
+  purpose: "{{Brief description of what this module does}}"
+  
+  # Fixed values (do not change)
+  system: "L9"
+  language: "python"
+  runtime: "python>=3.11"
+  owner: "Boss"
+
+# ============================================================================
+# SECTION 2: GOALS & NON-GOALS (REQUIRED)
+# ============================================================================
+goals:
+  - "{{Primary goal}}"
+  - "{{Secondary goal}}"
+  - "{{Additional goal if needed}}"
+
+non_goals:
+  - "{{What this module does NOT do}}"
+  # LOCKED — Do not remove these:
+  - "No new database tables"
+  - "No new migrations"
+  - "No parallel memory/logging/config systems"
+
+# ============================================================================
+# SECTION 3: FILE MANIFEST (REQUIRED)
+# ============================================================================
+# List exactly which files P may create and modify.
+# P will NOT create files outside this list.
+# ============================================================================
+repo:
+  root_path: "/Users/ib-mac/Projects/L9"
+  
+  # REQUIRED — New files P will create
+  allowed_new_files:
+    - "api/{{module}}_adapter.py"
+    - "api/{{module}}_client.py"  # Optional: only if external API calls needed
+    - "api/routes/{{module}}.py"
+    - "memory/{{module}}_ingest.py"
+    - "tests/test_{{module}}_adapter.py"
+    - "tests/test_{{module}}_ingest.py"  # Optional
+    - "docs/{{module}}.md"
+  
+  # REQUIRED — Existing files P may modify (via WIRING_SNIPPET)
+  allowed_modified_files:
+    - "api/server.py"  # Router registration only
+
+# ============================================================================
+# SECTION 4: INTERFACES (REQUIRED)
+# ============================================================================
+interfaces:
+  
+  # REQUIRED — How requests come IN to this module
+  inbound:
+    - name: "{{route_name}}"
+      method: "POST"
+      route: "/{{module}}/{{action}}"
+      headers:
+        - "X-{{Module}}-Signature"  # For HMAC verification
+        - "X-{{Module}}-Timestamp"  # For replay protection
+      payload_type: "JSON"
+      auth: "{{hmac-sha256 | bearer | api_key | none}}"
+  
+  # REQUIRED — How this module calls OUT to other services
+  outbound:
+    - name: "aios_chat"
+      endpoint: "/chat"
+      method: "POST"
+      timeout_seconds: 30
+      retry: false
+    
+    - name: "{{external_service}}"
+      endpoint: "{{external_api_url}}"
+      method: "POST"
+      timeout_seconds: 10
+      retry: true
+
+# ============================================================================
+# SECTION 5: ENVIRONMENT VARIABLES (REQUIRED)
+# ============================================================================
+environment:
+  required:
+    - name: "{{MODULE}}_SIGNING_SECRET"
+      description: "Secret for HMAC signature verification"
+      example: "your_signing_secret"
+    
+    - name: "{{MODULE}}_API_TOKEN"
+      description: "Token for external API calls"
+      example: "xoxb-your-token"
+  
+  optional:
+    - name: "AIOS_BASE_URL"
+      description: "AIOS endpoint"
+      default: "http://localhost:8000"
+
+# ============================================================================
+# SECTION 6: ORCHESTRATION FLOW (REQUIRED)
+# ============================================================================
+orchestration:
+  
+  # Step 1: Request validation
+  validation:
+    - "Verify signature (HMAC-SHA256)"
+    - "Check timestamp freshness (< 5 minutes)"
+    - "Parse and normalize payload"
+  
+  # Step 2: Context retrieval
+  context_reads:
+    - method: "substrate_service.search_packets"
+      filter: "thread_uuid match"
+      purpose: "Get conversation history"
+    
+    - method: "substrate_service.semantic_search"
+      enabled: "{{true | false}}"
+      purpose: "Find similar past conversations"
+  
+  # Step 3: AIOS processing
+  aios_calls:
+    - endpoint: "/chat"
+      input: "message + context"
+      output: "response_text"
+  
+  # Step 4: Side effects
+  side_effects:
+    - action: "Reply to external service"
+      service: "{{module}}_client.post_message"
+    
+    - action: "Store inbound packet"
+      service: "substrate_service.write_packet"
+      packet_type: "{{module}}.in"
+    
+    - action: "Store outbound packet"
+      service: "substrate_service.write_packet"
+      packet_type: "{{module}}.out"
+
+# ============================================================================
+# SECTION 7: IDEMPOTENCY (REQUIRED)
+# ============================================================================
+idempotency:
+  enabled: true  # or false
+  
+  # How to identify duplicate requests
+  dedupe_key:
+    primary: "{{event_id | message_id}}"
+    fallback: "hash(payload)"
+  
+  # What to do on duplicate
+  on_duplicate: "return {ok: true, dedupe: true}"
+  
+  # Thread identification
+  thread_id:
+    type: "UUIDv5"  # REQUIRED — deterministic
+    namespace: "{{module}}.l9.internal"
+    components:
+      - "{{source_id}}"  # e.g., team_id
+      - "{{channel_id}}"
+      - "{{thread_identifier}}"
+
+# ============================================================================
+# SECTION 8: ERROR POLICY (REQUIRED)
+# ============================================================================
+error_policy:
+  
+  # Auth/signature failures
+  invalid_signature:
+    status: 401
+    action: "Reject immediately"
+    log: "signature_invalid"
+  
+  # Stale timestamp (replay protection)
+  stale_timestamp:
+    status: 401
+    action: "Reject immediately"
+    log: "timestamp_stale"
+  
+  # AIOS call failure
+  aios_failure:
+    status: 200  # Always 200 to external service
+    action: "Log error, return ok"
+    log: "aios_call_failed"
+  
+  # External service reply failure
+  side_effect_failure:
+    status: 200  # Always 200 to external service
+    action: "Log error, return ok"
+    log: "reply_failed"
+  
+  # Packet storage failure
+  storage_failure:
+    status: 200
+    action: "Log error, continue"
+    log: "packet_storage_failed"
+
+# ============================================================================
+# SECTION 9: ACCEPTANCE CRITERIA (REQUIRED)
+# ============================================================================
+acceptance:
+  
+  # What MUST be true for module to be complete
+  required:
+    - criterion: "Signature verification blocks invalid requests"
+      test: "test_invalid_signature_returns_401"
+    
+    - criterion: "Valid requests are processed"
+      test: "test_valid_request_processes"
+    
+    - criterion: "Packets are stored with correct metadata"
+      test: "test_packet_stored_correctly"
+    
+    - criterion: "Thread UUID is deterministic"
+      test: "test_thread_uuid_deterministic"
+    
+    - criterion: "Duplicate events are idempotent"
+      test: "test_duplicate_event_skipped"
+    
+    - criterion: "AIOS response is forwarded"
+      test: "test_aios_response_forwarded"
+  
+  # What MUST NOT happen
+  forbidden:
+    - "Creates new database tables"
+    - "Duplicates memory substrate code"
+    - "Uses module-level singletons"
+    - "Reads env vars at import time"
+    - "Uses aiohttp instead of httpx"
+
+# ============================================================================
+# SECTION 10: OBSERVABILITY (REQUIRED)
+# ============================================================================
+observability:
+  
+  # Required log events (structured logging)
+  required_logs:
+    - event: "request_received"
+      level: "info"
+      fields: ["event_id", "source"]
+    
+    - event: "signature_verified"
+      level: "debug"
+      fields: ["valid"]
+    
+    - event: "packet_stored"
+      level: "info"
+      fields: ["packet_id", "thread_uuid"]
+    
+    - event: "aios_call_complete"
+      level: "info"
+      fields: ["elapsed_ms", "status"]
+    
+    - event: "handler_error"
+      level: "error"
+      fields: ["error", "traceback"]
+  
+  # Metrics (optional)
+  metrics:
+    - "{{module}}_requests_total"
+    - "{{module}}_errors_total"
+    - "{{module}}_latency_seconds"
+
+# ============================================================================
+# SECTION 11: NOTES FOR P
+# ============================================================================
+notes_for_perplexity:
+  - "Use REPO_CONTEXT_PACK imports exactly"
+  - "Use PacketEnvelopeIn for all packets"
+  - "Use UUIDv5 for thread_id (not uuid4)"
+  - "All handlers accept injected services (no singletons)"
+  - "Route handlers get services from request.app.state"
+  - "Include all tests from acceptance.required"
+  - "Include WIRING_SNIPPET for server.py"
+
+# ============================================================================
+# END OF MODULE SPEC
+# ============================================================================
+

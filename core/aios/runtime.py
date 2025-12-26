@@ -22,7 +22,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 import os
 from datetime import datetime
 from typing import Any, Optional
@@ -36,17 +36,17 @@ from core.agents.schemas import (
     ToolCallRequest,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
 # Default System Prompt
 # =============================================================================
 
-DEFAULT_SYSTEM_PROMPT = """You are L9, an AI assistant operating within the L9 AI Operating System.
+DEFAULT_SYSTEM_PROMPT = """You are L, an AI assistant operating within the L9 AI Operating System.
 
 IDENTITY
-You are L9. Role: Intelligent assistant and task executor.
+You are L. Role: Intelligent assistant and task executor.
 You operate autonomously within defined boundaries.
 
 CAPABILITIES

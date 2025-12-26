@@ -262,13 +262,18 @@ main() {
     
     if [[ "$1" == "--all" ]]; then
         log_info "Running validation on all specs..."
-        # Find all spec files and validate
+        # Find all spec files and validate (exclude docs/Quantum Research Factory/Perplexity/outputs)
         local all_passed=0
         while IFS= read -r -d '' spec_file; do
+            # Skip specs in Perplexity outputs directory (legacy/example specs)
+            if [[ "$spec_file" == *"docs/Quantum Research Factory/Perplexity/outputs"* ]]; then
+                log_info "Skipping legacy spec: $spec_file"
+                continue
+            fi
             if ! run_spec_validation "$spec_file"; then
                 all_passed=1
             fi
-        done < <(find "$REPO_ROOT" -name "*spec*.yaml" -print0 2>/dev/null)
+        done < <(find "$REPO_ROOT" -name "*spec*.yaml" -not -path "*/docs/Quantum Research Factory/Perplexity/outputs/*" -print0 2>/dev/null)
         
         if [[ $all_passed -ne 0 ]]; then
             log_error "SOME VALIDATIONS FAILED"

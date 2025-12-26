@@ -1,0 +1,796 @@
+# ============================================================================
+# L9 MODULE TIER 2 — CANONICAL GUIDANCE FOR MANUS
+# ============================================================================
+# Version: 1.0.0
+# Purpose: Define Tier 2 module characteristics so Manus generates accurate specs
+# Audience: Manus (spec generator) → Perplexity (code generator) → Cursor (wiring)
+# Related: MANUS_CONTEXT_PACK.md, L9_IDEMPOTENCY_SSOT.md, Module-Spec-v2.1.yaml
+# ============================================================================
+
+# ============================================================================
+# SECTION 1: TIER SYSTEM OVERVIEW
+# ============================================================================
+tier_system:
+  description: |
+    L9 modules are categorized into 3 tiers based on complexity, integration depth,
+    and execution scope. Tier determines which spec sections are mandatory vs optional.
+  
+  tier_1:
+    name: "Simple Adapter"
+    complexity: "low"
+    typical_scope:
+      - "Single webhook endpoint"
+      - "Stateless request/response"
+      - "No conversation threading"
+      - "No custom memory storage"
+    file_count: "2-3 files"
+    example_modules: ["health_check", "simple_webhook", "status_endpoint"]
+  
+  tier_2:
+    name: "Integration Module"
+    complexity: "medium"
+    typical_scope:
+      - "Webhook + outbound API calls"
+      - "Conversation threading (UUIDv5)"
+      - "Memory substrate integration"
+      - "AIOS chat calls"
+      - "Signature verification"
+      - "Idempotency handling"
+    file_count: "4-7 files"
+    example_modules: ["slack_adapter", "whatsapp_adapter", "email_adapter", "twilio_adapter"]
+  
+  tier_3:
+    name: "Complex Orchestration"
+    complexity: "high"
+    typical_scope:
+      - "Multi-step workflows"
+      - "Agent instantiation"
+      - "Tool registry integration"
+      - "Governance policy evaluation"
+      - "State machine execution"
+      - "Custom reasoning blocks"
+    file_count: "8+ files"
+    example_modules: ["agent_executor", "research_factory", "governance_engine"]
+
+# ============================================================================
+# SECTION 2: TIER 2 CHARACTERISTICS (DETAILED)
+# ============================================================================
+tier_2_definition:
+  
+  canonical_identifier: "integration_module"
+  
+  # What makes a module Tier 2
+  qualifying_criteria:
+    required_all:
+      - "Receives external webhooks OR makes outbound API calls"
+      - "Integrates with memory substrate (packet storage)"
+      - "Calls AIOS /chat endpoint"
+      - "Implements conversation threading"
+    required_any:
+      - "Signature verification (HMAC-SHA256)"
+      - "External service client (Slack, WhatsApp, etc.)"
+      - "Custom thread_uuid generation"
+      - "Idempotency deduplication"
+  
+  # What disqualifies from Tier 2 (bump to Tier 3)
+  tier_3_triggers:
+    - "Creates agent instances dynamically"
+    - "Implements tool registry dispatch"
+    - "Requires governance policy evaluation"
+    - "Has state machine with 4+ states"
+    - "Manages execution loops with iterations"
+    - "Produces structured reasoning blocks"
+  
+  # Typical integration points
+  integration_surface:
+    inbound:
+      - type: "webhook"
+        auth: "hmac-sha256"
+        headers: ["X-{Module}-Signature", "X-{Module}-Timestamp"]
+    outbound:
+      - type: "aios_chat"
+        endpoint: "/chat"
+        method: "POST"
+      - type: "external_api"
+        examples: ["Slack API", "WhatsApp Business API", "Twilio API"]
+    substrate:
+      - type: "packet_write"
+        models: ["PacketEnvelopeIn"]
+        packet_types: ["{module}.in", "{module}.out", "{module}.error"]
+      - type: "packet_search"
+        purpose: "conversation_history"
+        filter: "thread_uuid"
+
+# ============================================================================
+# SECTION 3: SPEC SECTIONS — MANDATORY VS OPTIONAL FOR TIER 2
+# ============================================================================
+spec_requirements:
+  
+  # Always required for Tier 2
+  mandatory_sections:
+    - section: "module"
+      fields: ["id", "name", "purpose", "system", "language", "runtime", "owner"]
+      notes: "module.id is the canonical tool_id — use everywhere"
+    
+    - section: "goals"
+      min_items: 2
+      max_items: 5
+      notes: "Be specific — avoid generic goals"
+    
+    - section: "non_goals"
+      locked_items:
+        - "No new database tables"
+        - "No new migrations"
+        - "No parallel memory/logging/config systems"
+      additional_items: "1-3 module-specific non-goals"
+    
+    - section: "repo"
+      fields: ["root_path", "allowed_new_files", "allowed_modified_files"]
+      notes: "P will NOT create files outside allowed_new_files list"
+    
+    - section: "interfaces"
+      subsections: ["inbound", "outbound"]
+      inbound_required: ["name", "method", "route", "headers", "payload_type", "auth"]
+      outbound_required: ["name", "endpoint", "method", "timeout_seconds", "retry"]
+    
+    - section: "environment"
+      subsections: ["required", "optional"]
+      required_fields: ["name", "description", "example"]
+      notes: "Never read env vars at import time — read at init"
+    
+    - section: "orchestration"
+      subsections: ["validation", "context_reads", "aios_calls", "side_effects"]
+      notes: "This is the execution flow — P generates code from this"
+    
+    - section: "idempotency"
+      fields: ["enabled", "dedupe_key", "on_duplicate", "thread_id"]
+      thread_id_type: "UUIDv5"
+      notes: "See L9_IDEMPOTENCY_SSOT.md for patterns"
+    
+    - section: "error_policy"
+      required_scenarios:
+        - "invalid_signature"
+        - "stale_timestamp"
+        - "aios_failure"
+        - "side_effect_failure"
+        - "storage_failure"
+      notes: "Always return 200 to external services to prevent redelivery loops"
+    
+    - section: "acceptance"
+      subsections: ["required", "forbidden"]
+      min_required_criteria: 6
+      notes: "Each criterion maps to a test function name"
+    
+    - section: "observability"
+      subsections: ["required_logs", "metrics"]
+      logging_library: "structlog"
+      notes: "Never use stdlib logging or print"
+    
+    - section: "standards"
+      required_standards: ["identity", "logging", "http_client"]
+      notes: "tool_id, structlog, httpx — non-negotiable"
+    
+    - section: "notes_for_perplexity"
+      min_items: 5
+      notes: "P reads this section to understand implementation details"
+  
+  # Conditionally required based on module characteristics
+  conditional_sections:
+    
+    - section: "allowed_new_files → api/{module}_client.py"
+      include_when:
+        - "Module makes outbound API calls to external services"
+        - "Module sends messages/replies back to external platforms"
+        - "Module integrates with third-party APIs (Slack, WhatsApp, etc.)"
+      omit_when:
+        - "Module only receives webhooks (no outbound calls)"
+        - "Module only calls internal AIOS endpoints"
+        - "External SDK handles all outbound communication"
+    
+    - section: "allowed_new_files → memory/{module}_ingest.py"
+      include_when:
+        - "Module has custom packet transformation logic"
+        - "Module requires specialized thread_uuid generation"
+        - "Module needs custom packet routing beyond standard write"
+      omit_when:
+        - "Module uses standard substrate_service.write_packet"
+        - "Module is stateless (no packet storage)"
+        - "Existing memory/ patterns are sufficient"
+    
+    - section: "orchestration.context_reads → semantic_search"
+      include_when:
+        - "Module benefits from retrieving similar past conversations"
+        - "Module needs to find related context beyond thread history"
+      omit_when:
+        - "Simple request/response with no history needed"
+        - "Thread history alone is sufficient"
+
+# ============================================================================
+# SECTION 4: TIER 2 FILE MANIFEST TEMPLATE
+# ============================================================================
+tier_2_file_manifest:
+  
+  description: |
+    Standard file structure for Tier 2 modules. P generates these files.
+    C wires them into api/server.py.
+  
+  core_files:
+    - path: "api/{module}_adapter.py"
+      purpose: "Main adapter — receives webhooks, orchestrates flow"
+      contains:
+        - "Request validation (signature, timestamp)"
+        - "Provenance normalization"
+        - "Thread UUID generation"
+        - "Deduplication check"
+        - "AIOS call orchestration"
+        - "Side effect execution"
+      dependencies:
+        - "memory.substrate_models.PacketEnvelopeIn"
+        - "memory.substrate_models.PacketMetadata"
+        - "uuid.uuid5"
+        - "structlog"
+        - "httpx"
+    
+    - path: "api/routes/{module}.py"
+      purpose: "FastAPI router — HTTP endpoint definitions"
+      contains:
+        - "Route decorators with signature injection"
+        - "Request body parsing"
+        - "Service injection from request.app.state"
+        - "Response formatting"
+      dependencies:
+        - "fastapi.APIRouter"
+        - "fastapi.Request"
+        - "fastapi.Header"
+    
+    - path: "tests/test_{module}_adapter.py"
+      purpose: "Pytest tests for adapter logic"
+      must_test:
+        - "Signature verification (valid + invalid)"
+        - "Timestamp freshness (valid + stale)"
+        - "Thread UUID determinism"
+        - "Duplicate event handling"
+        - "AIOS response forwarding"
+        - "Packet storage correctness"
+      test_pattern: "async def test_{criterion_from_acceptance}():"
+  
+  conditional_files:
+    - path: "api/{module}_client.py"
+      purpose: "Outbound API client — sends replies to external service"
+      include_condition: "Module sends outbound messages"
+      contains:
+        - "httpx.AsyncClient wrapper"
+        - "Rate limiting (if required)"
+        - "Error handling with retries"
+        - "Response parsing"
+    
+    - path: "memory/{module}_ingest.py"
+      purpose: "Custom packet ingestion logic"
+      include_condition: "Non-standard packet transformation needed"
+      contains:
+        - "Custom thread_uuid generation"
+        - "Packet enrichment"
+        - "Provenance tagging"
+    
+    - path: "tests/test_{module}_ingest.py"
+      purpose: "Tests for custom ingest logic"
+      include_condition: "memory/{module}_ingest.py exists"
+    
+    - path: "docs/{module}.md"
+      purpose: "Module documentation"
+      include_condition: "always"
+      contains:
+        - "Purpose and scope"
+        - "Environment variables"
+        - "Endpoint documentation"
+        - "Error codes"
+        - "Thread UUID formula"
+
+# ============================================================================
+# SECTION 5: THREAD UUID GENERATION (CRITICAL FOR TIER 2)
+# ============================================================================
+thread_uuid_spec:
+  
+  description: |
+    Thread UUIDs MUST be deterministic (UUIDv5) to ensure conversation continuity.
+    Same inputs ALWAYS produce same UUID. Never use uuid4() for threads.
+  
+  pattern:
+    type: "UUIDv5"
+    namespace: "{module}.l9.internal"
+    formula: "uuid5(NAMESPACE, '{source_id}:{channel_id}:{thread_ts}')"
+  
+  # Standard components for common platforms
+  platform_mappings:
+    slack:
+      source_id: "team_id"
+      channel_id: "channel"
+      thread_ts: "thread_ts or ts"
+      example: "uuid5(SLACK_NS, 'T12345:C67890:1234567890.123456')"
+    
+    whatsapp:
+      source_id: "phone_number_id"
+      channel_id: "from"
+      thread_ts: "timestamp or message_id"
+      example: "uuid5(WABA_NS, '1234567890:+1555123456:wamid.abc123')"
+    
+    email:
+      source_id: "account_id"
+      channel_id: "thread_id or subject_hash"
+      thread_ts: "date"
+      example: "uuid5(EMAIL_NS, 'acct_123:thread_abc:2025-01-15')"
+    
+    generic:
+      source_id: "tenant_id or source_system"
+      channel_id: "conversation_id or session_id"
+      thread_ts: "timestamp or message_id"
+  
+  # Code pattern (P should generate this)
+  code_pattern: |
+    from uuid import uuid5, NAMESPACE_DNS
+    
+    {MODULE}_NAMESPACE = uuid5(NAMESPACE_DNS, "{module}.l9.internal")
+    
+    def generate_thread_uuid(source_id: str, channel_id: str, thread_ts: str) -> UUID:
+        """Generate deterministic thread UUID from stable identity components."""
+        identity = f"{source_id}:{channel_id}:{thread_ts}"
+        return uuid5({MODULE}_NAMESPACE, identity)
+  
+  validation_test: |
+    def test_thread_uuid_deterministic():
+        """Thread UUID must be deterministic — same input = same output."""
+        uuid1 = generate_thread_uuid("team_123", "channel_456", "1234567890.123")
+        uuid2 = generate_thread_uuid("team_123", "channel_456", "1234567890.123")
+        assert uuid1 == uuid2, "Thread UUID must be deterministic"
+
+# ============================================================================
+# SECTION 6: IDEMPOTENCY PATTERNS FOR TIER 2
+# ============================================================================
+idempotency_spec:
+  
+  description: |
+    Tier 2 modules MUST handle duplicate events gracefully.
+    Reference: L9_IDEMPOTENCY_SSOT.md for full patterns.
+  
+  # Primary deduplication approaches
+  dedupe_strategies:
+    
+    event_id_based:
+      description: "Use platform-provided event ID as primary key"
+      when_to_use: "Platform guarantees unique event IDs (Slack, etc.)"
+      implementation: |
+        dedupe_key = event.get("event_id")
+        if dedupe_key in processed_events:
+            return {"ok": True, "dedupe": True}
+    
+    composite_key:
+      description: "Hash multiple fields when no unique ID available"
+      when_to_use: "No guaranteed unique ID from platform"
+      components: ["source_id", "channel_id", "timestamp", "content_hash"]
+      implementation: |
+        import hashlib
+        composite = f"{team_id}:{channel}:{ts}:{user}"
+        dedupe_key = hashlib.sha256(composite.encode()).hexdigest()[:16]
+    
+    substrate_lookup:
+      description: "Check memory substrate for existing packet"
+      when_to_use: "Need durable deduplication across restarts"
+      implementation: |
+        existing = await substrate_service.get_packet_by_dedupe_key(dedupe_key)
+        if existing:
+            return {"ok": True, "dedupe": True, "packet_id": str(existing.packet_id)}
+  
+  # Response on duplicate
+  duplicate_response:
+    http_status: 200
+    body: {"ok": true, "dedupe": true}
+    notes: "Always return 200 to prevent external service redelivery"
+  
+  # Limitations to document
+  limitations:
+    in_memory:
+      description: "In-memory deduplication lost on restart"
+      mitigation: "Use substrate lookup for critical paths"
+      roadmap: "Substrate-backed idempotency in v1.2"
+
+# ============================================================================
+# SECTION 7: ERROR HANDLING PATTERNS FOR TIER 2
+# ============================================================================
+error_handling_spec:
+  
+  principle: |
+    External webhooks should ALWAYS receive 200 OK to prevent redelivery loops.
+    Log errors, store error packets, but don't expose failures to external services.
+  
+  error_categories:
+    
+    signature_failure:
+      http_status: 401
+      log_event: "signature_verification_failed"
+      log_level: "warning"
+      response: {"error": "Unauthorized"}
+      notes: "Only case where non-200 is returned"
+    
+    timestamp_stale:
+      http_status: 401
+      log_event: "timestamp_stale"
+      log_level: "warning"
+      response: {"error": "Request expired"}
+      tolerance: "300 seconds (5 minutes)"
+    
+    aios_failure:
+      http_status: 200
+      log_event: "aios_call_failed"
+      log_level: "error"
+      response: {"ok": true}
+      action: "Log error, store error packet, don't reply to user"
+    
+    external_api_failure:
+      http_status: 200
+      log_event: "external_api_failed"
+      log_level: "error"
+      response: {"ok": true}
+      action: "Log error, store error packet, don't block webhook"
+    
+    storage_failure:
+      http_status: 200
+      log_event: "packet_storage_failed"
+      log_level: "warning"
+      response: {"ok": true}
+      action: "Log error, continue processing"
+  
+  # Error packet structure
+  error_packet:
+    packet_type: "{module}.error"
+    payload:
+      error_type: "string"
+      error_message: "string"
+      original_event_id: "string"
+      traceback: "string (if available)"
+    thread_id: "same as original event thread"
+
+# ============================================================================
+# SECTION 8: OBSERVABILITY REQUIREMENTS FOR TIER 2
+# ============================================================================
+observability_spec:
+  
+  logging:
+    library: "structlog"
+    forbidden: ["logging", "print", "sys.stdout"]
+    setup_pattern: |
+      import structlog
+      log = structlog.get_logger(__name__)
+    
+    # Required log events for Tier 2
+    required_events:
+      - event: "request_received"
+        level: "info"
+        fields: ["event_id", "source", "channel"]
+        when: "Webhook received"
+      
+      - event: "signature_verified"
+        level: "debug"
+        fields: ["valid", "method"]
+        when: "After signature check"
+      
+      - event: "thread_uuid_generated"
+        level: "debug"
+        fields: ["thread_uuid", "components"]
+        when: "After UUID generation"
+      
+      - event: "dedupe_check"
+        level: "debug"
+        fields: ["dedupe_key", "is_duplicate"]
+        when: "After deduplication check"
+      
+      - event: "aios_call_start"
+        level: "info"
+        fields: ["thread_uuid", "message_preview"]
+        when: "Before AIOS call"
+      
+      - event: "aios_call_complete"
+        level: "info"
+        fields: ["elapsed_ms", "response_length", "status"]
+        when: "After AIOS call"
+      
+      - event: "packet_stored"
+        level: "info"
+        fields: ["packet_id", "packet_type", "thread_uuid"]
+        when: "After substrate write"
+      
+      - event: "reply_sent"
+        level: "info"
+        fields: ["channel", "thread_ts", "response_length"]
+        when: "After external API reply"
+      
+      - event: "handler_error"
+        level: "error"
+        fields: ["error", "error_type", "traceback"]
+        when: "On any exception"
+  
+  metrics:
+    pattern: "{module}_{metric_name}"
+    required_metrics:
+      - name: "requests_total"
+        type: "counter"
+        labels: ["status", "event_type"]
+      - name: "errors_total"
+        type: "counter"
+        labels: ["error_type"]
+      - name: "latency_seconds"
+        type: "histogram"
+        labels: ["operation"]
+
+# ============================================================================
+# SECTION 9: QUALITY GATES FOR TIER 2 SPECS
+# ============================================================================
+quality_gates:
+  
+  description: |
+    Manus MUST validate specs against these gates before delivery.
+    P will reject specs that fail quality gates.
+  
+  # Pre-generation checks
+  pre_checks:
+    - gate: "module_id_format"
+      rule: "lowercase, snake_case, no spaces"
+      example_valid: "slack_adapter"
+      example_invalid: "SlackAdapter"
+    
+    - gate: "goals_specificity"
+      rule: "Goals must be specific and measurable, not generic"
+      example_valid: "Route Slack messages to AIOS and store conversation packets"
+      example_invalid: "Handle Slack integration"
+    
+    - gate: "non_goals_locked"
+      rule: "Locked non-goals must always be present"
+      locked_items:
+        - "No new database tables"
+        - "No new migrations"
+        - "No parallel memory/logging/config systems"
+    
+    - gate: "thread_uuid_deterministic"
+      rule: "thread_id.type must be 'UUIDv5' — never 'uuid4'"
+    
+    - gate: "http_client_standard"
+      rule: "standards.http_client.library must be 'httpx'"
+    
+    - gate: "logging_standard"
+      rule: "standards.logging.library must be 'structlog'"
+  
+  # Post-generation validation
+  post_checks:
+    - gate: "acceptance_coverage"
+      rule: "Every orchestration step must have at least one acceptance criterion"
+    
+    - gate: "error_policy_completeness"
+      rule: "Must define handling for all 5 error categories"
+    
+    - gate: "env_var_naming"
+      rule: "Environment variables must use MODULE_PREFIX_NAME format"
+    
+    - gate: "file_manifest_consistency"
+      rule: "Every file in allowed_new_files must be used in orchestration or tests"
+
+# ============================================================================
+# SECTION 10: DECISION MATRIX FOR COMMON TIER 2 SCENARIOS
+# ============================================================================
+decision_matrix:
+  
+  description: |
+    Quick reference for Manus when deciding spec options.
+    Use this to resolve common decisions without user input.
+  
+  decisions:
+    
+    - scenario: "Does module need external API client?"
+      condition: "Module sends replies/messages to external platform"
+      if_yes: "Include api/{module}_client.py in allowed_new_files"
+      if_no: "Omit client file"
+    
+    - scenario: "Does module need custom ingest?"
+      condition: "Module requires non-standard thread_uuid or packet transformation"
+      if_yes: "Include memory/{module}_ingest.py"
+      if_no: "Use substrate_service.write_packet directly"
+    
+    - scenario: "Should semantic search be enabled?"
+      condition: "Module benefits from retrieving similar past conversations"
+      if_yes: "Set orchestration.context_reads.semantic_search.enabled: true"
+      if_no: "Set to false or omit"
+    
+    - scenario: "What auth method for webhook?"
+      slack: "hmac-sha256 with X-Slack-Signature"
+      whatsapp: "Bearer token or webhook verification"
+      twilio: "X-Twilio-Signature"
+      generic: "hmac-sha256 or api_key"
+    
+    - scenario: "What timeout for AIOS calls?"
+      default: "30 seconds"
+      complex_reasoning: "60 seconds"
+      simple_response: "15 seconds"
+    
+    - scenario: "Should retries be enabled?"
+      aios_calls: "false (let orchestrator handle)"
+      external_api: "true (with exponential backoff)"
+      substrate_writes: "false (fail-fast)"
+
+# ============================================================================
+# SECTION 11: EXAMPLE TIER 2 SPEC SKELETON
+# ============================================================================
+example_skeleton:
+  
+  description: |
+    Minimal valid Tier 2 spec structure. Manus expands this template
+    with module-specific details.
+  
+  template: |
+    # L9 MODULE SPEC — {MODULE_NAME}
+    # Tier: 2 (Integration Module)
+    # Version: 1.0.0
+    
+    module:
+      id: "{module_id}"
+      name: "{Module Name}"
+      purpose: "{One-line purpose}"
+      system: "L9"
+      language: "python"
+      runtime: "python>=3.11"
+      owner: "Boss"
+    
+    goals:
+      - "{Primary goal}"
+      - "{Secondary goal}"
+    
+    non_goals:
+      - "{Module-specific non-goal}"
+      - "No new database tables"
+      - "No new migrations"
+      - "No parallel memory/logging/config systems"
+    
+    repo:
+      root_path: "/Users/ib-mac/Projects/L9"
+      allowed_new_files:
+        - "api/{module}_adapter.py"
+        - "api/{module}_client.py"  # If outbound API
+        - "api/routes/{module}.py"
+        - "tests/test_{module}_adapter.py"
+        - "docs/{module}.md"
+      allowed_modified_files:
+        - "api/server.py"
+    
+    interfaces:
+      inbound:
+        - name: "{module}_webhook"
+          method: "POST"
+          route: "/{module}/events"
+          headers:
+            - "X-{Module}-Signature"
+            - "X-{Module}-Timestamp"
+          payload_type: "JSON"
+          auth: "hmac-sha256"
+      outbound:
+        - name: "aios_chat"
+          endpoint: "/chat"
+          method: "POST"
+          timeout_seconds: 30
+          retry: false
+    
+    environment:
+      required:
+        - name: "{MODULE}_SIGNING_SECRET"
+          description: "Secret for HMAC signature verification"
+          example: "your_signing_secret"
+      optional:
+        - name: "AIOS_BASE_URL"
+          description: "AIOS endpoint"
+          default: "http://localhost:8000"
+    
+    orchestration:
+      validation:
+        - "Verify signature (HMAC-SHA256)"
+        - "Check timestamp freshness (< 5 minutes)"
+      context_reads:
+        - method: "substrate_service.search_packets"
+          filter: "thread_uuid match"
+      aios_calls:
+        - endpoint: "/chat"
+          input: "message + context"
+      side_effects:
+        - action: "Store inbound packet"
+          packet_type: "{module}.in"
+        - action: "Store outbound packet"
+          packet_type: "{module}.out"
+    
+    idempotency:
+      enabled: true
+      dedupe_key:
+        primary: "event_id"
+        fallback: "hash(payload)"
+      on_duplicate: "return {ok: true, dedupe: true}"
+      thread_id:
+        type: "UUIDv5"
+        namespace: "{module}.l9.internal"
+        components: ["{source_id}", "{channel_id}", "{thread_ts}"]
+    
+    error_policy:
+      invalid_signature: {status: 401, log: "signature_invalid"}
+      stale_timestamp: {status: 401, log: "timestamp_stale"}
+      aios_failure: {status: 200, log: "aios_call_failed"}
+      side_effect_failure: {status: 200, log: "reply_failed"}
+      storage_failure: {status: 200, log: "packet_storage_failed"}
+    
+    acceptance:
+      required:
+        - criterion: "Signature verification blocks invalid requests"
+          test: "test_invalid_signature_returns_401"
+        - criterion: "Valid requests are processed"
+          test: "test_valid_request_processes"
+        - criterion: "Thread UUID is deterministic"
+          test: "test_thread_uuid_deterministic"
+        - criterion: "Duplicate events are idempotent"
+          test: "test_duplicate_event_skipped"
+        - criterion: "AIOS response is forwarded"
+          test: "test_aios_response_forwarded"
+        - criterion: "Packets stored with correct metadata"
+          test: "test_packet_stored_correctly"
+      forbidden:
+        - "Creates new database tables"
+        - "Uses module-level singletons"
+        - "Reads env vars at import time"
+        - "Uses aiohttp instead of httpx"
+        - "Uses stdlib logging instead of structlog"
+    
+    observability:
+      required_logs:
+        - {event: "request_received", level: "info"}
+        - {event: "signature_verified", level: "debug"}
+        - {event: "aios_call_complete", level: "info"}
+        - {event: "packet_stored", level: "info"}
+        - {event: "handler_error", level: "error"}
+    
+    standards:
+      identity:
+        canonical_identifier: "tool_id"
+      logging:
+        library: "structlog"
+        forbidden: ["logging", "print"]
+      http_client:
+        library: "httpx"
+        forbidden: ["aiohttp", "requests"]
+    
+    notes_for_perplexity:
+      - "Use PacketEnvelopeIn for all packets"
+      - "Use UUIDv5 for thread_id (never uuid4)"
+      - "Route handlers get services from request.app.state"
+      - "Include WIRING_SNIPPET for server.py"
+      - "Use structlog for all logging"
+      - "Use httpx for all HTTP calls"
+
+# ============================================================================
+# SECTION 12: REFERENCES
+# ============================================================================
+references:
+  
+  context_pack: "MANUS_CONTEXT_PACK.md"
+  idempotency_ssot: "L9_IDEMPOTENCY_SSOT.md"
+  spec_template: "Module-Spec-v2.1.yaml"
+  prompt_template: "Module-Prompt-MANUS-v1.1.md"
+  
+  core_schemas:
+    - "core/agents/schemas.py"
+    - "memory/substrate_models.py"
+    - "core/schemas/packet_envelope.py"
+    - "core/governance/schemas.py"
+  
+  protocol_definitions:
+    - "core/agents/executor.py"
+    - "core/governance/engine.py"
+    - "core/tools/registry_adapter.py"
+  
+  config_patterns:
+    - "config/settings.py"
+
+# ============================================================================
+# END OF TIER 2 GUIDANCE
+# ============================================================================
+

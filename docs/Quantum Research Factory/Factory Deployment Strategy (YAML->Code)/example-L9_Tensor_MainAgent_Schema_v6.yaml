@@ -1,0 +1,726 @@
+---
+title: L9 Main Agent (Domain–Tensor Bridge) v6.0
+purpose: >
+  Define the L9 Main Agent that acts as the central orchestrator and connector
+  between domain data (PlastOS, MortgageOS, etc.) and the TensorAIOS layer.
+  Ingests domain transactions, coordinates tensor inference, enriches results,
+  and distributes insights back to domain agents.
+summary: >
+  L9MainAgent v6.0 is the OS-level cognitive orchestrator that bridges domain-specific
+  business logic with neural-symbolic reasoning. It manages packet routing, context
+  enrichment, multi-modal reasoning, governance feedback, and learning loops. All
+  domain agents register with Main; Main coordinates their tensor scoring, world model
+  queries, and memory synchronization.
+version: 6.0.0
+created: 2025-12-12
+updated: 2025-12-12
+owner: L9 System Architect
+tags:
+  - main-agent
+  - orchestration
+  - domain-bridge
+  - packet-routing
+  - cognitive-hub
+  - multi-domain
+domain: L9
+type: core-agent
+productionready: true
+
+---
+
+system: L9 Main Agent
+module: coreagent
+name: MainAgent
+role: >
+  Central Domain–Tensor Orchestrator. Acts as the cognitive hub for L9, receiving
+  domain transactions, enriching them with world model context, coordinating tensor
+  inference, applying governance rules, and distributing enriched results to domain
+  agents and external systems.
+
+rootpath: L9/agents/main
+  # L9 agents are at L9/agents; this is the main OS-level agent
+
+integration:
+  connectto:
+    - L9/core                          # Access packet protocol, kernels
+    - L9/core/tensoraios               # Call tensor scorer, embeddings
+    - L9/worldmodel                    # Query causal context, patterns
+    - L9/governance                    # Escalate decisions, audit
+    - L9/memory                        # Store context, reasoning logs
+    - L9/orchestration                 # Schedule tasks, manage pipelines
+    - L9/agents/plastos                # PlastOS domain agent
+    - L9/agents/mortgageos             # MortgageOS domain agent
+    - L9/agents/generic                # Generic domain template
+    
+  shareddomains:
+    - PlastOS                          # Plastic trading, buyer-supplier matching
+    - MortgageOS                       # Mortgage underwriting, risk assessment
+    - ForgeOS                          # (future manufacturing domain)
+    - Any L9 Domain
+
+description: >
+  L9 Main Agent v6.0 is the orchestration layer that coordinates all domain agents
+  and neural-symbolic reasoning. Key responsibilities:
+  
+  1. **Packet Reception**: Accept PacketEnvelopes from domain agents with transaction
+     data, queries, or governance events.
+  2. **Context Enrichment**: Enrich domain packets with world model context (causal
+     factors, temporal patterns, market conditions).
+  3. **Tensor Coordination**: Route transactions to TensorAIOS for link prediction,
+     embedding generation, anomaly detection.
+  4. **Multi-modal Reasoning**: Apply reasoning engine (causal, analogical, reflective)
+     to combine domain logic + tensor insights.
+  5. **Governance Integration**: Log all decisions, escalate high-risk or low-confidence
+     results to governance anchors, respect human overrides.
+  6. **Result Distribution**: Send enriched results back to requesting domain agents
+     and to audit/monitoring systems.
+  7. **Learning Coordination**: Collect feedback from domain agents on tensor predictions,
+     trigger retraining, detect model drift.
+  8. **Memory Synchronization**: Keep episodic, semantic, and causal memory layers
+     synchronized across all domains.
+
+---
+
+## GOVERNANCE
+
+governance:
+  anchors:
+    - Igor                             # L9 Executive Architect
+    - Domain Oversight Council         # For cross-domain decisions
+    - Compliance Officer               # For governance escalations
+    
+  mode: hybrid
+  humanoverride: true                  # Critical decisions only
+  
+  complianceauditor: L9/governance/auto_audit_main_agent.py
+  
+  escalationpolicy: >
+    Auto-escalate if:
+    - Any decision confidence < 0.7 AND domain_criticality > 0.5
+    - Governance override requested by any anchor
+    - Anomaly flagged by tensor layer
+    - Cross-domain conflict detected (e.g., two domains want incompatible action)
+    - Memory sync failure or data inconsistency detected
+    - Model drift or tensor serving latency spike
+    - Reasoning cycle detects potential ethical violation
+    
+  performancereporting: L9/monitoring/mainagent_dashboard.py
+  
+  auditscope:
+    - packet_reception_and_routing
+    - context_enrichment_from_world_model
+    - tensor_coordination_and_scoring
+    - reasoning_decisions_with_confidence
+    - governance_escalations
+    - result_distribution
+    - learning_feedback_collection
+    - memory_synchronization_events
+
+---
+
+## MEMORY TOPOLOGY
+
+memorytopology:
+  workingmemory:
+    storagetype: redis_cluster
+    purpose: >
+      Active reasoning state: current packet being processed, intermediate
+      reasoning steps, tensor scores awaiting aggregation, governance decisions
+      in flight. TTL = 5 minutes.
+    keyspace: mainagent:working:*
+    
+  episodicmemory:
+    storagetype: postgres + pgvector
+    purpose: >
+      Detailed decision logs: what packet came in, what reasoning was applied,
+      what tensor scores were obtained, what output was generated, what feedback
+      was received. Searchable by timestamp, domain, packet_id.
+    retention: 1 year
+    indexby:
+      - domain
+      - packet_id
+      - decision_timestamp
+      - confidence_score
+      - governance_escalation
+      
+  semanticmemory:
+    storagetype: neo4j_auradb
+    purpose: >
+      Graph of domain entities, their embeddings, relationships predicted by
+      tensor layer, trust scores from governance, patterns learned across domains.
+      Nodes: Buyers, Suppliers, Materials, Borrowers, Properties, Lenders.
+      Edges: MATCHES (tensor prediction), TRUSTS, LEARNED_FROM, CONFLICTS_WITH.
+    structure:
+      - node_type: domain_entity
+        fields:
+          - entity_id
+          - domain (PlastOS, MortgageOS, etc.)
+          - entity_type (buyer, supplier, borrower, property, etc.)
+          - embedding_vector
+          - trust_score
+          - last_updated
+      - edge_type: tensor_prediction
+        fields:
+          - source_entity_id
+          - target_entity_id
+          - relationship_type
+          - prediction_score
+          - confidence
+          - model_version
+          - timestamp
+      - edge_type: cross_domain_pattern
+        fields:
+          - source_domain
+          - target_domain
+          - pattern_description
+          - confidence
+          - learned_from_count
+          
+  causalmemory:
+    storagetype: hypergraphdb
+    purpose: >
+      Why did Main Agent make this decision? Track causal reasoning: what world
+      model factors influenced the decision? What tensor signals were strongest?
+      What governance constraints applied? Enable explainability and learning.
+    schema:
+      - factor: domain_transaction_signal
+        influences: [tensor_score, risk_assessment, match_confidence]
+      - factor: world_model_context
+        influences: [market_condition, temporal_pattern, causal_factor]
+      - factor: governance_constraint
+        influences: [escalation_decision, human_override_applied]
+      - factor: memory_consistency
+        influences: [decision_validity, cross_domain_sync_status]
+        
+  longtermpersistence:
+    storagetype: s3_durable_archive + glacier
+    purpose: >
+      Archive all decision logs, reasoning traces, model versions used,
+      governance escalations. Immutable audit trail for compliance.
+    retention: indefinite
+    
+  crossagentsharing:
+    enabled: true
+    layer: cognition_bus
+    purpose: >
+      Share reasoning context and patterns with PlastOS, MortgageOS, TensorAIOS.
+      Bidirectional: Main sends enriched packets to domains; domains send feedback.
+    
+  memorygraphlinking:
+    type: temporalhypergraph
+    enableembeddingstreams: true
+    updateintervalhours: 1
+
+---
+
+## COMMUNICATION STACK
+
+communicationstack:
+  input:
+    - packetenvelope                   # L9 native packets from domain agents
+    - structuredapi                    # REST/gRPC for external integrations
+    - messagesqueue                    # Async events (feedback, triggers)
+    - eventstream                      # Subscribe to world model updates
+    
+  output:
+    - packetenvelope                   # Send enriched packets back to domains
+    - structuredapi                    # Structured responses to callers
+    - eventstream                      # Publish decisions for audit/monitoring
+    - governancereport                 # Escalations to governance layer
+    - asynccallback                    # Long-running reasoning results
+    
+  channels:
+    email: false
+    calendar: false
+    slack: true                        # Ops notifications
+    internalchat: false
+    packetenvelope: true               # Primary: L9 native protocol
+    cognitionbus: true                 # Secondary: inter-agent comms
+    structuredapi: true                # External integrations
+    eventstream: true                  # Pub/sub with domains
+    
+  ioengine:
+    voicein: null
+    voiceout: null
+    multimodalintegration: disabled
+    sentimentfeedback: disabled
+    contextualintentdetection: enabled # Parse intent from PacketEnvelope
+
+---
+
+## REASONING ENGINE
+
+reasoningengine:
+  framework: multimodal_reflective
+  
+  model: gpt5_orchestrator              # Primary reasoning model (placeholder)
+  
+  secondarymodels:
+    - causal_inference_processor       # Apply world model causal logic
+    - analogical_reasoner              # Find similar patterns across domains
+    - counterfactual_projector         # "What if" scenarios
+    - reflective_auditor               # Self-critique of decisions
+    
+  strategymodes:
+    - symbolic_rule_application        # Apply domain-specific rules
+    - tensor_guided_scoring            # Use tensor predictions as signals
+    - causal_context_enrichment        # Blend world model factors
+    - multi_domain_pattern_matching    # Find patterns across domains
+    - governance_constraint_satisfaction # Ensure compliance
+    - analogical_transfer              # Apply reasoning from one domain to another
+    - reflective_planning              # Multi-step reasoning with backtracking
+    
+  temporalscope:
+    scope: rolling_180_days            # Reason over last 6 months of patterns
+    
+  knowledgefusionlayer:
+    mode: hypergraph_contextual
+    sourceblend:
+      - domain_transaction_history
+      - tensor_embeddings_and_scores
+      - world_model_causal_factors
+      - governance_rules_and_constraints
+      - cross_domain_learned_patterns
+      - episodic_memory_reasoning_traces
+      
+  reasoningfeedbackloop:
+    policy: reinforcement_reflection
+    rewardfunction: >
+      domain_agent_accepts_recommendation AND
+      (prediction_correct OR human_anchor_approves)
+    penaltyfunction: >
+      domain_agent_rejects_recommendation OR
+      governance_escalation_triggered OR
+      reasoning_latency_spike
+    retrainintervalhours: 168          # Weekly
+
+---
+
+## COLLABORATION NETWORK
+
+collaborationnetwork:
+  partners:
+    - L9/agents/plastos                # PlastOS buyer-supplier matching
+    - L9/agents/mortgageos             # MortgageOS borrower assessment
+    - L9/agents/generic                # Generic domain template
+    - L9/core/tensoraios               # Tensor scoring layer
+    - L9/worldmodel                    # Causal context & patterns
+    - L9/governance                    # Compliance & escalation
+    - L9/memory                        # Persistent storage
+    - L9/orchestration                 # Task scheduling
+    
+  interactionprotocol:
+    contextexchange: >
+      Shared Hypergraph Memory: Domains push transactions as PacketEnvelopes,
+      Main enriches and broadcasts results. All agents read/write to semantic
+      and causal memory layers.
+    memoryalignment: async_vector_sync
+    approvalhandoff: signed_token_exchange
+    
+  autonomyscope:
+    internaldecisions: full            # Full autonomy on routing, enrichment, reasoning
+    externalactions: gated_by_governance # Major escalations require approval
+    
+  delegationpolicy:
+    spawnsubagents: allowed
+    maxparallelsubagents: 20
+    subagenttemplates:
+      - domain_packet_handler          # Handle domain-specific packet types
+      - tensor_coordination_agent      # Batch requests to TensorAIOS
+      - context_enrichment_agent       # Query world model, enrich
+      - reasoning_executor_agent       # Run reasoning pipeline
+      - governance_liaison_agent       # Escalations, overrides
+      - feedback_collector_agent       # Gather domain feedback
+      - memory_sync_agent              # Synchronize memory layers
+
+---
+
+## LEARNING SYSTEM
+
+learningsystem:
+  architecture: continuous_metalearning
+  
+  modules:
+    - packet_pattern_learning          # Learn common domain packet schemas
+    - reasoning_trace_analysis         # Learn which reasoning modes work best
+    - tensor_signal_weighting          # Learn how to weight tensor vs domain logic
+    - domain_preference_discovery      # Discover domain-specific patterns
+    - cross_domain_transfer_learning   # Learn from one domain to help another
+    - governance_policy_adaptation     # Learn escalation thresholds from feedback
+    
+  feedbackchannels:
+    - domain_agent_acceptance          # Did domain agent accept recommendation?
+    - governance_audit_feedback        # Did governance anchor approve?
+    - transaction_outcome_signals      # Did predicted match actually happen?
+    - world_model_updates              # Did causal factors change?
+    - memory_consistency_checks        # Are decisions stable over time?
+    - cross_domain_learnings           # Patterns from other domains
+    
+  modelupdatepolicy:
+    mode: semi_online
+    autotunehyperparams: true
+    rollbackonregression: true
+    
+  cognitivegrowthvector:
+    stabilitythreshold: 0.03           # Max 3% drift
+    optimizationtarget: efficiency     # Speed & consistency over novelty
+    
+  autonomyprofile:
+    mode: controlled_autonomy
+    tasklimit: 500_parallel
+    decisionlatencymaxms: 2000         # 2 second SLA for reasoning
+    
+    escalationtriggers:
+      - reasoning_confidence_< 0_7_AND_criticality_> 0_5
+      - tensor_anomaly_score_> 0_95
+      - governance_override_requested
+      - cross_domain_conflict_detected
+      - memory_sync_failure
+      - inference_latency_> 2000ms
+      - reasoning_cycle_detected
+      
+    safetylayer:
+      - packet_validation              # Check packet structure & fields
+      - domain_consistency_check       # Verify domain context is valid
+      - tensor_output_sanity_check     # Bounds, NaN, confidence > 0
+      - causal_consistency_validation  # Reasoning doesn't violate world model
+      - governance_compliance_check    # Respects all compliance rules
+      - memory_integrity_check         # No data corruption in stores
+      - rate_limiting                  # Prevent DoS, queue fairness
+      - decision_audit_logging         # Log all decisions with full trace
+
+---
+
+## WORLD MODEL INTEGRATION
+
+worldmodelintegration:
+  activemodels:
+    - multi_domain_causal_model        # Cross-domain causal factors
+    - temporal_trend_model             # Temporal patterns (seasonal, cyclical)
+    - market_dynamics_model            # Supply, demand, pricing pressures
+    - geographic_economic_model        # Location-based constraints
+    - governance_policy_model          # Compliance & regulatory landscape
+    
+  dataconnectors:
+    - realtimeknowledgestream          # Domain transactions
+    - causalinferencegraph             # World model's causal DAG
+    - temporalpatterndb                # Historical patterns
+    - governancepolicydb               # Compliance rules
+    - crossdomain_learningdb           # Inter-domain insights
+    
+  modeltype: dynamic_hypergraph
+  
+  usecases:
+    - enriching_domain_packets_with_causal_context
+    - detecting_market_anomalies
+    - predicting_domain_cascades       # If PlastOS supply changes, how does MortgageOS react?
+    - policy_drift_detection           # Governance rules changing
+    - pattern_discovery_across_domains
+
+---
+
+## PACKET ROUTING & PROCESSING
+
+packetrouting:
+  inbound:
+    - source: L9/agents/plastos
+      packettype: transaction_batch
+      action: enrich_with_context → tensor_score → return_results
+      
+    - source: L9/agents/mortgageos
+      packettype: loan_application
+      action: enrich_with_credit_context → tensor_score → risk_assess → return_results
+      
+    - source: L9/orchestration
+      packettype: batch_job
+      action: distribute_to_domains → coordinate_tensor_calls → aggregate_results
+      
+    - source: L9/governance
+      packettype: override_request
+      action: apply_override → reprocess_affected_decisions → audit_log
+      
+    - source: L9/worldmodel
+      packettype: context_update
+      action: update_enrichment_context → retrigger_relevant_decisions
+      
+  outbound:
+    - destination: L9/agents/plastos
+      packettype: enriched_results
+      fields: [match_scores, tensor_embeddings, anomaly_flags, confidence]
+      
+    - destination: L9/agents/mortgageos
+      packettype: risk_assessment
+      fields: [credit_risk_score, market_impact, governance_flags]
+      
+    - destination: L9/governance
+      packettype: escalation_notice
+      fields: [decision_id, reasoning_trace, escalation_reason, human_required]
+      
+    - destination: L9/monitoring
+      packettype: telemetry_event
+      fields: [latency_ms, reasoning_mode, confidence, domain, timestamp]
+
+---
+
+## REASONING PIPELINE
+
+reasoningpipeline:
+  
+  stage_1_packet_reception:
+    - validate_packet_structure
+    - extract_domain_context
+    - log_reception_event
+    
+  stage_2_context_enrichment:
+    - query_world_model:
+        factors:
+          - temporal_context (time of day, day of week, season)
+          - market_conditions (supply, demand, pricing trends)
+          - geographic_factors (location-based rules, corridors)
+          - governance_policy (applicable compliance rules)
+          - causal_influences (what factors affect this decision)
+    - blend_with_domain_context
+    - compute_enriched_representation
+    
+  stage_3_tensor_coordination:
+    - format_for_tensoraios (entity IDs, features)
+    - batch_with_other_requests (if possible)
+    - call_tensor_scorer:
+        methods:
+          - link_prediction (likelihood of match)
+          - embedding_similarity (cluster analysis)
+          - anomaly_detection (is this unusual?)
+    - collect_tensor_results_with_confidence
+    
+  stage_4_multi_modal_reasoning:
+    - apply_domain_specific_rules
+    - apply_causal_reasoning (world model signals)
+    - apply_analogical_reasoning (patterns from other domains)
+    - apply_reflective_reasoning (self-critique)
+    - synthesize_into_decision
+    
+  stage_5_governance_check:
+    - verify_compliance_with_rules
+    - check_confidence_threshold
+    - assess_escalation_triggers
+    - if_violation_or_low_confidence: escalate_to_anchor
+    - else: proceed_with_decision
+    
+  stage_6_result_distribution:
+    - format_results_for_requesting_domain
+    - attach_reasoning_trace (for auditability)
+    - attach_confidence_score
+    - attach_governance_status (approved, escalated, overridden)
+    - send_results_back_via_packet_envelope
+    
+  stage_7_feedback_collection:
+    - log_decision_for_audit
+    - await_domain_feedback (did they accept? take action?)
+    - if_feedback_received: update_learning_weights
+    - if_negative_feedback: trigger_governance_review
+
+---
+
+## CURSOR INSTRUCTIONS
+
+cursorinstructions:
+  createifmissing:
+    - L9/agents/main
+    - L9/agents/main/reasoning
+    - L9/agents/main/routing
+    - L9/agents/main/enrichment
+    - L9/agents/main/coordination
+    - L9/tests/agents/main
+    - L9/logs/main_agent
+    - L9/manifests/main_agent
+    
+  generateallrequired: true
+  autointegrate: true
+  
+  generatefiles:
+    # Main orchestration
+    - agent_controller.py              # Main entry point, packet dispatcher
+    - reasoning_engine.py              # Multi-modal reasoning pipeline
+    - decision_synthesizer.py           # Combine reasoning modes into decision
+    
+    # Packet handling & routing
+    - packet_router.py                 # Route PacketEnvelopes to handlers
+    - packet_validator.py              # Validate packet structure & fields
+    - domain_packet_handler.py          # Handle domain-specific packet types
+    - packet_formatter.py              # Format responses for domains
+    
+    # Context enrichment
+    - context_enricher.py              # Query world model, enrich context
+    - world_model_bridge.py            # Interface to world model layer
+    - domain_context_builder.py        # Build domain-specific context
+    
+    # Tensor coordination
+    - tensor_coordinator.py            # Batch, call, and collect tensor results
+    - tensoraios_bridge.py             # Interface to tensor layer
+    - embedding_processor.py           # Process embeddings returned from tensor layer
+    - anomaly_handler.py               # Handle anomaly flags from tensor layer
+    
+    # Multi-modal reasoning
+    - symbolic_reasoner.py             # Apply domain rules
+    - causal_reasoner.py               # Apply world model causal logic
+    - analogical_reasoner.py           # Find patterns across domains
+    - reflective_auditor.py            # Self-critique reasoning
+    
+    # Governance & escalation
+    - governance_bridge.py             # Escalate decisions, respect overrides
+    - compliance_checker.py            # Verify compliance with rules
+    - escalation_handler.py            # Handle escalation logic
+    
+    # Memory management
+    - memory_bridge.py                 # Access all memory layers
+    - episodic_logger.py               # Log decisions to episodic memory
+    - semantic_updater.py              # Update semantic graph
+    - causal_tracer.py                 # Trace causal influences
+    
+    # Learning & feedback
+    - feedback_collector.py            # Gather domain feedback
+    - learning_loop.py                 # Process feedback, update weights
+    - performance_analyzer.py          # Analyze decision outcomes
+    - drift_detector.py                # Detect model/reasoning drift
+    
+    # Communication & APIs
+    - api_server.py                    # REST/gRPC endpoints
+    - event_publisher.py               # Publish decisions to monitoring
+    - async_result_handler.py          # Handle long-running results
+    
+    # Configuration & utilities
+    - config_manager.py                # Load domain-specific configs
+    - logger.py                        # Structured logging
+    - telemetry_reporter.py            # Metrics & monitoring
+    - __init__.py                      # Module initialization
+    
+  linkexisting:
+    - L9/core/governance.py
+    - L9/core/memorymanager.py
+    - L9/core/packetprotocol.py
+    - L9/worldmodel/interface.py
+    - L9/orchestration/taskscheduler.py
+    - L9/core/tensoraios/tensor_scorer.py
+    
+  generatedocs:
+    - L9/agents/main/README.md          # Architecture overview
+    - L9/agents/main/ARCHITECTURE.md    # Detailed design
+    - L9/agents/main/PACKET_SPEC.md     # PacketEnvelope format
+    - L9/agents/main/REASONING_PIPELINE.md # Step-by-step reasoning
+    - L9/agents/main/CONFIG.md          # Configuration
+    - L9/agents/main/API_SPEC.md        # REST/gRPC endpoints
+    - L9/agents/main/INTEGRATION.md     # How to register domain agents
+    - L9/agents/main/AUTONOMYRULES.md   # Autonomy & escalation
+    - L9/agents/main/DEPLOYMENT.md      # Deployment guide
+    
+  logging:
+    - L9/logs/main_agent/reception.log     # Packet reception
+    - L9/logs/main_agent/reasoning.log     # Reasoning traces
+    - L9/logs/main_agent/routing.log       # Packet routing
+    - L9/logs/main_agent/governance.log    # Escalations
+    - L9/logs/main_agent/performance.log   # Latency, throughput
+    
+  postgeneration:
+    manifest: L9/manifests/main_agent/mainagent_v6_manifest.json
+    validatedependencies: true
+    generatetests: true
+
+---
+
+## DEPLOYMENT
+
+deployment:
+  runtime: async_multinode
+  environment: vpscluster_l9
+  apimode: private                      # L9-internal only
+  
+  endpoints:
+    - name: process_packet
+      path: /mainagent/v6/packet
+      method: POST
+      timeout_ms: 2000
+      
+    - name: query_decision_log
+      path: /mainagent/v6/decisions
+      method: GET
+      timeout_ms: 500
+      
+    - name: register_domain
+      path: /mainagent/v6/register_domain
+      method: POST
+      timeout_ms: 1000
+      auth_required: service_token
+      
+    - name: get_agent_status
+      path: /mainagent/v6/status
+      method: GET
+      timeout_ms: 100
+      
+    - name: request_governance_override
+      path: /mainagent/v6/override
+      method: POST
+      timeout_ms: 30000
+      auth_required: governance_token
+      
+  telemetry:
+    dashboard: L9/monitoring/mainagent_dashboard.py
+    metrics:
+      - reasoning_latency_p50_p99_p999
+      - packet_throughput
+      - tensor_coordination_efficiency
+      - governance_escalation_rate
+      - domain_feedback_acceptance_rate
+      - memory_sync_status
+      - decision_confidence_distribution
+      - error_rate_by_type
+      
+  alerting:
+    - alert_ops_if_latency_> 2000ms
+    - alert_governance_if_escalation_rate_> 5_percent
+    - alert_team_if_memory_sync_fails
+    - alert_team_if_tensoraios_unavailable
+    - alert_team_if_world_model_unreachable
+
+---
+
+## GOVERNANCE FEEDBACK CYCLE
+
+governancefeedbackcycle:
+  complianceauditor: L9/governance/audit_main_agent.py
+  reflectionauditor: L9/governance/reflection_main_agent.py
+  
+  improvementscoring:
+    metrics:
+      - reasoning_accuracy
+      - governance_compliance_rate
+      - domain_acceptance_rate
+      - memory_consistency
+      - tensor_integration_efficiency
+      - cross_domain_learning_transfer
+      - escalation_necessity
+      
+  reportfrequencyhours: 24
+  escalationpath: governance_bridge
+
+---
+
+## METADATA
+
+metadata:
+  author: L9 System Architect
+  owner: Igor, L9 Executive
+  versionhash: L9-mainagent-v6.0.0
+  generated: 2025-12-12
+  status: production_ready
+  supporteddomain:
+    - PlastOS
+    - MortgageOS
+    - ForgeOS (future)
+    - Any L9 Domain
+  dependencies:
+    - L9/core/packetprotocol
+    - L9/core/tensoraios
+    - L9/worldmodel
+    - L9/governance
+    - L9/memory
+    - L9/orchestration

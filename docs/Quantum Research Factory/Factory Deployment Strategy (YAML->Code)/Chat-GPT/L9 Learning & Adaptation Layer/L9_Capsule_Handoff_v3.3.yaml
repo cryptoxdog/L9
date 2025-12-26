@@ -1,0 +1,257 @@
+# ============================================================================
+# L9_Capsule_Handoff_v3.3.yaml
+# Extracted from: L9 Learning & Adaptation Layer Chat Transcript
+# Description: VPS deployment + memory stack config
+# Extracted: 2025-12-16T23:52:05.523143
+# Source lines: 26452-26700
+# ============================================================================
+
+id: "l9.session_capsule.v3.3"
+type: "capsule"
+version: "3.3.0"
+status: "active"
+created: "2025-12-10T00:00:00Z"
+
+meta:
+  owner: "L9 Core Systems"
+  domain_scope:
+    - "PlasticOS"
+    - "MortgageOS"
+    - "Generic Reasoning Stack"
+  purpose: >
+    Portable specification and deployment handoff for L9 reasoning OS. 
+    Includes runtime, memory stack, and VPS deployment guide.
+
+# ============================================================
+# 🧠 SYSTEM CONTEXT SNAPSHOT
+# ============================================================
+context:
+  goals:
+    - Achieve full autonomous reasoning for industrial domains (PlasticOS, MortgageOS)
+    - Enable scalable RL-driven world models using a unified memory architecture
+    - Deploy on cost-efficient VPS environments with persistent reasoning state
+  architecture_summary: >
+    L9 consists of a reasoning kernel (GPT-5 class model), modular world models (hypergraph + temporal embeddings),
+    and a four-tier memory stack: Redis (working), Postgres (episodic), Pinecone (semantic), S3 (long-term archive).
+  constraints:
+    - Must be deployable on commodity VPS hardware
+    - Prefer open-source memory integrations (pgvector, Redis-stack)
+    - Containerized for reproducibility (Docker or Podman)
+  assumptions:
+    - Persistent state is critical (no stateless compute)
+    - Agents must reason asynchronously (async I/O mandatory)
+    - Compatible with Cursor or equivalent dev environment
+
+# ============================================================
+# ⚙️ AGENT CONFIGURATION + MEMORY STACK
+# ============================================================
+runtime:
+  mode: "async"
+  max_concurrent_agents: 12
+  checkpointing: true
+  persistence_enabled: true
+  hot_reload: true
+  model_backend: "gpt-5"
+  reasoning_mode: "long_context_hierarchical"
+  compression: "zstd"
+
+memory_config:
+  working_memory: 
+    engine: "redis_cluster"
+    purpose: "ephemeral state, agent dialogue, in-context scratchpad"
+    host: "localhost"
+    port: 6379
+  episodic_memory:
+    engine: "postgres_pgvector"
+    db_name: "l9_memory"
+    purpose: "episodic recall and short-term persistence"
+    connection_env: "DATABASE_URL"
+  semantic_memory:
+    engine: "pinecone"
+    purpose: "embedding-based retrieval, long-term relational recall"
+    api_key_env: "PINECONE_API_KEY"
+    index_name: "l9-semantic-embeddings"
+  long_term_persistence:
+    engine: "s3"
+    purpose: "archival storage of reasoning traces, checkpoints, and model logs"
+    bucket_env: "AWS_S3_BUCKET"
+    region: "us-east-1"
+    retention_days: 365
+
+backup_policy:
+  auto_snapshot: true
+  interval_hours: 12
+  retention_limit: 20
+  target: "s3://l9-backups"
+
+# ============================================================
+# 🌍 WORLD MODEL ARCHITECTURE
+# ============================================================
+world_model:
+  engine: "L9.HyperGraphEngine"
+  type: "dynamic_hypergraph"
+  components:
+    - schema_loader: "canonical_yaml_spec_v3.yaml"
+    - reasoning_module: "Bayesian_GNN_Reasoner.yaml"
+    - counterfactual_module: "Counterfactual_Reasoning_Module.yaml"
+    - temporal_embeddings: "temporal_embeddings.csv"
+    - feature_store: "postgres_pgvector"
+  capabilities:
+    - temporal reasoning
+    - multi-domain inference
+    - reinforcement learning (RL) simulation
+  interaction_loop:
+    - observe_state: "env.observe() → reads hypergraph snapshot"
+    - act: "agent.policy(state)"
+    - update: "env.step(action) → modifies node/edge attributes"
+    - store: "memory.store(state, action, reward)"
+    - learn: "agent.learn(memory.sample())"
+  output_channels:
+    - postgres (structured logs)
+    - pinecone (embedding summaries)
+    - s3 (checkpoints)
+    - grafana dashboard (real-time metrics)
+
+# ============================================================
+# 🧩 AGENT SETS
+# ============================================================
+agents:
+  - id: "l9.research_agent"
+    role: "data acquisition + inference synthesis"
+    source_modules:
+      - ResearchAgent_Interface.yaml
+      - LongRAG_Retriever_Config.yaml
+  - id: "l9.reasoning_agent"
+    role: "world model simulation + policy optimization"
+    runtime_class: "AsyncReinforcementAgent"
+  - id: "l9.validation_agent"
+    role: "quality control and bias/fairness monitor"
+    module: "MortgageGraph_Validation_Module.yaml"
+  - id: "l9.execution_agent"
+    role: "production orchestrator and API handler"
+    api_endpoints:
+      - "/query"
+      - "/simulate"
+      - "/validate"
+
+# ============================================================
+# 🏗️ VPS DEPLOYMENT GUIDE
+# ============================================================
+deployment:
+  environment:
+    min_requirements:
+      cpu: "4 cores"
+      ram: "16 GB"
+      storage: "250 GB SSD"
+      os: "Ubuntu 22.04 LTS"
+    recommended_vps:
+      - provider: "Hetzner Cloud"
+        plan: "CPX41 (8C/16GB RAM)"
+      - provider: "Vultr"
+        plan: "High Frequency 8C/32GB"
+      - provider: "AWS Lightsail"
+        plan: "8vCPU / 32GB RAM / 640GB SSD"
+    dockerized: true
+    docker_base: "python:3.11-slim"
+    ports:
+      - 8080  # L9 REST API
+      - 6379  # Redis
+      - 5432  # Postgres
+      - 5005  # Debug + Telemetry
+
+  setup_steps:
+    1: "Provision VPS (Ubuntu 22.04+)"
+    2: "Install Docker + Docker Compose"
+    3: "Clone L9 repo or load capsule via S3"
+    4: "Create .env with all secrets (POSTGRES_URL, PINECONE_KEY, AWS_CREDS)"
+    5: "docker-compose up -d"
+    6: "Initialize Postgres schema + Redis cluster"
+    7: "Seed Pinecone index with base embeddings"
+    8: "Load initial world models from /artifacts/worldmodels/"
+    9: "Run health check via /health endpoint"
+    10: "Enable auto-backup + Grafana dashboards"
+
+  verification:
+    health_check:
+      - "curl localhost:8080/health"
+      - "docker ps"
+      - "redis-cli ping"
+      - "psql -U postgres -d l9_memory -c '\dt'"
+    monitoring_tools:
+      - Prometheus
+      - Grafana
+      - Loki (for log aggregation)
+
+  scaling:
+    - "Horizontal scaling via Docker swarm or K8s (replicate agents)"
+    - "Attach external Postgres and Redis clusters for persistence"
+    - "Offload embeddings to Pinecone dedicated pod"
+
+  disaster_recovery:
+    - auto_restore_from: "s3://l9-backups/latest/"
+    - recovery_script: "./scripts/recover_from_snapshot.sh"
+
+# ============================================================
+# 🧪 TRAINING + SIMULATION
+# ============================================================
+training:
+  rl_world_simulator: "L9_WorldSim_RL_Trainer.yaml"
+  training_loops:
+    - "MortgageGraph_RL_WorldSimulator.yaml"
+    - "PlasticOS_RL_WorldSimulator.yaml"
+  batch_size: 64
+  reward_function:
+    - name: "approval_accuracy"
+      weight: 0.45
+    - name: "default_prediction_accuracy"
+      weight: 0.35
+    - name: "policy_stability"
+      weight: 0.20
+  optimizer: "AdamW"
+  lr: 0.0002
+  eval_metrics:
+    - auc
+    - mrr
+    - f1_score
+  scheduler: "CosineAnnealingLR"
+
+# ============================================================
+# 🧩 STORAGE + BLOBS
+# ============================================================
+storage:
+  s3_bucket: "l9-data-archive"
+  path_structure:
+    - /checkpoints/
+    - /backups/
+    - /logs/
+    - /datasets/
+  versioning: true
+  retention_policy:
+    - daily_snapshots: 7
+    - weekly_snapshots: 4
+    - monthly_snapshots: 12
+  encryption: "AES256"
+
+# ============================================================
+# 🧭 MONITORING + OPS
+# ============================================================
+observability:
+  metrics:
+    - cpu_usage
+    - memory_usage
+    - request_latency
+    - agent_reward_avg
+    - model_loss
+    - embedding_similarity
+  dashboards:
+    grafana:
+      panels:
+        - RL Agent Performance
+        - World Model Drift
+        - Memory Utilization
+        - Semantic Retrieval Accuracy
+  alerts:
+    - type: "anomaly"
+      trigger: "memory_usage > 90%"
+    - type: "drift"
+      trigger: "embedding_similarity < 0.75"

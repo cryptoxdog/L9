@@ -1,12 +1,4 @@
 .suite6-config.json
-Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
-Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
-Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
-Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
-Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
-Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
-Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
-Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
 api/adapters/calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
 api/adapters/email_adapter/Module-Spec-v2.6-email_adapter.yaml
 api/adapters/twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
@@ -17,24 +9,30 @@ config/policies/defaults.yaml
 config/policies/tool_usage.yaml
 config/settings.yaml
 core/schemas/Memory.yaml
-core/schemas/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
-deploy/Dockerfile.memory_api_v1.0.0
+docker-compose.override.yml
+docker-compose.override.yml.example
 docker-compose.yml
-docs/Agent L-CTO/L-CTO Setup/INITIALIZATION_KERNEL_UNIFIED.yaml
-docs/Agent L-CTO/L-CTO Setup/personality_kernel.yaml
-docs/Full Diagnosis VPS/docker/Dockerfile
-docs/Full Diagnosis VPS/docker/Dockerfile.api
-docs/Full Diagnosis VPS/docker/docker-compose.yml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Module-Spec-v2.1.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Module-Spec-v2.2.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Module-Spec-v2.3.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/Module-Spec-v2.4.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Manus/TIER_2_MODULE_GUIDANCE.yaml
-docs/New Code/Module Spec & Templates/Module Canonical Trio/Module-Prompt-CURSOR-v2.0.yaml
-docs/Perplexity/Module-Spec-v2.5.yaml
-docs/Perplexity/outputs/01_config_loader_spec.yaml
+docs/12-19-25/docker-compose.txt
+docs/12-19-25/generated/specs/config_loader.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/INITIALIZATION_KERNEL_UNIFIED.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/L9 AGENT MANIFEST — L-CTO v1.0.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/personality_kernel.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.1.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.2.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.3.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.4.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/TIER_2_MODULE_GUIDANCE.yaml
+docs/CodeGen/_Module Canonical Trio/Module-Prompt-CURSOR-v2.0.yaml
+docs/Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
+docs/Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
+docs/Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
+docs/Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
+docs/Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
+docs/Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
+docs/Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
+docs/Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
 docs/Quantum Research Factory/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/FILE_MANIFEST.json
 docs/Quantum Research Factory/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/comprehensive_research_foundation.json
 docs/Quantum Research Factory/Factory Deployment Strategy (YAML->Code)/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v5.3.yaml
@@ -48,12 +46,20 @@ docs/Quantum Research Factory/Factory Deployment Strategy (YAML->Code)/Chat-GPT/
 docs/Quantum Research Factory/Factory Deployment Strategy (YAML->Code)/Chat-GPT/L9 Learning & Adaptation Layer/L9_v4.1_GodMode_Prompt.yaml
 docs/Quantum Research Factory/Factory Deployment Strategy (YAML->Code)/Chat-GPT/L9 Learning & Adaptation Layer/L9_v4.1_Manifest_GodMode.yaml
 docs/Quantum Research Factory/Factory Deployment Strategy (YAML->Code)/example-L9_Tensor_MainAgent_Schema_v6.yaml
+docs/Quantum Research Factory/Perplexity/Module-Spec-v2.5.yaml
+docs/Quantum Research Factory/Perplexity/outputs/01_config_loader_spec.yaml
 docs/Quantum Research Factory/research_factory_schema.yaml
-docs/Repo-Summary/docker-compose.yml.md
-docs/research_factory/sample_schemas/domain_adapter.yaml
-docs/research_factory/sample_schemas/glue_layer.yaml
-docs/research_factory/sample_schemas/orchestrator.yaml
-docs/research_factory/sample_schemas/simple_agent.yaml
+docs/Quantum Research Factory/sample_schemas/domain_adapter.yaml
+docs/Quantum Research Factory/sample_schemas/glue_layer.yaml
+docs/Quantum Research Factory/sample_schemas/orchestrator.yaml
+docs/Quantum Research Factory/sample_schemas/simple_agent.yaml
+docs/_Context-L9-Repo/docker/Dockerfile
+docs/_Context-L9-Repo/docker/Dockerfile.api
+docs/_Context-L9-Repo/docker/docker-compose-VPS.yaml
+docs/_Context-L9-Repo/docker/docker-compose.yml
+docs/_Context-L9-Repo/docker/root-docker-compose.yml
+docs/_Context-L9-Repo/docker/runtime-Dockerfile
+docs/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
 generated/specs/config_loader.yaml
 l9_private/kernels/00_system/01_master_kernel.yaml
 l9_private/kernels/00_system/02_identity_kernel.yaml

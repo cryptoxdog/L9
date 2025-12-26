@@ -1,0 +1,321 @@
+# ============================================================================
+# L9 MODULE SPEC — config_loader v2.5.0
+# Generated: 2025-12-17 via Perplexity Deep Research (60 citations)
+# ============================================================================
+
+module_spec_version: '2.5'
+module_id: config_loader
+module_name: Configuration Loader
+module_tier: 0
+module_category: core_infrastructure
+
+description: >
+  Tier 0 core infrastructure module providing environment and YAML configuration
+  management with comprehensive validation. Loads before all other L9 modules,
+  establishing typed access to application configuration via Pydantic Settings v2.
+  Implements fail-fast validation, ensuring invalid configuration prevents startup
+  with explicit error reporting suitable for operational visibility.
+
+dependencies:
+  module_dependencies: []
+  external_dependencies:
+    - pydantic>=2.5.0
+    - pydantic-settings>=2.1.0
+    - python-dotenv>=1.0.0
+    - PyYAML>=6.0.0
+    - structlog>=24.1.0
+
+interfaces:
+  provided:
+    - config_provider:
+        description: >
+          Exposes validated application configuration through strongly-typed
+          Pydantic models. Configuration is immutable after validation and
+          safely shareable across application threads.
+        methods:
+          - get_config() -> ApplicationConfig
+          - get_database_config() -> DatabaseConfig
+          - get_cache_config() -> CacheConfig
+          - get_logging_config() -> LoggingConfig
+          - validate_config() -> ValidationResult
+  required: []
+
+configuration:
+  environment_variables:
+    - DATABASE_HOST: { type: string, default: "localhost", required: false }
+    - DATABASE_PORT: { type: integer, default: 5432, required: false }
+    - DATABASE_USER: { type: string, required: true }
+    - DATABASE_PASSWORD: { type: string, required: true, sensitive: true }
+    - DATABASE_NAME: { type: string, default: "l9_core", required: false }
+    - DATABASE_POOL_SIZE: { type: integer, default: 20, required: false }
+    - DATABASE_MAX_OVERFLOW: { type: integer, default: 10, required: false }
+    - DATABASE_ECHO: { type: boolean, default: false, required: false }
+    - DATABASE_SSL_MODE: { type: string, default: "prefer", required: false }
+    - REDIS_HOST: { type: string, default: "localhost", required: false }
+    - REDIS_PORT: { type: integer, default: 6379, required: false }
+    - REDIS_DB: { type: integer, default: 0, required: false }
+    - REDIS_PASSWORD: { type: string, required: false, sensitive: true }
+    - REDIS_SENTINEL_HOSTS: { type: string, required: false }
+    - REDIS_SENTINEL_SERVICE_NAME: { type: string, default: "mymaster", required: false }
+    - LOG_LEVEL: { type: string, default: "INFO", required: false }
+    - LOG_FORMAT: { type: string, default: "json", required: false }
+    - LOG_OUTPUT: { type: string, default: "stdout", required: false }
+    - APPLICATION_ENV: { type: string, default: "development", required: false }
+    - APPLICATION_DEBUG: { type: boolean, default: false, required: false }
+    - ENABLE_VECTORDB: { type: boolean, default: true, required: false }
+
+  dotenv_support:
+    enabled: true
+    file_path: ".env"
+    encoding: "utf-8"
+    override_existing: false
+    search_upward: true
+
+  yaml_support:
+    enabled: true
+    safe_loading_only: true
+    supported_formats:
+      - application/yaml
+      - application/x-yaml
+
+lifespan_integration:
+  startup:
+    - load_environment_variables
+    - load_dotenv_files
+    - parse_yaml_configuration
+    - validate_all_configuration
+    - initialize_structured_logging
+    - health_check_prerequisites
+    - log_configuration_summary
+  shutdown:
+    - flush_logging
+    - close_configuration_resources
+
+validation:
+  fail_on_error: true
+  detailed_error_reporting: true
+  validation_errors:
+    - invalid_type: "Configuration value cannot be coerced to required type"
+    - missing_required: "Required configuration environment variable not set"
+    - invalid_format: "Configuration value does not match expected format"
+    - out_of_range: "Configuration numeric value exceeds valid range"
+    - invalid_url: "Configuration URL is malformed or uses unsupported scheme"
+
+security:
+  secret_handling:
+    - never_log_secrets: true
+    - mask_sensitive_values: true
+    - validate_secret_permissions: true
+    - support_secret_rotation: true
+  credential_sources:
+    - environment_variables_only: true
+    - external_secret_managers: ["aws_secrets", "azure_keyvault", "vault"]
+    - dotenv_for_development_only: true
+    - no_hardcoded_secrets: true
+
+database_configuration:
+  connection_string_format: "postgresql+asyncpg://user:password@host:port/database"
+  connection_parameters:
+    host:
+      type: string
+      description: "PostgreSQL server hostname or IP address"
+      required: true
+      environment_variable: "DATABASE_HOST"
+    port:
+      type: integer
+      description: "PostgreSQL server port"
+      default: 5432
+      environment_variable: "DATABASE_PORT"
+      range: [1024, 65535]
+    user:
+      type: string
+      description: "PostgreSQL database user"
+      required: true
+      environment_variable: "DATABASE_USER"
+    password:
+      type: string
+      description: "PostgreSQL database password"
+      required: true
+      environment_variable: "DATABASE_PASSWORD"
+      sensitive: true
+    database:
+      type: string
+      description: "PostgreSQL database name"
+      default: "l9_core"
+      environment_variable: "DATABASE_NAME"
+    pool_size:
+      type: integer
+      description: "Maximum number of database connections in pool"
+      default: 20
+      environment_variable: "DATABASE_POOL_SIZE"
+      range: [5, 100]
+    max_overflow:
+      type: integer
+      description: "Maximum overflow connections beyond pool_size"
+      default: 10
+      environment_variable: "DATABASE_MAX_OVERFLOW"
+      range: [0, 50]
+    echo:
+      type: boolean
+      description: "Enable SQL query logging for debugging"
+      default: false
+      environment_variable: "DATABASE_ECHO"
+    ssl_mode:
+      type: string
+      description: "SSL connection mode"
+      default: "prefer"
+      environment_variable: "DATABASE_SSL_MODE"
+      valid_values: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
+  pgvector_extension:
+    enabled: true
+    required_version: "0.5.0"
+    dimensions_supported: [1024]
+    operations: ["cosine_distance", "l2_distance", "inner_product"]
+
+cache_configuration:
+  backend: redis
+  connection_parameters:
+    host:
+      type: string
+      description: "Redis server hostname or IP address"
+      default: "localhost"
+      environment_variable: "REDIS_HOST"
+    port:
+      type: integer
+      description: "Redis server port"
+      default: 6379
+      environment_variable: "REDIS_PORT"
+      range: [1024, 65535]
+    db:
+      type: integer
+      description: "Redis database number"
+      default: 0
+      environment_variable: "REDIS_DB"
+      range: [0, 15]
+    password:
+      type: string
+      description: "Redis password for authentication"
+      required: false
+      environment_variable: "REDIS_PASSWORD"
+      sensitive: true
+  sentinel_support:
+    enabled: true
+    hosts:
+      type: string
+      description: "Comma-separated sentinel hosts"
+      environment_variable: "REDIS_SENTINEL_HOSTS"
+      format: "host1:26379,host2:26379,host3:26379"
+    service_name:
+      type: string
+      description: "Redis service name in Sentinel configuration"
+      default: "mymaster"
+      environment_variable: "REDIS_SENTINEL_SERVICE_NAME"
+    quorum:
+      type: integer
+      description: "Sentinel quorum for failover decisions"
+      default: 2
+      range: [1, 5]
+  connection_pooling:
+    min_idle: 2
+    max_size: 50
+    connection_timeout_ms: 5000
+    idle_timeout_ms: 300000
+
+logging_configuration:
+  framework: structlog
+  processors:
+    - add_log_level
+    - add_timestamp
+    - add_service_name
+    - json_renderer
+  log_level:
+    type: string
+    default: "INFO"
+    environment_variable: "LOG_LEVEL"
+    valid_values: ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+  output_format:
+    type: string
+    default: "json"
+    environment_variable: "LOG_FORMAT"
+    valid_values: ["json", "text", "syslog"]
+  output_destination:
+    type: string
+    default: "stdout"
+    environment_variable: "LOG_OUTPUT"
+    valid_values: ["stdout", "stderr", "file", "syslog"]
+  context_fields:
+    - service_name
+    - version
+    - environment
+    - request_id
+    - user_id
+    - correlation_id
+
+application_configuration:
+  environment:
+    type: string
+    default: "development"
+    environment_variable: "APPLICATION_ENV"
+    valid_values: ["development", "staging", "production"]
+  debug_mode:
+    type: boolean
+    default: false
+    environment_variable: "APPLICATION_DEBUG"
+  enable_vector_database:
+    type: boolean
+    default: true
+    environment_variable: "ENABLE_VECTORDB"
+  enable_http_client_pooling:
+    type: boolean
+    default: true
+  http_client_timeout_seconds:
+    type: integer
+    default: 30
+    range: [5, 300]
+  max_workers_for_async_tasks:
+    type: integer
+    default: 10
+    range: [1, 100]
+
+output:
+  exports:
+    config_instance:
+      type: ApplicationConfig
+      description: "Fully validated application configuration object"
+    database_url:
+      type: string
+      description: "Validated PostgreSQL connection URL"
+    redis_url:
+      type: string
+      description: "Validated Redis connection URL"
+    logger_instance:
+      type: structlog.BoundLogger
+      description: "Configured structured logger"
+  metrics:
+    - config_load_duration_ms
+    - config_validation_duration_ms
+    - config_error_count
+    - missing_required_variables_count
+
+error_handling:
+  validation_errors:
+    behavior: fail_fast
+    reporting: detailed
+    logging: structured_json
+  missing_required_configuration:
+    behavior: startup_failure
+    exit_code: 1
+    notification: "Alert deployment platform"
+  partial_configuration_detected:
+    behavior: log_warning
+    action: continue_with_defaults
+  configuration_reload:
+    enabled: false
+    reason: "Immutable configuration prevents runtime updates"
+
+testing:
+  fixtures:
+    - valid_config
+    - missing_required_config
+    - invalid_type_config
+

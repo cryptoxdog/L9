@@ -1,3 +1,5 @@
+# CodeGen????
+
 """
 L9 Research Factory API Routes
 ==============================
@@ -13,14 +15,14 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/factory", tags=["research-factory"])
 

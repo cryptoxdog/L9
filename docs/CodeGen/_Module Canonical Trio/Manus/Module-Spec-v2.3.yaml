@@ -1,0 +1,470 @@
+# ============================================================================
+# L9 UNIVERSAL MODULE SPEC — v2.3.0
+# ============================================================================
+# Purpose: Define WHAT to build (P generates HOW)
+# Audience: User fills → P consumes → C wires
+# Part of Trio: [Spec] → [P-Prompt] → [C-Prompt]
+# Changelog v2.3.0:
+#   - Added Section: EXTERNAL SURFACE (deployment exposure clarity)
+#   - Added Section: PACKET CONTRACT (schema-enforced packet guarantees)
+#   - Added Section: BOOT IMPACT (criticality classification)
+#   - Added Section: TEST SCOPE (deployment guarantees)
+#   - Schema validation rules now enforce test requirements based on surface
+# Prior versions: v2.1 (base), v2.2 (invariants, touchpoints, negative cases)
+# ============================================================================
+
+# Schema version for validation gating
+schema_version: "2.3"
+
+# ============================================================================
+# SECTION 1: MODULE IDENTITY (REQUIRED)
+# ============================================================================
+module:
+  # REQUIRED — Unique identifier (lowercase, snake_case)
+  # This is the CANONICAL tool_id. Use this everywhere (not tool_name).
+  id: "{{module_id}}"
+  
+  # REQUIRED — Human-readable name (display only, not for code references)
+  name: "{{Module Name}}"
+  
+  # REQUIRED — One-line purpose
+  purpose: "{{Brief description of what this module does}}"
+  
+  # Fixed values (do not change)
+  system: "L9"
+  language: "python"
+  runtime: "python>=3.11"
+  owner: "Boss"
+
+# ============================================================================
+# SECTION 2: GOALS & NON-GOALS (REQUIRED)
+# ============================================================================
+goals:
+  - "{{Primary goal}}"
+  - "{{Secondary goal}}"
+  - "{{Additional goal if needed}}"
+
+non_goals:
+  - "{{What this module does NOT do}}"
+  # LOCKED — Do not remove these:
+  - "No new database tables"
+  - "No new migrations"
+  - "No parallel memory/logging/config systems"
+
+# ============================================================================
+# SECTION 3: FILE MANIFEST (REQUIRED)
+# ============================================================================
+repo:
+  root_path: "/Users/ib-mac/Projects/L9"
+  
+  allowed_new_files:
+    - "api/{{module}}_adapter.py"
+    - "api/{{module}}_client.py"  # Include IF: external API calls needed
+    - "api/routes/{{module}}.py"
+    - "memory/{{module}}_ingest.py"  # Include IF: custom packet storage logic
+    - "tests/test_{{module}}_adapter.py"
+    - "tests/test_{{module}}_ingest.py"  # Include IF: ingest file created
+    - "docs/{{module}}.md"
+  
+  allowed_modified_files:
+    - "api/server.py"  # Router registration only
+
+# ============================================================================
+# SECTION 4: EXTERNAL SURFACE (REQUIRED — v2.3 NEW)
+# ============================================================================
+# v2.3: Deployment exposure clarity. No defaults — must be explicit.
+# Used by routing, security tests, and Caddy validation.
+# ============================================================================
+external_surface:
+  # REQUIRED — Does this module expose an HTTP endpoint?
+  exposes_http_endpoint: "{{true | false}}"
+  
+  # REQUIRED — Does this module receive external webhooks?
+  exposes_webhook: "{{true | false}}"
+  
+  # REQUIRED — Does this module register as a callable tool?
+  exposes_tool: "{{true | false}}"
+  
+  # REQUIRED — Who can call this module?
+  callable_from:
+    - "{{external | internal}}"  # List all that apply
+
+# ============================================================================
+# SECTION 5: INTERFACES (REQUIRED)
+# ============================================================================
+interfaces:
+  
+  inbound:
+    - name: "{{route_name}}"
+      method: "POST"
+      route: "/{{module}}/{{action}}"
+      headers:
+        - "X-{{Module}}-Signature"
+        - "X-{{Module}}-Timestamp"
+      payload_type: "JSON"
+      auth: "{{hmac-sha256 | bearer | api_key | none}}"
+  
+  outbound:
+    - name: "aios_chat"
+      endpoint: "/chat"
+      method: "POST"
+      timeout_seconds: 30
+      retry: false
+    
+    - name: "{{external_service}}"
+      endpoint: "{{external_api_url}}"
+      method: "POST"
+      timeout_seconds: 10
+      retry: true
+
+# ============================================================================
+# SECTION 6: ENVIRONMENT VARIABLES (REQUIRED)
+# ============================================================================
+environment:
+  required:
+    - name: "{{MODULE}}_SIGNING_SECRET"
+      description: "Secret for HMAC signature verification"
+      example: "your_signing_secret"
+    
+    - name: "{{MODULE}}_API_TOKEN"
+      description: "Token for external API calls"
+      example: "xoxb-your-token"
+  
+  optional:
+    - name: "AIOS_BASE_URL"
+      description: "AIOS endpoint"
+      default: "http://localhost:8000"
+
+# ============================================================================
+# SECTION 7: ORCHESTRATION FLOW (REQUIRED)
+# ============================================================================
+orchestration:
+  
+  validation:
+    - "Verify signature (HMAC-SHA256)"
+    - "Check timestamp freshness (< 5 minutes)"
+    - "Parse and normalize payload"
+  
+  context_reads:
+    - method: "substrate_service.search_packets"
+      filter: "thread_uuid match"
+      purpose: "Get conversation history"
+    
+    - method: "substrate_service.semantic_search"
+      enabled: "{{true | false}}"
+      purpose: "Find similar past conversations"
+  
+  aios_calls:
+    - endpoint: "/chat"
+      input: "message + context"
+      output: "response_text"
+  
+  side_effects:
+    - action: "Reply to external service"
+      service: "{{module}}_client.post_message"
+    
+    - action: "Store inbound packet"
+      service: "substrate_service.write_packet"
+      packet_type: "{{module}}.in"
+    
+    - action: "Store outbound packet"
+      service: "substrate_service.write_packet"
+      packet_type: "{{module}}.out"
+
+# ============================================================================
+# SECTION 8: PACKET CONTRACT (REQUIRED — v2.3 NEW)
+# ============================================================================
+# v2.3: Schema-enforced packet guarantees. Runtime MUST block undeclared writes.
+# ============================================================================
+packet_contract:
+  # REQUIRED — All packet types this module can emit
+  emits:
+    - "{{module}}.in"
+    - "{{module}}.out"
+    - "{{module}}.error"
+  
+  # REQUIRED — Metadata fields that MUST be present on every packet
+  requires_metadata:
+    - "task_id"
+    - "thread_uuid"
+    - "source"
+    - "tool_id"
+
+# ============================================================================
+# SECTION 9: IDEMPOTENCY (REQUIRED — NO INFERENCE ALLOWED)
+# ============================================================================
+idempotency:
+  enabled: true
+  
+  # REQUIRED — Deduplication strategy (must map to L9_IDEMPOTENCY_SSOT)
+  pattern: "{{event_id | composite_key | substrate_lookup}}"
+  source: "{{platform_event_id | webhook_header | computed_hash}}"
+  durability: "{{in_memory | substrate}}"
+  
+  dedupe_key:
+    primary: "{{event_id | message_id}}"
+    fallback: "hash(payload)"
+  
+  on_duplicate: "return {ok: true, dedupe: true}"
+  
+  thread_id:
+    type: "UUIDv5"
+    namespace: "{{module}}.l9.internal"
+    components:
+      - "{{source_id}}"
+      - "{{channel_id}}"
+      - "{{thread_identifier}}"
+
+# ============================================================================
+# SECTION 10: ERROR POLICY (REQUIRED)
+# ============================================================================
+error_policy:
+  
+  default: "{{fail_fast | best_effort}}"
+  
+  retries:
+    enabled: "{{true | false}}"
+    max_attempts: "{{0 | 1 | 3}}"
+  
+  compensating_action: "{{none | emit_error_packet | rollback}}"
+  
+  invalid_signature:
+    status: 401
+    action: "Reject immediately"
+    log: "signature_invalid"
+  
+  stale_timestamp:
+    status: 401
+    action: "Reject immediately"
+    log: "timestamp_stale"
+  
+  aios_failure:
+    status: 200
+    action: "Log error, return ok"
+    log: "aios_call_failed"
+  
+  side_effect_failure:
+    status: 200
+    action: "Log error, return ok"
+    log: "reply_failed"
+  
+  storage_failure:
+    status: 200
+    action: "Log error, continue"
+    log: "packet_storage_failed"
+
+# ============================================================================
+# SECTION 11: DEPENDENCIES (REQUIRED)
+# ============================================================================
+dependencies:
+  allowed_tiers:
+    - 0
+    - 1
+    - 2
+  
+  outbound_calls:
+    - module: "memory.service"
+      interface: "{{http | tool}}"
+      endpoint: "/memory/ingest"
+
+# ============================================================================
+# SECTION 12: BOOT IMPACT (REQUIRED — v2.3 NEW)
+# ============================================================================
+# v2.3: Boot criticality classification. No ambiguity allowed.
+# ============================================================================
+boot_impact:
+  # REQUIRED — How critical is this module to system boot?
+  # hard: missing config fails service boot entirely
+  # soft: feature disabled but service boots
+  # none: no impact on boot
+  level: "{{none | soft | hard}}"
+  
+  # REQUIRED — Why does this module have this boot impact?
+  reason: "{{Explanation of boot impact}}"
+
+# ============================================================================
+# SECTION 13: TEST SCOPE (REQUIRED — v2.3 NEW)
+# ============================================================================
+# v2.3: Deployment guarantees. Enforced validation rules:
+# - If external_surface.exposes_http_endpoint == true → docker_smoke: true
+# - Tier 2+ modules MUST set integration: true
+# ============================================================================
+test_scope:
+  # REQUIRED — Unit tests exist
+  unit: true
+  
+  # REQUIRED — Integration tests exist (Tier 2+ modules MUST be true)
+  integration: "{{true | false}}"
+  
+  # REQUIRED — Docker smoke test exists
+  # MUST be true if external_surface.exposes_http_endpoint == true
+  docker_smoke: "{{true | false}}"
+
+# ============================================================================
+# SECTION 14: ACCEPTANCE CRITERIA (REQUIRED)
+# ============================================================================
+acceptance:
+  
+  positive:
+    - id: "AP-1"
+      criterion: "Signature verification blocks invalid requests"
+      test: "test_invalid_signature_returns_401"
+    
+    - id: "AP-2"
+      criterion: "Valid requests are processed"
+      test: "test_valid_request_processes"
+    
+    - id: "AP-3"
+      criterion: "Packets are stored with correct metadata"
+      test: "test_packet_stored_correctly"
+    
+    - id: "AP-4"
+      criterion: "Thread UUID is deterministic"
+      test: "test_thread_uuid_deterministic"
+    
+    - id: "AP-5"
+      criterion: "Duplicate events are idempotent"
+      test: "test_duplicate_event_skipped"
+    
+    - id: "AP-6"
+      criterion: "AIOS response is forwarded"
+      test: "test_aios_response_forwarded"
+  
+  negative:
+    - id: "AN-1"
+      description: "Unknown tool_id causes hard failure"
+      expected_behavior: "Request rejected before execution"
+      test: "test_unknown_tool_id_rejected"
+    
+    - id: "AN-2"
+      description: "Malformed packet blocked at ingress"
+      expected_behavior: "400 Bad Request with structured error"
+      test: "test_malformed_packet_rejected"
+  
+  forbidden:
+    - "Creates new database tables"
+    - "Duplicates memory substrate code"
+    - "Uses module-level singletons"
+    - "Reads env vars at import time"
+    - "Uses aiohttp instead of httpx"
+    - "Uses stdlib logging instead of structlog"
+    - "Uses tool_name instead of tool_id for identification"
+
+# ============================================================================
+# SECTION 15: OBSERVABILITY (REQUIRED)
+# ============================================================================
+observability:
+  
+  required_logs:
+    - event: "request_received"
+      level: "info"
+      fields: ["event_id", "source"]
+    
+    - event: "signature_verified"
+      level: "debug"
+      fields: ["valid"]
+    
+    - event: "packet_stored"
+      level: "info"
+      fields: ["packet_id", "thread_uuid"]
+    
+    - event: "aios_call_complete"
+      level: "info"
+      fields: ["elapsed_ms", "status"]
+    
+    - event: "handler_error"
+      level: "error"
+      fields: ["error", "traceback"]
+  
+  metrics:
+    - "{{module}}_requests_total"
+    - "{{module}}_errors_total"
+    - "{{module}}_latency_seconds"
+
+# ============================================================================
+# SECTION 16: GLOBAL INVARIANTS ACKNOWLEDGEMENT (REQUIRED)
+# ============================================================================
+global_invariants_ack:
+  emits_packet_on_ingress: true
+  tool_calls_traceable: true
+  unknown_tool_id_hard_fail: true
+  malformed_packet_blocked: true
+  missing_env_fails_boot: true
+
+# ============================================================================
+# SECTION 17: RUNTIME TOUCHPOINTS (REQUIRED)
+# ============================================================================
+runtime_touchpoints:
+  touches_db: "{{true | false}}"
+  touches_tools: "{{true | false}}"
+  touches_external_network: "{{true | false}}"
+  affects_boot: "{{true | false}}"
+
+# ============================================================================
+# SECTION 18: MANDATORY STANDARDS (REQUIRED)
+# ============================================================================
+standards:
+
+  identity:
+    canonical_identifier: "tool_id"
+    description: |
+      Always use module.id (tool_id) as the canonical identifier.
+      Never use tool_name for programmatic references.
+
+  logging:
+    library: "structlog"
+    forbidden: ["logging", "print"]
+
+  http_client:
+    library: "httpx"
+    forbidden: ["aiohttp", "requests"]
+
+  optional_files:
+    matrix:
+      - file: "api/{{module}}_client.py"
+        include_when:
+          - "Module makes outbound API calls to external services"
+        omit_when:
+          - "Module only receives webhooks (no outbound calls)"
+      
+      - file: "memory/{{module}}_ingest.py"
+        include_when:
+          - "Module has custom packet storage logic"
+        omit_when:
+          - "Module uses standard substrate_service.write_packet"
+
+# ============================================================================
+# SECTION 19: SPEC CONFIDENCE (REQUIRED)
+# ============================================================================
+spec_confidence:
+  level: "{{high | medium | low}}"
+  basis:
+    - "{{Existing code present | Spec-only, no implementation yet}}"
+    - "{{Tested in production | Untested design}}"
+
+# ============================================================================
+# SECTION 20: NOTES FOR P
+# ============================================================================
+notes_for_perplexity:
+  - "Use REPO_CONTEXT_PACK imports exactly"
+  - "Use PacketEnvelopeIn for all packets"
+  - "Use UUIDv5 for thread_id (not uuid4)"
+  - "All handlers accept injected services (no singletons)"
+  - "Route handlers get services from request.app.state"
+  - "Include all tests from acceptance (positive AND negative)"
+  - "Include WIRING_SNIPPET for server.py"
+  - "Use tool_id (module.id) as canonical identifier everywhere"
+  - "Use structlog for all logging (never stdlib logging)"
+  - "Use httpx for all HTTP calls (never aiohttp)"
+  - "Validate against dependencies.allowed_tiers before calling"
+  - "Emit error packets on unrecoverable failures per error_policy"
+  # v2.3 additions:
+  - "Validate emitted packets against packet_contract.emits"
+  - "Include all packet_contract.requires_metadata on every packet"
+  - "Generate docker smoke test if external_surface.exposes_http_endpoint"
+  - "Generate boot-failure test if boot_impact.level == hard"
+
+# ============================================================================
+# END OF MODULE SPEC v2.3.0
+# ============================================================================
+

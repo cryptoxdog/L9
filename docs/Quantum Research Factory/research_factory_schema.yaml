@@ -1,0 +1,185 @@
+# ============================================================================
+# Research Factory (Agent + Service)
+# L9 Master Schema v1.3.0 — Canonical Module Definition
+# ============================================================================
+# Extracted: 2025-12-07
+# Source: chats_raw/Done/research factory.md
+# Status: CANONICAL (highest version)
+# ============================================================================
+
+# -- [1] HEADER (required) ---------------------------------------------------
+header:
+  module_name: research_factory
+  module_version: 1.0.0
+  schema_version: 1.3.0
+  module_type: agent_service  # allowable: agent | service | pipeline | model
+  owner: "L9 Systems"
+  status: active
+
+# -- [2] GOVERNANCE METADATA -------------------------------------------------
+governance_metadata:
+  risk_level: medium
+  pii_handling: none
+  audit_required: true
+  change_control: standard
+  data_retention_days: 30
+
+# -- [3] TECHNICAL METADATA --------------------------------------------------
+technical_metadata:
+  language: python
+  runtime: python3.11
+  frameworks:
+    - fastapi
+    - pydantic
+  orchestrator: langgraph
+  containerization: docker
+  api_endpoints:
+    - path: /research/run
+      method: POST
+      description: Execute the Research Factory 5-pass pipeline
+
+# -- [4] OPERATIONAL METADATA ------------------------------------------------
+operational_metadata:
+  sla:
+    availability_target: "99%"
+    latency_p99_ms: 5000
+  execution_mode: synchronous
+  monitoring_required: true
+  logging_level: info
+  dependency_services:
+    - redis
+    - mlflow
+
+# -- [5] BUSINESS METADATA ---------------------------------------------------
+business_metadata:
+  summary: >
+    The Research Factory is a 5-pass pipeline responsible for planning,
+    prompting, retrieval, extraction, and integration of structured research
+    outputs. It provides a standard interface for research workflows across L9.
+  capability: research_pipeline
+  domain: cross_domain
+  stakeholders:
+    - Engineering
+    - MLOps
+    - Leadership
+
+# -- [6] MLOPS METADATA (optional) ------------------------------------------
+mlops_metadata:
+  model_registry_id: ""
+  model_artifact_path: ""
+  model_version: ""
+  model_stage: development
+  experiment_id: ""
+  run_id: ""
+  hyperparameters: {}
+  training_data_version: ""
+  training_data_path: ""
+  feature_store_ref: ""
+  deployment_strategy: canary
+  canary_percentage: 10
+  rollback_version: "1.0.0"
+  rollback_trigger: manual
+  feature_flag_key: ""
+
+# -- [7] QUALITY METADATA (optional) ----------------------------------------
+quality_metadata:
+  test_coverage_min: 85
+  unit_tests_required: true
+  integration_tests_required: true
+  adversarial_tests_required: false
+  load_tests_required: false
+  quality_gate_enabled: true
+  quality_gate_thresholds:
+    latency_p99_max_ms: 5000
+    error_rate_max: 0.01
+    blocking_on_failure: true
+  fairness_testing_enabled: false
+  fairness_metrics: []
+  fairness_thresholds: {}
+  protected_attributes: []
+  drift_detection_enabled: true
+  drift_baseline_ref: "baseline:research_input_distribution_v1"
+  drift_thresholds:
+    psi_max: 0.2
+  drift_alert_action: alert_only
+
+# -- [8] WHAT IT DOES --------------------------------------------------------
+what_it_does: |
+  Implements a 5-pass structured research pipeline:
+  1. Pass 1 — plan_queries: derive research plan from job specification.
+  2. Pass 2 — build_superprompts: construct optimized prompts.
+  3. Pass 3 — execute_retrieval: call research backend(s).
+  4. Pass 4 — extract_results: transform raw JSON into validated objects.
+  5. Pass 5 — integrate_results: persist output to hypergraph and world model.
+
+# -- [9] WHEN TO USE ---------------------------------------------------------
+when_to_use: |
+  Use whenever structured, repeatable research jobs are required.
+  Ideal for pipeline-driven research tasks, data discovery, and preparation
+  of standardized knowledge artifacts.
+
+# -- [10] BEHAVIOR ENGINE (required) ----------------------------------------
+behavior_engine: |
+  The Research Factory follows a strict pass-by-pass orchestration model:
+  - Input: ResearchJobSpec (polymer/domain/regions/max_results)
+  - Output: IntegrationResult
+
+  Execution Flow:
+  1. plan_queries(job_spec)
+  2. build_superprompts(query_plan)
+  3. execute_retrieval(superprompts)
+  4. extract_results(raw_responses)
+  5. integrate_results(parsed_objects)
+
+  Responsibilities:
+  - enforce schema validation
+  - capture metrics for each pass
+  - propagate exceptions with clear error classes
+  - output standardized response payloads
+
+# -- [11] OUTPUT FORMAT ------------------------------------------------------
+output_format: |
+  {
+    "job_spec": {...},
+    "query_plan": [...],
+    "superprompts": [...],
+    "retrieval_batches": <int>,
+    "parsed_objects": [...],
+    "integration_summary": {...},
+    "metrics": {...}
+  }
+
+# -- [12] USAGE --------------------------------------------------------------
+usage: |
+  POST /research/run
+  {
+    "domain": "example_domain",
+    "polymer": "HDPE",
+    "regions": ["US"],
+    "max_results": 50
+  }
+
+# -- [13] INTEGRATION NOTES --------------------------------------------------
+integration_notes: |
+  - Receives input through FastAPI.
+  - Invokes pluggable ResearchClient.
+  - Writes to HypergraphStore and WorldModel.
+  - Should run inside docker-compose runtime.
+  - Passes quality gate enforcements automatically.
+
+# -- [14] ARTIFACTS ----------------------------------------------------------
+artifacts:
+  readme:
+    enabled: true
+    path: docs/research_factory/README.md
+    mode: create
+  architecture_diagram:
+    enabled: true
+    path: docs/research_factory/architecture.md
+    format: mermaid
+    type: flowchart
+  runbook:
+    enabled: true
+    path: docs/research_factory/runbook.md
+    template: standard
+

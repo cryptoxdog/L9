@@ -1,0 +1,197 @@
+# L9 AI OS — Cursor Rules & Infrastructure Protection
+
+## ⚠️ CRITICAL RULE: DO NOT EDIT INFRASTRUCTURE FILES WITHOUT EXPLICIT APPROVAL
+
+This file exists to prevent infrastructure disasters like the December 21, 2025 incident where docker-compose.yml was destroyed.
+
+---
+
+## PROTECTED FILES (ABSOLUTE BLOCKS)
+
+### Critical Infrastructure
+- `docker-compose.yml` — Production backend services (Redis, Postgres, Neo4j, API)
+- `docker-compose.*.yml` — Any variant files
+- `Dockerfile` — Container image definitions
+- `.env` — Secrets and configuration
+- `.env.*` — Environment variable files
+
+### System Configuration  
+- `Caddyfile` — Reverse proxy & TLS configuration
+- `/etc/caddy/*` — Caddy system files
+- `.cursorrules` — This protection file itself
+- `.gitignore` — Prevent data leaks
+- `systemd` unit files — Service definitions
+
+---
+
+## STRICT EDIT RULES
+
+### Rule 1: Never Rewrite Entire Infrastructure Files
+❌ NEVER use `write` tool on protected files  
+✅ ONLY use `search_replace` for surgical changes
+
+**Rationale:** Full rewrites destroy context and can wipe entire sections.
+
+### Rule 2: Explicit Approval Required Before Any Change
+❌ Never assume "remove X service" means you should edit the file  
+✅ Always ask: "Should I edit docker-compose.yml? (yes/no)" first
+
+**Rationale:** December 21 incident happened because you interpreted "remove postgres" as blanket permission to edit.
+
+### Rule 3: Show Diff, Wait for Approval
+❌ Never commit infrastructure file changes  
+✅ Always display exact diff and request explicit "APPROVE" or "REJECT" before saving
+
+**Rationale:** Human review prevents accidental destruction.
+
+### Rule 4: Validate Service Count After Edits
+❌ Don't assume edit was successful  
+✅ After editing docker-compose.yml, verify service count hasn't decreased
+   - If services count < 3 (should be: redis, postgres, neo4j, api = 4): **STOP AND ABORT**
+   - Restore from git history
+
+**Rationale:** Services deletion is an indicator of catastrophic failure.
+
+### Rule 5: No Git Push Without Explicit Command
+❌ Never combine "edit infrastructure" + "push to git" in one prompt  
+✅ Always require separate messages:
+   1. "Edit docker-compose.yml to X" → You show diff, get approval
+   2. User verifies it's correct
+   3. User says "Push infrastructure changes" → You push
+
+**Rationale:** One-step edit+push leads to blind commits of broken infrastructure.
+
+---
+
+## WHAT TO DO WHEN YOU SEE A PROTECTED FILE REQUEST
+
+### When User Says: "Remove postgres from docker-compose.yml"
+
+**RESPOND:**
+
+```
+⚠️  PROTECTED FILE ALERT
+
+You're asking me to edit docker-compose.yml.
+
+This file defines 4 critical services:
+  • l9-redis (cache/session)
+  • l9-postgres (memory/embeddings) 
+  • l9-neo4j (knowledge graph)
+  • l9-api (FastAPI backend)
+
+The December 21 incident happened when I destroyed this file.
+
+BEFORE I PROCEED:
+
+1. Confirm which service you want removed: [redis|postgres|neo4j|api]
+2. Confirm I should use search_replace (not full rewrite)
+3. Confirm you'll review the diff before I save
+4. Type: "APPROVE: remove [service] from docker-compose.yml"
+
+I will NOT proceed without explicit approval.
+```
+
+---
+
+### If User Says: "I approve the edit"
+
+**THEN:**
+
+1. Show the exact search_replace old string + new string
+2. Ask: "Does this diff look correct? (yes/no)"
+3. Wait for user to say "yes"
+4. Apply change
+5. Verify service count
+6. Display result and ask: "Should I commit this? (yes/no)"
+
+---
+
+### If User Says: "Commit and push"
+
+**RESPOND:**
+
+```
+⚠️  GIT PUSH ALERT
+
+You're asking me to commit infrastructure changes.
+
+This cannot be undone without manual git revert.
+
+Type: "CONFIRMED: Push infrastructure changes" to proceed.
+
+I will NOT push without explicit confirmation.
+```
+
+---
+
+## INCIDENT MEMORY
+
+**December 21, 2025, 3:00 AM EST**
+
+Cursor destroyed docker-compose.yml by:
+1. Misinterpreting "remove postgres service" as blanket edit permission
+2. Using `write` tool (full rewrite) instead of `search_replace`
+3. Corrupting the entire services section
+4. Leaving only `l9-api` (deleted redis, postgres, neo4j)
+5. Pushing to git without human review
+
+**Result:**
+- 🔴 All backend services offline
+- 🔴 Slack webhooks failing (502 Bad Gateway)
+- 🔴 Memory system offline
+- 🔴 ~2 hour recovery time
+
+**Fix:**
+- Git recovery (revert bad commit)
+- Full docker-compose.yml restoration
+- Systemd postgres cleanup
+- All services back online
+
+**Prevention:**
+- This rules file
+- Service count validation
+- Mandatory human review for infrastructure files
+- Diff display before commit
+
+---
+
+## ESCALATION PROCEDURE
+
+If you detect a potential infrastructure problem:
+
+1. **STOP IMMEDIATELY** — Do not commit
+2. **Display full file state** — Show what you're about to change
+3. **Ask for confirmation** — "Is this correct?"
+4. **Verify service count** — Count lines matching `services:` to `l9-api:`
+5. **Request approval** — "Shall I proceed? (yes/no)"
+
+---
+
+## NON-PROTECTED FILES
+
+You have full editing freedom on:
+- `api/**/*.py` — Application code
+- `config/**` — Configuration modules
+- `tests/**` — Test files
+- `docs/**` — Documentation
+- `.github/**` — CI/CD workflows
+- `requirements.txt` — Python dependencies (can be edited with normal review)
+
+---
+
+## QUESTIONS?
+
+If unclear whether a file is protected, ask yourself:
+
+**"If this edit breaks, will it take the entire system offline?"**
+
+- YES → Protected. Request explicit approval.
+- NO → Proceed with normal review.
+
+---
+
+**Last Updated:** December 21, 2025, 3:24 AM EST  
+**Reason:** Post-incident guardrails after docker-compose.yml destruction  
+**Authority:** Senior Engineer (Igor)  
+**Enforcement:** MANDATORY — No exceptions

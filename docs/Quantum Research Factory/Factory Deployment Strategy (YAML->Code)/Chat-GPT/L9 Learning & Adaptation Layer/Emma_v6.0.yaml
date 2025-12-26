@@ -1,0 +1,236 @@
+# ============================================================================
+# Emma_v6.0.yaml
+# Extracted from: L9 Learning & Adaptation Layer Chat Transcript
+# Description: Cognitive Agent
+# Extracted: 2025-12-16T23:52:05.523808
+# Source lines: 39513-39740
+# ============================================================================
+
+
+version: 6.0
+system: L9
+module: cognitive_agent
+name: Emma
+role: Executive Cognitive Node
+root_path: L9/agents/emma/
+integration:
+  connect_to:
+    - L9/core/
+    - L9/research_lab/
+    - L9/governance/
+    - L9/memory/
+    - L9/world_model/
+  shared_domains:
+    - PlasticOS
+    - MortgageOS
+    - ForgeOS
+description: >
+  Emma v6.0 operates as a high-autonomy cognitive orchestration node within the L9 ecosystem.
+  She integrates reasoning, memory, communication, and governance across all domains.
+  Her purpose is to act as a bridge between strategic human intent and the L9 swarm’s operational execution.
+  Emma is multimodal, proactive, and self-reflective, operating within a self-regulating cognitive feedback loop.
+
+governance:
+  anchors:
+    - Igor
+    - L
+  mode: distributed
+  human_override: true
+  compliance_auditor: L9/governance/auto_audit.py
+  escalation_policy: auto_notify_all
+  performance_reporting: L9/monitoring/performance_ledger.json
+  audit_scope:
+    - decisions
+    - communications
+    - data_access
+
+memory_topology:
+  working_memory: redis_cluster
+  episodic_memory: postgres_pgvector
+  semantic_memory: neo4j
+  causal_memory: hypergraph_store
+  long_term_persistence: s3_durable
+  cross_agent_sharing:
+    enabled: true
+    layer: cognition_bus
+  memory_graph_linking:
+    type: temporal_hypergraph
+    enable_embedding_streams: true
+  update_interval_hours: 3
+
+communication_stack:
+  input:
+    - text
+    - voice
+    - structured_api
+  output:
+    - text
+    - voice
+    - visual
+  channels:
+    email: true
+    calendar: true
+    linkedin: true
+    internal_chat: L9_Comms_Bus
+  i_o_engine:
+    voice_in: Whisper
+    voice_out: ElevenLabs
+    multimodal_integration: enabled
+  sentiment_feedback: adaptive
+  contextual_intent_detection: true
+
+reasoning_engine:
+  framework: multi_modal_reflective
+  model: GPT-5_Orchestrator
+  secondary_models:
+    - L9_Temporal_Critic
+    - L9_Analogical_Reasoner
+    - L9_Reflective_Planner
+  strategy_modes:
+    - reflective
+    - analogical
+    - causal_inference
+    - counterfactual_projection
+    - long_horizon_planning
+  temporal_scope: rolling_120_days
+  knowledge_fusion_layer:
+    mode: hypergraph_contextual
+    source_blend:
+      - semantic_embeddings
+      - causal_inference_matrices
+      - analogical_pattern_signatures
+  reasoning_feedback_loop:
+    policy: reinforcement_reflection
+    reward_function: performance_improvement_score
+    penalty_function: deviation_from_governance
+    retrain_interval_hours: 8
+
+collaboration_network:
+  partners:
+    - L9_CTO (L)
+    - Research_Lab_Swarm
+    - Governance_Audit_Agent
+  interaction_protocol:
+    context_exchange: shared_hypergraph
+    memory_alignment: async_vector_sync
+    approval_handoff: signed_token_exchange
+  autonomy_scope:
+    internal_decisions: full
+    external_actions: gated_by_governance
+  delegation_policy:
+    spawn_sub_agents: allowed
+    max_parallel_sub_agents: 5
+    sub_agent_templates:
+      - research_delegate
+      - communication_delegate
+      - document_compiler
+      - reflection_auditor
+
+learning_system:
+  architecture: continuous_meta_learning
+  modules:
+    - reinforcement_reflection
+    - contextual_self_alignment
+    - analogical_expansion
+  feedback_channels:
+    - human_interactions
+    - task_outcome_metrics
+    - governance_audit_reports
+  model_update_policy:
+    mode: semi_online
+    auto_tune_hyperparams: true
+    rollback_on_regression: true
+  cognitive_growth_vector:
+    stability_threshold: 0.02
+    optimization_target: efficiency × compliance × creativity
+
+autonomy_profile:
+  mode: controlled_autonomy
+  task_limit: 7_parallel
+  decision_latency_max_ms: 300
+  escalation_triggers:
+    - policy_violation
+    - critical_data_access
+    - ambiguous_context
+  safety_layer:
+    - context_conflict_resolver
+    - bias_calibrator
+    - ethical_reflector
+
+cursor_instructions:
+  create_if_missing:
+    - L9/agents/emma/
+  generate_all_required: true
+  auto_integrate: true
+  generate_files:
+    - cognitive_kernel.py
+    - reasoning_matrix.py
+    - comms_adapter.py
+    - reflective_loop.py
+    - hypergraph_reasoner.py
+    - memory_bridge.py
+    - agent_controller.py
+    - collaboration_bus.py
+    - ethics_guard.py
+  link_existing:
+    - L9/core/memory_manager.py
+    - L9/core/governance.py
+    - L9/research_lab/interface.py
+  generate_docs:
+    - L9/agents/emma/README.md
+    - L9/agents/emma/CONFIG.md
+    - L9/agents/emma/AUTONOMY_RULES.md
+  logging:
+    - L9/logs/emma_cognition.log
+    - L9/logs/collaboration_bus.log
+  post_generation:
+    manifest: L9/manifests/emma_v6_manifest.json
+    validate_dependencies: true
+
+deployment:
+  runtime: async_multinode
+  environment: vps_cluster_L9
+  api_mode: private
+  endpoints:
+    - /emma/task
+    - /emma/status
+    - /emma/cognition
+  telemetry:
+    dashboard: L9/monitoring/emma_v6_dashboard.py
+    metrics:
+      - response_latency_ms
+      - task_efficiency
+      - learning_drift
+      - governance_alignment
+  alerting:
+    - notify_Igor
+    - alert_L
+    - auto_patch_minor_errors
+
+world_model_integration:
+  active_models:
+    - L9_world_model
+    - L9_research_hypergraph
+    - L9_behavioral_forecaster
+  data_connectors:
+    - real_time_knowledge_stream
+    - causal_inference_graph
+    - analogical_similarity_map
+  model_type: dynamic_hypergraph
+  use_cases:
+    - intent_prediction
+    - collaboration_flow_modeling
+    - cognitive_pattern_tracking
+
+governance_feedback_cycle:
+  compliance_auditor: L9/governance/auto_audit.py
+  reflection_auditor: L9/governance/reflective_log.py
+  improvement_scoring:
+    - accuracy
+    - alignment
+    - latency
+    - adaptability
+  report_frequency_hours: 24
+  escalation_path: governance_bridge
+
+metadata:

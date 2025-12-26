@@ -19,10 +19,10 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Memory segment constants
 MEMORY_SEGMENT_GOVERNANCE_META = "governance_meta"
@@ -100,6 +100,12 @@ async def memory_search(
                         filtered.append(payload)
             else:
                 # Include if we can't determine segment (backward compatibility)
+                logger.warning(
+                    f"memory_search: Segment filtering ambiguous for query '{query}' "
+                    f"(segment '{segment}' not clearly marked). "
+                    f"Returning result for backward compatibility. "
+                    f"Recommend explicit segment metadata in payload."
+                )
                 filtered.append(payload)
         
         return filtered

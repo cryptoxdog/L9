@@ -268,3 +268,31 @@ def sample_checkpoint() -> dict:
         "plan": [1, 2, 3],
         "state": {"key": "value"},
     }
+
+
+# =============================================================================
+# Shared Mock Fixtures (from test_executor.py)
+# =============================================================================
+
+@pytest.fixture
+def mock_substrate_service():
+    """
+    Shared mock substrate service for memory tests.
+    
+    Provides a MagicMock that simulates SubstrateService behavior.
+    """
+    from typing import Generator
+    from tests.core.agents.test_executor import MockSubstrateService
+    return MockSubstrateService()
+
+
+@pytest.fixture
+def mock_tool_registry():
+    """
+    Shared mock tool registry for orchestrator tests.
+    
+    Provides a MagicMock that simulates ToolRegistry behavior.
+    """
+    from typing import Generator
+    from tests.core.agents.test_executor import MockToolRegistry
+    return MockToolRegistry()

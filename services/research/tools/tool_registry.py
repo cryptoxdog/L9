@@ -12,15 +12,15 @@ Production-ready features (v2.0.0):
 """
 
 import asyncio
-import logging
+import structlog
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ToolType(str, Enum):
@@ -521,4 +521,205 @@ def _initialize_default_tools(registry: ToolRegistry) -> None:
     registry.register(calc_meta, calculate_executor)
     
     logger.info(f"Initialized {len(registry.list_all())} default tools")
+
+
+async def ask_l(query: str) -> dict:
+    """
+    Trigger reactive task generation and execution pipeline.
+    
+    This tool allows external systems to trigger L's reactive task dispatch
+    by providing a user query that gets converted to tasks and executed.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dictionary with execution results: task_ids, status, message
+    """
+    import structlog
+    from core.agents.executor import _generate_tasks_from_query
+    from runtime.task_queue import dispatch_task_immediate, QueuedTask
+    from uuid import uuid4
+    
+    logger = structlog.get_logger(__name__)
+    
+    if not query or not query.strip():
+        return {
+            "success": False,
+            "error": "query is required",
+            "task_ids": [],
+        }
+    
+    try:
+        # Generate tasks from query
+        task_specs = await _generate_tasks_from_query(query)
+        
+        if not task_specs:
+            return {
+                "success": False,
+                "error": "No tasks generated from query",
+                "task_ids": [],
+            }
+        
+        task_ids = []
+        
+        # Dispatch each task immediately
+        for spec in task_specs:
+            try:
+                task = QueuedTask(
+                    task_id=str(uuid4()),
+                    name=spec["name"],
+                    payload=spec["payload"],
+                    handler=spec["handler"],
+                    agent_id="L",
+                    priority=spec.get("priority", 5),
+                    tags=["ask_l", "reactive"],
+                )
+                
+                task_id = await dispatch_task_immediate(task)
+                task_ids.append(task_id)
+            except Exception as e:
+                logger.error(f"Failed to dispatch task from ask_l: {e}", exc_info=True)
+        
+        return {
+            "success": True,
+            "task_ids": task_ids,
+            "message": f"Dispatched {len(task_ids)} task(s) from query",
+        }
+        
+    except Exception as e:
+        logger.error(f"ask_l failed: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "task_ids": [],
+        }
+
+
+async def get_l_memory_state() -> dict:
+    """
+    Expose L's current memory context.
+    
+    Retrieves L's memory state from substrate including governance rules,
+    project history, and recent task context.
+    
+    Returns:
+        Dictionary with memory state: governance_rules, project_history, recent_tasks
+    """
+    import structlog
+    from memory.substrate_service import get_service
+    
+    logger = structlog.get_logger(__name__)
+    
+    try:
+        substrate = await get_service()
+        if not substrate:
+            return {
+                "success": False,
+                "error": "Memory substrate not available",
+            }
+        
+        memory_state = {}
+        
+        # Search for recent governance and project history packets
+        governance_packets = await substrate.search_packets_by_type(
+            packet_type="governance_meta",
+            agent_id="L",
+            limit=10,
+        )
+        if governance_packets:
+            memory_state["governance_rules"] = [
+                p.get("payload", {}) for p in governance_packets
+            ]
+        
+        project_packets = await substrate.search_packets_by_type(
+            packet_type="project_history",
+            agent_id="L",
+            limit=10,
+        )
+        if project_packets:
+            memory_state["project_history"] = [
+                p.get("payload", {}) for p in project_packets
+            ]
+        
+        # Get recent task execution results
+        task_packets = await substrate.search_packets_by_type(
+            packet_type="task_execution_result",
+            agent_id="L",
+            limit=10,
+        )
+        if task_packets:
+            memory_state["recent_tasks"] = [
+                p.get("payload", {}) for p in task_packets
+            ]
+        
+        return {
+            "success": True,
+            "memory_state": memory_state,
+            "summary": {
+                "governance_rules": len(memory_state.get("governance_rules", [])),
+                "project_history": len(memory_state.get("project_history", [])),
+                "recent_tasks": len(memory_state.get("recent_tasks", [])),
+            },
+        }
+        
+    except Exception as e:
+        logger.error(f"get_l_memory_state failed: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+async def recall_task_history(num_tasks: int = 10) -> List[dict]:
+    """
+    Retrieve recent task execution history.
+    
+    Queries memory substrate for recent task execution results.
+    
+    Args:
+        num_tasks: Number of recent tasks to retrieve (default: 10)
+        
+    Returns:
+        List of task result dicts with task_id, status, duration_ms, error, etc.
+    """
+    import structlog
+    from typing import List
+    from memory.substrate_service import get_service
+    
+    logger = structlog.get_logger(__name__)
+    
+    try:
+        substrate = await get_service()
+        if not substrate:
+            logger.warning("Memory substrate not available - cannot recall task history")
+            return []
+        
+        # Search for task execution result packets
+        packets = await substrate.search_packets_by_type(
+            packet_type="task_execution_result",
+            agent_id="L",
+            limit=num_tasks,
+        )
+        
+        # Extract task results from packets
+        task_history = []
+        for packet in packets:
+            payload = packet.get("payload", {})
+            if payload:
+                task_history.append({
+                    "task_id": payload.get("task_id"),
+                    "status": payload.get("status"),
+                    "iterations": payload.get("iterations", 0),
+                    "duration_ms": payload.get("duration_ms", 0),
+                    "error": payload.get("error"),
+                    "completed_at": payload.get("completed_at"),
+                })
+        
+        logger.info(f"Recalled {len(task_history)} task(s) from history")
+        return task_history
+        
+    except Exception as e:
+        logger.error(f"recall_task_history failed: {e}", exc_info=True)
+        return []
 
