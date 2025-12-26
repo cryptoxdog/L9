@@ -16,13 +16,19 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
+import os
 import structlog
+from pathlib import Path
 from typing import Any, Dict, Optional
 from datetime import datetime
 
 from runtime.task_queue import TaskQueue, QueuedTask
 
 logger = structlog.get_logger(__name__)
+
+# Cursor CLI path (configurable via environment)
+CURSOR_CLI_PATH = os.getenv("CURSOR_CLI_PATH", "cursor")
+GMP_TIMEOUT_SECONDS = int(os.getenv("GMP_TIMEOUT_SECONDS", "300"))  # 5 minutes default
 
 # GMP queue instance
 GMP_QUEUE = TaskQueue(queue_name="l9:gmp_runs", use_redis=True)
@@ -151,10 +157,9 @@ class GMPWorker:
         metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        Run GMP workflow.
+        Run GMP workflow by invoking Cursor CLI.
         
-        This integrates with the local GMP runner (runner.py, executor.py, websocket_client.py).
-        For now, this is a stub that can be extended to actually call the GMP runner.
+        Writes GMP markdown to a temp file and opens it in Cursor with the target repo.
         
         Args:
             gmp_markdown: GMP markdown content
@@ -163,22 +168,138 @@ class GMPWorker:
             metadata: Additional metadata
             
         Returns:
-            Result dictionary with status and output
+            Result dictionary with success, output, error, and execution details
         """
-        # TODO: Integrate with actual GMP runner
-        # This would involve:
-        # 1. Opening the target repo in Cursor (via runner.py or similar)
-        # 2. Applying the GMP markdown
-        # 3. Streaming/logging results
+        start_time = datetime.utcnow()
         
-        # GMP execution deferred to Stage 2
-        # Currently, return explicit error to prevent false success
-        logger.warning(f"GMP execution requested but not available: {repo_root} by {caller}")
-        return {
-            "success": False,
-            "error": "GMP execution not yet available — available in Stage 2",
-            "traceback": None,
-        }
+        # Validate inputs
+        if not gmp_markdown:
+            return {
+                "success": False,
+                "error": "Empty GMP markdown",
+                "output": None,
+                "traceback": None,
+            }
+        
+        repo_path = Path(repo_root)
+        if not repo_path.exists():
+            return {
+                "success": False,
+                "error": f"Repository path does not exist: {repo_root}",
+                "output": None,
+                "traceback": None,
+            }
+        
+        # Create GMP task file in the repo's .cursor directory
+        cursor_dir = repo_path / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        
+        gmp_file = cursor_dir / f"gmp_task_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.md"
+        
+        try:
+            # Write GMP markdown to file
+            gmp_file.write_text(gmp_markdown, encoding="utf-8")
+            logger.info(
+                "GMP markdown written to file",
+                gmp_file=str(gmp_file),
+                caller=caller,
+            )
+            
+            # Build Cursor CLI command
+            # cursor --goto opens the file in an existing or new Cursor window
+            cmd = [
+                CURSOR_CLI_PATH,
+                "--goto",
+                str(gmp_file),
+                "--folder-uri",
+                f"file://{repo_path.resolve()}",
+            ]
+            
+            logger.info(
+                "Executing Cursor CLI",
+                command=" ".join(cmd),
+                repo=repo_root,
+            )
+            
+            # Execute Cursor CLI
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=str(repo_path),
+            )
+            
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(),
+                    timeout=GMP_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
+                return {
+                    "success": False,
+                    "error": f"GMP execution timed out after {GMP_TIMEOUT_SECONDS}s",
+                    "output": None,
+                    "traceback": None,
+                    "duration_seconds": (datetime.utcnow() - start_time).total_seconds(),
+                }
+            
+            stdout_str = stdout.decode("utf-8", errors="replace") if stdout else ""
+            stderr_str = stderr.decode("utf-8", errors="replace") if stderr else ""
+            
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            
+            if proc.returncode == 0:
+                logger.info(
+                    "GMP execution succeeded",
+                    caller=caller,
+                    duration_seconds=duration,
+                )
+                return {
+                    "success": True,
+                    "output": stdout_str,
+                    "error": None,
+                    "traceback": None,
+                    "gmp_file": str(gmp_file),
+                    "duration_seconds": duration,
+                    "exit_code": 0,
+                }
+            else:
+                logger.error(
+                    "GMP execution failed",
+                    caller=caller,
+                    exit_code=proc.returncode,
+                    stderr=stderr_str[:500],
+                )
+                return {
+                    "success": False,
+                    "output": stdout_str,
+                    "error": stderr_str or f"Cursor exited with code {proc.returncode}",
+                    "traceback": None,
+                    "gmp_file": str(gmp_file),
+                    "duration_seconds": duration,
+                    "exit_code": proc.returncode,
+                }
+                
+        except Exception as e:
+            logger.error(
+                "GMP execution error",
+                caller=caller,
+                error=str(e),
+                exc_info=True,
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "output": None,
+                "traceback": str(e),
+                "duration_seconds": (datetime.utcnow() - start_time).total_seconds(),
+            }
+        finally:
+            # Optionally clean up GMP file after execution
+            # For now, leave it for debugging/audit purposes
+            pass
 
 
 # Global worker instance

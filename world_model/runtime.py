@@ -1736,3 +1736,92 @@ class WorldModelRuntime:
             "patterns_indexed": len(self._pattern_index.get("all", [])),
             "heuristics_indexed": len(self._heuristic_index.get("all", [])),
         }
+
+
+# =============================================================================
+# Factory Functions
+# =============================================================================
+
+async def create_runtime_with_substrate(
+    substrate_service: "MemorySubstrateService",
+    engine: Optional["WorldModelEngine"] = None,
+    config: Optional[RuntimeConfig] = None,
+) -> WorldModelRuntime:
+    """
+    Create a WorldModelRuntime wired to the Memory Substrate.
+    
+    This enables proactive world model updates by polling the substrate
+    for new packets.
+    
+    Args:
+        substrate_service: Initialized MemorySubstrateService instance
+        engine: Optional WorldModelEngine (created if not provided)
+        config: Optional RuntimeConfig
+        
+    Returns:
+        Configured WorldModelRuntime ready for run_forever()
+        
+    Usage:
+        from memory.substrate_service import MemorySubstrateService
+        from world_model.runtime import create_runtime_with_substrate
+        
+        substrate = MemorySubstrateService(...)
+        await substrate.initialize()
+        
+        runtime = await create_runtime_with_substrate(substrate)
+        await runtime.load_seed_library()
+        await runtime.run_forever()  # Polls substrate continuously
+    """
+    # Create packet source wired to substrate
+    packet_source = MemorySubstratePacketSource(
+        source_id="memory_substrate",
+        source_type="memory_substrate",
+        substrate_service=substrate_service,
+    )
+    
+    # Create engine if not provided
+    if engine is None:
+        from world_model.engine import WorldModelEngine
+        engine = WorldModelEngine()
+        await engine.initialize_state()
+    
+    # Create runtime with all components wired
+    runtime = WorldModelRuntime(
+        config=config or RuntimeConfig(),
+        engine=engine,
+        packet_source=packet_source,
+    )
+    
+    logger.info("Created WorldModelRuntime with MemorySubstratePacketSource")
+    return runtime
+
+
+# Singleton for global access
+_global_runtime: Optional[WorldModelRuntime] = None
+
+
+async def get_or_create_runtime(
+    substrate_service: Optional["MemorySubstrateService"] = None,
+) -> WorldModelRuntime:
+    """
+    Get or create the global WorldModelRuntime singleton.
+    
+    If substrate_service is provided, creates a runtime wired to it.
+    Otherwise returns a runtime with stub packet source.
+    
+    Args:
+        substrate_service: Optional MemorySubstrateService to wire
+        
+    Returns:
+        Global WorldModelRuntime instance
+    """
+    global _global_runtime
+    
+    if _global_runtime is None:
+        if substrate_service:
+            _global_runtime = await create_runtime_with_substrate(substrate_service)
+        else:
+            _global_runtime = WorldModelRuntime()
+            logger.warning("Created WorldModelRuntime without substrate - using stub packet source")
+    
+    return _global_runtime

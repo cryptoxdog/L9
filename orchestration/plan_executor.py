@@ -146,6 +146,7 @@ class ExecutorConfig:
     packet_source: str = "plan_executor"
     # Handler options
     real_execution: bool = False  # When True, actually modify files
+    allowed_write_roots: list[str] = field(default_factory=lambda: ["/Users/ib-mac/Projects"])
 
 
 # =============================================================================
@@ -519,20 +520,84 @@ class PlanExecutor:
         step: Any,
         context: dict[str, Any],
     ) -> dict[str, Any]:
-        """Handle code write action."""
-        logger.info(f"Writing code to: {step.target}")
+        """
+        Handle code write action.
         
-        if self._config.real_execution:
-            # TODO: Implement real file writing
-            # Could integrate with repo writer or Cursor adapter
-            pass
+        When real_execution is True, writes content to the target file.
+        Creates backup of existing file before overwriting.
+        """
+        from pathlib import Path
         
-        return {
-            "action": "code_write",
-            "target": step.target,
-            "status": "simulated" if not self._config.real_execution else "executed",
-            "parameters": step.parameters,
-        }
+        target_path = step.target
+        logger.info(f"Writing code to: {target_path}")
+        
+        if not self._config.real_execution:
+            return {
+                "action": "code_write",
+                "target": target_path,
+                "status": "simulated",
+                "parameters": step.parameters,
+            }
+        
+        # Get content from step parameters
+        content = step.parameters.get("content", "")
+        if not content:
+            return {
+                "action": "code_write",
+                "target": target_path,
+                "status": "error",
+                "error": "No content provided in parameters",
+            }
+        
+        # Validate path is within allowed directories
+        allowed_roots = self._config.allowed_write_roots or ["/Users/ib-mac/Projects"]
+        path = Path(target_path).resolve()
+        
+        is_allowed = any(
+            str(path).startswith(str(Path(root).resolve()))
+            for root in allowed_roots
+        )
+        
+        if not is_allowed:
+            logger.error(f"Path not in allowed roots: {path}")
+            return {
+                "action": "code_write",
+                "target": target_path,
+                "status": "error",
+                "error": f"Path {path} not in allowed write roots",
+            }
+        
+        try:
+            # Create parent directories if needed
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Backup existing file if it exists
+            backup_path = None
+            if path.exists():
+                backup_path = path.with_suffix(path.suffix + f".bak.{int(datetime.utcnow().timestamp())}")
+                path.rename(backup_path)
+                logger.info(f"Backed up existing file to: {backup_path}")
+            
+            # Write new content
+            path.write_text(content, encoding="utf-8")
+            logger.info(f"Successfully wrote {len(content)} bytes to: {path}")
+            
+            return {
+                "action": "code_write",
+                "target": str(path),
+                "status": "executed",
+                "bytes_written": len(content),
+                "backup_path": str(backup_path) if backup_path else None,
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to write file: {e}")
+            return {
+                "action": "code_write",
+                "target": target_path,
+                "status": "error",
+                "error": str(e),
+            }
     
     async def _handle_code_read(
         self,

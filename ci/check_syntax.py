@@ -316,7 +316,6 @@ def check_and_fix_syntax(file_path: Path, fix: bool = False) -> Tuple[List[Synta
         return errors, False
     
     # Try to compile the file
-    syntax_error = None
     try:
         compile(content, str(file_path), 'exec')
         # If it compiles, check AST too
@@ -332,10 +331,11 @@ def check_and_fix_syntax(file_path: Path, fix: bool = False) -> Tuple[List[Synta
                     f"AST parse error: {error_msg}"
                 ))
         return errors, False
-    except BaseException as e:
-        if not isinstance(e, SyntaxError):
+    except BaseException as compile_error:
+        if not isinstance(compile_error, SyntaxError):
             raise
-        syntax_error = e
+        # Store the error for later use
+        syntax_error = compile_error
     
     # File has syntax errors - try to fix if requested
     if fix:
@@ -394,7 +394,7 @@ def check_and_fix_syntax(file_path: Path, fix: bool = False) -> Tuple[List[Synta
                 ))
     
     # Extract error information (only if we didn't fix it)
-    if not was_fixed and syntax_error is not None:
+    if not was_fixed:
         line_num = getattr(syntax_error, 'lineno', 0) or 0
         error_msg = getattr(syntax_error, 'msg', None) or str(syntax_error)
         

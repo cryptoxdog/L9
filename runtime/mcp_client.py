@@ -18,9 +18,193 @@ import asyncio
 import json
 import structlog
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 logger = structlog.get_logger(__name__)
+
+
+# =============================================================================
+# MCP Server Process Manager
+# =============================================================================
+
+class MCPServerProcess:
+    """
+    Manages a single MCP server subprocess.
+    
+    Handles JSON-RPC 2.0 communication over stdio.
+    """
+    
+    def __init__(
+        self,
+        server_id: str,
+        command: List[str],
+        env: Optional[Dict[str, str]] = None,
+    ):
+        self.server_id = server_id
+        self.command = command
+        self.env = env or {}
+        self._process: Optional[asyncio.subprocess.Process] = None
+        self._lock = asyncio.Lock()
+        self._request_id = 0
+        self._pending_requests: Dict[str, asyncio.Future] = {}
+        self._reader_task: Optional[asyncio.Task] = None
+    
+    async def start(self) -> bool:
+        """Start the MCP server process."""
+        async with self._lock:
+            if self._process is not None:
+                return True
+            
+            try:
+                # Merge environment
+                process_env = os.environ.copy()
+                process_env.update(self.env)
+                
+                self._process = await asyncio.create_subprocess_exec(
+                    *self.command,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    env=process_env,
+                )
+                
+                # Start response reader
+                self._reader_task = asyncio.create_task(self._read_responses())
+                
+                logger.info(
+                    "MCP server process started",
+                    server_id=self.server_id,
+                    pid=self._process.pid,
+                )
+                return True
+                
+            except Exception as e:
+                logger.error(
+                    "Failed to start MCP server",
+                    server_id=self.server_id,
+                    error=str(e),
+                )
+                return False
+    
+    async def stop(self) -> None:
+        """Stop the MCP server process."""
+        async with self._lock:
+            if self._reader_task:
+                self._reader_task.cancel()
+                try:
+                    await self._reader_task
+                except asyncio.CancelledError:
+                    pass
+                self._reader_task = None
+            
+            if self._process:
+                self._process.terminate()
+                try:
+                    await asyncio.wait_for(self._process.wait(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    self._process.kill()
+                    await self._process.wait()
+                
+                logger.info("MCP server process stopped", server_id=self.server_id)
+                self._process = None
+            
+            # Cancel pending requests
+            for future in self._pending_requests.values():
+                if not future.done():
+                    future.set_exception(Exception("Server stopped"))
+            self._pending_requests.clear()
+    
+    async def _read_responses(self) -> None:
+        """Read responses from stdout and dispatch to pending requests."""
+        if not self._process or not self._process.stdout:
+            return
+        
+        try:
+            while True:
+                line = await self._process.stdout.readline()
+                if not line:
+                    break
+                
+                try:
+                    response = json.loads(line.decode().strip())
+                    request_id = response.get("id")
+                    
+                    if request_id and request_id in self._pending_requests:
+                        future = self._pending_requests.pop(request_id)
+                        if not future.done():
+                            if "error" in response:
+                                future.set_exception(
+                                    Exception(response["error"].get("message", "Unknown error"))
+                                )
+                            else:
+                                future.set_result(response.get("result"))
+                                
+                except json.JSONDecodeError:
+                    logger.warning("Invalid JSON from MCP server", server_id=self.server_id)
+                    
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error("MCP response reader error", server_id=self.server_id, error=str(e))
+    
+    async def send_request(
+        self,
+        method: str,
+        params: Optional[Dict[str, Any]] = None,
+        timeout: float = 30.0,
+    ) -> Any:
+        """
+        Send a JSON-RPC request and wait for response.
+        
+        Args:
+            method: JSON-RPC method name
+            params: Method parameters
+            timeout: Request timeout in seconds
+            
+        Returns:
+            Result from the MCP server
+        """
+        if not self._process or not self._process.stdin:
+            raise Exception(f"MCP server {self.server_id} not running")
+        
+        self._request_id += 1
+        request_id = f"{self.server_id}-{self._request_id}"
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": method,
+            "id": request_id,
+        }
+        if params:
+            request["params"] = params
+        
+        # Create future for response
+        future: asyncio.Future = asyncio.get_event_loop().create_future()
+        self._pending_requests[request_id] = future
+        
+        try:
+            # Send request
+            request_line = json.dumps(request) + "\n"
+            self._process.stdin.write(request_line.encode())
+            await self._process.stdin.drain()
+            
+            # Wait for response
+            result = await asyncio.wait_for(future, timeout=timeout)
+            return result
+            
+        except asyncio.TimeoutError:
+            self._pending_requests.pop(request_id, None)
+            raise Exception(f"MCP request timed out: {method}")
+        except Exception:
+            self._pending_requests.pop(request_id, None)
+            raise
+    
+    @property
+    def is_running(self) -> bool:
+        """Check if the process is running."""
+        return self._process is not None and self._process.returncode is None
 
 
 class ToolMeta:
@@ -51,81 +235,86 @@ class MCPClient:
     
     Supports multiple MCP servers (GitHub, Notion, Vercel, GoDaddy).
     Configuration via environment variables.
+    
+    Uses JSON-RPC 2.0 over stdio for communication.
     """
     
     def __init__(self):
         """Initialize MCP client with server configurations."""
         self._servers: Dict[str, Dict[str, Any]] = {}
         self._allowed_tools: Dict[str, List[str]] = {}  # server_id -> [tool_names]
+        self._processes: Dict[str, MCPServerProcess] = {}  # server_id -> process
         self._load_servers()
     
     def _load_servers(self) -> None:
         """Load MCP server configurations from environment."""
-        # GitHub MCP
-        github_endpoint = os.getenv("MCP_GITHUB_ENDPOINT")
-        github_token = os.getenv("MCP_GITHUB_TOKEN")
-        if github_endpoint:
+        # GitHub MCP - uses @modelcontextprotocol/server-github
+        github_token = os.getenv("MCP_GITHUB_TOKEN") or os.getenv("GITHUB_TOKEN")
+        github_command = os.getenv("MCP_GITHUB_COMMAND", "npx -y @modelcontextprotocol/server-github")
+        if github_token:
             self._servers["github"] = {
-                "endpoint": github_endpoint,
-                "token": github_token,
+                "command": github_command.split(),
+                "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": github_token},
                 "enabled": True,
             }
             self._allowed_tools["github"] = [
-                "github.create_issue",
-                "github.create_pull_request",
-                "github.merge_pull_request",
-                "github.get_repo",
-                "github.list_issues",
+                "create_issue",
+                "create_pull_request",
+                "merge_pull_request",
+                "get_file_contents",
+                "list_issues",
+                "search_repositories",
             ]
             logger.info("GitHub MCP server configured")
         
-        # Notion MCP
-        notion_endpoint = os.getenv("MCP_NOTION_ENDPOINT")
-        notion_token = os.getenv("MCP_NOTION_TOKEN")
-        if notion_endpoint:
+        # Notion MCP - uses notion MCP server
+        notion_token = os.getenv("MCP_NOTION_TOKEN") or os.getenv("NOTION_API_KEY")
+        notion_command = os.getenv("MCP_NOTION_COMMAND", "npx -y @modelcontextprotocol/server-notion")
+        if notion_token:
             self._servers["notion"] = {
-                "endpoint": notion_endpoint,
-                "token": notion_token,
+                "command": notion_command.split(),
+                "env": {"NOTION_API_KEY": notion_token},
                 "enabled": True,
             }
             self._allowed_tools["notion"] = [
-                "notion.create_page",
-                "notion.update_page",
-                "notion.get_page",
-                "notion.search_pages",
+                "create_page",
+                "update_page",
+                "get_page",
+                "search",
+                "query_database",
             ]
             logger.info("Notion MCP server configured")
         
-        # Vercel MCP
-        vercel_endpoint = os.getenv("MCP_VERCEL_ENDPOINT")
-        vercel_token = os.getenv("MCP_VERCEL_TOKEN")
-        if vercel_endpoint:
-            self._servers["vercel"] = {
-                "endpoint": vercel_endpoint,
-                "token": vercel_token,
-                "enabled": True,
-            }
-            self._allowed_tools["vercel"] = [
-                "vercel.trigger_deploy",
-                "vercel.get_deploy_status",
-                "vercel.list_deployments",
-            ]
-            logger.info("Vercel MCP server configured")
+        # Filesystem MCP - for local file operations
+        fs_command = os.getenv("MCP_FILESYSTEM_COMMAND", "npx -y @modelcontextprotocol/server-filesystem")
+        fs_allowed_dirs = os.getenv("MCP_FILESYSTEM_ALLOWED_DIRS", "/Users/ib-mac/Projects")
+        self._servers["filesystem"] = {
+            "command": fs_command.split() + fs_allowed_dirs.split(","),
+            "env": {},
+            "enabled": True,
+        }
+        self._allowed_tools["filesystem"] = [
+            "read_file",
+            "write_file",
+            "list_directory",
+            "create_directory",
+        ]
+        logger.info("Filesystem MCP server configured")
         
-        # GoDaddy MCP
-        godaddy_endpoint = os.getenv("MCP_GODADDY_ENDPOINT")
-        godaddy_token = os.getenv("MCP_GODADDY_TOKEN")
-        if godaddy_endpoint:
-            self._servers["godaddy"] = {
-                "endpoint": godaddy_endpoint,
-                "token": godaddy_token,
-                "enabled": True,
-            }
-            self._allowed_tools["godaddy"] = [
-                "godaddy.update_dns_record",
-                "godaddy.get_dns_records",
-            ]
-            logger.info("GoDaddy MCP server configured")
+        # Memory MCP - for knowledge graph operations
+        memory_command = os.getenv("MCP_MEMORY_COMMAND", "npx -y @modelcontextprotocol/server-memory")
+        self._servers["memory"] = {
+            "command": memory_command.split(),
+            "env": {},
+            "enabled": True,
+        }
+        self._allowed_tools["memory"] = [
+            "create_entities",
+            "create_relations", 
+            "search_nodes",
+            "read_graph",
+        ]
+        logger.info("Memory MCP server configured")
     
     def is_server_available(self, server_id: str) -> bool:
         """Check if an MCP server is configured and available."""
@@ -138,11 +327,55 @@ class MCPClient:
     def is_tool_allowed(self, server_id: str, tool_name: str) -> bool:
         """Check if a tool is allowed for a server."""
         allowed = self._allowed_tools.get(server_id, [])
-        return tool_name in allowed
+        # Check both with and without server prefix
+        return tool_name in allowed or f"{server_id}.{tool_name}" in allowed
+    
+    async def _get_or_start_server(self, server_id: str) -> MCPServerProcess:
+        """Get or start an MCP server process."""
+        if server_id in self._processes and self._processes[server_id].is_running:
+            return self._processes[server_id]
+        
+        server_config = self._servers.get(server_id)
+        if not server_config:
+            raise Exception(f"MCP server {server_id} not configured")
+        
+        process = MCPServerProcess(
+            server_id=server_id,
+            command=server_config["command"],
+            env=server_config.get("env", {}),
+        )
+        
+        if not await process.start():
+            raise Exception(f"Failed to start MCP server {server_id}")
+        
+        self._processes[server_id] = process
+        
+        # Initialize the server (MCP handshake)
+        try:
+            await process.send_request("initialize", {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "L9", "version": "1.0.0"},
+            })
+            logger.info("MCP server initialized", server_id=server_id)
+        except Exception as e:
+            logger.warning("MCP initialize failed (may be optional)", server_id=server_id, error=str(e))
+        
+        return process
+    
+    async def stop_all_servers(self) -> None:
+        """Stop all running MCP server processes."""
+        for server_id, process in list(self._processes.items()):
+            await process.stop()
+        self._processes.clear()
+        logger.info("All MCP servers stopped")
     
     async def list_tools(self, server_id: str) -> List[ToolMeta]:
         """
         List available tools from an MCP server.
+        
+        Queries the server via JSON-RPC tools/list method.
+        Falls back to configured allowed tools if server unavailable.
         
         Args:
             server_id: Server identifier (e.g., "github", "notion")
@@ -154,25 +387,52 @@ class MCPClient:
             logger.warning(f"MCP server {server_id} not available")
             return []
         
-        # For now, return the curated list of allowed tools
-        # In production, this would make an actual MCP call to list tools
-        allowed_tool_names = self._allowed_tools.get(server_id, [])
-        
-        tools = []
-        for tool_name in allowed_tool_names:
-            # Extract base name (e.g., "create_issue" from "github.create_issue")
-            base_name = tool_name.split(".", 1)[1] if "." in tool_name else tool_name
+        try:
+            # Get or start the server process
+            process = await self._get_or_start_server(server_id)
             
-            # Create tool metadata
-            tool_meta = ToolMeta(
-                name=tool_name,
-                description=f"{base_name} via {server_id} MCP",
-                input_schema={},  # Would be populated from actual MCP server
+            # Query available tools
+            result = await process.send_request(
+                method="tools/list",
+                params={},
+                timeout=30.0,
             )
-            tools.append(tool_meta)
-        
-        logger.debug(f"Listed {len(tools)} tools from MCP server {server_id}")
-        return tools
+            
+            tools = []
+            for tool_data in result.get("tools", []):
+                tool_name = tool_data.get("name", "")
+                
+                # Only include allowed tools
+                if self.is_tool_allowed(server_id, tool_name):
+                    tool_meta = ToolMeta(
+                        name=tool_name,
+                        description=tool_data.get("description", ""),
+                        input_schema=tool_data.get("inputSchema", {}),
+                    )
+                    tools.append(tool_meta)
+            
+            logger.info(f"Listed {len(tools)} tools from MCP server {server_id}")
+            return tools
+            
+        except Exception as e:
+            logger.warning(
+                "Failed to list MCP tools, using fallback",
+                server_id=server_id,
+                error=str(e),
+            )
+            
+            # Fallback to configured allowed tools
+            allowed_tool_names = self._allowed_tools.get(server_id, [])
+            tools = []
+            for tool_name in allowed_tool_names:
+                tool_meta = ToolMeta(
+                    name=tool_name,
+                    description=f"{tool_name} via {server_id} MCP",
+                    input_schema={},
+                )
+                tools.append(tool_meta)
+            
+            return tools
     
     async def call_tool(
         self,
@@ -181,48 +441,75 @@ class MCPClient:
         arguments: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        Call a tool on an MCP server.
+        Call a tool on an MCP server using JSON-RPC over stdio.
         
         Args:
             server_id: Server identifier (e.g., "github", "notion")
-            tool_name: Tool name (e.g., "github.create_issue")
+            tool_name: Tool name (e.g., "create_issue")
             arguments: Tool arguments
             
         Returns:
-            Tool result dictionary
+            Tool result dictionary with success, result, and error fields
         """
         if not self.is_server_available(server_id):
             return {
                 "success": False,
                 "error": f"MCP server {server_id} not available",
+                "result": None,
             }
         
         if not self.is_tool_allowed(server_id, tool_name):
             return {
                 "success": False,
                 "error": f"Tool {tool_name} not allowed for server {server_id}",
+                "result": None,
             }
         
-        server_config = self._servers[server_id]
-        endpoint = server_config["endpoint"]
-        token = server_config.get("token")
-        
-        # TODO: Make actual MCP protocol call
-        # For now, this is a stub that would be replaced with actual MCP client implementation
-        # MCP uses JSON-RPC over stdio/HTTP/WebSocket
-        
         logger.info(
-            f"Calling MCP tool {tool_name} on server {server_id} with args: {arguments}"
+            "Calling MCP tool",
+            server_id=server_id,
+            tool_name=tool_name,
+            arguments=arguments,
         )
         
-        # MCP protocol implementation deferred to Stage 2
-        # Currently, return explicit error to prevent false success
-        logger.warning(f"MCP tool call requested but not implemented: {server_id}/{tool_name}")
-        return {
-            "success": False,
-            "error": "MCP protocol not yet implemented — available in Stage 2",
-            "result": None,
-        }
+        try:
+            # Get or start the server process
+            process = await self._get_or_start_server(server_id)
+            
+            # Call the tool via JSON-RPC
+            result = await process.send_request(
+                method="tools/call",
+                params={
+                    "name": tool_name,
+                    "arguments": arguments,
+                },
+                timeout=60.0,
+            )
+            
+            logger.info(
+                "MCP tool call succeeded",
+                server_id=server_id,
+                tool_name=tool_name,
+            )
+            
+            return {
+                "success": True,
+                "result": result,
+                "error": None,
+            }
+            
+        except Exception as e:
+            logger.error(
+                "MCP tool call failed",
+                server_id=server_id,
+                tool_name=tool_name,
+                error=str(e),
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "result": None,
+            }
 
 
 # Global MCP client instance
@@ -240,6 +527,7 @@ def get_mcp_client() -> MCPClient:
 __all__ = [
     "ToolMeta",
     "MCPClient",
+    "MCPServerProcess",
     "get_mcp_client",
 ]
 

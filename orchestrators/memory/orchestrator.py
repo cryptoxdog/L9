@@ -6,12 +6,16 @@ Manages memory substrate usage: batching, replay, garbage collection.
 """
 
 import structlog
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from .interface import (
     IMemoryOrchestrator,
+    MemoryOperation,
     MemoryRequest,
     MemoryResponse,
 )
+from .housekeeping import Housekeeping
 
 logger = structlog.get_logger(__name__)
 
@@ -21,23 +25,161 @@ class MemoryOrchestrator(IMemoryOrchestrator):
     Memory Orchestrator implementation.
     
     Manages memory substrate usage: batching, replay, garbage collection.
+    Uses MemorySubstrateService for actual storage operations.
     """
     
-    def __init__(self):
-        """Initialize memory orchestrator."""
+    def __init__(self, substrate_service: Optional[Any] = None):
+        """
+        Initialize memory orchestrator.
+        
+        Args:
+            substrate_service: Optional MemorySubstrateService instance.
+                              If not provided, will be lazily loaded.
+        """
+        self._substrate_service = substrate_service
+        self._housekeeping = Housekeeping()
         logger.info("MemoryOrchestrator initialized")
+    
+    async def _get_substrate_service(self) -> Any:
+        """Get or lazily load the substrate service."""
+        if self._substrate_service is None:
+            try:
+                from memory.substrate_service import get_substrate_service
+                self._substrate_service = await get_substrate_service()
+            except ImportError:
+                logger.error("MemorySubstrateService not available")
+                raise RuntimeError("MemorySubstrateService not available")
+        return self._substrate_service
     
     async def execute(
         self,
         request: MemoryRequest
     ) -> MemoryResponse:
-        """Execute memory orchestration."""
-        logger.info("Executing memory orchestration")
+        """
+        Execute memory orchestration based on operation type.
         
-        # TODO: Implement orchestration logic
+        Supports:
+        - BATCH_WRITE: Store multiple packets
+        - REPLAY: Replay packets from a time range to world model
+        - GC: Garbage collect old packets
+        - COMPACT: Optimize storage
+        """
+        logger.info(
+            "Executing memory orchestration",
+            operation=request.operation,
+            packet_count=len(request.packets),
+        )
+        
+        try:
+            if request.operation == MemoryOperation.BATCH_WRITE:
+                return await self._batch_write(request.packets)
+            
+            elif request.operation == MemoryOperation.REPLAY:
+                return await self._replay(request)
+            
+            elif request.operation == MemoryOperation.GC:
+                return await self._garbage_collect(request.gc_threshold_days)
+            
+            elif request.operation == MemoryOperation.COMPACT:
+                return await self._compact()
+            
+            else:
+                return MemoryResponse(
+                    success=False,
+                    message=f"Unknown operation: {request.operation}",
+                )
+                
+        except Exception as e:
+            logger.error(f"Memory orchestration failed: {e}", exc_info=True)
+            return MemoryResponse(
+                success=False,
+                message=f"Operation failed: {str(e)}",
+                errors=[str(e)],
+            )
+    
+    async def _batch_write(self, packets: List[Dict[str, Any]]) -> MemoryResponse:
+        """Store multiple packets in batch."""
+        if not packets:
+            return MemoryResponse(
+                success=True,
+                message="No packets to store",
+                processed_count=0,
+            )
+        
+        substrate = await self._get_substrate_service()
+        errors = []
+        stored_count = 0
+        
+        for packet in packets:
+            try:
+                await substrate.store_packet(packet)
+                stored_count += 1
+            except Exception as e:
+                errors.append(f"Failed to store packet: {e}")
+                logger.warning(f"Batch write error: {e}")
         
         return MemoryResponse(
-            success=True,
-            message="Memory orchestration completed",
+            success=len(errors) == 0,
+            message=f"Stored {stored_count}/{len(packets)} packets",
+            processed_count=stored_count,
+            errors=errors,
+        )
+    
+    async def _replay(self, request: MemoryRequest) -> MemoryResponse:
+        """Replay packets from memory to world model."""
+        substrate = await self._get_substrate_service()
+        
+        try:
+            # Query recent packets
+            result = await substrate.query_packets(
+                limit=100,
+                since=datetime.utcnow() - timedelta(days=7),
+            )
+            
+            packets = result.get("packets", [])
+            
+            # Trigger world model update with replayed packets
+            if packets:
+                insights = [
+                    {"packet": p, "trigger_world_model": True}
+                    for p in packets
+                ]
+                await substrate.trigger_world_model_update(insights)
+            
+            return MemoryResponse(
+                success=True,
+                message=f"Replayed {len(packets)} packets to world model",
+                processed_count=len(packets),
+            )
+            
+        except Exception as e:
+            logger.error(f"Replay failed: {e}")
+            return MemoryResponse(
+                success=False,
+                message=f"Replay failed: {e}",
+                errors=[str(e)],
+            )
+    
+    async def _garbage_collect(self, threshold_days: int) -> MemoryResponse:
+        """
+        Garbage collect packets older than threshold.
+        
+        Delegates to Housekeeping for actual deletion.
+        """
+        result = await self._housekeeping.garbage_collect(threshold_days)
+        
+        return MemoryResponse(
+            success=result.get("success", False),
+            message=result.get("message", "GC completed"),
+            processed_count=result.get("deleted_count", 0),
+        )
+    
+    async def _compact(self) -> MemoryResponse:
+        """Compact/optimize storage."""
+        result = await self._housekeeping.compact()
+        
+        return MemoryResponse(
+            success=result.get("success", False),
+            message=result.get("message", "Compact completed"),
         )
 

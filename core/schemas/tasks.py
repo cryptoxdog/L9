@@ -199,33 +199,107 @@ class TaskEnvelope(BaseModel):
 
 
 # =============================================================================
-# Phase 3 Stubs
+# Task Graph and Batch (Phase 3)
 # =============================================================================
 
 class TaskGraph(BaseModel):
     """
-    Phase 3 Stub: DAG of dependent tasks.
+    DAG of dependent tasks with LangGraph state machine integration.
     
-    Will support parallel execution and dependency management
-    when LangGraph-based routing is implemented.
+    Supports:
+    - Parallel execution with dependency awareness
+    - LangGraph StateGraph reference for routing
+    - Execution state tracking
     """
     graph_id: UUID = Field(default_factory=uuid4)
     tasks: list[AgentTask] = Field(default_factory=list)
     dependencies: Dict[str, list[str]] = Field(default_factory=dict)
-    # TODO: Phase 3 - Add LangGraph state machine integration
+    
+    # LangGraph integration
+    state_graph_id: Optional[str] = Field(
+        default=None,
+        description="Reference to LangGraph StateGraph for routing decisions",
+    )
+    graph_state: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Current state of the LangGraph execution",
+    )
+    
+    # Execution tracking
+    completed_task_ids: list[str] = Field(
+        default_factory=list,
+        description="IDs of tasks that have completed",
+    )
+    failed_task_ids: list[str] = Field(
+        default_factory=list,
+        description="IDs of tasks that have failed",
+    )
+    
+    def get_ready_tasks(self) -> list[AgentTask]:
+        """Get tasks whose dependencies have all completed."""
+        ready = []
+        completed_set = set(self.completed_task_ids)
+        failed_set = set(self.failed_task_ids)
+        
+        for task in self.tasks:
+            task_id = str(task.task_id)
+            
+            # Skip already completed or failed
+            if task_id in completed_set or task_id in failed_set:
+                continue
+            
+            # Check dependencies
+            deps = self.dependencies.get(task_id, [])
+            if all(d in completed_set for d in deps):
+                ready.append(task)
+        
+        return ready
 
 
 class TaskBatch(BaseModel):
     """
-    Phase 3 Stub: Batch of tasks for bulk processing.
+    Batch of tasks for bulk processing with transaction support.
     
-    Will support atomic batch operations and transactional
-    task execution.
+    Supports:
+    - Atomic batch operations (all-or-nothing)
+    - Transaction ID for rollback tracking
+    - Partial success reporting
     """
     batch_id: UUID = Field(default_factory=uuid4)
     envelopes: list[TaskEnvelope] = Field(default_factory=list)
     atomic: bool = Field(default=False)
-    # TODO: Phase 3 - Add transaction support
+    
+    # Transaction support
+    transaction_id: Optional[UUID] = Field(
+        default=None,
+        description="Transaction ID for atomic operations and rollback",
+    )
+    rollback_on_failure: bool = Field(
+        default=True,
+        description="Whether to rollback all changes on any task failure",
+    )
+    
+    # Execution tracking
+    completed_count: int = Field(default=0)
+    failed_count: int = Field(default=0)
+    
+    def mark_completed(self, envelope_id: UUID) -> None:
+        """Mark an envelope as completed."""
+        self.completed_count += 1
+    
+    def mark_failed(self, envelope_id: UUID) -> None:
+        """Mark an envelope as failed."""
+        self.failed_count += 1
+    
+    @property
+    def all_succeeded(self) -> bool:
+        """Check if all tasks in batch succeeded."""
+        return self.completed_count == len(self.envelopes) and self.failed_count == 0
+    
+    @property
+    def any_failed(self) -> bool:
+        """Check if any task in batch failed."""
+        return self.failed_count > 0
 
 
 # =============================================================================

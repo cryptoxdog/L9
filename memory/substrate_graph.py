@@ -10,6 +10,8 @@ The DAG routes PacketEnvelopes through processing stages with state accumulation
 # bound to memory-yaml2.0 structural layer (NOTE: YAML specifies Neo4j backend, but current implementation uses LangGraph DAG for entity_graph/relationship_traversal/event_timeline)
 """
 
+from __future__ import annotations
+
 import structlog
 from datetime import datetime
 from typing import Any, Annotated, TypedDict
