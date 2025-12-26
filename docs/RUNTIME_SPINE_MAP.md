@@ -19,6 +19,8 @@ How work flows through the L9 system from entrypoint to persistence.
 │  │  lifespan() startup:                                            │        │
 │  │    1. run_migrations(database_url)  ─────► migrations/*.sql     │        │
 │  │    2. init_service(database_url)    ─────► memory substrate     │        │
+│  │    3. get_neo4j_client()            ─────► Neo4j graph DB       │        │
+│  │    4. get_redis_client()            ─────► Redis cache/queues   │        │
 │  │                                                                  │        │
 │  │  app = FastAPI(lifespan=lifespan)                               │        │
 │  └─────────────────────────────────────────────────────────────────┘        │
@@ -60,7 +62,7 @@ How work flows through the L9 system from entrypoint to persistence.
 │     │            orchestrators/ws_bridge.py                         │        │
 │     │                   │                                           │        │
 │     │                   ▼                                           │        │
-│     │            TaskEnvelope ──► runtime/task_queue.py            │        │
+│     │            TaskEnvelope ──► runtime/task_queue.py ──► Redis  │        │
 │     └──────────────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -105,24 +107,50 @@ How work flows through the L9 system from entrypoint to persistence.
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         PERSISTENCE LAYER                                    │
 │                                                                              │
-│  memory/substrate_repository.py                                              │
-│       │                                                                      │
-│       ▼                                                                      │
-│  PostgreSQL + pgvector                                                       │
-│       │                                                                      │
-│       ├── packet_store              (all packets)                            │
-│       ├── agent_memory_events       (agent activity log)                     │
-│       ├── reasoning_traces          (structured reasoning blocks)            │
-│       ├── semantic_memory           (vector embeddings)                      │
-│       ├── knowledge_facts           (extracted facts)                        │
-│       ├── graph_checkpoints         (DAG state snapshots)                    │
-│       └── schema_migrations         (migration tracking)                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  PostgreSQL + pgvector (l9-postgres:5432)                            │    │
+│  │                                                                      │    │
+│  │  memory/substrate_repository.py                                      │    │
+│  │       ├── packet_store              (all packets)                    │    │
+│  │       ├── agent_memory_events       (agent activity log)             │    │
+│  │       ├── reasoning_traces          (structured reasoning blocks)    │    │
+│  │       ├── semantic_memory           (vector embeddings)              │    │
+│  │       ├── knowledge_facts           (extracted facts)                │    │
+│  │       ├── graph_checkpoints         (DAG state snapshots)            │    │
+│  │       ├── tasks                     (task queue persistence)         │    │
+│  │       ├── agent_log                 (agent execution logs)           │    │
+│  │       └── schema_migrations         (migration tracking)             │    │
+│  │                                                                      │    │
+│  │  world_model/repository.py                                           │    │
+│  │       ├── world_model_entities      (entities in world model)        │    │
+│  │       ├── world_model_updates       (update history)                 │    │
+│  │       └── world_model_snapshots     (point-in-time snapshots)        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
 │                                                                              │
-│  world_model/repository.py                                                   │
-│       │                                                                      │
-│       ├── world_model_entities      (entities in world model)                │
-│       ├── world_model_updates       (update history)                         │
-│       └── world_model_snapshots     (point-in-time snapshots)                │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Neo4j Graph DB (l9-neo4j:7687)                                      │    │
+│  │                                                                      │    │
+│  │  memory/graph_client.py::Neo4jClient                                 │    │
+│  │       ├── Entity nodes              (users, agents, events)          │    │
+│  │       ├── Relationship edges        (causality, ownership)           │    │
+│  │       ├── Event timeline            (temporal causality chains)      │    │
+│  │       └── Tool registry             (registered tools graph)         │    │
+│  │                                                                      │    │
+│  │  core/security/permission_graph.py                                   │    │
+│  │       └── Permission graph          (RBAC nodes & edges)             │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Redis (redis:6379)                                                  │    │
+│  │                                                                      │    │
+│  │  runtime/redis_client.py::RedisClient                                │    │
+│  │       ├── Task queue backend        (priority sorted sets)          │    │
+│  │       ├── Rate limiting             (sliding window counters)        │    │
+│  │       └── Session/context cache     (ephemeral state)                │    │
+│  │                                                                      │    │
+│  │  runtime/task_queue.py::TaskQueue                                    │    │
+│  │       └── Redis-backed with in-memory fallback                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ---
@@ -182,8 +210,12 @@ How work flows through the L9 system from entrypoint to persistence.
 |-----------|--------|---------|
 | `ws_orchestrator` | `runtime.websocket_orchestrator` | WebSocket connection manager |
 | `_service` | `memory.substrate_service` | Memory substrate singleton |
-| `_repository` | `memory.substrate_repository` | DB connection pool |
+| `_repository` | `memory.substrate_repository` | PostgreSQL connection pool |
 | `_world_model_engine` | `world_model.engine` | World model singleton |
+| `_neo4j_client` | `memory.graph_client` | Neo4j graph database client |
+| `_redis_client` | `runtime.redis_client` | Redis cache/queue client |
+| `app.state.neo4j_client` | `api.server` | Neo4j client (FastAPI state) |
+| `app.state.redis_client` | `api.server` | Redis client (FastAPI state) |
 
 ---
 
@@ -191,10 +223,36 @@ How work flows through the L9 system from entrypoint to persistence.
 
 1. `uvicorn api.server:app`
 2. `lifespan()` context manager enters
-3. `run_migrations()` - apply pending SQL migrations
-4. `init_service()` - initialize memory substrate
-5. FastAPI app serves requests
-6. On shutdown: `close_service()` - cleanup
+3. `run_migrations()` - apply pending SQL migrations to PostgreSQL
+4. `init_service()` - initialize memory substrate (PostgreSQL)
+5. `get_neo4j_client()` - connect to Neo4j (optional, graceful fallback)
+6. `get_redis_client()` - connect to Redis (optional, in-memory fallback)
+7. Register tools in Neo4j graph (if available)
+8. Initialize Permission Graph (RBAC via Neo4j)
+9. FastAPI app serves requests
+10. On shutdown: `close_service()`, `close_neo4j_client()`, `close_redis_client()`
+
+---
+
+## Health Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/health` | Overall API health |
+| `/health/neo4j` | Neo4j connection status |
+| `/os/health` | OS-level health check |
+
+---
+
+## Graceful Degradation
+
+The system is designed to operate with reduced functionality when optional services are unavailable:
+
+| Service | If Unavailable | Fallback Behavior |
+|---------|----------------|-------------------|
+| Neo4j | Graph features disabled | Permission graph, tool registry, event timeline unavailable |
+| Redis | In-memory fallback | Task queue uses `deque`, rate limiting uses local counters |
+| PostgreSQL | **Fatal** | System cannot start - core persistence required |
 
 ---
 

@@ -1,10 +1,11 @@
 # L9 Core Dependencies
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-python-multipart>=0.0.6
 pydantic>=2.5.0
-pydantic-settings>=2.1.0
 python-dotenv>=1.0.0
+
+# Pydantic Settings (separate package in v2)
+pydantic-settings>=2.1.0
 
 # Database
 psycopg[binary]>=3.1.14
@@ -41,10 +42,6 @@ typing-extensions>=4.9.0
 # Slack
 slack-sdk>=3.26.0
 
-# Testing (optional, for dev)
-pytest>=7.4.0
-pytest-asyncio>=0.23.0
-
 # Twilio (SMS/Voice)
 twilio>=8.10.0
 
@@ -59,3 +56,7 @@ cryptography>=41.0.0
 
 # Browser Automation (Mac Agent)
 playwright>=1.40.0
+
+# Testing (optional, for dev)
+pytest>=7.4.0
+pytest-asyncio>=0.23.0

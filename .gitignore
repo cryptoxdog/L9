@@ -87,9 +87,13 @@ docs/12-19-25/
 docs/_VPS MRI/
 
 # Local Docker overrides (machine-specific)
-# docker-compose.override.yml  # Now tracked - uses env vars for cross-platform
+docker-compose.yml
+docker-compose.override.yml
+docs/docker-compose.yaml
+
+# Backup/reference files (local only)
+Repo-Files/
 
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml
 .Trash/
-# docker-compose.yml  # Now tracked - canonical VPS version
