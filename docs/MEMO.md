@@ -9,3 +9,8 @@
 - **Action needed:** Decide whether to keep the `__future__` import (harmless) or remove it (not needed for production)
 - **Added:** 2025-12-26
 
+### ⚠️ Playwright Browser Automation Setup
+- **Issue:** Playwright requires additional system setup beyond `pip install`
+- **Required command:** `playwright install chromium`
+- **Context:** This may need to be added to the Dockerfile if browser automation is used in production
+- **Added:** 2025-12-26
