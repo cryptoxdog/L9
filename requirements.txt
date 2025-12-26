@@ -43,3 +43,18 @@ slack-sdk>=3.26.0
 # Testing (optional, for dev)
 pytest>=7.4.0
 pytest-asyncio>=0.23.0
+
+# Twilio (SMS/Voice)
+twilio>=8.10.0
+
+# Templates
+Jinja2>=3.1.2
+
+# YAML
+PyYAML>=6.0.1
+
+# Cryptography (signature verification)
+cryptography>=41.0.0
+
+# Browser Automation (Mac Agent)
+playwright>=1.40.0
