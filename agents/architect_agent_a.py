@@ -14,12 +14,12 @@ Responsibilities:
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 from typing import Any, Optional
 
 from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 SYSTEM_PROMPT = """You are Architect A, the primary system designer for L9.

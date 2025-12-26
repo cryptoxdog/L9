@@ -1,14 +1,14 @@
 """
 Mac Agent API endpoints for polling and reporting task results.
 """
-import logging
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 
 from services.mac_tasks import get_next_task, complete_task, list_tasks
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/mac", tags=["mac-agent"])
 

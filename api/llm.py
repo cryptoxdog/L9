@@ -1,5 +1,5 @@
 import os
-import logging
+import structlog
 from typing import Dict, Any
 from openai import OpenAI
 
@@ -10,7 +10,7 @@ try:
 except ImportError:
     KERNELS_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 MODEL = os.getenv("L9_LLM_MODEL", "gpt-4o-mini")
 USE_KERNELS = os.getenv("L9_USE_KERNELS", "true").lower() in ("true", "1", "yes")

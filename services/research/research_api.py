@@ -5,7 +5,7 @@ Version: 1.0.0
 FastAPI router for the /research endpoint.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from services.research.graph_runtime import get_runtime, ResearchGraphRuntime
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Create router
 router = APIRouter(prefix="/research", tags=["research"])

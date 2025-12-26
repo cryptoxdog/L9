@@ -5,7 +5,7 @@ Email Parser
 Helpers for parsing Gmail message payloads, extracting headers, body, and attachments.
 """
 import base64
-import logging
+import structlog
 import re
 from typing import Dict, Any, List, Optional
 from email.header import decode_header
@@ -18,7 +18,7 @@ try:
 except ImportError:
     HTML_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 def parse_headers(payload: Dict[str, Any]) -> Dict[str, str]:

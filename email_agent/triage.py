@@ -4,11 +4,11 @@ Email Inbox Triage and Daily Digest
 
 Functions for summarizing inbox, extracting priorities, and generating daily digests.
 """
-import logging
+import structlog
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 try:
     from email_agent.gmail_client import GmailClient

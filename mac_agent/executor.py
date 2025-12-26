@@ -3,14 +3,14 @@ Mac Agent Executor V2
 Playwright automation engine with GUI fallback.
 """
 import asyncio
-import logging
+import structlog
 import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import time
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 from mac_agent.helpers.logging import log_step, ts
 

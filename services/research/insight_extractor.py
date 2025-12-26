@@ -6,10 +6,10 @@ Extracts structured insights from research results.
 Used by store_insights node to convert research output into Memory Substrate packets.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class InsightExtractorAgent:

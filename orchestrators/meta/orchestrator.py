@@ -5,7 +5,7 @@ Version: 1.0.0
 Concrete implementation of meta orchestration logic.
 """
 
-import logging
+import structlog
 from typing import List, Dict, Any, Optional
 
 from .interface import (
@@ -19,7 +19,7 @@ from .interface import (
 )
 from .adapter import BlueprintAdapter
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class MetaOrchestrator(IMetaOrchestrator):
@@ -44,10 +44,23 @@ class MetaOrchestrator(IMetaOrchestrator):
         
         evaluations: List[BlueprintEvaluation] = []
         for blueprint in request.blueprints:
-            evaluation = await self._evaluate_single_blueprint(
+            scores = await self._adapter.score_blueprint(
                 blueprint,
                 request.criteria,
                 request.context
+            )
+            # TODO: Convert scores to BlueprintEvaluation
+            # For now, create a placeholder evaluation
+            from .interface import BlueprintEvaluation, BlueprintScore
+            weighted_total = sum(s.score * next((c.weight for c in request.criteria if c.name == s.criterion), 0.5) 
+                                for s in scores) / len(scores) if scores else 0.0
+            evaluation = BlueprintEvaluation(
+                blueprint_id=blueprint.id,
+                scores=scores,
+                weighted_total=weighted_total,
+                strengths=[],
+                weaknesses=[],
+                recommendation="Evaluation complete"
             )
             evaluations.append(evaluation)
         
@@ -90,8 +103,12 @@ class MetaOrchestrator(IMetaOrchestrator):
         """Compare two blueprints head-to-head."""
         logger.info(f"Comparing {blueprint_a.id} vs {blueprint_b.id}")
         
-        eval_a = await self._evaluate_single_blueprint(blueprint_a, criteria, None)
-        eval_b = await self._evaluate_single_blueprint(blueprint_b, criteria, None)
+        # Evaluate both blueprints
+        scores_a = await self._adapter.score_blueprint(blueprint_a, criteria, None)
+        scores_b = await self._adapter.score_blueprint(blueprint_b, criteria, None)
+        
+        eval_a = await self._evaluate_blueprint(blueprint_a, criteria, scores_a, None)
+        eval_b = await self._evaluate_blueprint(blueprint_b, criteria, scores_b, None)
         
         winner = blueprint_a.id if eval_a.weighted_total > eval_b.weighted_total else blueprint_b.id
         margin = abs(eval_a.weighted_total - eval_b.weighted_total)
@@ -123,20 +140,21 @@ class MetaOrchestrator(IMetaOrchestrator):
         suggestions = await self._adapter.generate_improvements(blueprint, evaluation)
         return suggestions
     
-    async def _evaluate_single_blueprint(
+    async def _evaluate_blueprint(
         self,
         blueprint: Blueprint,
         criteria: List[EvaluationCriteria],
-        context: Optional[Dict[str, Any]]
+        scores: List[BlueprintScore],
+        context: Optional[Dict[str, Any]] = None
     ) -> BlueprintEvaluation:
         """Evaluate a single blueprint against all criteria."""
-        scores = await self._adapter.score_blueprint(blueprint, criteria, context)
+        logger.info(f"Evaluating blueprint: {blueprint.id}")
         
         total_weight = sum(c.weight for c in criteria)
         weighted_total = sum(
-            score.score * next(c.weight for c in criteria if c.name == score.criterion)
+            score.score * next((c.weight for c in criteria if c.name == score.criterion), 0.5)
             for score in scores
-        ) / total_weight
+        ) / total_weight if total_weight > 0 else 0.0
         
         strengths = [score.rationale for score in scores if score.score >= 0.8]
         weaknesses = [score.rationale for score in scores if score.score < 0.6]

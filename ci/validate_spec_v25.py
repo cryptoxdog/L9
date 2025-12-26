@@ -21,6 +21,7 @@ Usage:
 """
 
 import sys
+import structlog
 import os
 import re
 from pathlib import Path
@@ -34,6 +35,8 @@ import yaml
 # =============================================================================
 
 # All v2.5 required top-level sections
+
+logger = structlog.get_logger(__name__)
 V25_REQUIRED_SECTIONS = [
     "schema_version",
     "metadata",
@@ -171,24 +174,24 @@ class ValidationResult:
     
     def print_report(self) -> None:
         """Print validation report."""
-        print(f"\n{'='*70}")
-        print(f"SPEC VALIDATION: {self.spec_path}")
-        print(f"{'='*70}")
+        logger.info(f"\n{'='*70}")
+        logger.info(f"SPEC VALIDATION: {self.spec_path}")
+        logger.info(f"{'='*70}")
         
         if self.is_valid:
             version = self._get_schema_version()
-            print(f"✅ PASSED - All v{version} requirements satisfied")
+            logger.info(f"✅ PASSED - All v{version} requirements satisfied")
         else:
-            print(f"❌ FAILED - {len(self.errors)} error(s) found\n")
+            logger.error(f"❌ FAILED - {len(self.errors)} error(s) found\n")
             for i, error in enumerate(self.errors, 1):
-                print(f"  [{i}] {error}")
+                logger.error(f"  [{i}] {error}")
         
         if self.warnings:
-            print(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
+            logger.warning(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
             for warning in self.warnings:
-                print(f"    - {warning}")
+                logger.warning(f"    - {warning}")
         
-        print(f"{'='*70}\n")
+        logger.info(f"{'='*70}\n")
 
 
 # =============================================================================
@@ -505,8 +508,8 @@ def find_all_specs(repo_root: str) -> list[str]:
 def main() -> int:
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python validate_spec_v25.py <spec.yaml> [spec2.yaml ...]")
-        print("       python validate_spec_v25.py --all")
+        logger.info("Usage: python validate_spec_v25.py <spec.yaml> [spec2.yaml ...]")
+        logger.info("       python validate_spec_v25.py --all")
         return 2
     
     if sys.argv[1] == "--all":
@@ -514,7 +517,7 @@ def main() -> int:
         repo_root = Path(__file__).parent.parent
         specs = find_all_specs(str(repo_root))
         if not specs:
-            print("No spec files found in repo")
+            logger.info("No spec files found in repo")
             return 0
     else:
         specs = sys.argv[1:]
@@ -527,10 +530,10 @@ def main() -> int:
             all_passed = False
     
     if all_passed:
-        print("✅ ALL SPECS PASSED VALIDATION")
+        logger.info("✅ ALL SPECS PASSED VALIDATION")
         return 0
     else:
-        print("❌ VALIDATION FAILED - See errors above")
+        logger.error("❌ VALIDATION FAILED - See errors above")
         return 1
 
 

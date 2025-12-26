@@ -25,6 +25,7 @@ Integration:
 """
 
 from __future__ import annotations
+import structlog
 
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from world_model.registry import WorldModelRegistry
 
 
+
+logger = structlog.get_logger(__name__)
 class WorldModelLoader:
     """
     Loader for World Model specifications.
@@ -208,9 +211,9 @@ class WorldModelLoader:
     # Domain-Specific Loading
     # =========================================================================
     
-    def load_domain_blueprint(self, blueprint_path: str) -> dict[str, Any]:
+    def load_blueprint(self, blueprint_path: str):
         """
-        Load domain-specific blueprint (e.g., PlasticRecycling).
+        logger.info(e.g., PlasticRecycling)
         
         Specification: PlasticRecycling_World Model-Blueprint.md
         

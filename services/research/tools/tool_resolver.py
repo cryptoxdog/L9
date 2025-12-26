@@ -6,7 +6,7 @@ Resolves which tools are available for a given agent/role.
 Enforces access control and rate limits.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 
 from services.research.tools.tool_registry import (
@@ -15,7 +15,7 @@ from services.research.tools.tool_registry import (
     get_tool_registry,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ToolResolver:

@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import asyncio
 import fnmatch
-import logging
+import structlog
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from simulation.simulation_engine import SimulationEngine, SimulationRun
     from memory.substrate_service import MemorySubstrateService
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

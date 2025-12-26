@@ -6,9 +6,9 @@ import os
 import yaml
 from pathlib import Path
 from typing import Optional
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class MacAgentConfig:
     """Configuration for Mac Agent V2."""

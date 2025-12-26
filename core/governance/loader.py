@@ -15,7 +15,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +28,7 @@ from core.governance.schemas import (
     ConditionOperator,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

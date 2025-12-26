@@ -5,13 +5,13 @@ Version: 1.0.0
 Evaluates research quality and provides feedback.
 """
 
-import logging
+import structlog
 from typing import Any
 
 from services.research.agents.base_agent import BaseAgent
 from services.research.graph_state import Evidence
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 CRITIC_SYSTEM_PROMPT = """You are a research quality critic. Your job is to evaluate research findings and provide constructive feedback.

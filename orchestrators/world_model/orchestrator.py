@@ -6,7 +6,7 @@ Drives world-model lifecycle, ingest updates, schedule propagation.
 Integrates with memory substrate for insight-driven updates.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 from uuid import uuid4
 from datetime import datetime
@@ -19,7 +19,7 @@ from .interface import (
 )
 from .scheduler import WorldModelScheduler
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class WorldModelOrchestrator(IWorldModelOrchestrator):

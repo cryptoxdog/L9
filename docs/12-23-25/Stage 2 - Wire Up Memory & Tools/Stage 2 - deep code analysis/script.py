@@ -1,4 +1,5 @@
 
+logger = structlog.get_logger(__name__)
 # SUMMARY OF ISSUES TO FIX IN GMP v1.7
 
 issues_to_fix = {
@@ -55,48 +56,102 @@ issues_to_fix = {
     ]
 }
 
-print("GMP v1.7 CORRECTIVE ACTIONS")
-print("=" * 100)
+logger.info("GMP v1.7 CORRECTIVE ACTIONS")
+logger.info("=" * 100)
 print()
 
 for category, items in issues_to_fix.items():
-    print(f"\n{category} ISSUES ({len(items)} to fix):")
-    print("-" * 100)
+    logger.info(f"\n{category} ISSUES ({len(items)} to fix):")
+    logger.info("-" * 100)
     for item in items:
-        print(f"  [{item['id']}] {item['issue']}")
-        print(f"      File: {item['file']}")
-        print(f"      Problem: {item['problem']}")
-        print(f"      Fix: {item['fix']}")
+        logger.info(f"  [{item['id']}] {item['issue']}")
+        logger.info(f"      File: {item['file']}")
+        logger.info(f"      Problem: {item['problem']}")
+        logger.info(f"      Fix: {item['fix']}")
         print()
 
-print("\n" + "=" * 100)
-print("STRATEGY FOR GMP v1.7")
-print("=" * 100)
-print("""
+logger.info("\n" + "=" * 100)
+logger.info("STRATEGY FOR GMP v1.7")
+logger.info("=" * 100)
+logger.info("""
+
 PHASE 1: FIX CRITICAL CODE ISSUES (Immediate)
+PHASE 1: FIX CRITICAL CODE ISSUES (Immediate)
+
   - Implement proper stubs in: mcp_client.py, gmp_worker.py, long_plan_graph.py
+  - Implement proper stubs in: mcp_client.py, gmp_worker.py, long_plan_graph.py
+
   - Stubs should NOT silently fail, should explicitly say "Stage 2 deferred"
+  - Stubs should NOT silently fail, should explicitly say "Stage 2 deferred"
+
   - Add TODO comments pointing to Stage 2 requirements
+  - Add TODO comments pointing to Stage 2 requirements
+
   
+  
+
 PHASE 2: ADD MISSING FUNCTIONS (Immediate)
+PHASE 2: ADD MISSING FUNCTIONS (Immediate)
+
   - execute_long_plan() - stub with clear error
+  - execute_long_plan() - stub with clear error
+
   - simulate_long_plan() - stub with clear error
+  - simulate_long_plan() - stub with clear error
+
   - build_long_plan_graph() - stub with clear error
+  - build_long_plan_graph() - stub with clear error
+
+  - All return proper error/status, don't crash
   - All return proper error/status, don't crash
 
+
+
+
 PHASE 3: DOCUMENTATION (Immediate)
+PHASE 3: DOCUMENTATION (Immediate)
+
   - Create DEFERRED_FEATURES.md (list all Stage 2 items)
+  - Create DEFERRED_FEATURES.md (list all Stage 2 items)
+
   - Create TODO_MAPPING.md (29 TODOs with line numbers)
+  - Create TODO_MAPPING.md (29 TODOs with line numbers)
+
+  - Update all .md reports with clarity notes
   - Update all .md reports with clarity notes
 
+
+
+
 PHASE 4: VERIFICATION (Before commit)
+PHASE 4: VERIFICATION (Before commit)
+
   - Run: pytest test_l_bootstrap.py -v
+  - Run: pytest test_l_bootstrap.py -v
+
   - All 8 test scenarios must pass
+  - All 8 test scenarios must pass
+
+  - Verify memory substrate handling
   - Verify memory substrate handling
 
+
+
+
 PHASE 5: CLEAN FOR COMMIT (Final)
+PHASE 5: CLEAN FOR COMMIT (Final)
+
   - Remove any debug code
+  - Remove any debug code
+
   - Ensure all imports work
+  - Ensure all imports work
+
   - Run: python -m py_compile *.py (all files)
+  - Run: python -m py_compile *.py (all files)
+
   - Check for TODO comments in wrong places
+  - Check for TODO comments in wrong places
+
+""")
 """)

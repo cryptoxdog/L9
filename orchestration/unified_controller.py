@@ -45,14 +45,14 @@ Version: 2.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
@@ -229,8 +229,8 @@ class UnifiedController:
         
         # Access results
         if result.success:
-            print(f"Plan: {result.plan}")
-            print(f"Artifacts: {result.artifacts}")
+            logger.info(f"Plan: {result.plan}")
+            logger.info(f"Artifacts: {result.artifacts}")
     """
     
     def __init__(self, config: Optional[ControllerConfig] = None):

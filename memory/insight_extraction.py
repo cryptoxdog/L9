@@ -15,7 +15,7 @@ All operations are async-safe with proper logging.
 """
 from __future__ import annotations
 
-import logging
+import structlog
 import re
 from datetime import datetime
 from typing import Any, Optional
@@ -27,7 +27,7 @@ from memory.substrate_models import (
     KnowledgeFact,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

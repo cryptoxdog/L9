@@ -21,6 +21,7 @@ Usage:
 """
 
 import asyncio
+import structlog
 import argparse
 import os
 import sys
@@ -34,10 +35,12 @@ from datetime import datetime
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+logger = structlog.get_logger(__name__)
+
 try:
     import httpx
 except ImportError:
-    print("❌ httpx not installed. Run: pip install httpx")
+    logger.info("❌ httpx not installed. Run: pip install httpx")
     sys.exit(1)
 
 # ============================================================================
@@ -208,7 +211,7 @@ class PerplexityBatchClient:
                         if response.status_code == 429:
                             # Rate limited - exponential backoff
                             delay = (2 ** attempt) + random.uniform(0, 1)
-                            print(f"  ⚠️  Rate limited on {module_name}, waiting {delay:.1f}s...")
+                            logger.info(f"  ⚠️  Rate limited on {module_name}, waiting {delay:.1f}s...")
                             await asyncio.sleep(delay)
                             continue
                         
@@ -224,11 +227,11 @@ class PerplexityBatchClient:
                         }
                 
                 except httpx.TimeoutException:
-                    print(f"  ⚠️  Timeout on {module_name}, attempt {attempt + 1}/{self.config.max_retries}")
+                    logger.info(f"  ⚠️  Timeout on {module_name}, attempt {attempt + 1}/{self.config.max_retries}")
                     await asyncio.sleep(2 ** attempt)
                 
                 except Exception as e:
-                    print(f"  ❌ Error on {module_name}: {e}")
+                    logger.error(f"  ❌ Error on {module_name}: {e}")
                     if attempt < self.config.max_retries - 1:
                         await asyncio.sleep(2 ** attempt)
             
@@ -290,22 +293,22 @@ class BatchSpecGenerator:
     async def run(self, modules: List[tuple], dry_run: bool = False) -> dict:
         """Run batch generation"""
         
-        print("=" * 60)
-        print("  L9 BATCH MODULE SPEC GENERATOR")
-        print("=" * 60)
-        print(f"\n📋 Modules to process: {len(modules)}")
-        print(f"🔧 Model: {self.config.model}")
-        print(f"⚡ Batch size: {self.config.batch_size} concurrent")
-        print(f"⏱️  Estimated time: {len(modules) / self.config.batch_size * 35:.0f}s")
-        print(f"📁 Output: {self.config.output_dir}/")
+        logger.info("=" * 60)
+        logger.info("  L9 BATCH MODULE SPEC GENERATOR")
+        logger.info("=" * 60)
+        logger.info(f"\n📋 Modules to process: {len(modules)}")
+        logger.info(f"🔧 Model: {self.config.model}")
+        logger.info(f"⚡ Batch size: {self.config.batch_size} concurrent")
+        logger.info(f"⏱️  Estimated time: {len(modules) / self.config.batch_size * 35:.0f}s")
+        logger.info(f"📁 Output: {self.config.output_dir}/")
         
         if dry_run:
-            print("\n🔍 DRY RUN - Would generate:")
+            logger.info("\n🔍 DRY RUN - Would generate:")
             for name, desc in modules:
-                print(f"   • {name}: {desc[:50]}...")
+                logger.info(f"   • {name}: {desc[:50]}...")
             return {"dry_run": True, "modules": len(modules)}
         
-        print("\n" + "-" * 60)
+        logger.info("\n" + "-" * 60)
         
         start_time = time.time()
         successful = 0
@@ -318,32 +321,32 @@ class BatchSpecGenerator:
             batch = modules[i:i + self.config.batch_size]
             batch_num = i // self.config.batch_size + 1
             
-            print(f"\n📦 Batch {batch_num}/{batch_count}: {', '.join(m[0] for m in batch)}")
+            logger.info(f"\n📦 Batch {batch_num}/{batch_count}: {', '.join(m[0] for m in batch)}")
             
             results = await self.process_batch(batch)
             
             for result in results:
                 if result.get("success"):
                     path = self.save_spec(result["module"], result["content"])
-                    print(f"   ✅ {result['module']} → {path}")
+                    logger.info(f"   ✅ {result['module']} → {path}")
                     successful += 1
                 else:
-                    print(f"   ❌ {result.get('module', 'unknown')}: {result.get('error', 'Unknown error')}")
+                    logger.error(f"   ❌ {result.get('module', 'unknown')}: {result.get('error', 'Unknown error')}")
                     failed += 1
             
             # Delay between batches (except last)
             if i + self.config.batch_size < len(modules):
-                print(f"   ⏳ Waiting {self.config.delay_between_batches}s before next batch...")
+                logger.info(f"   ⏳ Waiting {self.config.delay_between_batches}s before next batch...")
                 await asyncio.sleep(self.config.delay_between_batches)
         
         elapsed = time.time() - start_time
         
-        print("\n" + "=" * 60)
-        print(f"✅ Completed: {successful}/{len(modules)} specs")
-        print(f"❌ Failed: {failed}/{len(modules)}")
-        print(f"⏱️  Total time: {elapsed:.1f}s")
-        print(f"📁 Output: {self.config.output_dir}/")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info(f"✅ Completed: {successful}/{len(modules)} specs")
+        logger.error(f"❌ Failed: {failed}/{len(modules)}")
+        logger.info(f"⏱️  Total time: {elapsed:.1f}s")
+        logger.info(f"📁 Output: {self.config.output_dir}/")
+        logger.info("=" * 60)
         
         return {
             "successful": successful,
@@ -392,7 +395,7 @@ async def main():
     # Get API key
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key:
-        print("❌ PERPLEXITY_API_KEY not set")
+        logger.info("❌ PERPLEXITY_API_KEY not set")
         sys.exit(1)
     
     # Parse modules
@@ -401,11 +404,11 @@ async def main():
         modules = [(args.module, desc)]
     elif args.modules:
         if not args.modules.exists():
-            print(f"❌ Modules file not found: {args.modules}")
+            logger.info(f"❌ Modules file not found: {args.modules}")
             sys.exit(1)
         modules = parse_modules_file(args.modules)
     else:
-        print("❌ Provide --modules file or --module name")
+        logger.info("❌ Provide --modules file or --module name")
         sys.exit(1)
     
     # Configure and run

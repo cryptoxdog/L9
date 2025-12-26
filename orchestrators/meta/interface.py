@@ -7,10 +7,13 @@ Evaluates architectural proposals and chooses optimal solution.
 """
 
 from typing import Protocol, List, Dict, Any, Optional
+import structlog
 from pydantic import BaseModel, Field
 from enum import Enum
 
 
+
+logger = structlog.get_logger(__name__)
 class BlueprintType(str, Enum):
     """Types of blueprints that can be evaluated."""
     ARCHITECTURE = "architecture"

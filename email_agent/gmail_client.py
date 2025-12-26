@@ -4,7 +4,7 @@ Full-featured Gmail API wrapper with message parsing, attachment handling, and M
 """
 import os
 import base64
-import logging
+import structlog
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -25,7 +25,7 @@ except ImportError:
     GMAIL_AVAILABLE = False
     logging.warning("Gmail API libraries not available")
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Ensure directories exist
 ensure_dirs()

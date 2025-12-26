@@ -6,11 +6,11 @@ This module provides execute_email_task() function for Mac Agent integration.
 Uses gmail_client.py for actual Gmail operations.
 """
 
-import logging
+import structlog
 from typing import Dict, Any
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 try:
     from email_agent.gmail_client import GmailClient

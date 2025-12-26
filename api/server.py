@@ -15,7 +15,7 @@ Version: 0.5.0 (Research Factory Integration)
 from config.settings import settings
 
 import os
-import logging
+import structlog
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header
 from pydantic import BaseModel
@@ -145,7 +145,7 @@ from memory.migration_runner import run_migrations
 from memory.substrate_service import init_service, close_service, get_service
 
 # Integration settings
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Development mode flag
 LOCAL_DEV = os.getenv("LOCAL_DEV", "false").lower() == "true"
@@ -973,11 +973,11 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
             await ws_orchestrator.unregister(agent_id)
     except Exception as exc:
         # Unexpected error - log and cleanup
-        import logging
-        logging.getLogger(__name__).error(
+        logger.error(
             "WebSocket error for agent %s: %s",
             agent_id or "unknown",
-            exc
+            exc,
+            exc_info=True
         )
         if agent_id:
             await ws_orchestrator.unregister(agent_id)

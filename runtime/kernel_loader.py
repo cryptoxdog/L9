@@ -21,9 +21,9 @@ import hashlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 import yaml
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

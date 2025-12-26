@@ -19,13 +19,13 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Callable, Dict, Optional
 
 from core.schemas.ws_event_stream import EventMessage, EventType
 from core.schemas.tasks import AgentTask, TaskEnvelope, TaskKind
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

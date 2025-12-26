@@ -18,7 +18,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 import os
 import shutil
 from dataclasses import dataclass, field
@@ -40,7 +40,7 @@ from services.research_factory.glue_resolver import (
     create_empty_glue_config,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
@@ -141,10 +141,10 @@ class UniversalExtractor:
         )
         
         if result.success:
-            print(f"Generated {len(result.generated_files)} files")
+            logger.info(f"Generated {len(result.generated_files)} files")
         else:
             for error in result.errors:
-                print(f"Error: {error}")
+                logger.error(f"Error: {error}")
     """
     
     def __init__(
@@ -465,10 +465,10 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class {class_name}:

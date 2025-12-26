@@ -15,7 +15,7 @@ Usage:
     
     changes = check_kernel_integrity("l9_private")
     if changes:
-        print("Kernel files changed:", changes)
+        logger.info(f"Kernel files changed: {changes}")
 
 Version: 1.0.0
 """
@@ -24,12 +24,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
+import structlog
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

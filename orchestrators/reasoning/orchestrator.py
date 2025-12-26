@@ -7,7 +7,7 @@ Implements chain-of-thought, tree-of-thought, and forest reasoning patterns.
 """
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -18,7 +18,7 @@ from .interface import (
     ReasoningResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ReasoningOrchestrator(IReasoningOrchestrator):

@@ -20,13 +20,13 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 import os
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # =============================================================================
 # Database Configuration

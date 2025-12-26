@@ -6,6 +6,7 @@ Works with distributed API architectures (memory APIs, agent routers, VPS-facing
 """
 
 import os
+import structlog
 import shutil
 import json
 import subprocess
@@ -17,6 +18,8 @@ from pathlib import Path
 from collections import defaultdict
 
 # Configuration
+
+logger = structlog.get_logger(__name__)
 REPO_DIR = "/Users/ib-mac/Projects/L9"
 EXPORT_DIR = "/Users/ib-mac/Dropbox/Repo_Dropbox_IB/L9-index-export"
 
@@ -509,17 +512,17 @@ def main():
     """Generate index files and export them."""
     
     if not os.path.isdir(REPO_DIR):
-        print(f"❌ Repo directory not found: {REPO_DIR}")
+        logger.info(f"❌ Repo directory not found: {REPO_DIR}")
         sys.exit(1)
     
-    print(f"📁 Using repo: {REPO_DIR}")
-    print(f"📤 Export destination: {EXPORT_DIR}")
+    logger.info(f"📁 Using repo: {REPO_DIR}")
+    logger.info(f"📤 Export destination: {EXPORT_DIR}")
     
     try:
         os.makedirs(EXPORT_DIR, exist_ok=True)
-        print(f"✅ Export directory ready")
+        logger.info(f"✅ Export directory ready")
     except Exception as e:
-        print(f"❌ Failed to create export directory: {e}")
+        logger.error(f"❌ Failed to create export directory: {e}")
         sys.exit(1)
     
     # Define generators - ORDER MATTERS for LLM context efficiency
@@ -536,11 +539,11 @@ def main():
         "imports.txt": ("📚 Python imports", generate_imports),
     }
     
-    print("\n📝 Generating indexes...\n")
+    logger.info("\n📝 Generating indexes...\n")
     
     results = {}
     for filename, (emoji_desc, generator) in generators.items():
-        print(f"  {emoji_desc}...", end=" ", flush=True)
+        logger.info(f"  {emoji_desc}...", end=" ", flush=True)
         
         try:
             content = generator()
@@ -556,27 +559,27 @@ def main():
             
             size = len(content.encode('utf-8'))
             results[filename] = size
-            print(f"✅ ({size:,} bytes)")
+            logger.info(f"✅ ({size:,} bytes)")
         except Exception as e:
-            print(f"❌ {e}")
+            logger.info(f"❌ {e}")
             results[filename] = 0
     
-    print(f"\n✨ Done! Files exported to:")
-    print(f"   {EXPORT_DIR}")
-    print(f"\n📋 Summary:")
+    logger.info(f"\n✨ Done! Files exported to:")
+    logger.info(f"   {EXPORT_DIR}")
+    logger.info(f"\n📋 Summary:")
     total_size = 0
     for filename, size in sorted(results.items()):
         status = "✅" if size > 0 else "⚠️"
-        print(f"   {status} {filename:30} {size:>12,} bytes")
+        logger.info(f"   {status} {filename:30} {size:>12,} bytes")
         total_size += size
     
-    print(f"\n   📊 Total: {total_size:,} bytes")
-    print(f"\n💡 Load order for LLMs (most context-critical first):")
-    print("   1. architecture.txt - understand module purposes")
-    print("   2. api_surfaces.txt - understand API surfaces (memory/agents/services)")
-    print("   3. tree.txt - understand structure")
-    print("   4. class_definitions.txt - understand data models")
-    print("   5. dependencies.txt - understand tech stack")
+    logger.info(f"\n   📊 Total: {total_size:,} bytes")
+    logger.info(f"\n💡 Load order for LLMs (most context-critical first):")
+    logger.info("   1. architecture.txt - understand module purposes")
+    logger.info("   2. api_surfaces.txt - understand API surfaces (memory/agents/services)")
+    logger.info("   3. tree.txt - understand structure")
+    logger.info("   4. class_definitions.txt - understand data models")
+    logger.info("   5. dependencies.txt - understand tech stack")
 
 
 if __name__ == "__main__":

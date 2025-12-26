@@ -5,7 +5,7 @@ Version: 1.0.0
 Adapter for LLM-based blueprint evaluation and improvement suggestions.
 """
 
-import logging
+import structlog
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 
@@ -16,7 +16,7 @@ from .interface import (
     EvaluationCriteria,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class BlueprintAdapter:
@@ -39,7 +39,7 @@ class BlueprintAdapter:
         self,
         blueprint: Blueprint,
         criteria: List[EvaluationCriteria],
-        context: Optional[Dict[str, Any]]
+        context: Optional[Dict[str, Any]] = None
     ) -> List[BlueprintScore]:
         """Score a blueprint against all criteria using LLM."""
         logger.info(f"Scoring blueprint: {blueprint.id}")
@@ -90,7 +90,7 @@ class BlueprintAdapter:
         self,
         blueprint: Blueprint,
         criteria: List[EvaluationCriteria],
-        context: Optional[Dict[str, Any]]
+        context: Optional[Dict[str, Any]] = None
     ) -> str:
         """Build prompt for scoring."""
         prompt = f"""

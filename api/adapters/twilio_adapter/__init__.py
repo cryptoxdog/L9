@@ -27,7 +27,7 @@ Spec Hash: SPEC-102d1d3dc34c
 """
 
 import os
-import logging
+import structlog
 
 from .config import TwilioAdapterConfig
 from .schemas import TwilioAdapterRequest, TwilioAdapterResponse
@@ -45,7 +45,7 @@ __spec_hash__ = "SPEC-102d1d3dc34c"
 # STARTUP GUARD: Fail fast if required env vars missing when enabled
 # ══════════════════════════════════════════════════════════════════════════════
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.get_logger(__name__)
 
 def _validate_startup() -> None:
     """Validate required configuration at module load time."""

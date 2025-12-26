@@ -21,6 +21,7 @@ Usage:
 """
 
 import asyncio
+import structlog
 import os
 import sys
 import time
@@ -38,10 +39,12 @@ try:
 except ImportError:
     pass  # dotenv not installed, rely on environment
 
+logger = structlog.get_logger(__name__)
+
 try:
     import httpx
 except ImportError:
-    print("❌ httpx not installed. Run: pip install httpx")
+    logger.error("❌ httpx not installed. Run: pip install httpx")
     sys.exit(1)
 
 # ============================================================================
@@ -159,13 +162,13 @@ async def process_module(
         return {"module": module_name, "error": str(e)}
     
     if dry_run:
-        print(f"\n📋 {module_name}")
-        print(f"   Payload: {payload_path}")
-        print(f"   Prompt length: {len(prompt)} chars")
+        logger.info(f"\n📋 {module_name}")
+        logger.info(f"   Payload: {payload_path}")
+        logger.info(f"   Prompt length: {len(prompt)} chars")
         return {"module": module_name, "dry_run": True}
     
-    print(f"\n🔬 Delegating {module_name} to Sonar Deep Research...")
-    print(f"   ⏳ This may take 2-5 minutes...")
+    logger.info(f"\n🔬 Delegating {module_name} to Sonar Deep Research...")
+    logger.info(f"   ⏳ This may take 2-5 minutes...")
     
     start_time = time.time()
     
@@ -173,7 +176,7 @@ async def process_module(
         response = await call_deep_research(prompt, api_key)
         
         if "error" in response:
-            print(f"   ❌ Error: {response['error']}")
+            logger.error(f"   ❌ Error: {response['error']}")
             return {"module": module_name, "error": response["error"]}
         
         elapsed = time.time() - start_time
@@ -187,9 +190,9 @@ async def process_module(
         
         tokens = response.get("usage", {})
         
-        print(f"   ✅ Complete in {elapsed:.1f}s")
-        print(f"   📁 Saved to: {output_path}")
-        print(f"   📊 Tokens: {tokens.get('total_tokens', 'N/A')}")
+        logger.info(f"   ✅ Complete in {elapsed:.1f}s")
+        logger.info(f"   📁 Saved to: {output_path}")
+        logger.info(f"   📊 Tokens: {tokens.get('total_tokens', 'N/A')}")
         
         return {
             "module": module_name,
@@ -200,11 +203,11 @@ async def process_module(
         }
     
     except httpx.TimeoutException:
-        print(f"   ❌ Timeout after {TIMEOUT}s")
+        logger.info(f"   ❌ Timeout after {TIMEOUT}s")
         return {"module": module_name, "error": "timeout"}
     
     except Exception as e:
-        print(f"   ❌ Error: {e}")
+        logger.error(f"   ❌ Error: {e}")
         return {"module": module_name, "error": str(e)}
 
 
@@ -217,25 +220,25 @@ async def main():
     # Check API key
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key and not args.dry_run:
-        print("❌ PERPLEXITY_API_KEY not set")
-        print("   Add to .env: PERPLEXITY_API_KEY=pplx-...")
+        logger.info("❌ PERPLEXITY_API_KEY not set")
+        logger.info("   Add to .env: PERPLEXITY_API_KEY=pplx-...")
         sys.exit(1)
     
     # Determine modules to process
     modules = [args.module] if args.module else MODULES
     
-    print("=" * 60)
-    print("  L9 DEEP RESEARCH DELEGATION")
-    print("=" * 60)
-    print(f"\n🔬 Model: {MODEL}")
-    print(f"📋 Modules: {len(modules)}")
-    print(f"⏱️  Rate limit delay: {RATE_LIMIT_DELAY}s between calls")
-    print(f"💰 Estimated cost: ${len(modules) * 1.00:.2f} - ${len(modules) * 2.00:.2f}")
+    logger.info("=" * 60)
+    logger.info("  L9 DEEP RESEARCH DELEGATION")
+    logger.info("=" * 60)
+    logger.info(f"\n🔬 Model: {MODEL}")
+    logger.info(f"📋 Modules: {len(modules)}")
+    logger.info(f"⏱️  Rate limit delay: {RATE_LIMIT_DELAY}s between calls")
+    logger.info(f"💰 Estimated cost: ${len(modules) * 1.00:.2f} - ${len(modules) * 2.00:.2f}")
     
     if args.dry_run:
-        print(f"\n🔍 DRY RUN MODE")
+        logger.info(f"\n🔍 DRY RUN MODE")
     
-    print("\n" + "-" * 60)
+    logger.info("\n" + "-" * 60)
     
     results = []
     
@@ -245,26 +248,26 @@ async def main():
         
         # Rate limit delay (except for last module)
         if not args.dry_run and i < len(modules) - 1:
-            print(f"\n⏳ Rate limit: waiting {RATE_LIMIT_DELAY}s before next call...")
+            logger.info(f"\n⏳ Rate limit: waiting {RATE_LIMIT_DELAY}s before next call...")
             await asyncio.sleep(RATE_LIMIT_DELAY)
     
     # Summary
-    print("\n" + "=" * 60)
-    print("  DELEGATION COMPLETE")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("  DELEGATION COMPLETE")
+    logger.info("=" * 60)
     
     successful = sum(1 for r in results if r.get("success"))
     failed = sum(1 for r in results if r.get("error"))
     
-    print(f"\n✅ Successful: {successful}/{len(modules)}")
-    print(f"❌ Failed: {failed}/{len(modules)}")
+    logger.info(f"\n✅ Successful: {successful}/{len(modules)}")
+    logger.error(f"❌ Failed: {failed}/{len(modules)}")
     
     if successful > 0:
-        print(f"\n📁 Specs saved to: {OUTPUT_DIR}/")
-        print("\n📝 Next steps:")
-        print("   1. Review generated specs")
-        print("   2. Use Module-Prompt-PERPLEXITY-v3.0.md to generate code")
-        print("   3. /wire the generated code into the repo")
+        logger.info(f"\n📁 Specs saved to: {OUTPUT_DIR}/")
+        logger.info("\n📝 Next steps:")
+        logger.info("   1. Review generated specs")
+        logger.info("   2. Use Module-Prompt-PERPLEXITY-v3.0.md to generate code")
+        logger.info("   3. /wire the generated code into the repo")
 
 
 if __name__ == "__main__":

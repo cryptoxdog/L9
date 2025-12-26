@@ -18,7 +18,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
@@ -31,7 +31,7 @@ from world_model.repository import (
     get_world_model_repository,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class WorldModelService:

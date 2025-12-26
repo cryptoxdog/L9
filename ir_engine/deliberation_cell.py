@@ -13,7 +13,7 @@ Implements a produce-critique-revise loop:
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -35,7 +35,7 @@ from ir_engine.ir_schema import (
 from ir_engine.semantic_compiler import SemanticCompiler
 from ir_engine.ir_validator import IRValidator
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

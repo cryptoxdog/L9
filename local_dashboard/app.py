@@ -17,6 +17,7 @@ Usage:
 """
 
 import os
+import structlog
 import sys
 import json
 from datetime import datetime
@@ -35,6 +36,8 @@ import uvicorn
 # =============================================================================
 
 # L9 API endpoint (local Docker)
+
+logger = structlog.get_logger(__name__)
 L9_API_URL = os.getenv("L9_API_URL", "http://localhost:8000")
 L9_API_KEY = os.getenv("L9_API_KEY", "9c4753df3b7ee85e2370b0e9a55355e59a9cf3c15f65791de4ab8cdd656b4304")
 
@@ -588,15 +591,32 @@ async def health():
 # =============================================================================
 
 if __name__ == "__main__":
-    print(f"""
+    logger.info(f"""
+
 ╔══════════════════════════════════════════════════════════════╗
+╔══════════════════════════════════════════════════════════════╗
+
 ║                    L9 LOCAL DASHBOARD                        ║
+║                    L9 LOCAL DASHBOARD                        ║
+
 ╠══════════════════════════════════════════════════════════════╣
+╠══════════════════════════════════════════════════════════════╣
+
 ║  Dashboard:   http://{LOCAL_HOST}:{LOCAL_PORT}                        ║
+║  Dashboard:   http://{LOCAL_HOST}:{LOCAL_PORT}                        ║
+
 ║  L9 API:      {L9_API_URL:<43} ║
+║  L9 API:      {L9_API_URL:<43} ║
+
 ║                                                              ║
+║                                                              ║
+
 ║  Press Ctrl+C to stop                                        ║
+║  Press Ctrl+C to stop                                        ║
+
 ╚══════════════════════════════════════════════════════════════╝
+╚══════════════════════════════════════════════════════════════╝
+
 """)
     
     uvicorn.run(

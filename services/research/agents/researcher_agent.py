@@ -5,14 +5,14 @@ Version: 1.0.0
 Gathers evidence by executing research steps using tools.
 """
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional
 
 from services.research.agents.base_agent import BaseAgent
 from services.research.graph_state import Evidence, ResearchStep
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 RESEARCHER_SYSTEM_PROMPT = """You are a research agent. Your job is to gather information based on the given query and synthesize findings.

@@ -17,7 +17,7 @@ All operations are async-safe with proper logging.
 """
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
@@ -31,7 +31,7 @@ from memory.substrate_models import (
 from memory.substrate_service import MemorySubstrateService
 from memory.graph_client import get_neo4j_client
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class IngestionPipeline:

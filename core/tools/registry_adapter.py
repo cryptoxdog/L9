@@ -17,7 +17,7 @@ Version: 2.0.0 (Governance Integration)
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Callable, Optional, Protocol, TYPE_CHECKING
 from uuid import UUID, uuid4
@@ -30,7 +30,7 @@ from core.agents.schemas import (
 if TYPE_CHECKING:
     from core.governance.engine import GovernanceEngineService
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

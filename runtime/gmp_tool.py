@@ -12,13 +12,13 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import time
 from typing import Any, Dict
 
 from runtime.gmp_worker import GMP_QUEUE, store_pending_task
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def gmp_run_tool(

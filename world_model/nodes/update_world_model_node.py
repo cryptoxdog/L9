@@ -23,13 +23,13 @@ Integration:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any, Optional, TypedDict
 from uuid import UUID
 
 from world_model.engine import get_world_model_engine, WorldModelEngine
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

@@ -15,7 +15,7 @@ NO NEW TABLES - uses only existing substrate tables:
 """
 
 import json
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
@@ -31,7 +31,7 @@ from memory.substrate_repository import SubstrateRepository, get_repository
 
 from services.research.graph_state import ResearchGraphState
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ResearchMemoryAdapter:

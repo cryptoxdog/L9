@@ -5,7 +5,7 @@ Version: 1.0.0
 Runtime wrapper for research graph execution with substrate integration.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -14,7 +14,7 @@ from services.research.research_graph import build_research_graph, run_research
 from services.research.memory_adapter import get_memory_adapter, init_memory_adapter
 from memory.substrate_repository import init_repository, close_repository, get_repository
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ResearchGraphRuntime:

@@ -4,7 +4,7 @@ Handles OAuth2 flow for Gmail API authentication.
 Account: nc@scrapmanagement.com
 """
 import json
-import logging
+import structlog
 from typing import Optional, Dict, Any
 
 try:
@@ -23,7 +23,7 @@ from email_agent.config import (
     ensure_dirs
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Ensure directories exist on import
 ensure_dirs()

@@ -1,4 +1,5 @@
 import os
+import structlog
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel
 
@@ -13,6 +14,8 @@ from openai import OpenAI
 
 # Integration settings
 from config.settings import settings
+
+logger = structlog.get_logger(__name__)
 
 # Initialize DB ONCE at boot
 if not LOCAL_DEV:
@@ -97,8 +100,7 @@ async def chat(
             await ingest_packet(packet_in)
         except Exception as mem_err:
             # Log but don't fail the request if memory ingestion fails
-            import logging
-            logging.getLogger(__name__).warning(f"Failed to ingest chat to memory: {mem_err}")
+            logger.warning(f"Failed to ingest chat to memory: {mem_err}")
         
         return ChatResponse(reply=reply)
     except Exception as e:
@@ -115,7 +117,7 @@ if settings.slack_app_enabled:
         from api.webhook_slack import router as slack_router
         app.include_router(slack_router)
     except Exception as e:
-        print(f"WARNING: Failed to load Slack router: {e}")
+        logger.error(f"WARNING: Failed to load Slack router: {e}")
 
 # Mac Agent API
 if settings.mac_agent_enabled:
@@ -123,7 +125,7 @@ if settings.mac_agent_enabled:
         from api.webhook_mac_agent import router as mac_agent_router
         app.include_router(mac_agent_router)
     except Exception as e:
-        print(f"WARNING: Failed to load Mac Agent router: {e}")
+        logger.error(f"WARNING: Failed to load Mac Agent router: {e}")
 
 # Twilio webhook router (disabled until ready)
 if settings.twilio_enabled:
@@ -131,7 +133,7 @@ if settings.twilio_enabled:
         from api.webhook_twilio import router as twilio_router
         app.include_router(twilio_router)
     except Exception as e:
-        print(f"WARNING: Failed to load Twilio router: {e}")
+        logger.error(f"WARNING: Failed to load Twilio router: {e}")
 
 # WABA (WhatsApp Business Account - native Meta) (disabled until ready)
 if settings.waba_enabled:
@@ -139,7 +141,7 @@ if settings.waba_enabled:
         from api.webhook_waba import router as waba_router
         app.include_router(waba_router)
     except Exception as e:
-        print(f"WARNING: Failed to load WABA router: {e}")
+        logger.error(f"WARNING: Failed to load WABA router: {e}")
 
 # Email integration
 if settings.email_enabled:
@@ -147,17 +149,17 @@ if settings.email_enabled:
         from api.webhook_email import router as email_router
         app.include_router(email_router)
     except Exception as e:
-        print(f"WARNING: Failed to load Email router: {e}")
+        logger.error(f"WARNING: Failed to load Email router: {e}")
     
     # Email Agent API
     try:
         from email_agent.router import router as email_agent_router
         app.include_router(email_agent_router)
     except Exception as e:
-        print(f"WARNING: Failed to load Email Agent router: {e}")
+        logger.error(f"WARNING: Failed to load Email Agent router: {e}")
 
 # === Debug: Print integration toggles at startup ===
-print("L9 Integration Toggles:", {
+logger.info("L9 Integration Toggles", {
     "Slack": settings.slack_app_enabled,
     "Mac Agent": settings.mac_agent_enabled,
     "Email": settings.email_enabled,
@@ -168,4 +170,4 @@ print("L9 Integration Toggles:", {
 
 # === DEBUG: Print all mounted routes at startup ===
 for route in app.routes:
-    print("ROUTE:", route.path)
+    logger.info(f"ROUTE: {route.path}")

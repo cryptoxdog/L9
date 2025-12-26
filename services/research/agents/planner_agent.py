@@ -5,13 +5,13 @@ Version: 1.0.0
 Decomposes research goals into ordered steps with tool assignments.
 """
 
-import logging
+import structlog
 from typing import Any
 
 from services.research.agents.base_agent import BaseAgent
 from services.research.graph_state import ResearchStep
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 PLANNER_SYSTEM_PROMPT = """You are a research planning agent. Your job is to decompose a research query into a clear, ordered plan of steps.

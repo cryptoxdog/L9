@@ -6,9 +6,9 @@ Specialized component for memory orchestration.
 Handles garbage collection, compaction, and maintenance.
 """
 
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Housekeeping:

@@ -32,6 +32,7 @@ Version: 1.0.0
 """
 
 import argparse
+import structlog
 import asyncio
 import json
 import sys
@@ -48,62 +49,64 @@ from services.research_factory import (
     load_glue_config,
 )
 
+logger = structlog.get_logger(__name__)
+
 
 def print_validation_result(result, verbose: bool = False):
     """Print validation result."""
     if result.valid:
-        print("✅ Schema is valid")
+        logger.info("✅ Schema is valid")
     else:
-        print("❌ Schema validation failed")
+        logger.error("❌ Schema validation failed")
     
     if result.errors:
-        print(f"\n  Errors ({len(result.errors)}):")
+        logger.error(f"\n  Errors ({len(result.errors)}):")
         for error in result.errors:
-            print(f"    • [{error.code}] {error.message}")
+            logger.error(f"    • [{error.code}] {error.message}")
             if error.path and verbose:
-                print(f"      at: {error.path}")
+                logger.error(f"      at: {error.path}")
     
     if result.warnings:
-        print(f"\n  Warnings ({len(result.warnings)}):")
+        logger.warning(f"\n  Warnings ({len(result.warnings)}):")
         for warning in result.warnings:
-            print(f"    • [{warning.code}] {warning.message}")
+            logger.warning(f"    • [{warning.code}] {warning.message}")
             if warning.path and verbose:
-                print(f"      at: {warning.path}")
+                logger.warning(f"      at: {warning.path}")
 
 
 def print_extraction_result(result, verbose: bool = False):
     """Print extraction result."""
     if result.success:
-        print("✅ Extraction successful")
+        logger.info("✅ Extraction successful")
     else:
-        print("❌ Extraction failed")
+        logger.error("❌ Extraction failed")
     
     if result.schema:
-        print(f"\n  Agent: {result.schema.system.name}")
-        print(f"  ID: {result.schema.get_agent_id()}")
-        print(f"  Version: {result.schema.metadata.version}")
+        logger.info(f"\n  Agent: {result.schema.system.name}")
+        logger.info(f"  ID: {result.schema.get_agent_id()}")
+        logger.info(f"  Version: {result.schema.metadata.version}")
     
-    print(f"\n  Files generated: {len(result.generated_files)}")
+    logger.info(f"\n  Files generated: {len(result.generated_files)}")
     if verbose and result.generated_files:
         for f in result.generated_files:
-            print(f"    • {f.path} ({f.size_bytes} bytes)")
+            logger.info(f"    • {f.path} ({f.size_bytes} bytes)")
     
     if result.errors:
-        print(f"\n  Errors ({len(result.errors)}):")
+        logger.error(f"\n  Errors ({len(result.errors)}):")
         for error in result.errors:
-            print(f"    • {error}")
+            logger.error(f"    • {error}")
     
     if result.warnings:
-        print(f"\n  Warnings ({len(result.warnings)}):")
+        logger.warning(f"\n  Warnings ({len(result.warnings)}):")
         for warning in result.warnings:
-            print(f"    • {warning}")
+            logger.warning(f"    • {warning}")
     
     if result.manifest:
-        print(f"\n  Manifest:")
-        print(f"    • Total lines: {result.manifest.total_lines}")
-        print(f"    • Total bytes: {result.manifest.total_bytes}")
+        logger.info(f"\n  Manifest:")
+        logger.info(f"    • Total lines: {result.manifest.total_lines}")
+        logger.info(f"    • Total bytes: {result.manifest.total_bytes}")
     
-    print(f"\n  Duration: {result.duration_ms}ms")
+    logger.info(f"\n  Duration: {result.duration_ms}ms")
 
 
 async def main():
@@ -173,11 +176,11 @@ async def main():
     # Validate arguments
     schema_path = Path(args.schema)
     if not schema_path.exists():
-        print(f"Error: Schema file not found: {schema_path}", file=sys.stderr)
+        logger.error(f"Error: Schema file not found: {schema_path}")
         sys.exit(1)
     
     if not args.validate_only and not args.output:
-        print("Error: --output is required unless --validate-only is set", file=sys.stderr)
+        logger.error("Error: --output is required unless --validate-only is set")
         sys.exit(1)
     
     # Parse schema
@@ -185,9 +188,9 @@ async def main():
         schema = parse_schema(schema_path)
     except Exception as e:
         if args.json:
-            print(json.dumps({"success": False, "error": str(e)}))
+            logger.error(json.dumps({"success": False, "error": str(e)}))
         else:
-            print(f"Error parsing schema: {e}", file=sys.stderr)
+            logger.error(f"Error parsing schema: {e}", file=sys.stderr)
         sys.exit(1)
     
     # Validate only mode
@@ -195,7 +198,7 @@ async def main():
         result = validate_schema(schema)
         
         if args.json:
-            print(json.dumps(result.to_dict()))
+            logger.info(json.dumps(result.to_dict()))
         else:
             print_validation_result(result, args.verbose)
         
@@ -206,7 +209,7 @@ async def main():
     if args.glue:
         glue_path = Path(args.glue)
         if not glue_path.exists():
-            print(f"Error: Glue file not found: {glue_path}", file=sys.stderr)
+            logger.error(f"Error: Glue file not found: {glue_path}", file=sys.stderr)
             sys.exit(1)
         glue = load_glue_config(glue_path)
     
@@ -222,11 +225,11 @@ async def main():
     )
     
     if args.json:
-        print(json.dumps(result.to_dict()))
+        logger.info(json.dumps(result.to_dict()))
     else:
         mode = "DRY RUN - " if args.dry_run else ""
-        print(f"\n{mode}Extraction Result")
-        print("=" * 50)
+        logger.info(f"\n{mode}Extraction Result")
+        logger.info("=" * 50)
         print_extraction_result(result, args.verbose)
     
     sys.exit(0 if result.success else 1)

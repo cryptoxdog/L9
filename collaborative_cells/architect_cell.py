@@ -12,14 +12,14 @@ Uses 2 architect agents:
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 from typing import Any, Optional
 
 from openai import AsyncOpenAI
 
 from collaborative_cells.base_cell import BaseCell, CellConfig
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 ARCHITECT_A_PROMPT = """You are Architect A, the primary system designer.

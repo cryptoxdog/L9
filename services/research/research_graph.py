@@ -11,7 +11,7 @@ Flow:
          ↳ (if approved) → finalize_node → store_insights → END
 """
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Literal
 from uuid import uuid4
@@ -32,7 +32,7 @@ from services.research.insight_extractor import InsightExtractorAgent
 # Memory client for substrate writes
 from clients.memory_client import get_memory_client, PacketWriteResult
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

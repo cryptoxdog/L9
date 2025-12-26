@@ -16,11 +16,11 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 import time
 from typing import Any, Callable, Coroutine, Dict, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def tool_call_wrapper(

@@ -23,6 +23,7 @@ Usage:
 """
 
 import sys
+import structlog
 import os
 import re
 import ast
@@ -80,24 +81,24 @@ class CodeValidationResult:
     
     def print_report(self) -> None:
         """Print validation report."""
-        print(f"\n{'='*70}")
-        print("CODE VALIDATION REPORT")
-        print(f"{'='*70}")
-        print(f"Files checked: {len(self.files_checked)}")
+        logger.info(f"\n{'='*70}")
+        logger.info("CODE VALIDATION REPORT")
+        logger.info(f"{'='*70}")
+        logger.info(f"Files checked: {len(self.files_checked)}")
         
         if self.is_valid:
-            print("✅ PASSED - All code requirements satisfied")
+            logger.info("✅ PASSED - All code requirements satisfied")
         else:
-            print(f"❌ FAILED - {len(self.errors)} error(s) found\n")
+            logger.error(f"❌ FAILED - {len(self.errors)} error(s) found\n")
             for i, error in enumerate(self.errors, 1):
-                print(f"  [{i}] {error}")
+                logger.error(f"  [{i}] {error}")
         
         if self.warnings:
-            print(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
+            logger.warning(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
             for warning in self.warnings:
-                print(f"    - {warning}")
+                logger.warning(f"    - {warning}")
         
-        print(f"{'='*70}\n")
+        logger.info(f"{'='*70}\n")
 
 
 # =============================================================================
@@ -468,7 +469,7 @@ def main() -> int:
     args = parser.parse_args()
     
     if not args.files and not args.dir:
-        print("ERROR: Must provide --files or --dir")
+        logger.error("ERROR: Must provide --files or --dir")
         return 2
     
     files = args.files or []
@@ -476,7 +477,7 @@ def main() -> int:
         files.extend(find_files_in_dir(args.dir))
     
     if not files:
-        print("No files to validate")
+        logger.info("No files to validate")
         return 0
     
     result = validate_code(args.spec, files)
@@ -485,6 +486,8 @@ def main() -> int:
     return 0 if result.is_valid else 1
 
 
+
+logger = structlog.get_logger(__name__)
 if __name__ == "__main__":
     sys.exit(main())
 

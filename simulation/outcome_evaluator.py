@@ -13,7 +13,7 @@ Provides:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -22,7 +22,7 @@ from uuid import UUID, uuid4
 
 from simulation.simulation_engine import SimulationRun, SimulationMetrics
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CriterionType(str, Enum):

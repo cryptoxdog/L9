@@ -5,7 +5,7 @@ Version: 1.0.0
 Concrete implementation of evolution orchestration logic.
 """
 
-import logging
+import structlog
 from typing import List, Dict, Any
 from datetime import datetime
 
@@ -20,7 +20,7 @@ from .interface import (
 )
 from .apply_engine import ApplyEngine
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class EvolutionOrchestrator(IEvolutionOrchestrator):
