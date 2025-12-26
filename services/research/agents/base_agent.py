@@ -6,7 +6,7 @@ Shared LLM wrapper and utilities for all research agents.
 """
 
 import json
-import logging
+import structlog
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -14,7 +14,7 @@ from openai import AsyncOpenAI
 
 from config.research_settings import get_research_settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class BaseAgent(ABC):

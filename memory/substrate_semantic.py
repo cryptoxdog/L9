@@ -8,11 +8,11 @@ Provides a pluggable embedding provider interface.
 # bound to memory-yaml2.0 semantic layer
 """
 
-import logging
+import structlog
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class EmbeddingProvider(ABC):

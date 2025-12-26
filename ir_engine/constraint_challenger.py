@@ -14,7 +14,7 @@ Uses LLM reasoning to challenge and improve constraint sets.
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 from typing import Any, Optional
 from uuid import UUID
 
@@ -28,7 +28,7 @@ from ir_engine.ir_schema import (
     IRStatus,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 CHALLENGE_PROMPT = """You are a constraint analysis expert. Review the constraints and identify issues.

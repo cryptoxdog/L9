@@ -12,7 +12,7 @@ A cell coordinates 2+ agents in a consensus-seeking loop:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -20,7 +20,7 @@ from enum import Enum
 from typing import Any, Generic, Optional, TypeVar
 from uuid import UUID, uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ConsensusStrategy(str, Enum):

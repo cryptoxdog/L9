@@ -35,7 +35,7 @@ Version: 2.1.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -46,7 +46,7 @@ from uuid import UUID, uuid4
 # Security imports
 from core.schemas.capabilities import ToolName, AgentCapabilities, Capability
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

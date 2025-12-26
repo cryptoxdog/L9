@@ -18,7 +18,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import os
 from datetime import datetime
 from typing import Any, Optional, Protocol
@@ -32,7 +32,7 @@ from core.governance.schemas import (
 )
 from core.governance.loader import PolicyLoader, PolicyLoadError, InvalidPolicyError
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

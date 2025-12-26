@@ -19,12 +19,12 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional, TypedDict
 from uuid import uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

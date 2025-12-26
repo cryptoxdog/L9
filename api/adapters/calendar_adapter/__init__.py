@@ -27,7 +27,7 @@ Spec Hash: SPEC-447dc3be62b3
 """
 
 import os
-import logging
+import structlog
 
 from .config import CalendarAdapterConfig
 from .schemas import CalendarAdapterRequest, CalendarAdapterResponse
@@ -45,7 +45,7 @@ __spec_hash__ = "SPEC-447dc3be62b3"
 # STARTUP GUARD: Fail fast if required env vars missing when enabled
 # ══════════════════════════════════════════════════════════════════════════════
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.get_logger(__name__)
 
 def _validate_startup() -> None:
     """Validate required configuration at module load time."""

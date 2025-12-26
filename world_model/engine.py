@@ -29,7 +29,7 @@ Version: 1.2.0 (async interface)
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from world_model.causal_mapper import CausalMapper
     from world_model.reflection_memory import ReflectionMemory
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

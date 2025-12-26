@@ -8,13 +8,13 @@ Version: 1.0.0
 """
 
 import json
-import logging
+import structlog
 import os
 from typing import Dict, Any, List
 
 from openai import OpenAI
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 MODEL = os.getenv("L9_LLM_MODEL", "gpt-4o-mini")
 

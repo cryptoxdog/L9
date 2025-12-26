@@ -5,7 +5,7 @@ Version: 1.0.0
 Validates and executes tools, retries, safety, logs tool packets.
 """
 
-import logging
+import structlog
 
 from .interface import (
     IActionToolOrchestrator,
@@ -13,7 +13,7 @@ from .interface import (
     ActionToolResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ActionToolOrchestrator(IActionToolOrchestrator):

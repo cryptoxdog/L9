@@ -6,9 +6,9 @@ Specialized component for action_tool orchestration.
 Handles tool validation and safety checks.
 """
 
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Validator:

@@ -7,13 +7,13 @@ Adapts reasoning engine for LangGraph node integration.
 """
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any, Optional, TypedDict
 
 from .orchestrator import ReasoningOrchestrator
 from .interface import ReasoningRequest, ReasoningMode
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ReasoningNodeState(TypedDict):

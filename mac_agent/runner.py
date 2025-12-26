@@ -8,8 +8,8 @@ import sys
 import time
 import asyncio
 import subprocess
-import requests
-import logging
+import httpx
+import structlog
 import json
 from pathlib import Path
 from datetime import datetime
@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Check if Mac Agent is enabled
 try:
@@ -150,7 +150,7 @@ async def poll_and_execute():
             task_id = task.get("task_id", "unknown")
             steps = task.get("steps", [])
             
-            print(f"[L9 Mac Agent] Executing task {task_id} with {len(steps)} steps.")
+            logger.info(f"[L9 Mac Agent] Executing task {task_id} with {len(steps)} steps.")
             logger.info(f"Received task {task_id} with {len(steps)} steps")
             
             if not steps:

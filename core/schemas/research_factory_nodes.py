@@ -13,7 +13,7 @@ The pipeline flow:
     pass_5_integrate_results → END
 """
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Callable, Optional
 from uuid import uuid4
@@ -37,7 +37,7 @@ from core.schemas.research_factory_models import (
 )
 from core.schemas.research_factory_state import PassStatus, ResearchState
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

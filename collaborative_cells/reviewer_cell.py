@@ -12,14 +12,14 @@ Uses 2 reviewer agents:
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 from typing import Any, Optional
 
 from openai import AsyncOpenAI
 
 from collaborative_cells.base_cell import BaseCell, CellConfig
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 REVIEWER_A_PROMPT = """You are Reviewer A, the primary QA analyst.

@@ -7,7 +7,7 @@ Provides async functions for all memory substrate operations.
 """
 
 import json
-import logging
+import structlog
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, AsyncGenerator, Optional
@@ -27,7 +27,7 @@ from memory.substrate_models import (
     StructuredReasoningBlock,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SubstrateRepository:

@@ -11,6 +11,7 @@ Run this after server startup to verify:
 """
 
 import asyncio
+import structlog
 import os
 import sys
 from uuid import uuid4
@@ -20,6 +21,8 @@ from memory.substrate_models import PacketEnvelopeIn
 from memory.ingestion import ingest_packet
 
 
+
+logger = structlog.get_logger(__name__)
 async def smoke_test() -> dict[str, any]:
     """
     Run smoke test to verify memory system.
@@ -112,21 +115,21 @@ async def main():
     """Main entrypoint for smoke test."""
     results = await smoke_test()
     
-    print("\n" + "=" * 60)
-    print("L9 MEMORY SMOKE TEST")
-    print("=" * 60)
-    print(f"\nStatus: {results['status'].upper()}")
-    print("\nTest Results:")
+    logger.info("\n" + "=" * 60)
+    logger.info("L9 MEMORY SMOKE TEST")
+    logger.info("=" * 60)
+    logger.info(f"\nStatus: {results['status'].upper()}")
+    logger.info("\nTest Results:")
     for test_name, passed in results["tests"].items():
         status = "✓ PASS" if passed else "✗ FAIL"
-        print(f"  {status}: {test_name}")
+        logger.info(f"  {status}: {test_name}")
     
     if results["errors"]:
-        print("\nErrors:")
+        logger.error("\nErrors:")
         for error in results["errors"]:
-            print(f"  - {error}")
+            logger.error(f"  - {error}")
     
-    print("\n" + "=" * 60)
+    logger.info("\n" + "=" * 60)
     
     # Exit with error code if tests failed
     sys.exit(0 if results["status"] == "passed" else 1)

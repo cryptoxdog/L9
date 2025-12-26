@@ -27,7 +27,7 @@ Spec Hash: SPEC-62d9295fc71f
 """
 
 import os
-import logging
+import structlog
 
 from .config import EmailAdapterConfig
 from .schemas import EmailAdapterRequest, EmailAdapterResponse
@@ -45,7 +45,7 @@ __spec_hash__ = "SPEC-62d9295fc71f"
 # STARTUP GUARD: Fail fast if required env vars missing when enabled
 # ══════════════════════════════════════════════════════════════════════════════
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.get_logger(__name__)
 
 def _validate_startup() -> None:
     """Validate required configuration at module load time."""

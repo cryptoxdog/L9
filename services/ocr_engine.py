@@ -8,11 +8,11 @@ Version: 1.0.0
 """
 
 import os
-import logging
+import structlog
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 try:
     from PIL import Image

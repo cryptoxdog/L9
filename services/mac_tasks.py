@@ -9,11 +9,11 @@ import threading
 import json
 import os
 import shutil
-import logging
+import structlog
 from pathlib import Path
 from uuid import uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 @dataclass
 class MacTask:

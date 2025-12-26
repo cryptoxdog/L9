@@ -82,7 +82,9 @@ _l9_GHOST_REPO-DON'T USE/
 # --- documentation (local only) ---
 Module Production/
 igor/
-docs/_Context-L9-Repo/docker/
+docs/_Context-L9-Repo/
+docs/12-19-25/
+docs/_VPS MRI/
 
 # Local Docker overrides (machine-specific)
 docker-compose.override.yml

@@ -126,25 +126,37 @@ run_syntax_check() {
     
     log_header "GATE 3: PYTHON SYNTAX CHECK"
     
-    if [[ ${#files[@]} -eq 0 ]]; then
-        log_warn "No files provided for syntax check"
-        return 0
+    if [ ! -f "$SCRIPT_DIR/check_syntax.py" ]; then
+        log_error "Syntax checker script not found: $SCRIPT_DIR/check_syntax.py"
+        return 1
     fi
     
-    local failed=0
-    for file in "${files[@]}"; do
-        if [[ "$file" == *.py ]]; then
-            if ! python3 -m py_compile "$file" 2>/dev/null; then
-                log_error "Syntax error in: $file"
-                python3 -m py_compile "$file"
-                failed=1
-            fi
+    if [[ ${#files[@]} -eq 0 ]]; then
+        log_info "Checking syntax for all Python files..."
+        if ! python3 "$SCRIPT_DIR/check_syntax.py"; then
+            log_error "Syntax errors found in codebase"
+            return 1
         fi
-    done
-    
-    if [[ $failed -ne 0 ]]; then
-        log_error "SYNTAX CHECK FAILED"
-        return 1
+    else
+        log_info "Checking Python syntax for ${#files[@]} file(s)..."
+        
+        # Filter to only Python files
+        local py_files=()
+        for file in "${files[@]}"; do
+            if [[ "$file" == *.py ]]; then
+                py_files+=("$file")
+            fi
+        done
+        
+        if [[ ${#py_files[@]} -eq 0 ]]; then
+            log_info "No Python files to check"
+            return 0
+        fi
+        
+        if ! python3 "$SCRIPT_DIR/check_syntax.py" "${py_files[@]}"; then
+            log_error "Syntax errors found in files"
+            return 1
+        fi
     fi
     
     log_info "✅ Syntax check passed"
@@ -196,7 +208,43 @@ except SyntaxError as e:
 }
 
 # =============================================================================
-# GATE 5: TEST FILE PRESENCE
+# GATE 5: FORBIDDEN IMPORTS LINT
+# =============================================================================
+
+gate_5_forbidden_imports() {
+    local files=("$@")
+    
+    log_header "GATE 5: FORBIDDEN IMPORTS LINT"
+    
+    if [ ! -f "$SCRIPT_DIR/lint_forbidden_imports.py" ]; then
+        log_error "Linter script not found: $SCRIPT_DIR/lint_forbidden_imports.py"
+        return 1
+    fi
+    
+    log_info "Checking for forbidden imports (logging, aiohttp, requests, print)..."
+    
+    # If specific files provided, check only those
+    if [ ${#files[@]} -gt 0 ]; then
+        if ! python3 "$SCRIPT_DIR/lint_forbidden_imports.py" "${files[@]}"; then
+            log_error "Forbidden imports/patterns found in files"
+            log_info "Run with --fix to auto-fix: python3 ci/lint_forbidden_imports.py --fix [files]"
+            return 1
+        fi
+    else
+        # Check all Python files in the repo
+        if ! python3 "$SCRIPT_DIR/lint_forbidden_imports.py"; then
+            log_error "Forbidden imports/patterns found in codebase"
+            log_info "Run with --fix to auto-fix: python3 ci/lint_forbidden_imports.py --fix"
+            return 1
+        fi
+    fi
+    
+    log_info "✅ All files passed forbidden imports check"
+    return 0
+}
+
+# =============================================================================
+# GATE 6: TEST FILE PRESENCE
 # =============================================================================
 
 run_test_presence_check() {
@@ -293,6 +341,7 @@ main() {
     run_code_validation "$spec_file" "${files[@]}" || exit 1
     run_syntax_check "${files[@]}" || exit 1
     run_import_check "${files[@]}" || exit 1
+    gate_5_forbidden_imports "${files[@]}" || exit 1
     run_test_presence_check "$spec_file" "${files[@]}" || exit 1
     
     log_header "🎉 ALL CI GATES PASSED"

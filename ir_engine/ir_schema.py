@@ -11,7 +11,7 @@ Core data models for Intent Representation:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
@@ -19,7 +19,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

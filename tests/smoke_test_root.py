@@ -16,7 +16,7 @@ For full DB-connected tests, set MEMORY_DSN and run:
 
 import sys
 import asyncio
-import logging
+import structlog
 from pathlib import Path
 
 # Ensure repo root is in path
@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SmokeTestResults:

@@ -13,7 +13,7 @@ Responsibilities:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -21,7 +21,7 @@ from uuid import UUID, uuid4
 
 from ir_engine.ir_schema import IRGraph, IRStatus
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

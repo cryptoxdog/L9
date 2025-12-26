@@ -12,12 +12,12 @@ All operations are async-safe and use logging (no print statements).
 """
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class HousekeepingEngine:

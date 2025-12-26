@@ -13,7 +13,7 @@ Output formats:
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -28,7 +28,7 @@ from ir_engine.ir_schema import (
 )
 from ir_engine.ir_generator import IRGenerator
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass

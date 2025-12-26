@@ -14,14 +14,14 @@ Version: 1.1.0
 """
 
 import os
-import logging
+import structlog
 import httpx
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Configuration
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")

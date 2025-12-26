@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
+import structlog
 import os
 import platform
 import signal
@@ -42,11 +42,11 @@ try:
     from websockets.client import WebSocketClientProtocol
     from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 except ImportError:
-    print("ERROR: websockets library required. Install with: pip install websockets")
+    logger.error("ERROR: websockets library required. Install with: pip install websockets")
     sys.exit(1)
 
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

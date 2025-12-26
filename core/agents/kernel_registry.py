@@ -10,13 +10,13 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import os
 from typing import Any, Dict, Optional
 
 from core.agents.schemas import AgentConfig
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Check if kernels should be used
 USE_KERNELS = os.getenv("L9_USE_KERNELS", "true").lower() in ("true", "1", "yes")

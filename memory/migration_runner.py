@@ -6,14 +6,14 @@ Automatic, idempotent database migration execution.
 Tracks applied migrations in schema_migrations table.
 """
 
-import logging
+import structlog
 import os
 from pathlib import Path
 from typing import Optional
 
 import asyncpg
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class MigrationRunner:

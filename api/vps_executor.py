@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 import uvicorn
-import requests
+import httpx
 
 # Load from environment
 EXECUTOR_KEY = os.getenv("L9_EXECUTOR_API_KEY")

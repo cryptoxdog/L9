@@ -19,6 +19,7 @@ Requirements:
 """
 
 import asyncio
+import structlog
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -349,7 +350,7 @@ async def run_all_tests():
     """Run all email smoke tests."""
     import logging
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    logger = logging.getLogger(__name__)
+    logger = structlog.get_logger(__name__)
     
     tests = [
         ("email_query_ingestion", test_email_query_ingestion),
@@ -386,14 +387,14 @@ async def run_all_tests():
     logger.info(f"FAILED: {failed}")
     
     if failed == 0:
-        print("\n" + "=" * 60)
-        print("ALL EMAIL SMOKE TESTS PASSED")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("ALL EMAIL SMOKE TESTS PASSED")
+        logger.info("=" * 60)
         return 0
     else:
-        print("\n" + "=" * 60)
-        print("EMAIL SMOKE TESTS FAILED - SEE ERRORS ABOVE")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.error("EMAIL SMOKE TESTS FAILED - SEE ERRORS ABOVE")
+        logger.info("=" * 60)
         return 1
 
 

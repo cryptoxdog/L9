@@ -19,7 +19,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +27,7 @@ from typing import Any, Optional
 
 from services.research_factory.schema_parser import AgentSchema, parse_schema
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
@@ -138,7 +138,7 @@ class SchemaValidator:
         result = validator.validate(schema)
         if not result.valid:
             for error in result.errors:
-                print(error)
+                logger.error(error)
     """
     
     def __init__(

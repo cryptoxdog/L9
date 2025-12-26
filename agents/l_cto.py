@@ -10,12 +10,12 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from typing import Any, Dict, List, Optional
 
 from agents.base_agent import BaseAgent, AgentResponse, AgentMessage, AgentConfig
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class LCTOAgent(BaseAgent):

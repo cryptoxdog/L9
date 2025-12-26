@@ -4,11 +4,11 @@ HTTP client wrapper for Cursor remote API.
 Simple POST wrapper with timeout and error handling.
 """
 
-import requests
-import logging
+import httpx
+import structlog
 from typing import Dict, Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CursorClient:

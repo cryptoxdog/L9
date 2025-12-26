@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
+import structlog
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -45,7 +45,7 @@ from uuid import UUID, uuid4
 
 from world_model.state import WorldModelState, Entity, Relation
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SourceType(str, Enum):

@@ -5,9 +5,9 @@ import hmac
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # WABA credentials
 WABA_PHONE_NUMBER_ID = os.getenv("WABA_PHONE_NUMBER_ID")

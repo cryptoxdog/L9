@@ -5,7 +5,7 @@ Version: 1.0.0
 Runs concurrent research agents, analyst pass, dreamers, convergence.
 """
 
-import logging
+import structlog
 
 from .interface import (
     IResearchSwarmOrchestrator,
@@ -13,7 +13,7 @@ from .interface import (
     ResearchSwarmResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ResearchSwarmOrchestrator(IResearchSwarmOrchestrator):

@@ -14,7 +14,7 @@ Responsibilities:
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 import os
 from datetime import datetime
 from pathlib import Path
@@ -33,7 +33,7 @@ from memory.substrate_service import MemorySubstrateService
 from world_model.knowledge_ingestor import KnowledgeIngestor, SourceType, IngestResult
 from world_model.state import WorldModelState, Entity, Relation
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
@@ -755,17 +755,17 @@ if __name__ == "__main__":
             ingest_to_world_model=not args.no_ingest,
         )
         
-        print("\n=== Seed Loading Summary ===")
-        print(f"Files loaded: {summary['files_loaded']}")
-        print(f"Entities created: {summary['total_entities']}")
-        print(f"Relations created: {summary['total_relations']}")
+        logger.info("\n=== Seed Loading Summary ===")
+        logger.info(f"Files loaded: {summary['files_loaded']}")
+        logger.info(f"Entities created: {summary['total_entities']}")
+        logger.info(f"Relations created: {summary['total_relations']}")
         
         for result in summary['results']:
-            print(f"\n  - {result['file']}")
+            logger.info(f"\n  - {result['file']}")
             if result.get('ingest_result'):
                 ir = result['ingest_result']
-                print(f"    Entities: {ir.get('entities_added', 0)}")
-                print(f"    Relations: {ir.get('relations_added', 0)}")
+                logger.info(f"    Entities: {ir.get('entities_added', 0)}")
+                logger.info(f"    Relations: {ir.get('relations_added', 0)}")
     
     asyncio.run(main())
 

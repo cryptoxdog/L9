@@ -16,7 +16,7 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 from typing import Any, Dict, List, Optional
 
 from runtime.gmp_worker import (
@@ -27,7 +27,7 @@ from runtime.gmp_worker import (
 )
 from runtime.task_queue import QueuedTask
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def list_pending_gmp_tasks() -> List[Dict[str, Any]]:
@@ -110,19 +110,19 @@ async def cli_list_pending() -> None:
     tasks = await list_pending_gmp_tasks()
     
     if not tasks:
-        print("No pending GMP tasks")
+        logger.info("No pending GMP tasks")
         return
     
-    print(f"\nPending GMP Tasks ({len(tasks)}):")
-    print("=" * 80)
+    logger.info(f"\nPending GMP Tasks ({len(tasks)}):")
+    logger.info("=" * 80)
     
     for task in tasks:
-        print(f"\nTask ID: {task.get('task_id')}")
-        print(f"Name: {task.get('name')}")
-        print(f"Created: {task.get('created_at')}")
-        print(f"Caller: {task.get('payload', {}).get('caller', 'unknown')}")
-        print(f"Repo: {task.get('payload', {}).get('repo_root', 'unknown')}")
-        print("-" * 80)
+        logger.info(f"\nTask ID: {task.get('task_id')}")
+        logger.info(f"Name: {task.get('name')}")
+        logger.info(f"Created: {task.get('created_at')}")
+        logger.info(f"Caller: {task.get('payload', {}).get('caller', 'unknown')}")
+        logger.info(f"Repo: {task.get('payload', {}).get('repo_root', 'unknown')}")
+        logger.info("-" * 80)
 
 
 async def cli_approve(task_id: str) -> None:
@@ -130,9 +130,9 @@ async def cli_approve(task_id: str) -> None:
     success = await approve_gmp_task(task_id)
     
     if success:
-        print(f"✓ Approved GMP task {task_id}")
+        logger.info(f"✓ Approved GMP task {task_id}")
     else:
-        print(f"✗ Failed to approve GMP task {task_id}")
+        logger.error(f"✗ Failed to approve GMP task {task_id}")
 
 
 async def cli_reject(task_id: str) -> None:
@@ -140,9 +140,9 @@ async def cli_reject(task_id: str) -> None:
     success = await reject_gmp_task(task_id)
     
     if success:
-        print(f"✓ Rejected GMP task {task_id}")
+        logger.info(f"✓ Rejected GMP task {task_id}")
     else:
-        print(f"✗ Failed to reject GMP task {task_id}")
+        logger.error(f"✗ Failed to reject GMP task {task_id}")
 
 
 __all__ = [

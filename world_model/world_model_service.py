@@ -28,7 +28,7 @@ Version: 2.0.0 (full service layer per README_RUNTIMES.md)
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional, TYPE_CHECKING
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from world_model.causal_mapper import CausalMapper
     from world_model.knowledge_ingestor import KnowledgeIngestor
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================

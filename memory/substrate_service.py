@@ -6,7 +6,7 @@ Orchestrating service that coordinates repository, semantic, and graph layers.
 Provides a unified interface for substrate operations.
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 
 from memory.substrate_models import (
@@ -26,7 +26,7 @@ from memory.substrate_semantic import (
 )
 from memory.substrate_graph import SubstrateDAG, run_substrate_flow
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class MemorySubstrateService:

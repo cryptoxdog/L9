@@ -4,13 +4,13 @@ Tiny local HTTP server to complete OAuth flow.
 """
 import os
 import sys
-import logging
+import structlog
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from email_agent.credentials import create_flow, exchange_code_for_tokens, save_tokens
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 PORT = 8080
 
@@ -103,7 +103,7 @@ class OAuthHandler(BaseHTTPRequestHandler):
                 '''.encode('utf-8'))
                 from email_agent.config import GMAIL_ACCOUNT
                 logger.info(f"OAuth completed for {GMAIL_ACCOUNT}")
-                print(f"\n✅ OAuth completed for {GMAIL_ACCOUNT}")
+                logger.info(f"\n✅ OAuth completed for {GMAIL_ACCOUNT}")
             else:
                 self.send_response(500)
                 self.end_headers()
@@ -125,14 +125,14 @@ def main():
     server_address = ('', PORT)
     httpd = HTTPServer(server_address, OAuthHandler)
     
-    print(f"\n🌐 Gmail OAuth Server starting on http://localhost:{PORT}")
-    print(f"📋 Open http://localhost:{PORT}/oauth/start in your browser")
-    print("Press Ctrl+C to stop\n")
+    logger.info(f"\n🌐 Gmail OAuth Server starting on http://localhost:{PORT}")
+    logger.info(f"📋 Open http://localhost:{PORT}/oauth/start in your browser")
+    logger.info("Press Ctrl+C to stop\n")
     
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n\nServer stopped.")
+        logger.info("\n\nServer stopped.")
         httpd.shutdown()
 
 

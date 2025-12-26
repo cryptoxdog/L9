@@ -3,11 +3,14 @@
 Single deep research request for config_loader module.
 """
 import os
+import structlog
 import sys
 import time
 import httpx
 
 # Get API key directly from .env
+
+logger = structlog.get_logger(__name__)
 def get_api_key():
     env_path = "/Users/ib-mac/Projects/L9/.env"
     with open(env_path) as f:
@@ -18,7 +21,7 @@ def get_api_key():
 
 API_KEY = get_api_key()
 if not API_KEY:
-    print("❌ No API key found")
+    logger.info("❌ No API key found")
     sys.exit(1)
 
 PROMPT = """You are a senior L9 system architect conducting deep research to generate a production-ready Module Specification.
@@ -56,9 +59,9 @@ Generate a COMPLETE Module-Spec-v2.5 YAML with ALL sections filled with real pro
 
 Generate the COMPLETE specification."""
 
-print("🚀 Sending config_loader to Sonar Deep Research...")
-print(f"   API Key: {API_KEY[:15]}...")
-print("   ⏳ This may take 2-5 minutes...")
+logger.info("🚀 Sending config_loader to Sonar Deep Research...")
+logger.info(f"   API Key: {API_KEY[:15]}...")
+logger.info("   ⏳ This may take 2-5 minutes...")
 start = time.time()
 
 try:
@@ -78,7 +81,7 @@ try:
         )
         
         elapsed = time.time() - start
-        print(f"\n⏱️  Response in {elapsed:.1f}s (status: {resp.status_code})")
+        logger.info(f"\n⏱️  Response in {elapsed:.1f}s (status: {resp.status_code})")
         
         if resp.status_code == 200:
             data = resp.json()
@@ -86,10 +89,10 @@ try:
             citations = data.get("citations", [])
             usage = data.get("usage", {})
             
-            print(f"✅ SUCCESS!")
-            print(f"   Citations: {len(citations)}")
-            print(f"   Tokens: {usage.get('total_tokens', 'N/A')}")
-            print(f"   Cost: ${usage.get('cost', {}).get('total_cost', 'N/A')}")
+            logger.info(f"✅ SUCCESS!")
+            logger.info(f"   Citations: {len(citations)}")
+            logger.info(f"   Tokens: {usage.get('total_tokens', 'N/A')}")
+            logger.info(f"   Cost: ${usage.get('cost', {}).get('total_cost', 'N/A')}")
             
             # Save output
             output_path = "/Users/ib-mac/Projects/L9/docs/Perplexity/outputs/01_config_loader_spec.md"
@@ -103,19 +106,19 @@ try:
                 for i, cite in enumerate(citations[:20], 1):
                     f.write(f"{i}. {cite}\n")
             
-            print(f"\n📁 Saved to: {output_path}")
-            print(f"\n{'='*60}")
-            print("SPEC OUTPUT:")
-            print("="*60)
-            print(content[:2000])
+            logger.info(f"\n📁 Saved to: {output_path}")
+            logger.info(f"\n{'='*60}")
+            logger.info("SPEC OUTPUT:")
+            logger.info("="*60)
+            logger.info(content[:2000])
             if len(content) > 2000:
-                print(f"\n... [truncated, full output in file] ...")
+                logger.info(f"\n... [truncated, full output in file] ...")
         else:
-            print(f"❌ Error: {resp.status_code}")
-            print(resp.text)
+            logger.error(f"❌ Error: {resp.status_code}")
+            logger.info(resp.text)
             
 except httpx.TimeoutException:
-    print(f"❌ Timeout after {time.time() - start:.1f}s - deep research taking too long")
+    logger.info(f"❌ Timeout after {time.time() - start:.1f}s - deep research taking too long")
 except Exception as e:
-    print(f"❌ Exception: {type(e).__name__}: {e}")
+    logger.error(f"❌ Exception: {type(e).__name__}: {e}")
 

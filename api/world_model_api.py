@@ -18,7 +18,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
@@ -26,7 +26,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/world-model", tags=["world-model"])
 

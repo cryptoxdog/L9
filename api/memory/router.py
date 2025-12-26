@@ -10,13 +10,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from api.auth import verify_api_key
 from typing import Optional, List
-import logging
+import structlog
 
 from memory.substrate_service import get_service
 from memory.substrate_models import PacketEnvelopeIn, SemanticSearchRequest
 from memory.ingestion import ingest_packet
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 

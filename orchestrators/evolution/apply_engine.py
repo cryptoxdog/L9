@@ -5,13 +5,13 @@ Version: 1.0.0
 Engine for applying and rolling back system upgrades.
 """
 
-import logging
+import structlog
 from typing import Dict, Any
 import asyncio
 
 from .interface import Upgrade
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ApplyEngine:

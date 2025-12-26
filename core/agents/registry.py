@@ -15,7 +15,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import os
 from pathlib import Path
 from typing import Any, Optional
@@ -24,7 +24,7 @@ import yaml
 
 from core.agents.schemas import AgentConfig, ToolBinding
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Check if kernels should be used
 USE_KERNELS = os.getenv("L9_USE_KERNELS", "true").lower() in ("true", "1", "yes")
@@ -69,7 +69,7 @@ class AgentRegistry:
         
         config = registry.get_agent_config("l9-standard-v1")
         if config:
-            print(f"Agent: {config.name}")
+            logger.info(f"Agent: {config.name}")
     """
     
     def __init__(self, config_dir: Optional[str | Path] = None):

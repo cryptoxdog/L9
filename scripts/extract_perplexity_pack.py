@@ -21,12 +21,15 @@ This enables token-efficient editing:
 """
 
 import argparse
+import structlog
 import os
 import re
 import sys
 from pathlib import Path
 
 
+
+logger = structlog.get_logger(__name__)
 def extract_files(content: str, output_dir: str = ".") -> list[dict]:
     """
     Extract files from Perplexity multi-file output.
@@ -99,8 +102,8 @@ def write_files(files: list[dict], output_dir: str, dry_run: bool = False) -> No
     
     output_path = Path(output_dir)
     
-    print(f"\n{'[DRY RUN] ' if dry_run else ''}Extracting {len(files)} files to {output_path}/\n")
-    print("=" * 60)
+    logger.info(f"\n{'[DRY RUN] ' if dry_run else ''}Extracting {len(files)} files to {output_path}/\n")
+    logger.info("=" * 60)
     
     for f in files:
         filepath = output_path / f['path']
@@ -109,21 +112,21 @@ def write_files(files: list[dict], output_dir: str, dry_run: bool = False) -> No
         if not dry_run:
             filepath.parent.mkdir(parents=True, exist_ok=True)
         
-        print(f"  {'Would create' if dry_run else 'Creating'}: {f['path']} ({f['lines']} lines)")
+        logger.info(f"  {'Would create' if dry_run else 'Creating'}: {f['path']} ({f['lines']} lines)")
         
         if not dry_run:
             with open(filepath, 'w') as fp:
                 fp.write(f['content'])
                 fp.write('\n')  # Ensure trailing newline
     
-    print("=" * 60)
-    print(f"\n✅ {'Would extract' if dry_run else 'Extracted'} {len(files)} files")
+    logger.info("=" * 60)
+    logger.info(f"\n✅ {'Would extract' if dry_run else 'Extracted'} {len(files)} files")
     
     if not dry_run:
-        print(f"\nNext steps:")
-        print(f"  1. Review files in {output_path}/")
-        print(f"  2. Ask Cursor to edit/wire them into the repo")
-        print(f"  3. Cursor uses search_replace (token-efficient!)")
+        logger.info(f"\nNext steps:")
+        logger.info(f"  1. Review files in {output_path}/")
+        logger.info(f"  2. Ask Cursor to edit/wire them into the repo")
+        logger.info(f"  3. Cursor uses search_replace (token-efficient!)")
 
 
 def main():
@@ -153,22 +156,22 @@ def main():
             content = f.read()
     else:
         if sys.stdin.isatty():
-            print("Paste Perplexity output (Ctrl+D when done):\n")
+            logger.info("Paste Perplexity output (Ctrl+D when done):\n")
         content = sys.stdin.read()
     
     if not content.strip():
-        print("Error: No input provided")
+        logger.error("Error: No input provided")
         sys.exit(1)
     
     # Extract files
     files = extract_files(content, args.output_dir)
     
     if not files:
-        print("No files found in input.")
-        print("\nExpected formats:")
-        print("  ```python:path/to/file.py")
-        print("  # File: path/to/file.py")
-        print("  ## `path/to/file.py`")
+        logger.info("No files found in input.")
+        logger.info("\nExpected formats:")
+        logger.info("  ```python:path/to/file.py")
+        logger.info("  # File: path/to/file.py")
+        logger.info("  ## `path/to/file.py`")
         sys.exit(1)
     
     # Write files

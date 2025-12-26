@@ -12,7 +12,7 @@ Endpoints:
   - POST /api/v1/memory/semantic/search → semantic_search()
 """
 
-import logging
+import structlog
 import os
 from typing import Any, Optional
 from uuid import UUID
@@ -20,7 +20,7 @@ from uuid import UUID
 import httpx
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # =============================================================================
 # Configuration

@@ -11,12 +11,12 @@ Includes:
 Version: 1.1.0
 """
 
-import logging
+import structlog
 from typing import Any, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(tags=["agent"])
 

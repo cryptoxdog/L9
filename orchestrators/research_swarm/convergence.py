@@ -6,9 +6,9 @@ Specialized component for research_swarm orchestration.
 Handles consensus building and result aggregation.
 """
 
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Convergence:

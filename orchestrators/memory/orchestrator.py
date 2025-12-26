@@ -5,7 +5,7 @@ Version: 1.0.0
 Manages memory substrate usage: batching, replay, garbage collection.
 """
 
-import logging
+import structlog
 
 from .interface import (
     IMemoryOrchestrator,
@@ -13,7 +13,7 @@ from .interface import (
     MemoryResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class MemoryOrchestrator(IMemoryOrchestrator):

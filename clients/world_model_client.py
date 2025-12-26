@@ -32,7 +32,7 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 import os
 from datetime import datetime
 from typing import Any, Optional
@@ -41,7 +41,7 @@ from uuid import UUID
 import httpx
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # =============================================================================
 # Configuration

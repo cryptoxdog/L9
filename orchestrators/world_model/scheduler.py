@@ -6,11 +6,11 @@ Specialized component for world_model orchestration.
 Handles scheduling of propagation and update cycles.
 """
 
-import logging
+import structlog
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class WorldModelScheduler:

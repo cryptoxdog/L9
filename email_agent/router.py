@@ -15,7 +15,7 @@ All handlers:
 5. Fail loudly if ingestion fails
 """
 
-import logging
+import structlog
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
@@ -23,7 +23,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/email", tags=["email-agent"])
 
