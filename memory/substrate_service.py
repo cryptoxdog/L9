@@ -7,6 +7,7 @@ Provides a unified interface for substrate operations.
 """
 
 import structlog
+from datetime import datetime
 from typing import Any, Optional
 
 from memory.substrate_models import (
@@ -187,6 +188,84 @@ class MemorySubstrateService:
             logger.error(f"Error searching packets by type {packet_type}: {e}")
             return []
     
+    async def query_packets(
+        self,
+        packet_types: Optional[list[str]] = None,
+        limit: int = 50,
+        since: Optional[datetime] = None,
+        agent_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        Query packets for world model ingestion.
+        
+        Fetches packets matching the specified types, ordered by timestamp.
+        Used by WorldModelRuntime.MemorySubstratePacketSource for proactive
+        world model updates.
+        
+        Args:
+            packet_types: List of packet types to fetch (None = all)
+            limit: Maximum packets to return
+            since: Only fetch packets after this timestamp
+            agent_id: Optional filter by agent
+            
+        Returns:
+            Dict with 'packets' list and metadata
+        """
+        try:
+            all_packets = []
+            
+            if packet_types:
+                # Fetch each type and combine
+                for ptype in packet_types:
+                    rows = await self._repository.search_packets_by_type(
+                        packet_type=ptype,
+                        agent_id=agent_id,
+                        limit=limit,
+                        since=since,
+                    )
+                    all_packets.extend([row.envelope for row in rows])
+            else:
+                # No type filter - get recent packets
+                # Use a common packet type as fallback
+                for ptype in ["insight", "reflection", "ir_graph", "execution_plan"]:
+                    rows = await self._repository.search_packets_by_type(
+                        packet_type=ptype,
+                        agent_id=agent_id,
+                        limit=limit // 4,  # Split limit across types
+                        since=since,
+                    )
+                    all_packets.extend([row.envelope for row in rows])
+            
+            # Sort by timestamp descending and limit
+            all_packets.sort(
+                key=lambda p: p.get("timestamp", p.get("created_at", "")),
+                reverse=True
+            )
+            all_packets = all_packets[:limit]
+            
+            logger.debug(f"query_packets: fetched {len(all_packets)} packets")
+            
+            return {
+                "packets": all_packets,
+                "count": len(all_packets),
+                "since": since.isoformat() if since else None,
+            }
+            
+        except Exception as e:
+            logger.error(f"Error querying packets: {e}")
+            # Log to error telemetry
+            try:
+                from core.error_tracking import log_error_to_graph
+                import asyncio
+                asyncio.create_task(log_error_to_graph(
+                    error=e,
+                    context={"packet_types": packet_types, "limit": limit},
+                    source="memory.substrate_service.query_packets",
+                ))
+            except ImportError:
+                pass
+            return {"packets": [], "count": 0, "error": str(e)}
+    
     # =========================================================================
     # Semantic Search Operations
     # =========================================================================
@@ -363,14 +442,14 @@ class MemorySubstrateService:
         """
         Trigger world model update from insights.
         
-        Stub implementation - logs intent and returns success.
-        In production, this would call WorldModelOrchestrator.
+        Calls WorldModelOrchestrator.update_from_insights() to propagate
+        insights to the world model.
         
         Args:
             insights: List of insights to propagate
             
         Returns:
-            Status dict
+            Status dict with update results
         """
         logger.info(f"World model update triggered with {len(insights)} insights")
         
@@ -383,15 +462,38 @@ class MemorySubstrateService:
                 "reason": "no_triggering_insights",
             }
         
-        # Stub: In production, this calls the world model orchestrator
-        # For now, we just log and return success
-        logger.info(f"Would propagate {len(triggering)} insights to world model")
-        
-        return {
-            "status": "ok",
-            "insights_propagated": len(triggering),
-            "message": "World model update queued (stub)",
-        }
+        try:
+            # Lazy import to avoid circular dependencies
+            from orchestrators.world_model.orchestrator import WorldModelOrchestrator
+            
+            # Get or create singleton orchestrator instance
+            if not hasattr(self, '_world_model_orchestrator'):
+                self._world_model_orchestrator = WorldModelOrchestrator()
+            
+            # Delegate to orchestrator
+            result = await self._world_model_orchestrator.update_from_insights(triggering)
+            
+            logger.info(f"World model updated: {result}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"World model update failed: {e}")
+            # Log to error telemetry (non-blocking)
+            try:
+                from core.error_tracking import log_error_to_graph
+                import asyncio
+                asyncio.create_task(log_error_to_graph(
+                    error=e,
+                    context={"insights_count": len(triggering)},
+                    source="memory.substrate_service.world_model_update",
+                ))
+            except ImportError:
+                pass
+            return {
+                "status": "error",
+                "error": str(e),
+                "insights_attempted": len(triggering),
+            }
     
     async def get_facts_by_subject(
         self,

@@ -309,18 +309,229 @@ class TaskExecutor:
             "error": None,
         }
     
-    # Phase 3 stubs for real executors
+    # Phase 3 executors
     async def _execute_shell(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Phase 3: Execute shell command."""
-        raise NotImplementedError("Shell executor not implemented")
+        """
+        Execute shell command with security validation.
+        
+        Uses LocalAPI for whitelisted command execution with safety checks.
+        
+        Args:
+            payload: Dict with:
+                - command: Shell command to execute
+                - cwd: Working directory (default: /opt/l9)
+                - timeout: Execution timeout in seconds (default: 30)
+                
+        Returns:
+            Result dict with status, output, error, exit_code
+        """
+        command = payload.get("command", "")
+        cwd = payload.get("cwd", "/opt/l9")
+        timeout = payload.get("timeout", 30)
+        
+        if not command:
+            return {"status": "error", "error": "No command provided", "output": "", "exit_code": -1}
+        
+        try:
+            from l9_os.local_api import LocalAPI
+            api = LocalAPI({"base_path": cwd, "request_timeout": timeout})
+            
+            if not api.validate_command(command):
+                return {
+                    "status": "error",
+                    "error": f"Command not allowed: {command.split()[0] if command.split() else 'empty'}",
+                    "output": "",
+                    "exit_code": -1,
+                    "allowed_commands": list(api.ALLOWED_COMMANDS),
+                }
+            
+            result = api.execute_shell(command, cwd=cwd)
+            return {
+                "status": "completed" if result["success"] else "failed",
+                "output": result["output"],
+                "error": result["error"],
+                "exit_code": result["exit_code"],
+            }
+        except ImportError:
+            # Fallback to subprocess if LocalAPI not available
+            import subprocess
+            import shlex
+            
+            logger.warning("LocalAPI not available, using subprocess fallback")
+            try:
+                cmd_parts = shlex.split(command)
+                result = subprocess.run(
+                    cmd_parts,
+                    cwd=cwd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    check=False,
+                )
+                return {
+                    "status": "completed" if result.returncode == 0 else "failed",
+                    "output": result.stdout,
+                    "error": result.stderr,
+                    "exit_code": result.returncode,
+                }
+            except subprocess.TimeoutExpired:
+                return {"status": "failed", "error": "Command timeout", "output": "", "exit_code": -1}
+            except Exception as e:
+                return {"status": "error", "error": str(e), "output": "", "exit_code": -1}
+        except Exception as e:
+            logger.error(f"Shell execution error: {e}")
+            return {"status": "error", "error": str(e), "output": "", "exit_code": -1}
     
     async def _execute_browser(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Phase 3: Execute browser automation."""
-        raise NotImplementedError("Browser executor not implemented")
+        """
+        Execute browser automation via Playwright.
+        
+        Uses AutomationExecutor for step-based browser control.
+        
+        Args:
+            payload: Dict with:
+                - steps: List of automation steps (goto, click, fill, etc.)
+                - headless: Whether to run headless (default: False)
+                - task_id: Task ID for screenshot organization
+                
+        Returns:
+            Result dict with status, logs, screenshots, data
+        """
+        steps = payload.get("steps", [])
+        headless = payload.get("headless", False)
+        task_id = payload.get("task_id", str(uuid4()))
+        
+        if not steps:
+            return {"status": "error", "error": "No steps provided", "logs": [], "screenshots": []}
+        
+        try:
+            from mac_agent.executor import AutomationExecutor
+            executor = AutomationExecutor()
+            
+            result = await executor.run_steps(steps, headless=headless, task_id=task_id)
+            
+            return {
+                "status": "completed" if result["status"] == "success" else "failed",
+                "output": {
+                    "logs": result.get("logs", []),
+                    "screenshots": result.get("screenshots", []),
+                    "data": result.get("data", {}),
+                    "started_at": result.get("started_at"),
+                    "finished_at": result.get("finished_at"),
+                },
+                "error": result.get("data", {}).get("error"),
+            }
+        except ImportError as e:
+            return {
+                "status": "error",
+                "error": f"Playwright not available: {e}. Install with: pip install playwright && playwright install",
+                "logs": [],
+                "screenshots": [],
+            }
+        except Exception as e:
+            logger.error(f"Browser execution error: {e}")
+            return {"status": "error", "error": str(e), "logs": [], "screenshots": []}
     
     async def _execute_python(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Phase 3: Execute Python in sandbox."""
-        raise NotImplementedError("Python executor not implemented")
+        """
+        Execute Python code in a sandboxed environment.
+        
+        For production: Uses Docker container with network disabled.
+        For development: Falls back to subprocess with minimal env.
+        
+        Args:
+            payload: Dict with:
+                - code: Python code to execute
+                - timeout: Execution timeout in seconds (default: 30)
+                - use_docker: Force Docker execution (default: True in production)
+                
+        Returns:
+            Result dict with status, output, error, exit_code
+        """
+        import subprocess
+        import tempfile
+        import os as os_module
+        
+        code = payload.get("code", "")
+        timeout = payload.get("timeout", 30)
+        use_docker = payload.get("use_docker", True)
+        
+        if not code:
+            return {"status": "error", "error": "No code provided", "output": "", "exit_code": -1}
+        
+        # Try Docker execution first (more secure)
+        if use_docker:
+            try:
+                import docker
+                client = docker.from_env()
+                
+                # Create container with security restrictions
+                container = client.containers.run(
+                    "python:3.11-slim",
+                    command=["python", "-c", code],
+                    detach=True,
+                    network_disabled=True,
+                    mem_limit="128m",
+                    cpu_period=100000,
+                    cpu_quota=50000,  # 50% of one CPU
+                    remove=True,
+                )
+                
+                # Wait for completion with timeout
+                try:
+                    result = container.wait(timeout=timeout)
+                    logs = container.logs(stdout=True, stderr=True).decode('utf-8')
+                    exit_code = result.get('StatusCode', -1)
+                    
+                    return {
+                        "status": "completed" if exit_code == 0 else "failed",
+                        "output": logs,
+                        "error": "" if exit_code == 0 else logs,
+                        "exit_code": exit_code,
+                        "executor": "docker",
+                    }
+                except Exception as wait_error:
+                    container.kill()
+                    return {"status": "failed", "error": f"Container timeout: {wait_error}", "output": "", "exit_code": -1}
+                    
+            except ImportError:
+                logger.warning("Docker SDK not available, falling back to subprocess")
+            except Exception as docker_error:
+                logger.warning(f"Docker execution failed: {docker_error}, falling back to subprocess")
+        
+        # Fallback: subprocess with restricted environment (less secure)
+        logger.warning("Using subprocess fallback for Python execution - less secure than Docker")
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(code)
+            temp_path = f.name
+        
+        try:
+            result = subprocess.run(
+                ["python3", temp_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env={"PATH": "/usr/bin:/bin", "HOME": "/tmp"},  # Minimal env
+                cwd="/tmp",
+            )
+            return {
+                "status": "completed" if result.returncode == 0 else "failed",
+                "output": result.stdout,
+                "error": result.stderr,
+                "exit_code": result.returncode,
+                "executor": "subprocess",
+                "warning": "Executed without Docker sandbox - less secure",
+            }
+        except subprocess.TimeoutExpired:
+            return {"status": "failed", "error": "Execution timeout", "output": "", "exit_code": -1}
+        except Exception as e:
+            return {"status": "error", "error": str(e), "output": "", "exit_code": -1}
+        finally:
+            try:
+                os_module.unlink(temp_path)
+            except Exception:
+                pass
 
 
 # =============================================================================

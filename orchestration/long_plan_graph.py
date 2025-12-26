@@ -15,10 +15,171 @@ Version: 1.0.0
 
 from __future__ import annotations
 
+import os
 import structlog
 from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 logger = structlog.get_logger(__name__)
+
+# LLM Configuration
+LLM_MODEL = os.getenv("L9_LLM_MODEL", "gpt-4o-mini")
+
+
+# =============================================================================
+# LLM Artifact Generation
+# =============================================================================
+
+async def generate_artifact_with_llm(
+    artifact_type: str,
+    goal: str,
+    constraints: List[str],
+    context: Dict[str, Any],
+    max_tokens: int = 2048,
+) -> Optional[str]:
+    """
+    Generate an artifact (plan, code, docs) using LLM.
+    
+    Args:
+        artifact_type: One of "plan", "code", "docs"
+        goal: The goal/objective to accomplish
+        constraints: List of constraints to follow
+        context: Additional context (governance rules, project history, etc.)
+        max_tokens: Maximum tokens for generation
+        
+    Returns:
+        Generated artifact as string, or None on failure
+    """
+    try:
+        from openai import AsyncOpenAI
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning("OPENAI_API_KEY not set, skipping LLM artifact generation")
+            return None
+        
+        client = AsyncOpenAI(api_key=api_key)
+        
+        # Build prompt based on artifact type
+        if artifact_type == "plan":
+            system_prompt = """You are L9's planning agent. Generate a clear, actionable implementation plan.
+
+Format your plan as:
+## Objective
+[One-sentence objective]
+
+## Steps
+1. [Step description]
+2. [Step description]
+...
+
+## Dependencies
+- [Any dependencies or prerequisites]
+
+## Risks
+- [Any risks or considerations]
+
+Be specific and actionable. No fluff."""
+            
+            user_prompt = f"""Goal: {goal}
+
+Constraints:
+{chr(10).join(f'- {c}' for c in constraints) if constraints else '- None specified'}
+
+Context:
+{_format_context(context)}
+
+Generate a clear implementation plan."""
+
+        elif artifact_type == "code":
+            system_prompt = """You are L9's code generation agent. Generate production-ready Python code.
+
+Requirements:
+- Use structlog for logging (never print statements)
+- Include proper type hints
+- Include docstrings
+- Handle errors gracefully
+- Follow PEP 8 style
+
+Output the code directly, no markdown fences unless multiple files."""
+            
+            user_prompt = f"""Goal: {goal}
+
+Constraints:
+{chr(10).join(f'- {c}' for c in constraints) if constraints else '- None specified'}
+
+Context:
+{_format_context(context)}
+
+Generate the implementation code."""
+
+        elif artifact_type == "docs":
+            system_prompt = """You are L9's documentation agent. Generate clear, concise documentation.
+
+Format:
+- Use markdown
+- Include usage examples where applicable
+- Be concise but complete"""
+            
+            user_prompt = f"""Goal: {goal}
+
+Constraints:
+{chr(10).join(f'- {c}' for c in constraints) if constraints else '- None specified'}
+
+Context:
+{_format_context(context)}
+
+Generate documentation for this implementation."""
+        else:
+            logger.error(f"Unknown artifact type: {artifact_type}")
+            return None
+        
+        response = await client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.3,
+            max_tokens=max_tokens,
+        )
+        
+        content = response.choices[0].message.content
+        if content:
+            logger.info(
+                "LLM artifact generated",
+                artifact_type=artifact_type,
+                tokens_used=response.usage.total_tokens if response.usage else 0,
+            )
+            return content.strip()
+        return None
+        
+    except ImportError:
+        logger.warning("openai package not installed, skipping LLM artifact generation")
+        return None
+    except Exception as e:
+        logger.error(f"LLM artifact generation failed: {e}", exc_info=True)
+        return None
+
+
+def _format_context(context: Dict[str, Any]) -> str:
+    """Format context dict into readable string."""
+    parts = []
+    
+    if context.get("governance_rules"):
+        rules = context["governance_rules"]
+        parts.append(f"Governance Rules: {len(rules)} rules loaded")
+        
+    if context.get("project_history"):
+        history = context["project_history"]
+        parts.append(f"Project History: {len(history)} recent items")
+        
+    if context.get("github_context"):
+        parts.append(f"GitHub: {context['github_context'].get('summary', 'available')}")
+        
+    if context.get("notion_context"):
+        parts.append(f"Notion: {context['notion_context'].get('summary', 'available')}")
+    
+    return chr(10).join(parts) if parts else "No additional context"
 
 # Try to import LangGraph
 try:
@@ -241,27 +402,61 @@ async def draft_work_node(state: LongPlanState) -> LongPlanState:
     - Draft code (if applicable)
     - Draft documentation (if applicable)
     """
-    logger.info("draft_work_node: Drafting work")
+    logger.info("draft_work_node: Drafting work with LLM")
     
     try:
-        # This would call L or a worker agent to draft the work
-        # For now, this is a stub that creates placeholder drafts
-        # In production, this would use the LLM to generate actual plans/code/docs
+        import asyncio
         
         goal = state.get("goal", "")
         constraints = state.get("constraints", [])
         
-        # TODO: Stage 2 — LLM-based drafting
-        # For now, create minimal placeholders without actual LLM calls
-        draft_plan = f"[STAGE 2 TODO] Draft plan for: {goal}\n[STAGE 2 TODO] Constraints: {', '.join(constraints)}"
+        # Build context for LLM
+        context = {
+            "governance_rules": state.get("governance_rules", []),
+            "project_history": state.get("project_history", []),
+            "github_context": state.get("github_context"),
+            "notion_context": state.get("notion_context"),
+            "vercel_context": state.get("vercel_context"),
+        }
         
-        # Stub: Create draft code (if applicable)
-        draft_code = None  # TODO Stage 2: Generate via LLM
+        # Generate plan (always)
+        draft_plan = await generate_artifact_with_llm(
+            artifact_type="plan",
+            goal=goal,
+            constraints=constraints,
+            context=context,
+        )
         
-        # Stub: Create draft docs (if applicable)
-        draft_docs = None  # TODO Stage 2: Generate via LLM
+        # If plan mentions code generation, generate code artifact
+        draft_code = None
+        if draft_plan and any(kw in goal.lower() for kw in ["implement", "code", "build", "create", "write"]):
+            draft_code = await generate_artifact_with_llm(
+                artifact_type="code",
+                goal=goal,
+                constraints=constraints,
+                context=context,
+            )
         
-        logger.info("draft_work_node: Work drafted")
+        # If plan mentions documentation, generate docs artifact
+        draft_docs = None
+        if draft_plan and any(kw in goal.lower() for kw in ["document", "docs", "readme", "guide"]):
+            draft_docs = await generate_artifact_with_llm(
+                artifact_type="docs",
+                goal=goal,
+                constraints=constraints,
+                context=context,
+            )
+        
+        # Fallback if LLM failed
+        if not draft_plan:
+            draft_plan = f"[FALLBACK] Plan for: {goal}\nConstraints: {', '.join(constraints)}\n(LLM unavailable)"
+        
+        logger.info(
+            "draft_work_node: Work drafted",
+            has_plan=bool(draft_plan),
+            has_code=bool(draft_code),
+            has_docs=bool(draft_docs),
+        )
         
         return {
             **state,

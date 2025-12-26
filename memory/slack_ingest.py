@@ -434,11 +434,28 @@ async def _retrieve_thread_context(
     """
     Retrieve recent packets in thread (thread context).
     
-    In production, would query packet_store WHERE thread_uuid = ? ORDER BY ts DESC LIMIT ?
+    Queries packet_store for packets matching the thread_uuid.
     """
-    # Stub: Would call substrate_service.semantic_search or similar
-    # For now, return empty context
-    return {"packets": []}
+    try:
+        packets = await substrate_service.search_packets_by_thread(
+            thread_id=thread_uuid,
+            limit=limit,
+        )
+        return {"packets": packets}
+    except Exception as e:
+        logger.error("thread_context_retrieval_error", error=str(e), thread_uuid=thread_uuid)
+        # Log to error telemetry (non-blocking)
+        try:
+            from core.error_tracking import log_error_to_graph
+            import asyncio
+            asyncio.create_task(log_error_to_graph(
+                error=e,
+                context={"thread_uuid": thread_uuid, "limit": limit},
+                source="memory.slack_ingest.thread_context",
+            ))
+        except ImportError:
+            pass
+        return {"packets": [], "error": str(e)}
 
 
 async def _retrieve_semantic_hits(
@@ -450,11 +467,41 @@ async def _retrieve_semantic_hits(
     """
     Retrieve semantically similar packets.
     
-    Would call substrate_service.semantic_search(query, limit, agent_id=team_id)
+    Calls substrate_service.semantic_search for vector similarity search.
     """
-    # Stub: Would call semantic search
-    # For now, return empty hits
-    return {"results": []}
+    from memory.substrate_models import SemanticSearchRequest
+    
+    try:
+        request = SemanticSearchRequest(
+            query=query,
+            top_k=limit,
+            agent_id=team_id,
+        )
+        result = await substrate_service.semantic_search(request)
+        return {
+            "results": [
+                {
+                    "embedding_id": str(hit.embedding_id),
+                    "score": hit.score,
+                    "payload": hit.payload,
+                }
+                for hit in result.hits
+            ]
+        }
+    except Exception as e:
+        logger.error("semantic_search_error", error=str(e), query=query[:100], team_id=team_id)
+        # Log to error telemetry (non-blocking)
+        try:
+            from core.error_tracking import log_error_to_graph
+            import asyncio
+            asyncio.create_task(log_error_to_graph(
+                error=e,
+                context={"query": query[:100], "team_id": team_id, "limit": limit},
+                source="memory.slack_ingest.semantic_search",
+            ))
+        except ImportError:
+            pass
+        return {"results": [], "error": str(e)}
 
 
 def _build_system_prompt(

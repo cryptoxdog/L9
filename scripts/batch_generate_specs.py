@@ -40,7 +40,7 @@ logger = structlog.get_logger(__name__)
 try:
     import httpx
 except ImportError:
-    logger.info("❌ httpx not installed. Run: pip install httpx")
+    logger.error("❌ httpx not installed. Run: pip install httpx")
     sys.exit(1)
 
 # ============================================================================

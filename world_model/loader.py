@@ -211,9 +211,9 @@ class WorldModelLoader:
     # Domain-Specific Loading
     # =========================================================================
     
-    def load_blueprint(self, blueprint_path: str):
+    def load_domain_blueprint(self, blueprint_path: str):
         """
-        logger.info(e.g., PlasticRecycling)
+        Load a domain-specific blueprint (e.g., PlasticRecycling).
         
         Specification: PlasticRecycling_World Model-Blueprint.md
         

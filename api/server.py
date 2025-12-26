@@ -51,6 +51,17 @@ try:
 except ImportError:
     _has_research = False
 
+# Optional: World Model Runtime (v2.5+)
+try:
+    from world_model.runtime import (
+        create_runtime_with_substrate,
+        get_or_create_runtime,
+        WorldModelRuntime,
+    )
+    _has_world_model_runtime = True
+except ImportError:
+    _has_world_model_runtime = False
+
 # Optional: Agent Executor (v2.2+)
 try:
     from core.agents.executor import AgentExecutorService
@@ -235,6 +246,34 @@ async def lifespan(app: FastAPI):
     elif _has_research:
         logger.warning("Research Factory not initialized: database_url required")
         app.state.research_enabled = False
+    
+    # Initialize World Model Runtime (if enabled and substrate available)
+    if _has_world_model_runtime and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+        try:
+            logger.info("Initializing World Model Runtime...")
+            world_model_runtime = await create_runtime_with_substrate(
+                app.state.substrate_service,
+                poll_interval_seconds=60,  # Poll memory every minute
+                batch_size=50,
+            )
+            app.state.world_model_runtime = world_model_runtime
+            
+            # Start the runtime loop in background
+            import asyncio
+            app.state.world_model_task = asyncio.create_task(
+                world_model_runtime.run_loop()
+            )
+            logger.info(
+                "World Model Runtime initialized and running",
+                poll_interval=60,
+                batch_size=50,
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize World Model Runtime: {e}", exc_info=True)
+            app.state.world_model_runtime = None
+    elif _has_world_model_runtime:
+        logger.warning("World Model Runtime not initialized: substrate_service required")
+        app.state.world_model_runtime = None
     
     # Initialize Governance Engine (if enabled)
     if _has_governance:
@@ -566,6 +605,20 @@ async def lifespan(app: FastAPI):
         logger.info("GMP worker stopped")
     except Exception as e:
         logger.warning(f"Error stopping GMP worker: {e}")
+    
+    # Stop World Model Runtime
+    if hasattr(app.state, "world_model_runtime") and app.state.world_model_runtime:
+        try:
+            app.state.world_model_runtime.stop()
+            if hasattr(app.state, "world_model_task"):
+                app.state.world_model_task.cancel()
+                try:
+                    await app.state.world_model_task
+                except asyncio.CancelledError:
+                    pass
+            logger.info("World Model Runtime stopped")
+        except Exception as e:
+            logger.error(f"Error stopping World Model Runtime: {e}")
     
     # Cleanup Research Factory
     if _has_research and getattr(app.state, "research_enabled", False):

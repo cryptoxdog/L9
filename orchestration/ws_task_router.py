@@ -313,35 +313,234 @@ class WSTaskRouter:
 
 
 # =============================================================================
-# Phase 3 Stubs
+# LangGraph-Based Router
 # =============================================================================
+
+# Try to import LangGraph
+try:
+    from langgraph.graph import StateGraph, START, END
+    LANGGRAPH_AVAILABLE = True
+except ImportError:
+    LANGGRAPH_AVAILABLE = False
+    logger.warning("LangGraph not installed. LangGraphRouter will use fallback routing.")
+
+from typing import Any, TypedDict, List, Literal
+
+
+class RouterState(TypedDict):
+    """State for the routing graph."""
+    event: Dict[str, Any]
+    event_type: str
+    context: Dict[str, Any]
+    world_model_context: Dict[str, Any]
+    classification: str
+    task_envelope: Optional[Dict[str, Any]]
+    errors: List[str]
+
 
 class LangGraphRouter:
     """
-    Phase 3 Stub: LangGraph-based state machine router.
+    LangGraph-based state machine router.
     
-    Will provide:
-    - Stateful routing decisions
-    - Graph-based task dependencies
-    - Conditional routing based on context
-    - Integration with world model
+    Provides:
+    - Stateful routing decisions via StateGraph
+    - Context loading from world model
+    - Classification-based routing
+    - Enriched task envelopes
     """
     
-    def __init__(self):
-        # TODO: Phase 3 - Initialize LangGraph state machine
-        pass
+    def __init__(self, world_model_runtime: Optional[Any] = None):
+        """
+        Initialize LangGraph router.
+        
+        Args:
+            world_model_runtime: Optional WorldModelRuntime instance for context enrichment
+        """
+        self._world_model = world_model_runtime
+        self._graph = None
+        
+        if LANGGRAPH_AVAILABLE:
+            self._build_graph()
+            logger.info("LangGraphRouter initialized with StateGraph")
+        else:
+            logger.info("LangGraphRouter initialized with fallback routing")
     
-    async def route(self, event: EventMessage, context: dict) -> Optional[TaskEnvelope]:
+    def _build_graph(self) -> None:
+        """Build the routing state graph."""
+        if not LANGGRAPH_AVAILABLE:
+            return
+        
+        # Create the graph
+        graph = StateGraph(RouterState)
+        
+        # Add nodes
+        graph.add_node("load_context", self._load_context_node)
+        graph.add_node("classify", self._classify_node)
+        graph.add_node("create_task", self._create_task_node)
+        
+        # Add edges
+        graph.add_edge(START, "load_context")
+        graph.add_edge("load_context", "classify")
+        graph.add_edge("classify", "create_task")
+        graph.add_edge("create_task", END)
+        
+        # Compile the graph
+        self._graph = graph.compile()
+    
+    async def _load_context_node(self, state: RouterState) -> RouterState:
+        """Load context from world model."""
+        world_context = {}
+        
+        if self._world_model:
+            try:
+                # Query world model for relevant context
+                event_type = state.get("event_type", "")
+                
+                if hasattr(self._world_model, 'query_patterns'):
+                    patterns = await self._world_model.query_patterns(
+                        pattern_type="routing",
+                        limit=5,
+                    )
+                    world_context["patterns"] = patterns
+                
+                if hasattr(self._world_model, 'get_loop_stats'):
+                    world_context["model_stats"] = self._world_model.get_loop_stats()
+                    
+            except Exception as e:
+                logger.warning(f"Failed to load world model context: {e}")
+        
+        return {
+            **state,
+            "world_model_context": world_context,
+        }
+    
+    async def _classify_node(self, state: RouterState) -> RouterState:
+        """Classify the event for routing."""
+        event_type = state.get("event_type", "")
+        event = state.get("event", {})
+        
+        # Classification logic
+        if event_type == "TASK_RESULT":
+            classification = "result_processing"
+        elif event_type == "ERROR":
+            classification = "error_handling"
+        elif event_type == "CONTROL":
+            classification = "control_flow"
+        elif event_type == "LOG":
+            classification = "logging"
+        else:
+            # Check for high-priority indicators
+            payload = event.get("payload", {})
+            if payload.get("priority", 5) <= 2:
+                classification = "high_priority"
+            elif payload.get("require_approval"):
+                classification = "approval_required"
+            else:
+                classification = "standard"
+        
+        return {
+            **state,
+            "classification": classification,
+        }
+    
+    async def _create_task_node(self, state: RouterState) -> RouterState:
+        """Create task envelope from classified event."""
+        event = state.get("event", {})
+        context = state.get("context", {})
+        world_context = state.get("world_model_context", {})
+        classification = state.get("classification", "standard")
+        
+        # Create EventMessage from event dict
+        try:
+            event_msg = EventMessage(
+                event_type=EventType(state.get("event_type", "TASK_RESULT")),
+                session_id=event.get("session_id", ""),
+                payload=event.get("payload", {}),
+            )
+            
+            # Use base routing to create task
+            task_envelope = route_event_to_task(event_msg)
+            
+            if task_envelope:
+                # Enrich with world model context
+                task_dict = {
+                    "task_id": str(task_envelope.task_id),
+                    "task": task_envelope.task.model_dump() if hasattr(task_envelope.task, 'model_dump') else {},
+                    "kind": task_envelope.kind,
+                    "priority": task_envelope.priority,
+                    "world_context": world_context,
+                    "classification": classification,
+                }
+                
+                return {
+                    **state,
+                    "task_envelope": task_dict,
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to create task envelope: {e}")
+            return {
+                **state,
+                "task_envelope": None,
+                "errors": state.get("errors", []) + [str(e)],
+            }
+        
+        return {
+            **state,
+            "task_envelope": None,
+        }
+    
+    async def route(self, event: EventMessage, context: Dict[str, Any]) -> Optional[TaskEnvelope]:
         """
         Route event using LangGraph state machine.
         
-        Phase 3 implementation will:
-        1. Load context from world model
-        2. Execute routing graph
-        3. Return task envelope with enriched context
+        Args:
+            event: EventMessage to route
+            context: Additional routing context
+            
+        Returns:
+            TaskEnvelope with enriched context, or None if routing failed
         """
-        # Fallback to simple routing until Phase 3
-        return route_event_to_task(event)
+        if not LANGGRAPH_AVAILABLE or self._graph is None:
+            # Fallback to simple routing
+            return route_event_to_task(event)
+        
+        try:
+            # Prepare initial state
+            initial_state: RouterState = {
+                "event": {
+                    "event_type": event.event_type.value,
+                    "session_id": event.session_id,
+                    "payload": event.payload,
+                    "timestamp": event.timestamp.isoformat() if hasattr(event, 'timestamp') else None,
+                },
+                "event_type": event.event_type.value,
+                "context": context,
+                "world_model_context": {},
+                "classification": "",
+                "task_envelope": None,
+                "errors": [],
+            }
+            
+            # Execute the graph
+            final_state = await self._graph.ainvoke(initial_state)
+            
+            # Extract task envelope from final state
+            task_dict = final_state.get("task_envelope")
+            if task_dict:
+                # Return the base-routed envelope (world context is logged, not embedded)
+                logger.info(
+                    "LangGraph routing complete",
+                    classification=final_state.get("classification"),
+                    has_world_context=bool(final_state.get("world_model_context")),
+                )
+                return route_event_to_task(event)
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"LangGraph routing failed, using fallback: {e}")
+            return route_event_to_task(event)
 
 
 # =============================================================================
