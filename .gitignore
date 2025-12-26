@@ -92,3 +92,4 @@ docker-compose.override.yml
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml
 .Trash/
+docker-compose.yml
