@@ -109,12 +109,13 @@ else
     test_fail "Root endpoint"
 fi
 
-test_info "Testing /docs endpoint"
-if curl -s -f "$API_URL/docs" | grep -q "FastAPI"; then
-    test_pass "API documentation accessible"
-else
-    test_fail "API documentation"
-fi
+# /docs endpoint disabled - no Swagger UI in production
+# test_info "Testing /docs endpoint"
+# if curl -s -f "$API_URL/docs" | grep -q "FastAPI"; then
+#     test_pass "API documentation accessible"
+# else
+#     test_fail "API documentation"
+# fi
 
 test_info "Testing /openapi.json"
 if curl -s -f "$API_URL/openapi.json" | grep -q "openapi"; then
