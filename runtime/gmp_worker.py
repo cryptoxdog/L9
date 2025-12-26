@@ -16,13 +16,13 @@ Version: 1.0.0
 from __future__ import annotations
 
 import asyncio
-import logging
+import structlog
 from typing import Any, Dict, Optional
 from datetime import datetime
 
 from runtime.task_queue import TaskQueue, QueuedTask
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # GMP queue instance
 GMP_QUEUE = TaskQueue(queue_name="l9:gmp_runs", use_redis=True)
@@ -171,19 +171,13 @@ class GMPWorker:
         # 2. Applying the GMP markdown
         # 3. Streaming/logging results
         
-        logger.info(f"Running GMP: repo={repo_root}, caller={caller}")
-        logger.debug(f"GMP markdown preview: {gmp_markdown[:200]}...")
-        
-        # Stub implementation - return success
-        # In production, this would call the actual GMP runner
+        # GMP execution deferred to Stage 2
+        # Currently, return explicit error to prevent false success
+        logger.warning(f"GMP execution requested but not available: {repo_root} by {caller}")
         return {
-            "status": "completed",
-            "output": {
-                "message": "GMP execution stub - integrate with runner.py",
-                "repo_root": repo_root,
-                "caller": caller,
-            },
-            "error": None,
+            "success": False,
+            "error": "GMP execution not yet available — available in Stage 2",
+            "traceback": None,
         }
 
 

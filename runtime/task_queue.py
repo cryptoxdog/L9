@@ -16,14 +16,52 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
+import structlog
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 from uuid import uuid4
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
+
+
+async def dispatch_task_immediate(task: QueuedTask) -> str:
+    """
+    Execute a task immediately without queueing.
+    
+    Synchronous task execution for reactive dispatch.
+    
+    Args:
+        task: QueuedTask to execute immediately
+        
+    Returns:
+        Task ID
+    """
+    logger.info(f"Dispatching task {task.task_id} immediately: {task.name}")
+    
+    # Get handler from task queue
+    task_queue = TaskQueue(queue_name="l9:tasks", use_redis=True)
+    
+    # Access handlers (they're registered via register_handler)
+    # For immediate dispatch, we need to check if handler exists
+    # If not, log warning and return task_id
+    try:
+        # Try to get handler - handlers are stored in _handlers dict
+        handler = getattr(task_queue, '_handlers', {}).get(task.handler)
+        
+        if not handler:
+            logger.warning(f"No handler registered for: {task.handler}")
+            return task.task_id
+        
+        # Execute handler directly (matching process_one signature: handler receives payload and agent_id)
+        await handler(task.payload, agent_id=task.agent_id)
+        logger.info(f"Task {task.task_id} executed successfully")
+    except Exception as e:
+        logger.error(f"Task {task.task_id} execution failed: {e}", exc_info=True)
+    
+    return task.task_id
+
 
 # Try to import Redis client
 try:
@@ -46,6 +84,10 @@ class QueuedTask:
     priority: int
     tags: List[str]
     created_at: datetime = field(default_factory=datetime.utcnow)
+    status: str = "pending_igor_approval"
+    approved_by: Optional[str] = None
+    approval_timestamp: Optional[datetime] = None
+    approval_reason: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dict."""
@@ -58,6 +100,10 @@ class QueuedTask:
             "priority": self.priority,
             "tags": self.tags,
             "created_at": self.created_at.isoformat(),
+            "status": self.status,
+            "approved_by": self.approved_by,
+            "approval_timestamp": self.approval_timestamp.isoformat() if self.approval_timestamp else None,
+            "approval_reason": self.approval_reason,
         }
     
     @classmethod
@@ -72,6 +118,10 @@ class QueuedTask:
             priority=data.get("priority", 5),
             tags=data.get("tags", []),
             created_at=datetime.fromisoformat(data.get("created_at", datetime.utcnow().isoformat())),
+            status=data.get("status", "pending_igor_approval"),
+            approved_by=data.get("approved_by"),
+            approval_timestamp=datetime.fromisoformat(data["approval_timestamp"]) if data.get("approval_timestamp") else None,
+            approval_reason=data.get("approval_reason"),
         )
 
 
@@ -293,5 +343,39 @@ class TaskQueue:
         return True
 
 
-__all__ = ["TaskQueue", "QueuedTask"]
+async def enqueue_long_plan_tasks(plan_id: str, task_specs: List[Dict[str, Any]]) -> List[str]:
+    """
+    Bulk-enqueue extracted tasks from a long plan.
+    
+    Args:
+        plan_id: Plan identifier
+        task_specs: List of task spec dicts from extract_tasks_from_plan()
+        
+    Returns:
+        List of task IDs for enqueued tasks
+    """
+    task_queue = TaskQueue(queue_name="l9:tasks", use_redis=True)
+    task_ids = []
+    
+    for spec in task_specs:
+        try:
+            # Enqueue task with plan tag
+            task_id = await task_queue.enqueue(
+                name=spec["name"],
+                payload=spec["payload"],
+                handler=spec["handler"],
+                agent_id=spec.get("agent_id", "L"),
+                priority=spec.get("priority", 5),
+                tags=spec.get("tags", []) + [f"plan:{plan_id}"],
+            )
+            task_ids.append(task_id)
+            logger.debug(f"Enqueued task {task_id} from plan {plan_id}")
+        except Exception as e:
+            logger.warning(f"Failed to enqueue task from plan {plan_id}: {e}")
+    
+    logger.info(f"Enqueued {len(task_ids)}/{len(task_specs)} tasks from plan {plan_id}")
+    return task_ids
+
+
+__all__ = ["TaskQueue", "QueuedTask", "enqueue_long_plan_tasks"]
 

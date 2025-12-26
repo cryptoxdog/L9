@@ -6,12 +6,12 @@ No shell injection - all commands validated.
 
 import subprocess
 import shlex
-import logging
+import structlog
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import json
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class LocalAPI:

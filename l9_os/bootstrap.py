@@ -5,7 +5,7 @@ No dynamic module discovery - everything explicitly imported.
 """
 
 import yaml
-import logging
+import structlog
 from pathlib import Path
 from typing import Dict, Any
 
@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Bootstrap:

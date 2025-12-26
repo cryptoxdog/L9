@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import structlog
+logger = structlog.get_logger(__name__)
 """
 Send Module Spec generation request to Perplexity with full context embedded.
 
@@ -18,7 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 try:
     import httpx
 except ImportError:
-    print("❌ httpx not installed. Run: pip install httpx")
+    logger.info("❌ httpx not installed. Run: pip install httpx")
     sys.exit(1)
 
 
@@ -43,19 +45,19 @@ def main():
     # Load API key
     api_key = load_env()
     if not api_key:
-        print("❌ PERPLEXITY_API_KEY not found in .env or environment")
+        logger.info("❌ PERPLEXITY_API_KEY not found in .env or environment")
         sys.exit(1)
 
     # Load context files
     superprompt_path = PROJECT_ROOT / "docs/Perplexity/Module-Spec-SuperPrompt-v2.5.md"
     spec_template_path = PROJECT_ROOT / "docs/Perplexity/Module-Spec-v2.5.yaml"
 
-    print("📚 Loading context files...")
+    logger.info("📚 Loading context files...")
     superprompt = load_file(superprompt_path)
     spec_template = load_file(spec_template_path)
 
-    print(f"   SuperPrompt: {len(superprompt)} chars")
-    print(f"   Spec Template: {len(spec_template)} chars")
+    logger.info(f"   SuperPrompt: {len(superprompt)} chars")
+    logger.info(f"   Spec Template: {len(spec_template)} chars")
 
     # Build the request
     system_context = f"""SUPERPROMPT (CANONICAL v2.5):
@@ -117,9 +119,9 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
         ]
     }
 
-    print(f"\n🚀 Sending request to Perplexity sonar-reasoning...")
-    print(f"   Total prompt: ~{len(json.dumps(payload))} chars")
-    print("   ⏳ This may take 30-60 seconds...")
+    logger.info(f"\n🚀 Sending request to Perplexity sonar-reasoning...")
+    logger.info(f"   Total prompt: ~{len(json.dumps(payload))} chars")
+    logger.info("   ⏳ This may take 30-60 seconds...")
 
     start = time.time()
 
@@ -135,15 +137,15 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
             )
 
             elapsed = time.time() - start
-            print(f"\n⏱️  Response in {elapsed:.1f}s (status: {resp.status_code})")
+            logger.info(f"\n⏱️  Response in {elapsed:.1f}s (status: {resp.status_code})")
 
             if resp.status_code == 200:
                 data = resp.json()
                 content = data["choices"][0]["message"]["content"]
                 usage = data.get("usage", {})
 
-                print(f"✅ SUCCESS!")
-                print(f"   Tokens: {usage}")
+                logger.info(f"✅ SUCCESS!")
+                logger.info(f"   Tokens: {usage}")
 
                 # Clean up content - remove thinking blocks if present
                 if "<think>" in content:
@@ -167,26 +169,27 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
                 with open(output_path, "w") as f:
                     f.write(content)
 
-                print(f"\n📁 Saved to: {output_path}")
-                print(f"\n{'='*70}")
-                print("YAML OUTPUT:")
-                print("="*70)
-                print(content)
+                logger.info(f"\n📁 Saved to: {output_path}")
+                logger.info(f"\n{'='*70}")
+                logger.info("YAML OUTPUT:")
+                logger.info("="*70)
+                logger.info(content)
 
             else:
-                print(f"❌ Error: {resp.status_code}")
-                print(resp.text)
+                logger.info(f"❌ Error: {resp.status_code}")
+                logger.info(resp.text)
 
     except httpx.TimeoutException:
-        print(f"❌ Timeout after {time.time() - start:.1f}s")
+        logger.info(f"❌ Timeout after {time.time() - start:.1f}s")
     except Exception as e:
-        print(f"❌ Exception: {type(e).__name__}: {e}")
+        logger.info(f"❌ Exception: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
 
 
 if __name__ == "__main__":
     main()
+
 
 
 

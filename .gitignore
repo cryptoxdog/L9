@@ -80,8 +80,12 @@ entrypoints.txt
 _l9_GHOST_REPO-DON'T USE/
 
 # --- documentation (local only) ---
-docs/
 Module Production/
+igor/
+docs/_Context-L9-Repo/docker/
 
 # Local Docker overrides (machine-specific)
 docker-compose.override.yml
+
+# Generated specs
+docs/12-19-25/generated/specs/config_loader.yaml

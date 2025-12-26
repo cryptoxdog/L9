@@ -134,6 +134,7 @@ core/schemas/capabilities.py::get_capability(self, tool) - Get the capability fo
 core/schemas/capabilities.py::is_tool_allowed(self, tool) - Check if a specific tool is allowed for 
 core/schemas/capabilities.py::list_allowed_tools(self) - List all explicitly allowed tools.
 core/schemas/capabilities.py::list_denied_tools(self) - List all explicitly denied tools.
+core/schemas/capabilities.py::requires_igor_approval(self) - Check if this capability requires Igor's
 core/schemas/event_stream.py::create_handshake_event(handshake) - Create a security event for an agent han
 core/schemas/event_stream.py::create_violation_event(violation) - Create a security event for a capability
 core/schemas/event_stream.py::has_capability(self, tool) - Check if agent declared a capability.
@@ -153,14 +154,12 @@ core/schemas/tasks.py::assign_to(self, agent_id) - Assign this envelope to a spe
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
-core/schemas/tests/test_research_factory.py::test_complete_pass_success(self) - Verify successful pass completion.
 core/schemas/tests/test_research_factory.py::test_confidence_bounds(self) - Verify confidence bounds are enforced.
 core/schemas/tests/test_research_factory.py::test_empty_queries_rejected(self) - Verify empty queries list is rejected.
 core/schemas/tests/test_research_factory.py::test_empty_regions_rejected(self) - Verify empty regions list is rejected.
 core/schemas/tests/test_research_factory.py::test_initial_state(self) - Verify initial state creation.
 core/schemas/tests/test_research_factory.py::test_max_results_bounds(self) - Verify max_results bounds are enforced.
 core/schemas/tests/test_research_factory.py::test_regions_normalized_to_uppercase(self) - Verify regions are normalized to upperca
-core/schemas/tests/test_research_factory.py::test_start_pass(self) - Verify pass start updates state.
 core/schemas/tests/test_research_factory.py::test_valid_job_spec(self) - Verify valid job spec creation.
 core/schemas/tests/test_research_factory.py::test_valid_metrics(self) - Verify valid metrics creation.
 core/schemas/tests/test_research_factory.py::test_valid_parsed_object(self) - Verify valid parsed object creation.
@@ -177,6 +176,7 @@ core/tools/registry_adapter.py::list_tools(self) - List all registered tools.
 core/tools/registry_adapter.py::register_tool(self, tool_id, name, description, executor, tool_type) - Register a new tool.
 core/tools/registry_adapter.py::revoke_tool(self, agent_id, tool_id) - Revoke approval for a tool.
 core/tools/registry_adapter.py::set_governance_engine(self, engine) - Attach a governance engine for policy ev
+core/tools/tool_graph.py::create_tool_definition(name, description, category, scope, risk_level, is_destructive, requires_confirmation, external_apis, internal_dependencies, agent_id) - Convenience helper to create a ToolDefin
 tools/cursor_client.py::__init__(self, host, port, timeout) - 
 tools/cursor_client.py::_request(self, endpoint, method, data) - Make HTTP request to Cursor API.
 tools/cursor_client.py::health_check(self) - Check Cursor API health.

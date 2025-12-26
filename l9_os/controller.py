@@ -4,7 +4,7 @@ The brain that manages commands and tool routing.
 Handles cursor, mac, local, and test message types.
 """
 
-import logging
+import structlog
 import shlex
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -12,7 +12,7 @@ from datetime import datetime
 from .local_api import LocalAPI
 from ..tools.cursor_client import CursorClient
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Controller:

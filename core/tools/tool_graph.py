@@ -13,12 +13,12 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import logging
+import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -34,6 +34,7 @@ class ToolDefinition:
     requires_confirmation: bool = False
     scope: str = "internal"  # "internal" | "external" | "requires_igor_approval"
     risk_level: str = "low"  # "low" | "medium" | "high"
+    requires_igor_approval: bool = False
 
 
 class ToolGraph:
@@ -91,6 +92,7 @@ class ToolGraph:
                     "requires_confirmation": tool.requires_confirmation,
                     "scope": tool.scope,
                     "risk_level": tool.risk_level,
+                    "requires_igor_approval": tool.requires_igor_approval,
                     "registered_at": datetime.utcnow().isoformat(),
                 },
             )
@@ -128,6 +130,10 @@ class ToolGraph:
                     to_type="Tool",
                     to_id=tool.name,
                     rel_type="HAS_TOOL",
+                    properties={
+                        "scope": tool.scope,
+                        "requires_approval": tool.requires_igor_approval,
+                    },
                 )
             
             logger.info(f"Registered tool in graph: {tool.name}")
@@ -274,6 +280,43 @@ class ToolGraph:
                 tools.append(tool)
             
             return tools
+        except Exception:
+            return []
+    
+    @staticmethod
+    async def get_l_tool_catalog() -> list[dict[str, Any]]:
+        """
+        Get L's complete tool catalog with metadata.
+        
+        Queries Neo4j for all tools linked to agent "L" via HAS_TOOL relationship.
+        
+        Returns:
+            List of dicts with tool metadata: name, description, category, scope, risk_level, requires_igor_approval
+        """
+        neo4j = await ToolGraph._get_neo4j()
+        if not neo4j:
+            return []
+        
+        try:
+            result = await neo4j.run_query("""
+                MATCH (a:Agent {id: "L"})-[:HAS_TOOL]->(t:Tool)
+                RETURN t
+                ORDER BY t.name
+            """)
+            
+            catalog = []
+            for r in result or []:
+                tool = dict(r["t"])
+                catalog.append({
+                    "name": tool.get("name", ""),
+                    "description": tool.get("description", ""),
+                    "category": tool.get("category", "general"),
+                    "scope": tool.get("scope", "internal"),
+                    "risk_level": tool.get("risk_level", "low"),
+                    "requires_igor_approval": tool.get("requires_igor_approval", False),
+                })
+            
+            return catalog
         except Exception:
             return []
     

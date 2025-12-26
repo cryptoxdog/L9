@@ -29,7 +29,10 @@ import ast
 from pathlib import Path
 from typing import Any
 
+import structlog
 import yaml
+
+logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
@@ -45,7 +48,7 @@ FORBIDDEN_IMPORTS = {
 
 # Forbidden function calls
 FORBIDDEN_CALLS = {
-    "print": "Use structlog for logging, not print()",
+    "print": "Use structlog for logging, not print statements",
     "uuid.uuid4": "Use UUIDv5 for thread_id, not uuid4",
 }
 
@@ -80,24 +83,24 @@ class CodeValidationResult:
     
     def print_report(self) -> None:
         """Print validation report."""
-        print(f"\n{'='*70}")
-        print("CODE VALIDATION REPORT")
-        print(f"{'='*70}")
-        print(f"Files checked: {len(self.files_checked)}")
+        logger.info(f"\n{'='*70}")
+        logger.info("CODE VALIDATION REPORT")
+        logger.info(f"{'='*70}")
+        logger.info(f"Files checked: {len(self.files_checked)}")
         
         if self.is_valid:
-            print("✅ PASSED - All code requirements satisfied")
+            logger.info("✅ PASSED - All code requirements satisfied")
         else:
-            print(f"❌ FAILED - {len(self.errors)} error(s) found\n")
+            logger.error(f"❌ FAILED - {len(self.errors)} error(s) found\n")
             for i, error in enumerate(self.errors, 1):
-                print(f"  [{i}] {error}")
+                logger.error(f"  [{i}] {error}")
         
         if self.warnings:
-            print(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
+            logger.warning(f"\n⚠️  WARNINGS ({len(self.warnings)}):")
             for warning in self.warnings:
-                print(f"    - {warning}")
+                logger.warning(f"    - {warning}")
         
-        print(f"{'='*70}\n")
+        logger.info(f"{'='*70}\n")
 
 
 # =============================================================================
@@ -317,7 +320,7 @@ def validate_forbidden_patterns(
     
     STRICT:
     - No forbidden imports
-    - No print() calls
+    - No print statements
     - No uuid4 for thread_id
     """
     # Check imports
@@ -329,12 +332,12 @@ def validate_forbidden_patterns(
                 f"       {reason}"
             )
     
-    # Check for print() calls (but allow in tests)
+    # Check for print statements (but allow in tests)
     if "test_" not in file_path:
         print_pattern = r'\bprint\s*\('
         if re.search(print_pattern, content):
             result.add_error(
-                f"FORBIDDEN: {file_path} uses print()\n"
+                f"FORBIDDEN: {file_path} uses print statements\n"
                 f"       Use structlog for logging"
             )
 
@@ -468,7 +471,7 @@ def main() -> int:
     args = parser.parse_args()
     
     if not args.files and not args.dir:
-        print("ERROR: Must provide --files or --dir")
+        logger.error("ERROR: Must provide --files or --dir")
         return 2
     
     files = args.files or []
@@ -476,7 +479,7 @@ def main() -> int:
         files.extend(find_files_in_dir(args.dir))
     
     if not files:
-        print("No files to validate")
+        logger.warning("No files to validate")
         return 0
     
     result = validate_code(args.spec, files)
@@ -487,6 +490,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
 
 
 

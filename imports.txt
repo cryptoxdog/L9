@@ -112,6 +112,7 @@
   core.agents.schemas
   core.aios.runtime
   core.boundary.enforcer
+  core.governance.approvals
   core.governance.engine
   core.governance.loader
   core.governance.schemas
@@ -126,6 +127,7 @@
   core.schemas.research_factory_state
   core.schemas.tasks
   core.schemas.ws_event_stream
+  core.security.permission_graph
   core.tools.registry_adapter
   core.tools.tool_graph
 # dataclasses
@@ -170,6 +172,7 @@
   httpx
 # importlib
   importlib
+  importlib.util
 # ir_engine
   ir_engine.constraint_challenger
   ir_engine.deliberation_cell
@@ -224,6 +227,7 @@
   openai
 # orchestration
   orchestration.cell_orchestrator
+  orchestration.long_plan_graph
   orchestration.orchestrator_kernel
   orchestration.plan_executor
   orchestration.task_router
@@ -258,10 +262,13 @@
   routes.email_adapter
   routes.twilio_adapter
 # runtime
+  runtime.gmp_worker
   runtime.kernel_loader
+  runtime.mcp_client
   runtime.rate_limiter
   runtime.redis_client
   runtime.task_queue
+  runtime.tool_call_wrapper
   runtime.websocket_orchestrator
 # services
   services.mac_tasks
@@ -313,6 +320,7 @@
 # tenacity
   tenacity
 # tests
+  tests.core.agents.test_executor
   tests.ir_engine.conftest
   tests.mocks.kernel_mocks
   tests.mocks.memory_mocks

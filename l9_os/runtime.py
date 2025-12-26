@@ -6,7 +6,7 @@ Infinite loop with error handling and clean shutdown.
 
 import sys
 import signal
-import logging
+import structlog
 import time
 from pathlib import Path
 
@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Runtime:

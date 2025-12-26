@@ -22,6 +22,9 @@ from core.schemas.ws_event_stream import (
 
 class TestEventMessageBasics:
     def test_minimal_event_defaults(self):
+        """
+        Contract: EventMessage creates with minimal required fields and assigns defaults.
+        """
         event = EventMessage(
             type=EventType.TASK_RESULT,
             agent_id="agent-1",
@@ -37,6 +40,9 @@ class TestEventMessageBasics:
         assert event.payload["task_id"] == "abc123"
 
     def test_handshake_event_roundtrip(self):
+        """
+        Contract: EventMessage can be serialized and deserialized preserving all fields.
+        """
         event = EventMessage(
             type=EventType.HANDSHAKE,
             agent_id="mac_agent_01",
@@ -57,6 +63,9 @@ class TestEventMessageBasics:
 
 class TestAgentHeartbeat:
     def test_heartbeat_defaults_and_constraints(self):
+        """
+        Contract: AgentHeartbeat initializes with defaults for optional metrics.
+        """
         hb = AgentHeartbeat(agent_id="mac_agent_01")
 
         assert hb.agent_id == "mac_agent_01"
@@ -66,6 +75,9 @@ class TestAgentHeartbeat:
         assert hb.cpu_percent is None
 
     def test_heartbeat_with_metrics(self):
+        """
+        Contract: AgentHeartbeat accepts and stores all metric values.
+        """
         hb = AgentHeartbeat(
             agent_id="mac_agent_01",
             load_avg=0.5,
@@ -82,6 +94,9 @@ class TestAgentHeartbeat:
 
 class TestErrorEvent:
     def test_error_event_basic(self):
+        """
+        Contract: ErrorEvent can be serialized and deserialized preserving error details.
+        """
         err = ErrorEvent(
             agent_id="mac_agent_01",
             code="AUTH_FAILED",

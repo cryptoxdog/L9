@@ -16,11 +16,11 @@ Version: 1.0.0
 from __future__ import annotations
 
 import json
-import logging
+import structlog
 import os
 from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Try to import Redis
 try:
@@ -289,6 +289,52 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Redis increment_rate_limit failed: {e}")
             return 0
+    
+    async def get_task_context(self, task_id: str) -> dict:
+        """
+        Retrieve cached task state from Redis.
+        
+        Args:
+            task_id: Task identifier
+            
+        Returns:
+            Context dict or empty dict if not found
+        """
+        if not self.is_available():
+            return {}
+        
+        try:
+            context_key = f"task_context:{task_id}"
+            context_str = await self._client.get(context_key)
+            if context_str:
+                return json.loads(context_str)
+            return {}
+        except Exception as e:
+            logger.error(f"Redis get_task_context failed: {e}")
+            return {}
+    
+    async def set_task_context(self, task_id: str, context: dict, ttl: int = 3600) -> bool:
+        """
+        Cache task context in Redis.
+        
+        Args:
+            task_id: Task identifier
+            context: Context dict to cache
+            ttl: Time to live in seconds (default: 3600 = 1 hour)
+            
+        Returns:
+            True if cached, False otherwise
+        """
+        if not self.is_available():
+            return False
+        
+        try:
+            context_key = f"task_context:{task_id}"
+            await self._client.setex(context_key, ttl, json.dumps(context))
+            return True
+        except Exception as e:
+            logger.error(f"Redis set_task_context failed: {e}")
+            return False
     
     async def decrement_rate_limit(self, key: str) -> int:
         """Decrement rate limit counter."""

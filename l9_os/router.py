@@ -4,12 +4,12 @@ Dispatch table for message routing.
 Routes cursor, mac, local, and test message types.
 """
 
-import logging
+import structlog
 from typing import Dict, Any
 
 from .controller import Controller
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Router:
