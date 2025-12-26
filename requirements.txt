@@ -1,0 +1,44 @@
+# L9 Core Dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# Database
+psycopg[binary]>=3.1.14
+sqlalchemy>=2.0.23
+asyncpg>=0.29.0
+pgvector>=0.2.4
+
+# Redis
+redis>=5.0.0
+
+# Neo4j
+neo4j>=5.14.0
+
+# HTTP Client
+httpx>=0.26.0
+
+# OpenAI / LLM
+openai>=1.10.0
+
+# LangGraph / LangChain
+langgraph>=0.0.40
+langchain-core>=0.1.20
+
+# Logging
+structlog>=24.1.0
+
+# Async utilities
+anyio>=4.2.0
+aiofiles>=23.2.0
+
+# Typing extensions
+typing-extensions>=4.9.0
+
+# Slack
+slack-sdk>=3.26.0
+
+# Testing (optional, for dev)
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
