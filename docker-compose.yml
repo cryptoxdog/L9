@@ -1,0 +1,179 @@
+services:
+  # ===========================================================================
+  # Redis (Task queues, rate limiting, caching)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: l9-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - l9-network
+
+  # ===========================================================================
+  # Neo4j (Knowledge graph, entity relationships, event timelines)
+  # ===========================================================================
+  neo4j:
+    image: neo4j:5-community
+    container_name: l9-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-YOUR_NEO4J_PASSWORD}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    ports:
+      - "127.0.0.1:${NEO4J_HTTP_PORT:-7474}:7474"  # Browser UI (localhost only)
+      - "127.0.0.1:${NEO4J_BOLT_PORT:-7687}:7687"  # Bolt protocol (localhost only)
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - l9-network
+
+  # ===========================================================================
+  # L9 Main API (FastAPI Application)
+  # Includes: Agents, Kernels, Memory, Webhooks - all in one service
+  #
+  # NOTE: Connects to HOST PostgreSQL via:
+  #   - l9-postgres (macOS/Windows)
+  #   - l9-postgres (Linux Docker gateway)
+  # ===========================================================================
+  l9-api:
+    build:
+      context: .
+      dockerfile: runtime/Dockerfile
+    container_name: l9-api
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      l9-postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # PostgreSQL on HOST (not container) - use l9-postgres for Linux VPS
+      DATABASE_URL: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@l9-postgres:5432/${POSTGRES_DB:-l9_memory}
+      MEMORY_DSN: postgresql://${POSTGRES_USER:-l9_user}:${POSTGRES_PASSWORD:-YOUR_DB_PASSWORD_HERE}@l9-postgres:5432/${POSTGRES_DB:-l9_memory}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-YOUR_OPENAI_KEY_HERE}
+      L9_API_KEY: ${L9_API_KEY:-YOUR_API_KEY_HERE}
+      L9_EXECUTOR_API_KEY: ${L9_EXECUTOR_API_KEY:-YOUR_API_KEY_HERE}
+      # Research Factory / Perplexity
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4-turbo}
+      # Kernel system
+      L9_USE_KERNELS: ${L9_USE_KERNELS:-true}
+      # Mac Agent
+      MAC_AGENT_ENABLED: ${MAC_AGENT_ENABLED:-true}
+      # Redis (task queues, rate limiting)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Neo4j (knowledge graph)
+      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-YOUR_NEO4J_PASSWORD}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Slack Adapter
+      SLACK_APP_ID: ${SLACK_APP_ID:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-}
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_VERIFICATION_TOKEN: ${SLACK_VERIFICATION_TOKEN:-}
+      SLACK_APP_ENABLED: ${SLACK_APP_ENABLED:-false}
+      # Email Adapter
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      EMAIL_ADAPTER_SIGNING_SECRET: ${EMAIL_ADAPTER_SIGNING_SECRET:-}
+      GMAIL_API_KEY: ${GMAIL_API_KEY:-}
+      # Calendar Adapter
+      CALENDAR_ADAPTER_ENABLED: ${CALENDAR_ADAPTER_ENABLED:-false}
+      GOOGLE_CALENDAR_API_KEY: ${GOOGLE_CALENDAR_API_KEY:-}
+      GOOGLE_CALENDAR_WEBHOOK_SECRET: ${GOOGLE_CALENDAR_WEBHOOK_SECRET:-}
+      # Twilio Adapter
+      TWILIO_ENABLED: ${TWILIO_ENABLED:-false}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_SMS_NUMBER: ${TWILIO_SMS_NUMBER:-}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER:-}
+    ports:
+      - "127.0.0.1:${L9_API_PORT:-8000}:8000"
+    # Explicit command (matches VPS deployment)
+    command: uvicorn api.server:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - l9-network
+    labels:
+      - "com.l9.service=api"
+      - "com.l9.version=1.1.0"
+
+# =============================================================================
+# Volumes
+# =============================================================================
+
+  # ===========================================================================
+  # PostgreSQL with pgvector (Memory storage)
+  # ===========================================================================
+  l9-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: l9-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-l9_memory}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - l9-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+    name: l9-postgres-data
+  redis_data:
+    driver: local
+    name: l9-redis-data
+  neo4j_data:
+    driver: local
+    name: l9-neo4j-data
+  neo4j_logs:
+    driver: local
+    name: l9-neo4j-logs
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  l9-network:
