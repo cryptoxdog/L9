@@ -1,0 +1,12 @@
+# macOS Development Override
+# Uses host.docker.internal to connect to host PostgreSQL
+# DO NOT commit to git - local development only
+
+# macOS Development Override
+# Uses host.docker.internal to connect to host PostgreSQL
+
+services:
+  l9-api:
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB:-l9_memory}
+      MEMORY_DSN: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB:-l9_memory}
