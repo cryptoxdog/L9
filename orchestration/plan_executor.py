@@ -226,7 +226,7 @@ class PlanExecutor:
         Set the world model for updates.
         
         Args:
-            world_model: WorldModelOrchestrator instance
+            world_model: WorldModelService or WorldModelOrchestrator instance
         """
         self._world_model = world_model
         logger.info("World model attached to PlanExecutor")

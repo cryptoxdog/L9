@@ -442,7 +442,7 @@ class MemorySubstrateService:
         """
         Trigger world model update from insights.
         
-        Calls WorldModelOrchestrator.update_from_insights() to propagate
+        Calls WorldModelService.update_from_insights() to propagate
         insights to the world model.
         
         Args:
@@ -464,14 +464,14 @@ class MemorySubstrateService:
         
         try:
             # Lazy import to avoid circular dependencies
-            from orchestrators.world_model.orchestrator import WorldModelOrchestrator
+            from world_model.service import get_world_model_service
             
-            # Get or create singleton orchestrator instance
-            if not hasattr(self, '_world_model_orchestrator'):
-                self._world_model_orchestrator = WorldModelOrchestrator()
+            # Get or create singleton service instance (DB-backed)
+            if not hasattr(self, '_world_model_service'):
+                self._world_model_service = get_world_model_service()
             
-            # Delegate to orchestrator
-            result = await self._world_model_orchestrator.update_from_insights(triggering)
+            # Delegate to service
+            result = await self._world_model_service.update_from_insights(triggering)
             
             logger.info(f"World model updated: {result}")
             return result

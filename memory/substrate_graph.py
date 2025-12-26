@@ -687,18 +687,18 @@ class SubstrateDAG:
     Wrapper for executing the substrate DAG with injected dependencies.
     """
     
-    def __init__(self, repository=None, semantic_service=None, world_model_orchestrator=None):
+    def __init__(self, repository=None, semantic_service=None, world_model_service=None):
         """
         Initialize DAG with dependencies.
         
         Args:
             repository: SubstrateRepository instance
             semantic_service: SemanticService instance
-            world_model_orchestrator: WorldModelOrchestrator instance (optional)
+            world_model_service: WorldModelService instance (optional, DB-backed)
         """
         self._repository = repository
         self._semantic_service = semantic_service
-        self._world_model_orchestrator = world_model_orchestrator
+        self._world_model_service = world_model_service
         self._graph = build_substrate_graph()
     
     async def run(self, envelope: PacketEnvelope) -> PacketWriteResult:
@@ -749,7 +749,7 @@ class SubstrateDAG:
         state = await world_model_trigger_node(
             state, 
             repository=self._repository,
-            world_model_orchestrator=self._world_model_orchestrator
+            world_model_service=self._world_model_service
         )
         
         state = await checkpoint_node(state, repository=self._repository)

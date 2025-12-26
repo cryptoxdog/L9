@@ -364,7 +364,7 @@ class UnifiedController:
         Set the world model runtime.
         
         Args:
-            world_model: WorldModelOrchestrator instance
+            world_model: WorldModelService or WorldModelOrchestrator instance
         """
         self._world_model = world_model
         
