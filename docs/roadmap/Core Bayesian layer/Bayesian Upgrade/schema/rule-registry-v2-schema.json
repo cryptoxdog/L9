@@ -1,0 +1,209 @@
+{
+  "schema_version": "2.0.0",
+  "description": "Extended rule registry schema with probabilistic reasoning support",
+  "extends": "foundation/logic/rule-registry.json v1.0",
+  
+  "new_sections": {
+    "probabilistic_models": {
+      "description": "Bayesian-inspired probabilistic models for governance decisions",
+      "structure": {
+        "id": "string (PM-XXX)",
+        "name": "string (unique model name)",
+        "type": "bayesian_network | weighted_evidence | ensemble",
+        "domain": "file_compliance | escalation | command_risk | rule_creation",
+        "description": "string",
+        "variables": {
+          "target_variable": {
+            "name": "string",
+            "type": "binary | categorical | continuous",
+            "prior": "float (0.0-1.0) or 'learn_from_history'",
+            "evidence_sources": ["list of evidence names"],
+            "weights": {
+              "evidence_name": "float (weight for this evidence)"
+            }
+          }
+        },
+        "learning": {
+          "source": "telemetry path or database table",
+          "update_frequency": "realtime | hourly | daily | weekly",
+          "calibration_metric": "string (SQL query or condition)",
+          "min_samples_required": "integer"
+        },
+        "performance": {
+          "target_latency_ms": "integer",
+          "memory_budget_mb": "integer"
+        }
+      }
+    },
+    
+    "probabilistic_thresholds": {
+      "description": "Learned thresholds for probability-based decisions",
+      "structure": {
+        "threshold_name": {
+          "value": "float (0.0-1.0)",
+          "learned_from": "string (data source)",
+          "last_calibrated": "ISO timestamp",
+          "calibration_data": {
+            "true_positives": "integer",
+            "false_positives": "integer",
+            "true_negatives": "integer",
+            "false_negatives": "integer",
+            "precision": "float",
+            "recall": "float",
+            "f1_score": "float"
+          },
+          "target_precision": "float (desired precision level)",
+          "auto_adjust": "boolean"
+        }
+      }
+    },
+    
+    "calibration_parameters": {
+      "description": "Global calibration parameters for probability scaling",
+      "structure": {
+        "temperature": {
+          "value": "float (typically 0.5-2.0)",
+          "last_optimized": "ISO timestamp",
+          "optimization_metric": "ECE | Brier | Log-loss",
+          "target_ece": "float (typically <0.05)"
+        },
+        "evidence_correlations": {
+          "description": "Pairwise correlation matrix for evidence sources",
+          "matrix": "dict of dicts: {source1: {source2: correlation_value}}"
+        }
+      }
+    },
+    
+    "decision_log": {
+      "description": "Audit trail for probabilistic decisions",
+      "structure": {
+        "decision_id": "string (unique)",
+        "timestamp": "ISO timestamp",
+        "model_used": "string (model ID)",
+        "evidence": "dict (evidence_name: value)",
+        "raw_probability": "float",
+        "calibrated_probability": "float",
+        "confidence": "float",
+        "threshold_classification": "string",
+        "decision": "string (action taken)",
+        "reasoning": "dict (detailed breakdown)",
+        "outcome": "null | 'correct' | 'too_strict' | 'too_lenient'",
+        "user_feedback": "string (optional)"
+      }
+    }
+  },
+  
+  "example_implementation": {
+    "probabilistic_models": [
+      {
+        "id": "PM-001",
+        "name": "FileComplianceRisk",
+        "type": "weighted_evidence",
+        "domain": "file_compliance",
+        "description": "Assess risk of file compliance violations",
+        "variables": {
+          "ComplianceRisk": {
+            "name": "ComplianceRisk",
+            "type": "continuous",
+            "prior": "learn_from_history",
+            "evidence_sources": [
+              "file_location_tier",
+              "file_type",
+              "edit_frequency",
+              "user_correction_count",
+              "references_count"
+            ],
+            "weights": {
+              "file_location_tier": 0.30,
+              "file_type": 0.25,
+              "edit_frequency": 0.20,
+              "user_correction_count": 0.15,
+              "references_count": 0.10
+            }
+          }
+        },
+        "learning": {
+          "source": "telemetry/logs/governance_decisions.jsonl",
+          "update_frequency": "daily",
+          "calibration_metric": "outcome = 'correct'",
+          "min_samples_required": 50
+        },
+        "performance": {
+          "target_latency_ms": 10,
+          "memory_budget_mb": 5
+        }
+      }
+    ],
+    
+    "probabilistic_thresholds": {
+      "high_risk": {
+        "value": 0.85,
+        "learned_from": "historical_precision",
+        "last_calibrated": "2025-11-08T00:00:00Z",
+        "calibration_data": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "true_negatives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "target_precision": 0.90,
+        "auto_adjust": true
+      },
+      "medium_risk": {
+        "value": 0.65,
+        "learned_from": "review_efficiency",
+        "last_calibrated": "2025-11-08T00:00:00Z",
+        "calibration_data": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "true_negatives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "target_precision": 0.75,
+        "auto_adjust": true
+      },
+      "low_risk": {
+        "value": 0.40,
+        "learned_from": "false_negative_rate",
+        "last_calibrated": "2025-11-08T00:00:00Z",
+        "calibration_data": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "true_negatives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0
+        },
+        "target_precision": 0.60,
+        "auto_adjust": true
+      }
+    },
+    
+    "calibration_parameters": {
+      "temperature": {
+        "value": 1.0,
+        "last_optimized": "2025-11-08T00:00:00Z",
+        "optimization_metric": "ECE",
+        "target_ece": 0.05
+      },
+      "evidence_correlations": {
+        "description": "Pairwise correlations (updated nightly)",
+        "matrix": {}
+      }
+    }
+  },
+  
+  "migration_notes": {
+    "backward_compatibility": "Fully backward compatible - old rules continue to work",
+    "new_rule_syntax": "IF P(ModelName) > threshold('name') THEN Action()",
+    "example": "IF P(FileComplianceRisk) > threshold('high_risk') THEN REQUIRE_REVIEW()"
+  }
+}
+

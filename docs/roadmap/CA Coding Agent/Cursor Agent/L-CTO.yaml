@@ -1,0 +1,280 @@
+# ============================================================
+# CANONICAL SCHEMA — LCTO (L) v6.0
+# SYSTEM: L9 Cognitive Architecture
+# PURPOSE: Executive CTO Orchestrator / Governance + Execution Control Plane
+# ============================================================
+
+version: 6.0
+system: L9
+module: executive_cto
+name: L
+role: "Executive CTO Orchestrator (local-first autonomy + governed execution)"
+root_path: L9/agents/lcto/
+
+integration:
+  connect_to:
+    - L9/core/
+    - L9/memory/
+    - L9/world_model/
+    - L9/governance/
+    - L9/research_lab/
+    - L9/email_agent/
+    - L9/mac_agent/
+    - L9/api/
+    - L9/kernels/
+  shared_domains:
+    - L9
+    - DevOps
+    - ResearchFactory
+    - AutomationOps
+
+description: >
+  L (LCTO) is the executive control-plane agent for L9.
+  It loads and enforces the kernel stack, governs autonomy, routes work across subsystems,
+  and converts high-level objectives into verified, auditable execution plans.
+
+governance:
+  anchors:
+    - Igor
+  mode: centralized
+  human_override: true
+  compliance_auditor: L9/governance/auto_audit.py
+  escalation_policy: manual_review
+  performance_reporting: L9/monitoring/performance_ledger.json
+  audit_scope:
+    - decisions
+    - communications
+    - data_access
+    - command_execution
+    - file_writes
+    - model_selection
+
+memory_topology:
+  working_memory: redis
+  episodic_memory: postgres_pgvector
+  semantic_memory: neo4j
+  causal_memory: hypergraph_store
+  long_term_persistence: file_system_sandbox
+  cross_agent_sharing:
+    enabled: true
+    layer: cognition_bus
+  memory_graph_linking:
+    type: temporal_hypergraph
+    enable_embedding_streams: true
+  update_interval_hours: 6
+
+communication_stack:
+  input:
+    - text
+    - structured_api
+    - file_uploads
+  output:
+    - text
+    - structured_yaml
+    - structured_json
+  channels:
+    email: true
+    calendar: true
+    linkedin: false
+    slack: true
+    internal_chat: L9_Comms_Bus
+  i_o_engine:
+    voice_in: disabled
+    voice_out: disabled
+    multimodal_integration: enabled
+  sentiment_feedback: disabled
+  contextual_intent_detection: true
+
+reasoning_engine:
+  framework: multi_kernel_governed_executor
+  model: GPT-5.2_Thinking
+  secondary_models:
+    - L9_Temporal_Critic
+    - L9_Reflective_Planner
+    - L9_Safety_Inspector
+  strategy_modes:
+    - reflective
+    - causal_inference
+    - counterfactual_projection
+    - long_horizon_planning
+  temporal_scope: rolling_120_days
+  knowledge_fusion_layer:
+    mode: hypergraph_contextual
+    source_blend:
+      - semantic_embeddings
+      - repository_indexes
+      - governance_policies
+      - execution_traces
+  reasoning_feedback_loop:
+    policy: reinforcement_reflection
+    reward_function: performance_improvement_score
+    penalty_function: deviation_from_governance
+    retrain_interval_hours: 168
+
+collaboration_network:
+  partners:
+    - L9_Research_Lab_Swarm
+    - L9_Governance_Audit_Agent
+    - L9_Email_Agent
+    - L9_Mac_Agent
+  interaction_protocol:
+    context_exchange: message_queue
+    memory_alignment: async_vector_sync
+    approval_handoff: signed_token_exchange
+  autonomy_scope:
+    internal_decisions: full
+    external_actions: gated_by_governance
+  delegation_policy:
+    spawn_sub_agents: allowed
+    max_parallel_sub_agents: 7
+    sub_agent_templates:
+      - research_delegate
+      - comms_delegate
+      - doc_compiler
+      - devops_delegate
+
+learning_system:
+  architecture: continuous_meta_learning
+  modules:
+    - reinforcement_reflection
+    - contextual_self_alignment
+    - drift_detection
+  feedback_channels:
+    - human_interactions
+    - task_outcome_metrics
+    - governance_audit_reports
+    - test_suite_results
+  model_update_policy:
+    mode: semi_online
+    auto_tune_hyperparams: false
+    rollback_on_regression: true
+  cognitive_growth_vector:
+    stability_threshold: 0.03
+    optimization_target: "execution_accuracy × governance_alignment × latency"
+
+autonomy_profile:
+  mode: controlled_autonomy
+  task_limit: 7_parallel
+  decision_latency_max_ms: 1000
+  escalation_triggers:
+    - policy_violation
+    - critical_data_access
+    - destructive_command
+    - ambiguous_context
+    - security_risk
+  safety_layer:
+    - context_conflict_resolver
+    - command_safety_gate
+    - sandbox_file_governor
+    - provenance_logger
+
+cursor_instructions:
+  create_if_missing:
+    - L9/agents/lcto/
+    - L9/kernels/
+    - L9/logs/
+    - L9/manifests/
+    - L9/monitoring/
+  generate_all_required: true
+  auto_integrate: true
+  generate_files:
+    - L9/agents/lcto/lcto_agent.py
+    - L9/agents/lcto/router.py
+    - L9/agents/lcto/policies.py
+    - L9/agents/lcto/execution_gate.py
+    - L9/agents/lcto/memory_bridge.py
+    - L9/agents/lcto/world_model_bridge.py
+    - L9/agents/lcto/audit_hooks.py
+  link_existing:
+    - L9/core/memory_manager.py
+    - L9/core/governance.py
+    - L9/kernels/loader.py
+    - L9/api/server_memory.py
+    - L9/email_agent/router.py
+    - L9/mac_agent/ws_client.py
+  generate_docs:
+    - L9/agents/lcto/README.md
+    - L9/agents/lcto/CONFIG.md
+    - L9/agents/lcto/AUTONOMY_RULES.md
+    - L9/agents/lcto/PLAYBOOK.md
+  logging:
+    - L9/logs/L_lcto_cognition.log
+    - L9/logs/L_lcto_execution.log
+    - L9/logs/L_lcto_governance.log
+  post_generation:
+    manifest: L9/manifests/LCTO_L_v6.0_manifest.json
+    validate_dependencies: true
+
+deployment:
+  runtime: async_multinode
+  environment: vps_cluster_L9
+  api_mode: internal
+  endpoints:
+    - /lcto/task
+    - /lcto/status
+    - /lcto/plan
+    - /lcto/execute
+    - /lcto/audit
+  telemetry:
+    dashboard: L9/monitoring/lcto_dashboard.py
+    metrics:
+      - response_latency_ms
+      - task_efficiency
+      - learning_drift
+      - governance_alignment
+      - unsafe_command_blocks
+      - test_pass_rate
+  alerting:
+    - notify_Igor
+    - auto_patch_minor_errors
+
+world_model_integration:
+  active_models:
+    - L9_world_model
+    - L9_research_hypergraph
+  data_connectors:
+    - repository_index_stream
+    - real_time_knowledge_stream
+    - execution_trace_stream
+  model_type: dynamic_hypergraph
+  use_cases:
+    - intent_prediction
+    - collaboration_flow_modeling
+    - cognitive_pattern_tracking
+    - repo_state_awareness
+    - risk_forecasting
+
+governance_feedback_cycle:
+  compliance_auditor: L9/governance/auto_audit.py
+  reflection_auditor: L9/governance/reflective_log.py
+  improvement_scoring:
+    - accuracy
+    - alignment
+    - latency
+    - adaptability
+    - test_reliability
+  report_frequency_hours: 24
+  escalation_path: governance_bridge
+
+ai_reasoning:
+  extraction_notes:
+    - "Based on Canonical Schema Template v6.0." # :contentReference[oaicite:0]{index=0}
+    - "L is the governed execution/orchestration node; Igor is the sole human anchor."
+  inference_notes:
+    - "Memory backends set to redis + postgres_pgvector + neo4j + hypergraph_store (swap to match actual infra)."
+    - "Paths follow L9 conventions from the template."
+  flagged_assumptions:
+    - "If runtime is still local-only, set deployment.environment: local_dev."
+    - "If neo4j/hypergraph_store aren’t deployed, set semantic/causal memory to postgres tables or qdrant."
+  confidence_scores:
+    schema_fit: 0.86
+    path_accuracy: 0.72
+    infra_alignment: 0.68
+  reasoning_summary: >
+    LCTO is defined as a centralized, auditable orchestrator that loads kernels, routes tasks, and gates execution.
+
+metadata:
+  author: system
+  owner: Igor (L9 Executive)
+  version_hash: L9-LCTO-L-v6.0
+  generated: 2025-12-13

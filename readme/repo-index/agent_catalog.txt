@@ -1,0 +1,73 @@
+# L9 Agent Catalog
+# =================
+# All agents with their roles, models, and tool bindings.
+
+## Core Agents (agents/)
+
+- **ArchitectAgentA** (`architect_agent_a.py`)
+  - Primary architect agent for system design.
+
+- **ArchitectAgentB** (`architect_agent_b.py`)
+  - Challenger architect agent for design validation.
+
+- **for** (`base_agent.py`)
+  - from __future__ import annotations
+
+- **CoderAgentA** (`coder_agent_a.py`)
+  - Primary coder agent for implementation.
+
+- **CoderAgentB** (`coder_agent_b.py`)
+  - Secondary coder agent for parallel work and review.
+
+- **LCTOAgent** (`l_cto.py`)
+  - L - The CTO Agent for Igor.
+
+- **QAAgent** (`qa_agent.py`)
+  - Quality assurance agent.
+
+- **ReflectionAgent** (`reflection_agent.py`)
+  - Meta-reasoning agent for self-improvement.
+
+
+## Configured Agents (config/agents/)
+
+- **L9 Standard Agent** (id: `l9-standard-v1`)
+  - Model: gpt-4o
+  - Tools: 3
+  - Tool IDs: ?, ?, ?
+
+- **L9 Research Agent** (id: `research-agent-v1`)
+  - Model: gpt-4o
+  - Tools: 4
+  - Tool IDs: ?, ?, ?, ?
+
+
+## Agent Layers
+
+```
+                    ┌─────────────┐
+                    │   IGOR      │  (Human authority)
+                    └──────┬──────┘
+                           │ escalation
+                    ┌──────▼──────┐
+                    │   L (CTO)   │  (AI OS core agent)
+                    └──────┬──────┘
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+     ┌────────────┐ ┌────────────┐ ┌────────────┐
+     │ Research   │ │ Architect  │ │ Coder      │
+     │ Agents     │ │ Agents     │ │ Agents     │
+     └────────────┘ └────────────┘ └────────────┘
+            │              │              │
+            ▼              ▼              ▼
+     ┌────────────┐ ┌────────────┐ ┌────────────┐
+     │ Mac Agent  │ │ QA Agent   │ │ Reflection │
+     │            │ │            │ │ Agent      │
+     └────────────┘ └────────────┘ └────────────┘
+```
+
+## Authority Hierarchy
+
+Igor > L (CTO) > Research agents > Mac agent
+
+High-risk operations require Igor approval before execution.

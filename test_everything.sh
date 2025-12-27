@@ -288,8 +288,9 @@ if docker compose exec -T l9-api python -m pytest /app/tests/docker/test_stack_s
     test_pass "Smoke tests passed"
     echo "   $(grep -E "passed|PASSED" /tmp/smoke_test_output.txt | tail -1)"
 else
-    SMOKE_FAILED=$(grep -c "FAILED\|failed" /tmp/smoke_test_output.txt 2>/dev/null || echo "0")
-    if [ "$SMOKE_FAILED" -gt "0" ]; then
+    SMOKE_FAILED=$(grep -c "FAILED\|failed" /tmp/smoke_test_output.txt 2>/dev/null | head -1 || echo "0")
+    SMOKE_FAILED=${SMOKE_FAILED:-0}
+    if [ "$SMOKE_FAILED" -gt 0 ] 2>/dev/null; then
         test_fail "Smoke tests had failures"
         echo "   Check /tmp/smoke_test_output.txt for details"
     else

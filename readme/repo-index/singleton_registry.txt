@@ -1,0 +1,60 @@
+# L9 Singleton Registry
+# ======================
+# Key singleton instances and their modules.
+
+## Core Singletons
+
+| Singleton | Module | Purpose | Init |
+|-----------|--------|---------|------|
+| `ws_orchestrator` | runtime.websocket_orchestrator | WebSocket connection manager | Startup |
+| `_service` | memory.substrate_service | Memory substrate singleton | Lazy |
+| `_repository` | memory.substrate_repository | PostgreSQL connection pool | Lazy |
+| `_world_model_engine` | world_model.engine | World model singleton | Lazy |
+| `_neo4j_client` | memory.graph_client | Neo4j graph database client | Lazy |
+| `_redis_client` | runtime.redis_client | Redis cache/queue client | Lazy |
+
+## FastAPI State
+
+| Key | Module | Purpose |
+|-----|--------|---------|
+| `app.state.neo4j_client` | api.server | Neo4j client for request context |
+| `app.state.redis_client` | api.server | Redis client for request context |
+
+## Singleton Access Patterns
+
+### Memory Substrate
+```python
+from memory.substrate_service import get_service
+service = await get_service()
+```
+
+### Neo4j Client
+```python
+from memory.graph_client import get_neo4j_client
+client = await get_neo4j_client()  # Returns None if unavailable
+```
+
+### Redis Client
+```python
+from runtime.redis_client import get_redis_client
+client = await get_redis_client()  # Returns in-memory fallback if unavailable
+```
+
+### WebSocket Orchestrator
+```python
+from runtime.websocket_orchestrator import ws_orchestrator
+await ws_orchestrator.broadcast(message)
+```
+
+## Lifecycle
+
+1. **Startup** (`lifespan()` in api/server.py):
+   - `run_migrations()` - Apply SQL migrations
+   - `init_service()` - Initialize memory substrate
+   - `get_neo4j_client()` - Connect to Neo4j
+   - `get_redis_client()` - Connect to Redis
+
+2. **Shutdown** (`lifespan()` exit):
+   - `close_service()` - Close memory substrate
+   - `close_neo4j_client()` - Close Neo4j
+   - `close_redis_client()` - Close Redis

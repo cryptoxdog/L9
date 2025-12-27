@@ -1,0 +1,86 @@
+agents/ - 
+api/ - 
+api/adapters/calendar_adapter/ - No module docstring
+api/adapters/email_adapter/ - No module docstring
+api/adapters/slack_adapter/ - No module docstring
+api/adapters/twilio_adapter/ - No module docstring
+api/memory/ - Memory API module.
+api/routes/ - API routes package.
+api/tools/ - 
+ci/ - 
+clients/ - 
+collaborative_cells/ - 
+config/ - L9 Configuration Module.
+core/ - 
+core/agents/ - 
+core/aios/ - 
+core/boundary/ - 
+core/governance/ - 
+core/kernel_wiring/ - 
+core/kernels/ - 
+core/retrievers/ - L9 Core Retrievers
+core/schemas/ - 
+core/schemas/tests/ - L9 Core Schemas Test Suite.
+core/security/ - 
+core/tools/ - 
+dev/ - No module docstring
+dev/tools/ - No module docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/ - No module docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/ - No module docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/ - No module docstring
+email_agent/ - L9 Email Agent - Gmail API integration.
+ir_engine/ - 
+l9_langgraph/ - L9 LangGraph Integration - local helpers (renamed from langg
+l9_os/ - 
+l9_private/ - 
+l9_private/security/ - 
+mac_agent/ - L9 Mac Agent package.
+mac_agent/helpers/ - Mac Agent helper utilities.
+memory/ - 
+memory/extractor/ - 
+memory/extractor/ingestion/ - Memory extractor ingestion module.
+memory/validators/ - L9 Memory Validators
+orchestration/ - 
+orchestrators/ - 
+orchestrators/action_tool/ - 
+orchestrators/evolution/ - 
+orchestrators/memory/ - 
+orchestrators/meta/ - 
+orchestrators/reasoning/ - 
+orchestrators/research_swarm/ - 
+orchestrators/world_model/ - 
+runtime/ - 
+services/ - 
+services/research/ - 
+services/research/agents/ - 
+services/research/tools/ - 
+services/research_factory/ - 
+services/research_factory/templates/ - 
+simulation/ - 
+telemetry/ - L9 Telemetry module.
+tests/ - 
+tests/agents/ - 
+tests/api/ - 
+tests/clients/ - 
+tests/collaborative_cells/ - 
+tests/core/agents/ - Tests for core.agents module.
+tests/core/aios/ - 
+tests/core/governance/ - Tests for governance engine.
+tests/core/security/ - 
+tests/core/tools/ - 
+tests/docker/ - Docker smoke tests for L9 stack validation.
+tests/email_agent/ - 
+tests/ir_engine/ - 
+tests/kernel/ - Kernel Tests
+tests/mac_agent/ - 
+tests/memory/ - Memory Tests
+tests/mocks/ - 
+tests/orchestrators/ - 
+tests/os/ - 
+tests/performance/ - Performance Tests
+tests/services/research_factory/ - 
+tests/simulation/ - 
+tests/world_model/ - World Model Tests
+tools/ - 
+world_model/ - 
+world_model/nodes/ - 

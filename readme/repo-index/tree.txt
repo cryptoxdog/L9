@@ -1,0 +1,581 @@
+L9/
+├── .dockerignore
+├── .gitignore
+├── Go-Live.md
+├── L9.code-workspace
+├── Makefile
+├── PRIVATE_BOUNDARY.md
+├── README.gold-standard.md
+├── README.md
+├── __init__.py
+├── agent_catalog.txt
+├── ... (12 more files)
+├── agents/
+│   ├── __init__.py
+│   ├── architect_agent_a.py
+│   ├── architect_agent_b.py
+│   ├── base_agent.py
+│   ├── coder_agent_a.py
+│   ├── coder_agent_b.py
+│   ├── l_cto.py
+│   ├── qa_agent.py
+│   ├── reflection_agent.py
+├── api/
+│   ├── __init__.py
+│   ├── agent_routes.py
+│   ├── auth.py
+│   ├── db.py
+│   ├── llm.py
+│   ├── logging.conf
+│   ├── os_routes.py
+│   ├── server.py
+│   ├── server_memory.py
+│   ├── slack_adapter.py
+│   ├── ... (8 more files)
+│   ├── adapters/
+│   │   ├── calendar_adapter/
+│   │   ├── email_adapter/
+│   │   ├── slack_adapter/
+│   │   └── twilio_adapter/
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   ├── router.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── factory.py
+│   │   ├── reasoning.py
+│   │   ├── research.py
+│   │   ├── slack.py
+│   └── tools/
+│       ├── __init__.py
+│       ├── router.py
+├── ci/
+│   ├── STRICT_MODE.md
+│   ├── __init__.py
+│   ├── check_syntax.py
+│   ├── lint_forbidden_imports.py
+│   ├── run_ci_gates.sh
+│   ├── validate_codegen.py
+│   ├── validate_spec_v25.py
+├── clients/
+│   ├── __init__.py
+│   ├── memory_client.py
+│   ├── world_model_client.py
+├── collaborative_cells/
+│   ├── __init__.py
+│   ├── architect_cell.py
+│   ├── base_cell.py
+│   ├── coder_cell.py
+│   ├── reflection_cell.py
+│   ├── reviewer_cell.py
+├── config/
+│   ├── __init__.py
+│   ├── boot_overlay.yaml
+│   ├── memory_substrate_settings.py
+│   ├── research_settings.py
+│   ├── settings.py
+│   ├── settings.yaml
+│   ├── agents/
+│   │   ├── l9-standard-v1.yaml
+│   │   ├── research-agent-v1.yaml
+│   └── policies/
+│       ├── defaults.yaml
+│       ├── tool_usage.yaml
+├── core/
+│   ├── __init__.py
+│   ├── error_tracking.py
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── agent_instance.py
+│   │   ├── executor.py
+│   │   ├── kernel_registry.py
+│   │   ├── registry.py
+│   │   ├── schemas.py
+│   ├── aios/
+│   │   ├── __init__.py
+│   │   ├── runtime.py
+│   ├── boundary/
+│   │   ├── __init__.py
+│   │   ├── enforcer.py
+│   ├── governance/
+│   │   ├── __init__.py
+│   │   ├── approvals.py
+│   │   ├── engine.py
+│   │   ├── loader.py
+│   │   ├── schemas.py
+│   ├── kernel_wiring/
+│   │   ├── __init__.py
+│   │   ├── behavioral_wiring.py
+│   │   ├── cognitive_wiring.py
+│   │   ├── developer_wiring.py
+│   │   ├── execution_wiring.py
+│   │   ├── identity_wiring.py
+│   │   ├── master_wiring.py
+│   │   ├── memory_wiring.py
+│   │   ├── packet_protocol_wiring.py
+│   │   ├── safety_wiring.py
+│   │   ├── ... (1 more files)
+│   ├── kernels/
+│   │   ├── __init__.py
+│   │   ├── integrity.py
+│   │   ├── prompt_builder.py
+│   ├── retrievers/
+│   │   ├── __init__.py
+│   │   ├── substrate_retriever.py
+│   ├── schemas/
+│   │   ├── Memory.yaml
+│   │   ├── README.md
+│   │   ├── __init__.py
+│   │   ├── capabilities.py
+│   │   ├── event_stream.py
+│   │   ├── l_tools.py
+│   │   ├── packet_envelope.py
+│   │   ├── research_factory_models.py
+│   │   ├── research_factory_nodes.py
+│   │   ├── research_factory_state.py
+│   │   ├── ... (3 more files)
+│   │   └── tests/
+│   ├── security/
+│   │   ├── __init__.py
+│   │   ├── permission_graph.py
+│   └── tools/
+│       ├── __init__.py
+│       ├── registry_adapter.py
+│       ├── tool_graph.py
+├── deploy/
+│   ├── deploy.sh
+├── dev/
+│   ├── __init__.py
+│   ├── audit/
+│   │   ├── EXECUTION_PATH_AUDIT.md
+│   │   ├── FIXLIST_PATCHPLAN.md
+│   └── tools/
+│       ├── __init__.py
+│       ├── global_state_audit.py
+├── docs/
+│   ├── MEMO.md
+│   ├── MRI-ULTRA.md
+│   ├── ROADMAP.md
+│   ├── RUNTIME_SPINE_MAP.md
+│   ├── Reasoning-Blocks-GPT.md
+│   ├── VPS-DEPLOYMENT.md
+│   ├── Website Factory.md
+│   ├── cursorrules
+│   ├── lchat-migration-report.md
+│   ├── plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
+│   ├── ... (1 more files)
+│   ├── 12-23-25/
+│   │   ├── Stage 1 - Define Tools & Load Pattern/
+│   │   ├── Stage 2 - Wire Up Memory & Tools/
+│   │   └── Stage 2 - deep code analysis/
+│   ├── 12-24-25/
+│   │   ├── CA Coding (Agent)/
+│   │   └── L-CTO (Agent)/
+│   ├── CodeGen/
+│   │   ├── AI-OS & AI-Factory Implemenation Strategy/
+│   │   ├── Chat-GPT/
+│   │   ├── Factory Deployment Strategy (YAML->Code)/
+│   │   ├── Readme-CodeGen/
+│   │   ├── _Module Canonical Trio/
+│   │   ├── meta-yaml-pack/
+│   │   └── sample_schemas/
+│   ├── Perplexity/
+│   │   ├── cursorrules.md
+│   │   ├── cursorrules2.md
+│   │   ├── cursorrules3.md
+│   ├── Quantum Research Factory/
+│   │   └── Perplexity/
+│   ├── _GMP Execute + Audit/
+│   │   ├── Cursor-Directive.md
+│   │   ├── Dora-Block.md
+│   │   ├── GMP-Action-Prompt-Canonical-v1.0.md
+│   │   ├── GMP-Action-Prompt-Generator-v1.0.md
+│   │   ├── GMP-Audit-Prompt-Canonical-v1.0.md
+│   │   ├── GMP-Audit-Prompt-Guide-v1.0.md
+│   │   ├── GMP-System-Prompt-v1.0.md
+│   │   ├── L9_Cursor Integration Protocol.md
+│   ├── _GMP-Active/
+│   │   ├── GMP-Action-Prompt-Critical-Path-Tests-v1.0.md
+│   │   ├── GMP-Action-Prompt-Implement-Orchestrators-v1.0.md
+│   │   ├── GMP-Action-Prompt-Integration-Tests-v1.0.md
+│   │   ├── GMP-Action-Prompt-Roadmap-MASTER.md
+│   │   ├── GMP-Action-Prompt-Test-Coverage-v1.0.md
+│   │   ├── GMP-Action-Prompt-Unit-Test-Quality-v1.0.md
+│   │   ├── GMP-Action-Prompt-Wire-L-CTO-Phase-3a.md
+│   │   ├── GMP-Action-Prompt-Wire-L-CTO-Phase-3b-GMP.md
+│   │   ├── GMP-Action-Prompt-Wire-L‑CTO-Phase-1.md
+│   │   ├── GMP-Action-Prompt-Wire-L‑CTO-Phase-2.md
+│   │   ├── ... (1 more files)
+│   │   └── GAPS-EXECUTION-CHECKLIST/
+│   └── roadmap/
+│       ├── Roadmap-IB.md
+│       ├── strategic-planning-manus-GMP.md
+│       ├── strategic-planning-manus.md
+│       ├── AI Negotiation Agents/
+│       ├── CA Coding Agent/
+│       ├── Core Bayesian layer/
+│       ├── MortgageOS/
+│       ├── Perplexity Deep Research workflows/
+│       └── emma_agent_ready/
+├── email_agent/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── config.py
+│   ├── credentials.py
+│   ├── gmail_client.py
+│   ├── oauth_server.py
+│   ├── parser.py
+│   ├── router.py
+│   ├── triage.py
+├── engines/
+├── generated/
+│   └── specs/
+│       ├── config_loader.yaml
+├── ir_engine/
+│   ├── __init__.py
+│   ├── constraint_challenger.py
+│   ├── deliberation_cell.py
+│   ├── ir_generator.py
+│   ├── ir_schema.py
+│   ├── ir_to_plan_adapter.py
+│   ├── ir_validator.py
+│   ├── semantic_compiler.py
+│   ├── simulation_router.py
+├── l9_langgraph/
+│   ├── STATUS.md
+│   ├── __init__.py
+│   ├── packet_node_adapter.py
+├── l9_os/
+│   ├── __init__.py
+│   ├── bootstrap.py
+│   ├── controller.py
+│   ├── local_api.py
+│   ├── router.py
+│   ├── runtime.py
+├── l9_private/
+│   ├── __init__.py
+│   ├── kernels/
+│   │   ├── 00_system/
+│   │   └── bootstrap/
+│   └── security/
+│       ├── __init__.py
+│       ├── l9_security_kernel.yaml
+├── layers/
+├── local_dashboard/
+│   ├── app.py
+├── mac_agent/
+│   ├── __init__.py
+│   ├── com.l9.agent.plist
+│   ├── com.l9.tunnel.plist
+│   ├── config.py
+│   ├── config.yaml
+│   ├── executor.py
+│   ├── install_mac.sh
+│   ├── install_mac_agent.sh
+│   ├── install_reverse_tunnel.sh
+│   ├── requirements.txt
+│   ├── ... (3 more files)
+│   └── helpers/
+│       ├── __init__.py
+│       ├── logging.py
+├── memory/
+│   ├── README.md
+│   ├── WIRING.md
+│   ├── __init__.py
+│   ├── checkpoint_manager.py
+│   ├── description.with.diagram.md
+│   ├── graph_client.py
+│   ├── housekeeping.py
+│   ├── index_syncer.py
+│   ├── ingestion.py
+│   ├── insight_extraction.py
+│   ├── ... (13 more files)
+│   ├── extractor/
+│   │   ├── __init__.py
+│   │   ├── agent_config_extractor.py
+│   │   ├── base_extractor.py
+│   │   ├── code_extractor.py
+│   │   ├── cursor_action_extractor.py
+│   │   ├── memory_extractor.py
+│   │   ├── module_schema_extractor.py
+│   │   └── ingestion/
+│   └── validators/
+│       ├── __init__.py
+│       ├── packet_validator.py
+├── migrations/
+│   ├── 0001_init_memory_substrate.sql
+│   ├── 0002_enhance_packet_store.sql
+│   ├── 0003_init_tasks.sql
+│   ├── 0004_init_world_model_entities.sql
+│   ├── 0005_init_knowledge_facts.sql
+│   ├── 0006_init_world_model_updates.sql
+│   ├── 0007_init_world_model_snapshots.sql
+├── modules/
+├── ops/
+│   ├── vps_release_gate.sh
+├── orchestration/
+│   ├── __init__.py
+│   ├── cell_orchestrator.py
+│   ├── long_plan_graph.py
+│   ├── orchestrator_kernel.py
+│   ├── plan_executor.py
+│   ├── slack_task_router.py
+│   ├── task_router.py
+│   ├── unified_controller.py
+│   ├── ws_task_router.py
+├── orchestrators/
+│   ├── README.md
+│   ├── __init__.py
+│   ├── ws_bridge.py
+│   ├── action_tool/
+│   │   ├── __init__.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   │   ├── validator.py
+│   ├── evolution/
+│   │   ├── __init__.py
+│   │   ├── apply_engine.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   ├── housekeeping.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   ├── meta/
+│   │   ├── __init__.py
+│   │   ├── adapter.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   ├── reasoning/
+│   │   ├── __init__.py
+│   │   ├── adapter_node.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   ├── research_swarm/
+│   │   ├── __init__.py
+│   │   ├── convergence.py
+│   │   ├── interface.py
+│   │   ├── orchestrator.py
+│   └── world_model/
+│       ├── __init__.py
+│       ├── interface.py
+│       ├── orchestrator.py
+│       ├── scheduler.py
+├── prompts/
+│   ├── cursor-extraction-forge.md
+│   ├── cursor-extraction-planner.md
+│   ├── master.extractor.prompt.md
+│   ├── memory_substrate_extractor_prompt_v1.0.0.md
+├── readme/
+│   └── repo-index/
+│       ├── wiring_map.txt
+├── reports/
+│   ├── GMP_Audit_Combined_Orchestrators_v1.0.md
+│   ├── GMP_Report_Implement_Orchestrators_v1.0.md
+│   ├── GMP_Report_Wire_Orchestrators_v1.0.md
+│   ├── audit_report_gmp_integration_tests_v1.0.md
+│   ├── audit_report_gmp_l2_metadata.md
+│   ├── audit_report_gmp_test_coverage_v1.0.md
+│   ├── exec_report_gmp_l2_metadata.md
+│   ├── exec_report_gmp_l3_approvals.md
+│   ├── exec_report_gmp_l4_longplan.md
+│   ├── exec_report_gmp_l5_dispatch.md
+│   ├── ... (5 more files)
+├── runtime/
+│   ├── Dockerfile
+│   ├── __init__.py
+│   ├── git_tool.py
+│   ├── gmp_approval.py
+│   ├── gmp_tool.py
+│   ├── gmp_worker.py
+│   ├── kernel_loader.py
+│   ├── l_tools.py
+│   ├── long_plan_tool.py
+│   ├── mcp_client.py
+│   ├── ... (7 more files)
+├── scripts/
+│   ├── batch_generate_specs.py
+│   ├── check_env.sh
+│   ├── delegate_deep_research.py
+│   ├── deploy_to_vps.sh
+│   ├── dev_up.sh
+│   ├── extract_perplexity_pack.py
+│   ├── factory_extract.py
+│   ├── modules_example.txt
+│   ├── precommit_docker_smoke.sh
+│   ├── pull_to_vps.sh
+│   ├── ... (5 more files)
+├── services/
+│   ├── __init__.py
+│   ├── mac_tasks.py
+│   ├── ocr_engine.py
+│   ├── pdf_engine.py
+│   ├── slack_client.py
+│   ├── slack_files.py
+│   ├── research/
+│   │   ├── __init__.py
+│   │   ├── graph_runtime.py
+│   │   ├── graph_state.py
+│   │   ├── insight_extractor.py
+│   │   ├── memory_adapter.py
+│   │   ├── research_api.py
+│   │   ├── research_graph.py
+│   │   ├── agents/
+│   │   └── tools/
+│   └── research_factory/
+│       ├── STRICT_MODE.md
+│       ├── __init__.py
+│       ├── extractor.py
+│       ├── glue_resolver.py
+│       ├── run_ci_gates.sh
+│       ├── schema_parser.py
+│       ├── schema_validator.py
+│       ├── validate_codegen.py
+│       ├── validate_spec_v25.py
+│       └── templates/
+├── simulation/
+│   ├── __init__.py
+│   ├── outcome_evaluator.py
+│   ├── scenario_loader.py
+│   ├── simulation_engine.py
+├── specs/
+│   ├── MODULE_REGISTRY.yaml
+├── telemetry/
+│   ├── __init__.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── smoke_email.py
+│   ├── smoke_test.py
+│   ├── smoke_test_root.py
+│   ├── test-wirein-memory-yaml2.0.yaml
+│   ├── test_imports.py
+│   ├── test_l_cto_kernel_activation.py
+│   ├── test_memory_adapter.py
+│   ├── test_memory_substrate_basic.py
+│   ├── ... (3 more files)
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── test_architect_agents.py
+│   │   ├── test_base_agent.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── test_auth.py
+│   │   ├── test_server_health.py
+│   ├── clients/
+│   │   ├── __init__.py
+│   │   ├── test_memory_client.py
+│   ├── collaborative_cells/
+│   │   ├── __init__.py
+│   │   ├── test_base_cell.py
+│   ├── core/
+│   │   ├── agents/
+│   │   ├── aios/
+│   │   ├── governance/
+│   │   ├── security/
+│   │   └── tools/
+│   ├── docker/
+│   │   ├── __init__.py
+│   │   ├── test_env_validation.py
+│   │   ├── test_migrations.py
+│   │   ├── test_stack_smoke.py
+│   ├── email_agent/
+│   │   ├── __init__.py
+│   │   ├── test_email_router.py
+│   │   ├── test_email_triage.py
+│   ├── integration/
+│   │   ├── test_api_agent_integration.py
+│   │   ├── test_api_memory_integration.py
+│   │   ├── test_kernel_agent_activation_integration.py
+│   │   ├── test_kernel_router_orchestrator_end_to_end.py
+│   │   ├── test_l_bootstrap.py
+│   │   ├── test_orchestrator_memory_integration.py
+│   │   ├── test_research_tool_integration.py
+│   │   ├── test_slack_dispatch_integration.py
+│   │   ├── test_world_model_repository_integration.py
+│   │   ├── test_ws_task_routing_integration.py
+│   ├── ir_engine/
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_ir_packet_formats.py
+│   │   ├── test_ir_semantic_incremental.py
+│   │   ├── test_ir_semantic_to_plan_integration.py
+│   │   ├── test_ir_simulation_router_integration.py
+│   │   ├── test_ir_validation_and_status.py
+│   ├── kernel/
+│   │   ├── __init__.py
+│   │   ├── test_kernel_constraints.py
+│   │   ├── test_kernel_loader.py
+│   │   ├── test_kernel_merge.py
+│   ├── mac_agent/
+│   │   ├── __init__.py
+│   │   ├── test_executor.py
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   ├── test_blob_offload.py
+│   │   ├── test_memory_adapter_basic.py
+│   │   ├── test_memory_ingestion.py
+│   │   ├── test_packet_envelope.py
+│   │   ├── test_pruning.py
+│   │   ├── test_substrate_api.py
+│   │   ├── test_vector_index.py
+│   │   ├── test_vector_search.py
+│   ├── mocks/
+│   │   ├── __init__.py
+│   │   ├── kernel_mocks.py
+│   │   ├── memory_mocks.py
+│   │   ├── orchestrator_mocks.py
+│   │   ├── world_model_mocks.py
+│   ├── orchestrators/
+│   │   ├── __init__.py
+│   │   ├── test_action_tool_orchestrator.py
+│   │   ├── test_kernel_injection.py
+│   │   ├── test_rate_limit_persistence.py
+│   │   ├── test_task_execution.py
+│   │   ├── test_ws_task_router_routing.py
+│   ├── os/
+│   │   ├── __init__.py
+│   │   ├── test_bootstrap.py
+│   │   ├── test_controller.py
+│   ├── performance/
+│   │   ├── __init__.py
+│   │   ├── test_restart_recovery.py
+│   │   ├── test_state_bloat.py
+│   ├── runtime/
+│   │   ├── test_execution_wiring_sanity.py
+│   │   ├── test_packet_envelopes_invariants.py
+│   │   ├── test_websocket_orchestrator_basic.py
+│   │   ├── test_ws_protocol_static.py
+│   ├── services/
+│   │   └── research_factory/
+│   ├── simulation/
+│   │   ├── __init__.py
+│   │   ├── test_simulation_engine.py
+│   └── world_model/
+│       ├── __init__.py
+│       ├── test_wm_boot.py
+│       ├── test_wm_integrity.py
+│       ├── test_wm_nodes.py
+│       ├── test_world_model_repository_basic.py
+├── tools/
+│   ├── __init__.py
+│   ├── cursor_client.py
+│   ├── export_repo_indexes.py
+│   ├── mac_protocol.py
+└── world_model/
+    ├── __init__.py
+    ├── causal_graph.py
+    ├── causal_mapper.py
+    ├── engine.py
+    ├── interfaces.py
+    ├── knowledge_ingestor.py
+    ├── loader.py
+    ├── reflection_memory.py
+    ├── registry.py
+    ├── repository.py
+    ├── ... (6 more files)
+    └── nodes/
+        ├── __init__.py
+        ├── service_nodes.py
+        ├── update_world_model_node.py

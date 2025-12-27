@@ -22,6 +22,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+import httpx
+
 logger = structlog.get_logger(__name__)
 
 
@@ -301,7 +303,7 @@ class MCPClient:
         ]
         logger.info("Filesystem MCP server configured")
         
-        # Memory MCP - for knowledge graph operations
+        # Memory MCP - for knowledge graph operations (upstream MCP server)
         memory_command = os.getenv("MCP_MEMORY_COMMAND", "npx -y @modelcontextprotocol/server-memory")
         self._servers["memory"] = {
             "command": memory_command.split(),
@@ -315,6 +317,26 @@ class MCPClient:
             "read_graph",
         ]
         logger.info("Memory MCP server configured")
+        
+        # L9 Memory MCP - custom L9 memory server with semantic search
+        l9_memory_url = os.getenv("MCP_L9_MEMORY_URL", "http://127.0.0.1:9001")
+        l9_memory_key = os.getenv("MCP_L9_MEMORY_KEY") or os.getenv("MCP_API_KEY")
+        if l9_memory_key:
+            self._servers["l9-memory"] = {
+                "url": l9_memory_url,
+                "headers": {"Authorization": f"Bearer {l9_memory_key}"},
+                "enabled": True,
+                "type": "http",  # HTTP-based MCP, not stdio
+            }
+            self._allowed_tools["l9-memory"] = [
+                "saveMemory",
+                "searchMemory",
+                "getMemoryStats",
+                "deleteExpiredMemories",
+            ]
+            logger.info("L9 Memory MCP server configured at %s", l9_memory_url)
+        else:
+            logger.warning("L9 Memory MCP server not configured (MCP_L9_MEMORY_KEY or MCP_API_KEY missing)")
     
     def is_server_available(self, server_id: str) -> bool:
         """Check if an MCP server is configured and available."""
@@ -441,11 +463,13 @@ class MCPClient:
         arguments: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        Call a tool on an MCP server using JSON-RPC over stdio.
+        Call a tool on an MCP server.
+        
+        Supports both stdio-based (JSON-RPC over subprocess) and HTTP-based servers.
         
         Args:
-            server_id: Server identifier (e.g., "github", "notion")
-            tool_name: Tool name (e.g., "create_issue")
+            server_id: Server identifier (e.g., "github", "notion", "l9-memory")
+            tool_name: Tool name (e.g., "create_issue", "saveMemory")
             arguments: Tool arguments
             
         Returns:
@@ -472,6 +496,13 @@ class MCPClient:
             arguments=arguments,
         )
         
+        server_config = self._servers.get(server_id, {})
+        
+        # Check if HTTP-based server (like l9-memory)
+        if server_config.get("type") == "http":
+            return await self._call_http_tool(server_id, tool_name, arguments)
+        
+        # Standard stdio-based MCP server
         try:
             # Get or start the server process
             process = await self._get_or_start_server(server_id)
@@ -501,6 +532,82 @@ class MCPClient:
         except Exception as e:
             logger.error(
                 "MCP tool call failed",
+                server_id=server_id,
+                tool_name=tool_name,
+                error=str(e),
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "result": None,
+            }
+    
+    async def _call_http_tool(
+        self,
+        server_id: str,
+        tool_name: str,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Call a tool on an HTTP-based MCP server (like l9-memory).
+        
+        Uses the /mcp/call endpoint with POST request.
+        """
+        server_config = self._servers.get(server_id, {})
+        base_url = server_config.get("url", "")
+        headers = server_config.get("headers", {})
+        
+        if not base_url:
+            return {
+                "success": False,
+                "error": f"No URL configured for HTTP MCP server {server_id}",
+                "result": None,
+            }
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{base_url}/mcp/call",
+                    headers={
+                        "Content-Type": "application/json",
+                        **headers,
+                    },
+                    json={
+                        "name": tool_name,
+                        "arguments": arguments,
+                    },
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.info(
+                        "HTTP MCP tool call succeeded",
+                        server_id=server_id,
+                        tool_name=tool_name,
+                    )
+                    return {
+                        "success": True,
+                        "result": data.get("result"),
+                        "error": None,
+                    }
+                else:
+                    error_text = response.text
+                    logger.error(
+                        "HTTP MCP tool call failed",
+                        server_id=server_id,
+                        tool_name=tool_name,
+                        status=response.status_code,
+                        error=error_text,
+                    )
+                    return {
+                        "success": False,
+                        "error": f"HTTP {response.status_code}: {error_text}",
+                        "result": None,
+                    }
+                    
+        except Exception as e:
+            logger.error(
+                "HTTP MCP tool call exception",
                 server_id=server_id,
                 tool_name=tool_name,
                 error=str(e),

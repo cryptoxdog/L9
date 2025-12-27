@@ -21,7 +21,8 @@ from collections import defaultdict
 
 logger = structlog.get_logger(__name__)
 REPO_DIR = "/Users/ib-mac/Projects/L9"
-EXPORT_DIR = "/Users/ib-mac/Dropbox/Repo_Dropbox_IB/L9-index-export"
+REPO_INDEX_DIR = "/Users/ib-mac/Projects/L9/readme/repo-index"
+DROPBOX_EXPORT_DIR = "/Users/ib-mac/Dropbox/Repo_Dropbox_IB/L9-index-export"
 
 # Directories to skip
 SKIP_DIRS = {".git", "__pycache__", ".venv", "venv", ".cursor", ".dora", ".secrets", 
@@ -508,6 +509,582 @@ def generate_module_architecture():
     return "No module architecture found."
 
 
+# =============================================================================
+# NEW: Wiring & Architecture Index Generators
+# =============================================================================
+
+def generate_wiring_map():
+    """Generate high-level wiring/execution spine map."""
+    lines = [
+        "# L9 Wiring Map",
+        "# ==============",
+        "# How components connect: Entrypoint → Orchestration → Memory → Persistence",
+        "",
+        "## EXECUTION SPINE",
+        "",
+        "```",
+        "uvicorn api.server:app",
+        "    │",
+        "    ▼",
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  api/server.py (FastAPI)                                │",
+        "│                                                         │",
+        "│  lifespan():                                           │",
+        "│    1. run_migrations()  → migrations/*.sql             │",
+        "│    2. init_service()    → memory substrate (Postgres)  │",
+        "│    3. get_neo4j_client() → Neo4j graph DB              │",
+        "│    4. get_redis_client() → Redis cache/queues          │",
+        "└─────────────────────────────────────────────────────────┘",
+        "    │",
+        "    ▼ Routers mounted",
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  ROUTERS                                                │",
+        "│                                                         │",
+        "│  /os/*        → api/os_routes.py         (health)      │",
+        "│  /agent/*     → api/agent_routes.py      (tasks)       │",
+        "│  /memory/*    → api/memory/router.py     (packets)     │",
+        "│  /world-model/* → api/world_model_api.py (entities)    │",
+        "│  /ws/agent    → WebSocket handler        (real-time)   │",
+        "└─────────────────────────────────────────────────────────┘",
+        "    │",
+        "    ▼ WebSocket path",
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  WEBSOCKET LAYER                                        │",
+        "│                                                         │",
+        "│  1. Handshake → ws_orchestrator.register()             │",
+        "│  2. Message loop:                                       │",
+        "│     └→ ingest_packet() → Memory DAG                    │",
+        "│     └→ orchestrators/ws_bridge.py → TaskEnvelope       │",
+        "│                                                         │",
+        "│  runtime/websocket_orchestrator.py (connection mgmt)   │",
+        "└─────────────────────────────────────────────────────────┘",
+        "    │",
+        "    ▼ Packet ingestion",
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  MEMORY SUBSYSTEM                                       │",
+        "│                                                         │",
+        "│  memory/ingestion.py::ingest_packet()                  │",
+        "│       ▼                                                 │",
+        "│  memory/substrate_graph.py::SubstrateDAG.run()         │",
+        "│       │                                                 │",
+        "│       ├→ intake_node                                   │",
+        "│       ├→ reasoning_node                                │",
+        "│       ├→ memory_write_node                             │",
+        "│       ├→ semantic_embed_node                           │",
+        "│       ├→ extract_insights_node                         │",
+        "│       ├→ store_insights_node                           │",
+        "│       ├→ world_model_trigger_node                      │",
+        "│       └→ checkpoint_node                               │",
+        "└─────────────────────────────────────────────────────────┘",
+        "    │",
+        "    ▼ DB writes",
+        "┌─────────────────────────────────────────────────────────┐",
+        "│  PERSISTENCE LAYER                                      │",
+        "│                                                         │",
+        "│  PostgreSQL + pgvector (l9-postgres:5432)              │",
+        "│    ├─ packet_store          (all packets)              │",
+        "│    ├─ agent_memory_events   (agent activity)           │",
+        "│    ├─ reasoning_traces      (structured reasoning)     │",
+        "│    ├─ semantic_memory       (vector embeddings)        │",
+        "│    ├─ knowledge_facts       (extracted facts)          │",
+        "│    └─ tasks                 (task queue persistence)   │",
+        "│                                                         │",
+        "│  Neo4j Graph DB (l9-neo4j:7687)                        │",
+        "│    ├─ Entity nodes          (users, agents, events)    │",
+        "│    ├─ Relationship edges    (causality, ownership)     │",
+        "│    ├─ Event timeline        (temporal chains)          │",
+        "│    └─ Tool registry         (registered tools graph)   │",
+        "│                                                         │",
+        "│  Redis (redis:6379)                                    │",
+        "│    ├─ Task queue backend    (priority sorted sets)     │",
+        "│    ├─ Rate limiting         (sliding window counters)  │",
+        "│    └─ Session/context cache (ephemeral state)          │",
+        "└─────────────────────────────────────────────────────────┘",
+        "```",
+        "",
+        "## KEY SINGLETONS",
+        "",
+        "| Singleton | Module | Purpose |",
+        "|-----------|--------|---------|",
+        "| ws_orchestrator | runtime.websocket_orchestrator | WebSocket connection manager |",
+        "| _service | memory.substrate_service | Memory substrate singleton |",
+        "| _repository | memory.substrate_repository | PostgreSQL connection pool |",
+        "| _world_model_engine | world_model.engine | World model singleton |",
+        "| _neo4j_client | memory.graph_client | Neo4j graph client |",
+        "| _redis_client | runtime.redis_client | Redis cache/queue client |",
+        "",
+        "## GRACEFUL DEGRADATION",
+        "",
+        "| Service | If Unavailable | Fallback |",
+        "|---------|----------------|----------|",
+        "| Neo4j | Graph features disabled | No tool registry, no permission graph |",
+        "| Redis | In-memory fallback | TaskQueue uses deque, local rate limiting |",
+        "| PostgreSQL | FATAL | System cannot start |",
+    ]
+    return "\n".join(lines)
+
+
+def generate_agent_catalog():
+    """Generate catalog of all agents with roles and capabilities."""
+    lines = [
+        "# L9 Agent Catalog",
+        "# =================",
+        "# All agents with their roles, models, and tool bindings.",
+        "",
+    ]
+    
+    # Parse agents/ directory
+    agents_dir = os.path.join(REPO_DIR, "agents")
+    if os.path.isdir(agents_dir):
+        lines.append("## Core Agents (agents/)")
+        lines.append("")
+        for fname in sorted(os.listdir(agents_dir)):
+            if fname.endswith(".py") and not fname.startswith("__"):
+                fpath = os.path.join(agents_dir, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read(2000)
+                        # Extract class name and docstring
+                        class_match = re.search(r'class\s+(\w+).*?(?:"""(.*?)"""|\'\'\'(.*?)\'\'\')', content, re.DOTALL)
+                        if class_match:
+                            class_name = class_match.group(1)
+                            docstring = (class_match.group(2) or class_match.group(3) or "").strip()
+                            docstring = docstring.split('\n')[0][:80] if docstring else "No docstring"
+                            lines.append(f"- **{class_name}** (`{fname}`)")
+                            lines.append(f"  - {docstring}")
+                            lines.append("")
+                except Exception:
+                    pass
+    
+    # Parse config/agents/ YAML files
+    config_agents_dir = os.path.join(REPO_DIR, "config", "agents")
+    if os.path.isdir(config_agents_dir):
+        lines.append("")
+        lines.append("## Configured Agents (config/agents/)")
+        lines.append("")
+        for fname in sorted(os.listdir(config_agents_dir)):
+            if fname.endswith((".yaml", ".yml")):
+                fpath = os.path.join(config_agents_dir, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        import yaml
+                        data = yaml.safe_load(f)
+                        if data:
+                            agent_id = data.get("agent_id") or data.get("id", fname)
+                            name = data.get("name", agent_id)
+                            model = data.get("model", "gpt-4o")
+                            tools = data.get("tools", [])
+                            tool_count = len(tools)
+                            lines.append(f"- **{name}** (id: `{agent_id}`)")
+                            lines.append(f"  - Model: {model}")
+                            lines.append(f"  - Tools: {tool_count}")
+                            if tools and isinstance(tools[0], (str, dict)):
+                                tool_names = [t if isinstance(t, str) else t.get("tool_id", t.get("id", "?")) for t in tools[:5]]
+                                lines.append(f"  - Tool IDs: {', '.join(tool_names)}")
+                            lines.append("")
+                except Exception:
+                    pass
+    
+    # Parse orchestrators/README.md for agent coordination patterns
+    lines.append("")
+    lines.append("## Agent Layers")
+    lines.append("")
+    lines.append("```")
+    lines.append("                    ┌─────────────┐")
+    lines.append("                    │   IGOR      │  (Human authority)")
+    lines.append("                    └──────┬──────┘")
+    lines.append("                           │ escalation")
+    lines.append("                    ┌──────▼──────┐")
+    lines.append("                    │   L (CTO)   │  (AI OS core agent)")
+    lines.append("                    └──────┬──────┘")
+    lines.append("            ┌──────────────┼──────────────┐")
+    lines.append("            ▼              ▼              ▼")
+    lines.append("     ┌────────────┐ ┌────────────┐ ┌────────────┐")
+    lines.append("     │ Research   │ │ Architect  │ │ Coder      │")
+    lines.append("     │ Agents     │ │ Agents     │ │ Agents     │")
+    lines.append("     └────────────┘ └────────────┘ └────────────┘")
+    lines.append("            │              │              │")
+    lines.append("            ▼              ▼              ▼")
+    lines.append("     ┌────────────┐ ┌────────────┐ ┌────────────┐")
+    lines.append("     │ Mac Agent  │ │ QA Agent   │ │ Reflection │")
+    lines.append("     │            │ │            │ │ Agent      │")
+    lines.append("     └────────────┘ └────────────┘ └────────────┘")
+    lines.append("```")
+    lines.append("")
+    lines.append("## Authority Hierarchy")
+    lines.append("")
+    lines.append("Igor > L (CTO) > Research agents > Mac agent")
+    lines.append("")
+    lines.append("High-risk operations require Igor approval before execution.")
+    
+    return "\n".join(lines)
+
+
+def generate_kernel_catalog():
+    """Generate catalog of the 10 governance kernels."""
+    lines = [
+        "# L9 Kernel Catalog",
+        "# ==================",
+        "# 10 governance/identity/behavior kernels that define L's identity and constraints.",
+        "",
+        "## Kernel Stack (l9_private/kernels/00_system/)",
+        "",
+    ]
+    
+    kernel_dir = os.path.join(REPO_DIR, "l9_private", "kernels", "00_system")
+    if os.path.isdir(kernel_dir):
+        for fname in sorted(os.listdir(kernel_dir)):
+            if fname.endswith((".yaml", ".yml")) and not fname.startswith("_"):
+                fpath = os.path.join(kernel_dir, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        import yaml
+                        data = yaml.safe_load(f)
+                        if data:
+                            kernel_id = data.get("kernel_id", fname.replace(".yaml", ""))
+                            name = data.get("name", kernel_id)
+                            version = data.get("version", "1.0")
+                            purpose = data.get("purpose", data.get("description", ""))
+                            if isinstance(purpose, str):
+                                purpose = purpose.split('\n')[0][:100]
+                            lines.append(f"### {fname}")
+                            lines.append(f"- **ID**: {kernel_id}")
+                            lines.append(f"- **Name**: {name}")
+                            lines.append(f"- **Version**: {version}")
+                            lines.append(f"- **Purpose**: {purpose}")
+                            lines.append("")
+                except Exception:
+                    pass
+    
+    lines.append("")
+    lines.append("## Kernel Wiring Functions (core/kernel_wiring/)")
+    lines.append("")
+    lines.append("| Function | Source File | Purpose |")
+    lines.append("|----------|-------------|---------|")
+    
+    wiring_functions = [
+        ("get_active_mode()", "master_wiring.py", "Get current system mode"),
+        ("get_identity_profile()", "identity_wiring.py", "Get L's identity profile"),
+        ("apply_identity_to_response()", "identity_wiring.py", "Apply identity to outputs"),
+        ("get_reasoning_mode()", "cognitive_wiring.py", "Get reasoning mode config"),
+        ("should_enable_meta_cognition()", "cognitive_wiring.py", "Check meta-cognition flag"),
+        ("get_output_verbosity()", "behavioral_wiring.py", "Get output verbosity level"),
+        ("is_topic_blocked()", "behavioral_wiring.py", "Check if topic is blocked"),
+        ("get_memory_layers_config()", "memory_wiring.py", "Get memory layer config"),
+        ("should_checkpoint_now()", "memory_wiring.py", "Check checkpoint trigger"),
+        ("get_worldmodel_schema()", "worldmodel_wiring.py", "Get world model schema"),
+        ("get_execution_state_machine()", "execution_wiring.py", "Get execution FSM"),
+        ("get_allowed_transitions()", "execution_wiring.py", "Get allowed state transitions"),
+        ("get_safety_policies()", "safety_wiring.py", "Get safety policies"),
+        ("is_destructive_action()", "safety_wiring.py", "Check if action is destructive"),
+        ("get_dev_policies()", "developer_wiring.py", "Get developer policies"),
+        ("get_packet_protocol()", "packet_protocol_wiring.py", "Get packet protocol config"),
+        ("get_allowed_event_types()", "packet_protocol_wiring.py", "Get allowed event types"),
+        ("get_default_channel()", "packet_protocol_wiring.py", "Get default channel"),
+    ]
+    
+    for func, source, purpose in wiring_functions:
+        lines.append(f"| `{func}` | {source} | {purpose} |")
+    
+    return "\n".join(lines)
+
+
+def generate_tool_catalog():
+    """Generate catalog of all tools with metadata."""
+    lines = [
+        "# L9 Tool Catalog",
+        "# ================",
+        "# All tools with category, scope, risk level, and approval requirements.",
+        "",
+        "## Tool Scopes",
+        "",
+        "| Scope | Description |",
+        "|-------|-------------|",
+        "| `internal` | L9-internal operations, no external calls |",
+        "| `external` | Calls external APIs (GitHub, Notion, etc.) |",
+        "| `requires_igor_approval` | High-risk, needs explicit Igor approval |",
+        "",
+        "## Risk Levels",
+        "",
+        "| Risk | Description |",
+        "|------|-------------|",
+        "| `low` | Read-only or safe operations |",
+        "| `medium` | Write operations with rollback |",
+        "| `high` | Destructive or irreversible operations |",
+        "",
+        "## L Agent Tools",
+        "",
+        "| Tool | Category | Scope | Risk | Approval Required |",
+        "|------|----------|-------|------|-------------------|",
+    ]
+    
+    # Parse tool definitions from tool_graph.py
+    tool_graph_path = os.path.join(REPO_DIR, "core", "tools", "tool_graph.py")
+    if os.path.exists(tool_graph_path):
+        try:
+            with open(tool_graph_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+                # Extract L_INTERNAL_TOOLS definitions
+                tool_pattern = re.compile(
+                    r'ToolDefinition\(\s*'
+                    r'name="([^"]+)".*?'
+                    r'(?:description="([^"]*)")?.*?'
+                    r'(?:category="([^"]*)")?.*?'
+                    r'(?:scope="([^"]*)")?.*?'
+                    r'(?:risk_level="([^"]*)")?.*?'
+                    r'(?:requires_igor_approval=(True|False))?',
+                    re.DOTALL
+                )
+                
+                # Simpler approach: just extract the key info
+                for match in re.finditer(r'ToolDefinition\([^)]+\)', content, re.DOTALL):
+                    tool_def = match.group(0)
+                    name = re.search(r'name="([^"]+)"', tool_def)
+                    category = re.search(r'category="([^"]+)"', tool_def)
+                    scope = re.search(r'scope="([^"]+)"', tool_def)
+                    risk = re.search(r'risk_level="([^"]+)"', tool_def)
+                    approval = re.search(r'requires_igor_approval=(True|False)', tool_def)
+                    
+                    if name:
+                        lines.append(
+                            f"| `{name.group(1)}` | "
+                            f"{category.group(1) if category else 'general'} | "
+                            f"{scope.group(1) if scope else 'internal'} | "
+                            f"{risk.group(1) if risk else 'low'} | "
+                            f"{'Yes' if approval and approval.group(1) == 'True' else 'No'} |"
+                        )
+        except Exception:
+            pass
+    
+    lines.append("")
+    lines.append("## External API Dependencies")
+    lines.append("")
+    lines.append("| API | Used By |")
+    lines.append("|-----|---------|")
+    lines.append("| OpenAI | LLM chat, embeddings |")
+    lines.append("| PostgreSQL | Memory substrate, packet store |")
+    lines.append("| Neo4j | Graph DB, tool registry |")
+    lines.append("| Redis | Task queue, rate limiting |")
+    lines.append("| Slack | Messaging, webhooks |")
+    lines.append("| GitHub (MCP) | Issues, PRs |")
+    lines.append("| Notion (MCP) | Pages, databases |")
+    lines.append("| Vercel (MCP) | Deployments |")
+    lines.append("| Perplexity | Research queries |")
+    lines.append("| Firecrawl | Web scraping |")
+    
+    return "\n".join(lines)
+
+
+def generate_orchestrator_catalog():
+    """Generate catalog of all orchestrators."""
+    lines = [
+        "# L9 Orchestrator Catalog",
+        "# ========================",
+        "# Agent coordination patterns for the L9 platform.",
+        "",
+        "## Orchestrator Pattern",
+        "",
+        "Each orchestrator follows a consistent structure:",
+        "```",
+        "<orchestrator>/",
+        "├── __init__.py       # Module exports",
+        "├── interface.py      # Abstract interface / protocol",
+        "├── orchestrator.py   # Main orchestrator implementation",
+        "└── *.py              # Additional components",
+        "```",
+        "",
+        "## Available Orchestrators",
+        "",
+    ]
+    
+    orchestrators = [
+        ("action_tool", "Tool execution with validation and error handling"),
+        ("evolution", "Self-improvement via feedback loops and pattern adaptation"),
+        ("memory", "Memory housekeeping, garbage collection, and optimization"),
+        ("meta", "Meta-reasoning for strategy selection and reflection"),
+        ("reasoning", "Inference chain coordination with confidence tracking"),
+        ("research_swarm", "Multi-agent research with convergence and synthesis"),
+        ("world_model", "World model updates, scheduling, and causal inference"),
+    ]
+    
+    for name, description in orchestrators:
+        orch_dir = os.path.join(REPO_DIR, "orchestrators", name)
+        if os.path.isdir(orch_dir):
+            files = [f for f in os.listdir(orch_dir) if f.endswith(".py") and not f.startswith("__")]
+            lines.append(f"### {name}/")
+            lines.append(f"**Purpose:** {description}")
+            lines.append(f"**Files:** {', '.join(files)}")
+            lines.append("")
+    
+    lines.append("")
+    lines.append("## Orchestration Layer (orchestration/)")
+    lines.append("")
+    
+    orch_files = [
+        ("unified_controller.py", "Central orchestration controller"),
+        ("task_router.py", "HTTP task routing"),
+        ("slack_task_router.py", "Slack-specific task routing"),
+        ("ws_task_router.py", "WebSocket task routing"),
+        ("plan_executor.py", "Plan execution engine"),
+        ("long_plan_graph.py", "Long-running plan DAG"),
+        ("cell_orchestrator.py", "Collaborative cell orchestration"),
+        ("orchestrator_kernel.py", "Orchestrator kernel interface"),
+    ]
+    
+    for fname, desc in orch_files:
+        fpath = os.path.join(REPO_DIR, "orchestration", fname)
+        if os.path.exists(fpath):
+            lines.append(f"- `{fname}` - {desc}")
+    
+    lines.append("")
+    lines.append("## Interface Contract")
+    lines.append("")
+    lines.append("All orchestrators implement:")
+    lines.append("```python")
+    lines.append("class OrchestratorInterface(Protocol):")
+    lines.append("    async def run(self, context: Any) -> Any: ...")
+    lines.append("    async def health_check(self) -> dict: ...")
+    lines.append("```")
+    
+    return "\n".join(lines)
+
+
+def generate_event_types():
+    """Generate catalog of event types and packet kinds."""
+    lines = [
+        "# L9 Event Types",
+        "# ===============",
+        "# PacketEnvelope kinds, event types, and schema information.",
+        "",
+        "## PacketKind Enum",
+        "",
+        "| Kind | Description |",
+        "|------|-------------|",
+        "| `EVENT` | General event |",
+        "| `INSIGHT` | Extracted insight |",
+        "| `RESULT` | Execution result |",
+        "| `ERROR` | Error event |",
+        "| `COMMAND` | Command packet |",
+        "| `QUERY` | Query packet |",
+        "",
+        "## PacketEnvelope Schema",
+        "",
+        "```",
+        "PacketEnvelope:",
+        "  packet_id: UUID           # Unique identifier",
+        "  packet_type: str          # Type of packet",
+        "  kind: PacketKind          # Classification",
+        "  payload: dict             # Arbitrary JSON payload",
+        "  timestamp: datetime       # Creation timestamp",
+        "  metadata: PacketMetadata  # Schema version, agent, domain",
+        "  confidence: PacketConfidence  # Score 0-1, rationale",
+        "  provenance: PacketProvenance  # Parent packet, source agent",
+        "```",
+        "",
+        "## Memory DAG Pipeline Events",
+        "",
+        "| Stage | Event | Description |",
+        "|-------|-------|-------------|",
+        "| 1 | `intake` | Packet received and validated |",
+        "| 2 | `reasoning` | Reasoning trace extracted |",
+        "| 3 | `memory_write` | Packet written to store |",
+        "| 4 | `semantic_embed` | Vector embedding generated |",
+        "| 5 | `extract_insights` | Insights extracted |",
+        "| 6 | `store_insights` | Insights stored |",
+        "| 7 | `world_model_trigger` | World model update triggered |",
+        "| 8 | `checkpoint` | DAG state checkpointed |",
+        "",
+        "## WebSocket Event Types",
+        "",
+        "| Event | Direction | Description |",
+        "|-------|-----------|-------------|",
+        "| `handshake` | Client → Server | Agent registration |",
+        "| `task_request` | Client → Server | Task submission |",
+        "| `task_result` | Server → Client | Task completion |",
+        "| `error` | Server → Client | Error notification |",
+        "| `ping` | Bidirectional | Keepalive |",
+        "",
+        "## Slack Event Types",
+        "",
+        "| Event | Handler | Description |",
+        "|-------|---------|-------------|",
+        "| `message` | webhook_slack.py | Slack message received |",
+        "| `app_mention` | webhook_slack.py | Bot mentioned |",
+        "| `slash_command` | webhook_slack.py | Slash command invoked |",
+    ]
+    
+    return "\n".join(lines)
+
+
+def generate_singleton_registry():
+    """Generate registry of key singleton instances."""
+    lines = [
+        "# L9 Singleton Registry",
+        "# ======================",
+        "# Key singleton instances and their modules.",
+        "",
+        "## Core Singletons",
+        "",
+        "| Singleton | Module | Purpose | Init |",
+        "|-----------|--------|---------|------|",
+        "| `ws_orchestrator` | runtime.websocket_orchestrator | WebSocket connection manager | Startup |",
+        "| `_service` | memory.substrate_service | Memory substrate singleton | Lazy |",
+        "| `_repository` | memory.substrate_repository | PostgreSQL connection pool | Lazy |",
+        "| `_world_model_engine` | world_model.engine | World model singleton | Lazy |",
+        "| `_neo4j_client` | memory.graph_client | Neo4j graph database client | Lazy |",
+        "| `_redis_client` | runtime.redis_client | Redis cache/queue client | Lazy |",
+        "",
+        "## FastAPI State",
+        "",
+        "| Key | Module | Purpose |",
+        "|-----|--------|---------|",
+        "| `app.state.neo4j_client` | api.server | Neo4j client for request context |",
+        "| `app.state.redis_client` | api.server | Redis client for request context |",
+        "",
+        "## Singleton Access Patterns",
+        "",
+        "### Memory Substrate",
+        "```python",
+        "from memory.substrate_service import get_service",
+        "service = await get_service()",
+        "```",
+        "",
+        "### Neo4j Client",
+        "```python",
+        "from memory.graph_client import get_neo4j_client",
+        "client = await get_neo4j_client()  # Returns None if unavailable",
+        "```",
+        "",
+        "### Redis Client",
+        "```python",
+        "from runtime.redis_client import get_redis_client",
+        "client = await get_redis_client()  # Returns in-memory fallback if unavailable",
+        "```",
+        "",
+        "### WebSocket Orchestrator",
+        "```python",
+        "from runtime.websocket_orchestrator import ws_orchestrator",
+        "await ws_orchestrator.broadcast(message)",
+        "```",
+        "",
+        "## Lifecycle",
+        "",
+        "1. **Startup** (`lifespan()` in api/server.py):",
+        "   - `run_migrations()` - Apply SQL migrations",
+        "   - `init_service()` - Initialize memory substrate",
+        "   - `get_neo4j_client()` - Connect to Neo4j",
+        "   - `get_redis_client()` - Connect to Redis",
+        "",
+        "2. **Shutdown** (`lifespan()` exit):",
+        "   - `close_service()` - Close memory substrate",
+        "   - `close_neo4j_client()` - Close Neo4j",
+        "   - `close_redis_client()` - Close Redis",
+    ]
+    
+    return "\n".join(lines)
+
+
 def main():
     """Generate index files and export them."""
     
@@ -516,25 +1093,40 @@ def main():
         sys.exit(1)
     
     logger.info(f"📁 Using repo: {REPO_DIR}")
-    logger.info(f"📤 Export destination: {EXPORT_DIR}")
+    logger.info(f"📤 Export destinations:")
+    logger.info(f"   - {REPO_INDEX_DIR}")
+    logger.info(f"   - {DROPBOX_EXPORT_DIR}")
     
     try:
-        os.makedirs(EXPORT_DIR, exist_ok=True)
-        logger.info(f"✅ Export directory ready")
+        os.makedirs(REPO_INDEX_DIR, exist_ok=True)
+        os.makedirs(DROPBOX_EXPORT_DIR, exist_ok=True)
+        logger.info(f"✅ Export directories ready")
     except Exception as e:
-        logger.error(f"❌ Failed to create export directory: {e}")
+        logger.error(f"❌ Failed to create export directories: {e}")
         sys.exit(1)
     
     # Define generators - ORDER MATTERS for LLM context efficiency
     generators = {
-        "tree.txt": ("📊 Directory structure", generate_tree),
+        # Core architecture (load first for context)
+        "wiring_map.txt": ("🔌 Wiring map (execution spine)", generate_wiring_map),
         "architecture.txt": ("🏗️  Module architecture", generate_module_architecture),
+        "tree.txt": ("📊 Directory structure", generate_tree),
+        # Agent/orchestration layer
+        "agent_catalog.txt": ("🤖 Agent catalog", generate_agent_catalog),
+        "kernel_catalog.txt": ("🧠 Kernel catalog (10 kernels)", generate_kernel_catalog),
+        "orchestrator_catalog.txt": ("🎭 Orchestrator catalog", generate_orchestrator_catalog),
+        "tool_catalog.txt": ("🔧 Tool catalog", generate_tool_catalog),
+        # Events and schemas
+        "event_types.txt": ("📨 Event types & packet kinds", generate_event_types),
+        "singleton_registry.txt": ("📦 Singleton registry", generate_singleton_registry),
+        # API and code structure
         "api_surfaces.txt": ("🌐 API surfaces (memory/agents/services)", generate_api_surfaces),
         "entrypoints.txt": ("🚀 Entry points", generate_entrypoints),
-        "dependencies.txt": ("📦 Dependencies", generate_dependencies),
         "class_definitions.txt": ("📋 Classes & data models", generate_class_definitions),
         "function_signatures.txt": ("⚙️  Function signatures", generate_function_signatures),
+        # Configuration and dependencies
         "config_files.txt": ("⚙️  Configuration files", generate_config_files),
+        "dependencies.txt": ("📦 Dependencies", generate_dependencies),
         "env_refs.txt": ("🔐 Environment variables", generate_env_refs),
         "imports.txt": ("📚 Python imports", generate_imports),
     }
@@ -548,14 +1140,15 @@ def main():
         try:
             content = generator()
             
-            # Write to repo root
-            repo_file = os.path.join(REPO_DIR, filename)
+            # Write to repo index directory
+            repo_file = os.path.join(REPO_INDEX_DIR, filename)
             with open(repo_file, "w", encoding='utf-8') as f:
                 f.write(content)
             
-            # Copy to export dir
-            export_file = os.path.join(EXPORT_DIR, filename)
-            shutil.copy(repo_file, export_file)
+            # Write to Dropbox export directory
+            dropbox_file = os.path.join(DROPBOX_EXPORT_DIR, filename)
+            with open(dropbox_file, "w", encoding='utf-8') as f:
+                f.write(content)
             
             size = len(content.encode('utf-8'))
             results[filename] = size
@@ -565,7 +1158,8 @@ def main():
             results[filename] = 0
     
     logger.info(f"\n✨ Done! Files exported to:")
-    logger.info(f"   {EXPORT_DIR}")
+    logger.info(f"   📂 {REPO_INDEX_DIR}")
+    logger.info(f"   ☁️  {DROPBOX_EXPORT_DIR}")
     logger.info(f"\n📋 Summary:")
     total_size = 0
     for filename, size in sorted(results.items()):
@@ -575,11 +1169,16 @@ def main():
     
     logger.info(f"\n   📊 Total: {total_size:,} bytes")
     logger.info(f"\n💡 Load order for LLMs (most context-critical first):")
-    logger.info("   1. architecture.txt - understand module purposes")
-    logger.info("   2. api_surfaces.txt - understand API surfaces (memory/agents/services)")
-    logger.info("   3. tree.txt - understand structure")
-    logger.info("   4. class_definitions.txt - understand data models")
-    logger.info("   5. dependencies.txt - understand tech stack")
+    logger.info("   1. wiring_map.txt - understand execution spine & data flow")
+    logger.info("   2. architecture.txt - understand module purposes")
+    logger.info("   3. agent_catalog.txt - understand agent layers & capabilities")
+    logger.info("   4. kernel_catalog.txt - understand governance kernels")
+    logger.info("   5. orchestrator_catalog.txt - understand orchestration patterns")
+    logger.info("   6. tool_catalog.txt - understand tool capabilities & risks")
+    logger.info("   7. event_types.txt - understand packet/event schemas")
+    logger.info("   8. api_surfaces.txt - understand API endpoints")
+    logger.info("   9. tree.txt - understand directory structure")
+    logger.info("   10. class_definitions.txt - understand data models")
 
 
 if __name__ == "__main__":

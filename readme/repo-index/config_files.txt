@@ -1,0 +1,105 @@
+.suite6-config.json
+Repo-Files/docker/docker-Dockerfile
+Repo-Files/runtime/*runtime-Dockerfile
+Repo-Files/runtime/runtime-docker-compose.yml
+api/adapters/calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
+api/adapters/email_adapter/Module-Spec-v2.6-email_adapter.yaml
+api/adapters/twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
+config/agents/l9-standard-v1.yaml
+config/agents/research-agent-v1.yaml
+config/boot_overlay.yaml
+config/policies/defaults.yaml
+config/policies/tool_usage.yaml
+config/settings.yaml
+core/schemas/Memory.yaml
+docker-compose.override.yml.example
+docker-compose.yml
+docs/12-19-25/docker-compose.txt
+docs/12-19-25/generated/specs/config_loader.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/INITIALIZATION_KERNEL_UNIFIED.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/L9 AGENT MANIFEST — L-CTO v1.0.yaml
+docs/12-24-25/L-CTO (Agent)/YAML FILES/personality_kernel.yaml
+docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/FILE_MANIFEST.json
+docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/comprehensive_research_foundation.json
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v5.3.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v6.0.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v7.0.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v8.0.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/Emma_v8.1_Canonical.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/L9_Canonical_v4.1_Unified.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/L9_Capsule_Handoff_v3.3.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/L9_Session_Capsule_v3.0.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/L9_v4.1_GodMode_Prompt.yaml
+docs/CodeGen/Chat-GPT/L9 Learning & Adaptation Layer/L9_v4.1_Manifest_GodMode.yaml
+docs/CodeGen/Factory Deployment Strategy (YAML->Code)/example-L9_Tensor_MainAgent_Schema_v6.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.1.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.2.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.3.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.4.yaml
+docs/CodeGen/_Module Canonical Trio/Manus/TIER_2_MODULE_GUIDANCE.yaml
+docs/CodeGen/_Module Canonical Trio/Module-Prompt-CURSOR-v2.0.yaml
+docs/CodeGen/sample_schemas/domain_adapter.yaml
+docs/CodeGen/sample_schemas/glue_layer.yaml
+docs/CodeGen/sample_schemas/orchestrator.yaml
+docs/CodeGen/sample_schemas/simple_agent.yaml
+docs/Quantum Research Factory/Perplexity/Module-Spec-v2.5.yaml
+docs/Quantum Research Factory/Perplexity/outputs/01_config_loader_spec.yaml
+docs/Quantum Research Factory/Perplexity/research_factory_schema.yaml
+docs/_Context-L9-Repo/docker/Dockerfile
+docs/_Context-L9-Repo/docker/Dockerfile.api
+docs/_Context-L9-Repo/docker/docker-compose-VPS.yaml
+docs/_Context-L9-Repo/docker/docker-compose.yml
+docs/_Context-L9-Repo/docker/root-docker-compose.yml
+docs/_Context-L9-Repo/docker/runtime-Dockerfile
+docs/docker-compose.yaml
+docs/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
+docs/roadmap/CA Coding Agent/Cursor Agent/L-CTO.yaml
+docs/roadmap/CA Coding Agent/Module-Prompt-CURSOR-v2.0.yaml
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/schema/rule-registry-v2-schema.json
+docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
+docs/roadmap/emma_agent_ready/emma_manifest.json
+generated/specs/config_loader.yaml
+l9_private/kernels/00_system/01_master_kernel.yaml
+l9_private/kernels/00_system/02_identity_kernel.yaml
+l9_private/kernels/00_system/03_cognitive_kernel.yaml
+l9_private/kernels/00_system/04_behavioral_kernel.yaml
+l9_private/kernels/00_system/05_memory_kernel.yaml
+l9_private/kernels/00_system/06_worldmodel_kernel.yaml
+l9_private/kernels/00_system/07_execution_kernel.yaml
+l9_private/kernels/00_system/08_safety_kernel.yaml
+l9_private/kernels/00_system/09_developer_kernel.yaml
+l9_private/kernels/00_system/10_packet_protocol_kernel.yaml
+l9_private/kernels/00_system/_archived/00_master_kernel.yaml
+l9_private/kernels/00_system/_archived/01_memory_kernel.yaml
+l9_private/kernels/00_system/_archived/02_cognitive_kernel.yaml
+l9_private/kernels/00_system/_archived/03_behavioral_kernel.yaml
+l9_private/kernels/00_system/_archived/04_packet_protocol.yaml
+l9_private/kernels/00_system/_archived/06_developer_kernel_v3.yaml
+l9_private/kernels/00_system/_archived/07_execution_kernel.yaml
+l9_private/kernels/00_system/_archived/08_safety_kernel.yaml
+l9_private/kernels/00_system/_archived/09_memory_orchestration_kernel.yaml
+l9_private/kernels/00_system/_archived/10_cognitive_v2/00_context_engine_v2.yaml
+l9_private/kernels/00_system/_archived/10_cognitive_v2/01_reasoning_engine_v2.yaml
+l9_private/kernels/00_system/_archived/10_cognitive_v2/02_worldmodel_engine_v2.yaml
+l9_private/kernels/00_system/_archived/10_cognitive_v2/03_identity_personality_v2.yaml
+l9_private/kernels/00_system/_archived/10_packet_protocol_enforcement_kernel.yaml
+l9_private/kernels/00_system/_archived/11_identity_kernel.yaml
+l9_private/kernels/bootstrap/kernel_manifest.yaml
+l9_private/security/l9_security_kernel.yaml
+mac_agent/config.yaml
+memory/memory-yaml2.0.yaml
+openapi.json
+pyproject.toml
+pytest.ini
+runtime/Dockerfile
+specs/MODULE_REGISTRY.yaml
+tests/test-wirein-memory-yaml2.0.yaml

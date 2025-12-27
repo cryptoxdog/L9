@@ -10,16 +10,18 @@ L9 runs on a VPS at `157.180.73.53` with Docker Compose orchestrating all servic
 
 ## Docker Services
 
-| Container | Image | Port | Purpose |
-|-----------|-------|------|---------|
-| `l9-api` | `l9-l9-api:latest` | 127.0.0.1:8000 | FastAPI application |
-| `l9-postgres` | `pgvector/pgvector:pg16` | 127.0.0.1:5432 | PostgreSQL + pgvector |
-| `l9-neo4j` | `neo4j:5-community` | 127.0.0.1:7474, 7687 | Graph database |
-| `l9-redis` | `redis:7-alpine` | 127.0.0.1:6379 | Cache, queues, rate limiting |
+| Container | Service Name | Image | Port | Purpose |
+|-----------|--------------|-------|------|---------|
+| `l9-api` | `l9-api` | `l9-l9-api:latest` | 127.0.0.1:8000 | FastAPI application |
+| `l9-postgres` | N/A (separate) | `pgvector/pgvector:pg16` | 127.0.0.1:5432 | PostgreSQL + pgvector |
+| `l9-neo4j` | `neo4j` | `neo4j:5-community` | 127.0.0.1:7474, 7687 | Graph database |
+| `l9-redis` | `redis` | `redis:7-alpine` | 127.0.0.1:6379 | Cache, queues, rate limiting |
 
 **Network:** All containers on `l9-network` (Docker bridge network)
 
 **Security:** All ports bound to `127.0.0.1` (localhost only). External access via Caddy reverse proxy.
+
+**Note:** PostgreSQL runs as a separate container on VPS (not in main docker-compose.yml). Local dev uses `host.docker.internal` to connect to native PostgreSQL via docker-compose.override.yml.
 
 ---
 
@@ -65,19 +67,36 @@ postgresql://postgres:PASSWORD@l9-postgres:5432/l9_memory
 | Setting | Value |
 |---------|-------|
 | Version | Neo4j 5 Community |
-| Bolt URI | `bolt://l9-neo4j:7687` |
+| Service name | `neo4j` |
+| Container name | `l9-neo4j` |
+| Bolt URI | `bolt://neo4j:7687` (use service name) |
 | HTTP UI | `http://127.0.0.1:7474` |
 | User | `neo4j` |
 | Password | (in `.env` file) |
+| Plugins | APOC |
+
+**Usage:**
+- Knowledge graph (`memory/graph_client.py`) - entity nodes, relationship edges
+- Tool registry - registered tools stored as graph nodes
+- Permission graph (`core/security/permission_graph.py`) - RBAC via graph traversal
+- Event timeline - temporal causality chains
+- Optional: graceful degradation if unavailable (graph features disabled)
 
 ### Redis (l9-redis)
 
 | Setting | Value |
 |---------|-------|
 | Version | Redis 7 Alpine |
-| Host (from containers) | `redis:6379` |
+| Service name | `redis` |
+| Container name | `l9-redis` |
+| Host (from containers) | `redis:6379` (use service name, not container name) |
 | Persistence | AOF enabled |
-| Usage | Task queues, rate limiting, caching |
+
+**Usage:**
+- Task queue backend (`runtime/task_queue.py`) - priority sorted sets
+- Rate limiting (`runtime/rate_limiter.py`) - sliding window counters
+- Session/context caching - ephemeral task state
+- Graceful fallback to in-memory if unavailable
 
 ---
 
@@ -119,7 +138,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@l9-postgres:5432/${POSTGRES_DB}
       MEMORY_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@l9-postgres:5432/${POSTGRES_DB}
-      NEO4J_URI: ${NEO4J_URI:-bolt://l9-neo4j:7687}
+      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
       REDIS_HOST: ${REDIS_HOST:-redis}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -130,7 +149,10 @@ services:
         condition: service_healthy
 ```
 
-**Important:** Database hostnames use container names (`l9-postgres`, `l9-neo4j`, `redis`), NOT `127.0.0.1`.
+**Important:** 
+- Use **service names** (`redis`, `neo4j`) for inter-container communication, NOT container names (`l9-redis`, `l9-neo4j`)
+- PostgreSQL uses container name `l9-postgres` (separate container not in main docker-compose.yml)
+- Never use `127.0.0.1` for container-to-container connections
 
 ---
 
@@ -145,10 +167,17 @@ docker compose build --no-cache l9-api
 docker compose up -d
 ```
 
-### Health Check
+### Health Checks
 
 ```bash
+# Overall API health
 curl http://localhost:8000/health
+
+# Neo4j connection status
+curl http://localhost:8000/health/neo4j
+
+# OS-level health
+curl http://localhost:8000/os/health
 ```
 
 ### Logs
@@ -254,6 +283,7 @@ Migrations run automatically via `api.db.init_db()` on startup.
 |------|---------|
 | 2025-12-26 | Initial deployment documentation |
 | 2025-12-26 | Fixed PostgreSQL/Neo4j connection strings (127.0.0.1 → container names) |
+| 2025-12-26 | Added service name vs container name distinction, Neo4j/Redis usage details |
 
 
 

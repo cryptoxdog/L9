@@ -1,0 +1,887 @@
+agents/architect_agent_a.py::ArchitectAgentA - Primary architect agent for system design.
+agents/architect_agent_b.py::ArchitectAgentB - Challenger architect agent for design validation.
+agents/base_agent.py::AgentConfig - Configuration for an agent.
+agents/base_agent.py::AgentMessage - A message to/from an agent.
+agents/base_agent.py::AgentResponse - Response from an agent.
+agents/base_agent.py::AgentRole - Agent roles in the system.
+agents/base_agent.py::BaseAgent - Abstract base class for all L9 agents.
+agents/coder_agent_a.py::CoderAgentA - Primary coder agent for implementation.
+agents/coder_agent_b.py::CoderAgentB - Secondary coder agent for parallel work and review.
+agents/l_cto.py::LCTOAgent - L - The CTO Agent for Igor.
+agents/qa_agent.py::QAAgent - Quality assurance agent.
+agents/reflection_agent.py::ReflectionAgent - Meta-reasoning agent for self-improvement.
+api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterAdapter - Calendar Adapter Adapter
+api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterContext - Execution context.
+api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterRequest - Inbound request schema.
+api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterResponse - Response schema.
+api/adapters/calendar_adapter/clients/calendar_adapter_client.py::CalendarAdapterClient - External API client for Calendar Adapter.
+api/adapters/calendar_adapter/clients/calendar_adapter_client.py::CalendarAdapterClientConfig - Client configuration.
+api/adapters/calendar_adapter/config.py::CalendarAdapterConfig - Configuration for Calendar Adapter.
+api/adapters/calendar_adapter/schemas.py::CalendarAdapterContext - Execution context for Calendar Adapter.
+api/adapters/calendar_adapter/schemas.py::CalendarAdapterRequest - Inbound request schema for Calendar Adapter.
+api/adapters/calendar_adapter/schemas.py::CalendarAdapterResponse - Response schema for Calendar Adapter.
+api/adapters/calendar_adapter/schemas.py::Config - No docstring
+api/adapters/calendar_adapter/schemas.py::Config - No docstring
+api/adapters/calendar_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+api/adapters/calendar_adapter/services/calendar_adapter_service.py::CalendarAdapterService - Service layer for Calendar Adapter.
+api/adapters/calendar_adapter/tests/test_calendar_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+api/adapters/calendar_adapter/tests/test_calendar_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+api/adapters/calendar_adapter/tests/test_calendar_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+api/adapters/calendar_adapter/tests/test_calendar_adapter_integration.py::TestRoutes - Route-level integration tests.
+api/adapters/email_adapter/adapters/email_adapter_adapter.py::EmailAdapterAdapter - Email Adapter Adapter
+api/adapters/email_adapter/adapters/email_adapter_adapter.py::EmailAdapterContext - Execution context.
+api/adapters/email_adapter/adapters/email_adapter_adapter.py::EmailAdapterRequest - Inbound request schema.
+api/adapters/email_adapter/adapters/email_adapter_adapter.py::EmailAdapterResponse - Response schema.
+api/adapters/email_adapter/clients/email_adapter_client.py::EmailAdapterClient - External API client for Email Adapter.
+api/adapters/email_adapter/clients/email_adapter_client.py::EmailAdapterClientConfig - Client configuration.
+api/adapters/email_adapter/config.py::EmailAdapterConfig - Configuration for Email Adapter.
+api/adapters/email_adapter/schemas.py::Config - No docstring
+api/adapters/email_adapter/schemas.py::Config - No docstring
+api/adapters/email_adapter/schemas.py::EmailAdapterContext - Execution context for Email Adapter.
+api/adapters/email_adapter/schemas.py::EmailAdapterRequest - Inbound request schema for Email Adapter.
+api/adapters/email_adapter/schemas.py::EmailAdapterResponse - Response schema for Email Adapter.
+api/adapters/email_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+api/adapters/email_adapter/services/email_adapter_service.py::EmailAdapterService - Service layer for Email Adapter.
+api/adapters/email_adapter/tests/test_email_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+api/adapters/email_adapter/tests/test_email_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+api/adapters/email_adapter/tests/test_email_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+api/adapters/email_adapter/tests/test_email_adapter_integration.py::TestRoutes - Route-level integration tests.
+api/adapters/slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookAdapter - Slack Webhook Adapter Adapter
+api/adapters/slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookContext - Execution context for the adapter.
+api/adapters/slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookRequest - Inbound request schema.
+api/adapters/slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookResponse - Response schema.
+api/adapters/slack_adapter/clients/slack_webhook_client.py::SlackWebhookClient - External API client for Slack Webhook Adapter.
+api/adapters/slack_adapter/clients/slack_webhook_client.py::SlackWebhookClientConfig - Client configuration.
+api/adapters/slack_adapter/config.py::SlackWebhookConfig - Configuration for Slack Webhook Adapter.
+api/adapters/slack_adapter/routes/slack_webhook.py::Config - No docstring
+api/adapters/slack_adapter/routes/slack_webhook.py::SlackWebhookRequestModel - Request model for Slack Webhook Adapter endpoint.
+api/adapters/slack_adapter/routes/slack_webhook.py::SlackWebhookResponseModel - Response model for Slack Webhook Adapter endpoint.
+api/adapters/slack_adapter/schemas.py::Config - No docstring
+api/adapters/slack_adapter/schemas.py::Config - No docstring
+api/adapters/slack_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+api/adapters/slack_adapter/schemas.py::SlackWebhookContext - Execution context for Slack Webhook Adapter.
+api/adapters/slack_adapter/schemas.py::SlackWebhookRequest - Inbound request schema for Slack Webhook Adapter.
+api/adapters/slack_adapter/schemas.py::SlackWebhookResponse - Response schema for Slack Webhook Adapter.
+api/adapters/slack_adapter/tests/test_slack_webhook.py::TestAcceptance - Acceptance tests from spec.
+api/adapters/slack_adapter/tests/test_slack_webhook.py::TestAdapter - Unit tests for SlackWebhookAdapter.
+api/adapters/slack_adapter/tests/test_slack_webhook.py::TestNegative - Negative test cases.
+api/adapters/slack_adapter/tests/test_slack_webhook_integration.py::TestRoutes - Route-level integration tests.
+api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterAdapter - Twilio Adapter Adapter
+api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterContext - Execution context.
+api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterRequest - Inbound request schema.
+api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterResponse - Response schema.
+api/adapters/twilio_adapter/clients/twilio_adapter_client.py::TwilioAdapterClient - External API client for Twilio Adapter.
+api/adapters/twilio_adapter/clients/twilio_adapter_client.py::TwilioAdapterClientConfig - Client configuration.
+api/adapters/twilio_adapter/config.py::TwilioAdapterConfig - Configuration for Twilio Adapter.
+api/adapters/twilio_adapter/schemas.py::Config - No docstring
+api/adapters/twilio_adapter/schemas.py::Config - No docstring
+api/adapters/twilio_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+api/adapters/twilio_adapter/schemas.py::TwilioAdapterContext - Execution context for Twilio Adapter.
+api/adapters/twilio_adapter/schemas.py::TwilioAdapterRequest - Inbound request schema for Twilio Adapter.
+api/adapters/twilio_adapter/schemas.py::TwilioAdapterResponse - Response schema for Twilio Adapter.
+api/adapters/twilio_adapter/services/twilio_adapter_service.py::TwilioAdapterService - Service layer for Twilio Adapter.
+api/adapters/twilio_adapter/tests/test_twilio_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+api/adapters/twilio_adapter/tests/test_twilio_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+api/adapters/twilio_adapter/tests/test_twilio_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+api/adapters/twilio_adapter/tests/test_twilio_adapter_integration.py::TestRoutes - Route-level integration tests.
+api/agent_routes.py::ExecuteTaskRequest - Request model for /execute endpoint.
+api/agent_routes.py::ExecuteTaskResponse - Response model for /execute endpoint.
+api/memory/router.py::PacketRequest - Request model for packet ingestion.
+api/memory/router.py::PacketResponse - Response model for packet ingestion.
+api/routes/factory.py::ExtractRequest - Request model for agent extraction.
+api/routes/factory.py::ExtractResponse - Response model for agent extraction.
+api/routes/factory.py::HealthResponse - Response model for health check.
+api/routes/factory.py::TemplateInfo - Information about a template.
+api/routes/factory.py::TemplatesResponse - Response model for template listing.
+api/routes/factory.py::ValidateRequest - Request model for schema validation.
+api/routes/factory.py::ValidateResponse - Response model for schema validation.
+api/routes/reasoning.py::ReasoningExecuteRequest - Request model for reasoning execution.
+api/routes/reasoning.py::ReasoningExecuteResponse - Response model for reasoning execution.
+api/routes/research.py::ResearchExecuteRequest - Request model for research swarm execution.
+api/routes/research.py::ResearchExecuteResponse - Response model for research swarm execution.
+api/server.py::ChatRequest - No docstring
+api/server.py::ChatResponse - No docstring
+api/server.py::LChatRequest - Request for L-CTO agent chat via AgentExecutorService.
+api/server.py::LChatResponse - Response from L-CTO agent chat.
+api/server.py::StubAIOSRuntime - Stub AIOS runtime - returns direct responses.
+api/server.py::StubAgentRegistry - Stub agent registry with default agent.
+api/server.py::StubToolRegistry - Stub tool registry - no tools available.
+api/server_memory.py::ChatRequest - No docstring
+api/server_memory.py::ChatResponse - No docstring
+api/slack_adapter.py::SlackRequestNormalizer - Normalize Slack webhook payloads into internal typed models.
+api/slack_adapter.py::SlackRequestValidator - Validates Slack webhook requests using HMAC-SHA256.
+api/slack_adapter.py::SlackSignatureVerificationError - Raised when Slack signature verification fails.
+api/slack_client.py::SlackAPIClient - Async Slack API client for posting messages.
+api/slack_client.py::SlackClientError - Raised when Slack API call fails.
+api/tools/router.py::ToolExecuteRequest - Request model for tool execution.
+api/tools/router.py::ToolExecuteResponse - Response model for tool execution.
+api/vps_executor.py::CompositeTask - No docstring
+api/vps_executor.py::MemoryHealthTask - No docstring
+api/vps_executor.py::ShellTask - No docstring
+api/webhook_mac_agent.py::TaskResultRequest - Request model for task result submission.
+api/world_model_api.py::EntityListResponse - List of entities response.
+api/world_model_api.py::EntityResponse - Entity data response.
+api/world_model_api.py::InsightInput - Single insight for world model update.
+api/world_model_api.py::InsightsRequest - Submit insights for update request.
+api/world_model_api.py::InsightsResponse - Insights processing result.
+api/world_model_api.py::RestoreRequest - Restore from snapshot request.
+api/world_model_api.py::RestoreResponse - Restore result response.
+api/world_model_api.py::SnapshotRequest - Create snapshot request.
+api/world_model_api.py::SnapshotResponse - Snapshot response.
+api/world_model_api.py::StateVersionResponse - State version response.
+api/world_model_api.py::UpdateRecord - Single update record.
+api/world_model_api.py::UpdatesListResponse - List of updates response.
+ci/check_syntax.py::SyntaxIssue - Represents a syntax error in a file.
+ci/lint_forbidden_imports.py::LintResult - Result of linting a file.
+ci/validate_codegen.py::CodeValidationResult - Accumulates code validation errors.
+ci/validate_spec_v25.py::SpecValidationError - Raised when spec validation fails.
+ci/validate_spec_v25.py::ValidationResult - Accumulates validation errors.
+clients/memory_client.py::MemoryClient - Async HTTP client for L9 Memory Substrate API.
+clients/memory_client.py::PacketEnvelopeIn - Input structure for packet writes.
+clients/memory_client.py::PacketWriteResult - Response from packet write endpoint.
+clients/memory_client.py::SemanticHit - Single semantic search result.
+clients/memory_client.py::SemanticSearchRequest - Request for semantic search.
+clients/memory_client.py::SemanticSearchResult - Response from semantic search endpoint.
+clients/world_model_client.py::EntityData - Entity data from API.
+clients/world_model_client.py::InsightsResult - Insights submission result.
+clients/world_model_client.py::RestoreResult - Restore operation result.
+clients/world_model_client.py::SnapshotData - Snapshot data from API.
+clients/world_model_client.py::StateVersion - State version data.
+clients/world_model_client.py::UpdateRecord - Update record from API.
+clients/world_model_client.py::WorldModelClient - Async HTTP client for L9 World Model API.
+collaborative_cells/architect_cell.py::ArchitectCell - Collaborative cell for architecture design.
+collaborative_cells/base_cell.py::AgentMessage - Message exchanged between agents in a cell.
+collaborative_cells/base_cell.py::BaseCell - Abstract base class for collaborative cells.
+collaborative_cells/base_cell.py::CellConfig - Configuration for a cell.
+collaborative_cells/base_cell.py::CellResult - Result of cell execution.
+collaborative_cells/base_cell.py::CellRound - Record of a single cell round.
+collaborative_cells/base_cell.py::ConsensusStrategy - Strategy for reaching consensus.
+collaborative_cells/coder_cell.py::CoderCell - Collaborative cell for code implementation.
+collaborative_cells/reflection_cell.py::ReflectionCell - Meta-reasoning cell for self-improvement.
+collaborative_cells/reviewer_cell.py::ReviewerCell - Collaborative cell for code review and QA.
+config/memory_substrate_settings.py::Config - No docstring
+config/memory_substrate_settings.py::MemorySubstrateSettings - Configuration for the Memory Substrate module.
+config/research_settings.py::Config - No docstring
+config/research_settings.py::ResearchSettings - Configuration for the L9 Research Factory.
+config/settings.py::Config - No docstring
+config/settings.py::IntegrationSettings - Configuration for L9 external integrations.
+core/agents/agent_instance.py::AgentInstance - Represents a running agent instance.
+core/agents/executor.py::AIOSRuntime - Protocol for AIOS runtime interface.
+core/agents/executor.py::AgentExecutorService - Service for executing agent tasks.
+core/agents/executor.py::AgentRegistryProtocol - Protocol for agent registry interface.
+core/agents/executor.py::SubstrateServiceProtocol - Protocol for memory substrate service interface.
+core/agents/executor.py::ToolRegistryProtocol - Protocol for tool registry interface.
+core/agents/kernel_registry.py::KernelAwareAgentRegistry - Agent registry that integrates kernel loading.
+core/agents/registry.py::AgentRegistry - Registry for agent configurations.
+core/agents/schemas.py::AIOSResult - Result from AIOS reasoning call.
+core/agents/schemas.py::AIOSResultType - Type of AIOS result.
+core/agents/schemas.py::AgentConfig - Configuration for an agent instance.
+core/agents/schemas.py::AgentTask - Defines the work to be done by an agent.
+core/agents/schemas.py::DuplicateTaskResponse - Response when a duplicate task is detected.
+core/agents/schemas.py::ExecutionResult - Final result of agent task execution.
+core/agents/schemas.py::ExecutorState - State machine states for the executor loop.
+core/agents/schemas.py::TaskKind - Kind of agent task.
+core/agents/schemas.py::ToolBinding - A tool bound to an agent instance.
+core/agents/schemas.py::ToolCallRequest - Request to dispatch a tool call.
+core/agents/schemas.py::ToolCallResult - Result from a tool call.
+core/aios/runtime.py::AIOSRuntime - AIOS Runtime for agent reasoning.
+core/boundary/enforcer.py::BoundaryEnforcer - Stateful boundary enforcer with caching and configuration.
+core/boundary/enforcer.py::BoundarySpec - Parsed PRIVATE_BOUNDARY specification.
+core/governance/approvals.py::ApprovalManager - Manages approval of high-risk tasks.
+core/governance/engine.py::GovernanceEngineService - Stateless policy evaluation engine.
+core/governance/engine.py::SubstrateProtocol - Protocol for memory substrate (optional dependency).
+core/governance/loader.py::InvalidPolicyError - Raised when a policy file is invalid.
+core/governance/loader.py::PolicyLoadError - Raised when policy loading fails.
+core/governance/loader.py::PolicyLoader - Loads governance policies from YAML files.
+core/governance/schemas.py::Condition - A condition that must be met for a policy to apply.
+core/governance/schemas.py::ConditionOperator - Operators for policy conditions.
+core/governance/schemas.py::EvaluationRequest - Request to evaluate governance policies for an action.
+core/governance/schemas.py::EvaluationResult - Result of governance policy evaluation.
+core/governance/schemas.py::Policy - A governance policy defining access control rules.
+core/governance/schemas.py::PolicyEffect - Effect of a policy when matched.
+core/kernels/integrity.py::IntegrityChange - Represents a detected integrity change.
+core/retrievers/substrate_retriever.py::SubstrateRetriever - LangChain retriever wrapper over MemorySubstrateService.sema
+core/schemas/capabilities.py::AgentCapabilities - Complete capability set for an agent.
+core/schemas/capabilities.py::Capability - Single capability for a tool.
+core/schemas/capabilities.py::ToolName - Enumeration of L9 tools that can be capability-gated.
+core/schemas/event_stream.py::AgentHandshake - Agent handshake message for registration and capability decl
+core/schemas/event_stream.py::CapabilityViolation - Capability enforcement violation event.
+core/schemas/event_stream.py::HandshakeResponse - Response to an agent handshake.
+core/schemas/event_stream.py::HandshakeStatus - Status of agent handshake.
+core/schemas/event_stream.py::SecurityEvent - Security audit log event.
+core/schemas/event_stream.py::SecurityEventType - Types of security events.
+core/schemas/l_tools.py::GMPRunInput - Input schema for GMP run tool (high-risk, requires approval)
+core/schemas/l_tools.py::GitCommitInput - Input schema for git commit tool (high-risk, requires approv
+core/schemas/l_tools.py::KernelReadInput - Input schema for kernel read.
+core/schemas/l_tools.py::MCPCallToolInput - Input schema for MCP tool call.
+core/schemas/l_tools.py::MacAgentExecInput - Input schema for Mac agent execution (high-risk, requires ap
+core/schemas/l_tools.py::MemorySearchInput - Input schema for memory search tool.
+core/schemas/l_tools.py::MemoryWriteInput - Input schema for memory write tool.
+core/schemas/l_tools.py::WorldModelQueryInput - Input schema for world model query.
+core/schemas/packet_envelope.py::PacketConfidence - Confidence score and rationale for a packet.
+core/schemas/packet_envelope.py::PacketEnvelope - Canonical event container used by the Memory Substrate.
+core/schemas/packet_envelope.py::PacketEnvelopeIn - Input structure used for writes. 
+core/schemas/packet_envelope.py::PacketKind - Kind of packet for routing/classification.
+core/schemas/packet_envelope.py::PacketMetadata - Metadata attached to a packet envelope.
+core/schemas/packet_envelope.py::PacketProvenance - Provenance information for packet traceability.
+core/schemas/packet_envelope.py::PacketWriteResult - Returned after DAG processing for a packet write.
+core/schemas/packet_envelope.py::SemanticHit - Single semantic search result.
+core/schemas/packet_envelope.py::SemanticSearchRequest - Request to search semantic memory.
+core/schemas/packet_envelope.py::SemanticSearchResult - Top-k semantic hits.
+core/schemas/packet_envelope.py::SimpleContent - Simple text content wrapper.
+core/schemas/packet_envelope.py::StructuredReasoningBlock - Structured reasoning output from LLM.
+core/schemas/packet_envelope.py::TokenUsage - Token usage tracking for LLM calls.
+core/schemas/research_factory_models.py::IntegrationResult - Final output of the 5-pass Research Factory pipeline.
+core/schemas/research_factory_models.py::ParsedObject - Output of Pass 4: extract_results
+core/schemas/research_factory_models.py::Query - Individual query within a query plan.
+core/schemas/research_factory_models.py::QueryPlan - Output of Pass 1: plan_queries
+core/schemas/research_factory_models.py::ResearchJobSpec - Input specification for a research job.
+core/schemas/research_factory_models.py::ResearchMetrics - Metrics collected during research execution.
+core/schemas/research_factory_models.py::RetrievalBatch - Output of Pass 3: execute_retrieval
+core/schemas/research_factory_models.py::Superprompt - Output of Pass 2: build_superprompts
+core/schemas/research_factory_models.py::ValidationStatus - Validation status for parsed objects.
+core/schemas/research_factory_state.py::PassMetadata - Metadata for a single pass execution.
+core/schemas/research_factory_state.py::PassStatus - Status of each pass in the pipeline.
+core/schemas/research_factory_state.py::ResearchState - LangGraph state model for the Research Factory 5-pass pipeli
+core/schemas/tasks.py::AgentTask - Core task model representing work to be executed.
+core/schemas/tasks.py::TaskBatch - Batch of tasks for bulk processing with transaction support.
+core/schemas/tasks.py::TaskEnvelope - Wrapper for routing tasks to agents.
+core/schemas/tasks.py::TaskGraph - DAG of dependent tasks with LangGraph state machine integrat
+core/schemas/tasks.py::TaskKind - Kind of task for routing decisions.
+core/schemas/tasks.py::TaskResult - Result of task execution.
+core/schemas/tasks.py::TaskStatus - Lifecycle status of a task.
+core/schemas/tests/test_discriminators.py::TestMetadataExtras - Test metadata accepts extra fields.
+core/schemas/tests/test_discriminators.py::TestPacketEnvelopeInValidation - Test PacketEnvelopeIn input validation.
+core/schemas/tests/test_discriminators.py::TestPacketTypeValidation - Test packet_type field validation.
+core/schemas/tests/test_discriminators.py::TestPayloadValidation - Test payload field validation.
+core/schemas/tests/test_discriminators.py::TestSemanticSearchValidation - Test SemanticSearchRequest validation.
+core/schemas/tests/test_discriminators.py::TestValidationStatusEnum - Test ValidationStatus enum in ParsedObject.
+core/schemas/tests/test_packet_envelope.py::TestConfidenceValidation - Test confidence score validation.
+core/schemas/tests/test_packet_envelope.py::TestPacketEnvelopeImmutability - Test that PacketEnvelope is immutable (frozen).
+core/schemas/tests/test_packet_envelope.py::TestPacketEnvelopeIn - Test PacketEnvelopeIn input model.
+core/schemas/tests/test_packet_envelope.py::TestPacketEnvelopeOptional - Test optional fields.
+core/schemas/tests/test_packet_envelope.py::TestPacketEnvelopeRequired - Test required fields.
+core/schemas/tests/test_packet_envelope.py::TestPacketWriteResult - Test PacketWriteResult model.
+core/schemas/tests/test_packet_envelope.py::TestSemanticSearch - Test semantic search models.
+core/schemas/tests/test_research_factory.py::TestIntegrationResult - Test IntegrationResult model.
+core/schemas/tests/test_research_factory.py::TestParsedObject - Test ParsedObject model.
+core/schemas/tests/test_research_factory.py::TestQueryPlan - Test QueryPlan model.
+core/schemas/tests/test_research_factory.py::TestResearchFactoryNodes - Test LangGraph node functions.
+core/schemas/tests/test_research_factory.py::TestResearchJobSpec - Test ResearchJobSpec model.
+core/schemas/tests/test_research_factory.py::TestResearchMetrics - Test ResearchMetrics model.
+core/schemas/tests/test_research_factory.py::TestResearchState - Test ResearchState model.
+core/schemas/ws_event_stream.py::AgentHeartbeat - Periodic heartbeat message from connected agents.
+core/schemas/ws_event_stream.py::ErrorEvent - Error reporting structure for WebSocket communication.
+core/schemas/ws_event_stream.py::EventMessage - Canonical event structure for L9's internal EventStream.
+core/schemas/ws_event_stream.py::EventType - High-level event categories for WebSocket communication.
+core/security/permission_graph.py::PermissionGraph - RBAC permission graph backed by Neo4j.
+core/tools/registry_adapter.py::ExecutorToolRegistry - Tool registry adapter for AgentExecutorService.
+core/tools/registry_adapter.py::RiskLevel - Risk levels for tools.
+core/tools/registry_adapter.py::ToolExecutor - Protocol for tool executors.
+core/tools/tool_graph.py::ToolDefinition - Definition of a tool for graph registration.
+core/tools/tool_graph.py::ToolGraph - Tool dependency graph backed by Neo4j.
+dev/tools/global_state_audit.py::GlobalStateVisitor - No docstring
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::CodeGenerator - Generates production-ready code from synthesis
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::PerplexityLabsClient - Client for Perplexity Labs API with retry logic
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::PromptVariation - Represents a single prompt variation
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::READMEGenerator - Generates comprehensive README from synthesis
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::ResearchResponse - Structured response from Perplexity Labs
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::ResponseProcessor - Extracts structured insights from Perplexity responses
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::SynthesisEngine - Aggregates multi-prompt research findings
+docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::SynthesisReport - Aggregated research synthesis
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::SubjectiveLogicAdapter - Adapter between Bayesian probabilities and Subjective Logic 
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::BayesianUncertainty - Complete Bayesian uncertainty quantification.
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::DeepEnsemble - Deep ensemble for implicit Bayesian inference.
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::TestModel - No docstring
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::GovernanceDecision - Result of governance evaluation
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::HybridInferenceKernel - Upgraded Universal Kernel with probabilistic reasoning.
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::CursorProbabilisticEngine - Lightweight probabilistic reasoning engine for Cursor govern
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::Evidence - Single piece of evidence for probabilistic inference
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::ProbabilisticAssessment - Complete assessment from probabilistic model
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::RiskLevel - Risk classification levels
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::SubjectiveLogic - Subjective logic decomposition (Trust/Disbelief/Uncertainty)
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::AutoCalibrator - Autonomous calibration system - no manual intervention requi
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::CalibrationReport - Report generated from calibration run
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::FeedbackCollector - Collects and processes user feedback on governance decisions
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::FeedbackEvent - Single feedback event
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::FeedbackType - Types of user feedback
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::CalibrationDashboard - Monitoring and visualization for probabilistic governance.
+docs/roadmap/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::CalibrationMetrics - Calibration quality metrics
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterAdapter - Calendar Adapter Adapter
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterContext - Execution context.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterRequest - Inbound request schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterResponse - Response schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/clients/calendar_adapter_client.py::CalendarAdapterClient - External API client for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/clients/calendar_adapter_client.py::CalendarAdapterClientConfig - Client configuration.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/config.py::CalendarAdapterConfig - Configuration for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::CalendarAdapterContext - Execution context for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::CalendarAdapterRequest - Inbound request schema for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::CalendarAdapterResponse - Response schema for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/services/calendar_adapter_service.py::CalendarAdapterService - Service layer for Calendar Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/tests/test_calendar_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/tests/test_calendar_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/tests/test_calendar_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/tests/test_calendar_adapter_integration.py::TestRoutes - Route-level integration tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/adapters/email_adapter_adapter.py::EmailAdapterAdapter - Email Adapter Adapter
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/adapters/email_adapter_adapter.py::EmailAdapterContext - Execution context.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/adapters/email_adapter_adapter.py::EmailAdapterRequest - Inbound request schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/adapters/email_adapter_adapter.py::EmailAdapterResponse - Response schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/clients/email_adapter_client.py::EmailAdapterClient - External API client for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/clients/email_adapter_client.py::EmailAdapterClientConfig - Client configuration.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/config.py::EmailAdapterConfig - Configuration for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::EmailAdapterContext - Execution context for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::EmailAdapterRequest - Inbound request schema for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::EmailAdapterResponse - Response schema for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/services/email_adapter_service.py::EmailAdapterService - Service layer for Email Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter_integration.py::TestRoutes - Route-level integration tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookAdapter - Slack Webhook Adapter Adapter
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookContext - Execution context for the adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookRequest - Inbound request schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::SlackWebhookResponse - Response schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py::SlackWebhookClient - External API client for Slack Webhook Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py::SlackWebhookClientConfig - Client configuration.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py::SlackWebhookRequestModel - Request model for Slack Webhook Adapter endpoint.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py::SlackWebhookResponseModel - Response model for Slack Webhook Adapter endpoint.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::TestAcceptance - Acceptance tests from spec.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::TestAdapter - Unit tests for SlackWebhookAdapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::TestNegative - Negative test cases.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterAdapter - Twilio Adapter Adapter
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterContext - Execution context.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterRequest - Inbound request schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::TwilioAdapterResponse - Response schema.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/clients/twilio_adapter_client.py::TwilioAdapterClient - External API client for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/clients/twilio_adapter_client.py::TwilioAdapterClientConfig - Client configuration.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/config.py::TwilioAdapterConfig - Configuration for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::Config - No docstring
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::PacketPayload - Standard packet payload structure.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::TwilioAdapterContext - Execution context for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::TwilioAdapterRequest - Inbound request schema for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py::TwilioAdapterResponse - Response schema for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/services/twilio_adapter_service.py::TwilioAdapterService - Service layer for Twilio Adapter.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/tests/test_twilio_adapter.py::TestAcceptanceNegative - Negative acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/tests/test_twilio_adapter.py::TestAcceptancePositive - Positive acceptance criteria tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/tests/test_twilio_adapter.py::TestErrorHandling - Error handling and compensating action tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/tests/test_twilio_adapter_integration.py::TestRoutes - Route-level integration tests.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py::TestCodeGenerator - Test code generation.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py::TestFullPipeline - Test full pipeline integration.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py::TestModuleBlockParsing - Test module block parsing.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py::TestPolicyApplier - Test policy application.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py::TestSpecCompiler - Test spec compilation.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/apply_policy_rules.py::PolicyApplier - Applies governance rules to Module-Spec v2.6.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/apply_policy_rules.py::PolicyViolation - Hard failure when policy is violated.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/apply_policy_rules.py::ValidationError - Validation error in spec.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::AmbiguityError - Spec contains ambiguous or missing information.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::CompiledSpec - Fully compiled Module-Spec v2.6.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::CompilerError - Hard failure during compilation - no guessing allowed.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::ModuleBlock - Parsed module block input.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::SSOTViolation - Spec violates SSOT constraints.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py::SpecCompiler - Compiles Module Block → Module-Spec v2.6
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py::GeneratorError - Code generation error.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py::IncompleteSpecError - Spec is incomplete for code generation.
+docs/roadmap/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py::ModuleCodeGenerator - Deterministic code generator for L9 modules.
+docs/roadmap/emma_agent_ready/emma_controller.py::EmmaController - Main Emma agent controller.
+docs/roadmap/emma_agent_ready/emma_controller.py::Task - Task definition with metadata.
+docs/roadmap/emma_agent_ready/emma_controller.py::TaskResult - Result of task execution.
+docs/roadmap/emma_agent_ready/emma_controller.py::TaskStatus - Task execution status.
+docs/roadmap/emma_agent_ready/emma_controller.py::TaskType - Task type categories.
+email_agent/gmail_client.py::GmailClient - Gmail API client wrapper.
+email_agent/oauth_server.py::OAuthHandler - HTTP handler for OAuth flow.
+email_agent/parser.py::HTMLToTextParser - No docstring
+email_agent/router.py::DraftRequest - Request model for email draft.
+email_agent/router.py::ForwardRequest - Request model for forwarding email.
+email_agent/router.py::GetRequest - Request model for getting email.
+email_agent/router.py::QueryRequest - Request model for email query.
+email_agent/router.py::ReplyRequest - Request model for replying to email.
+email_agent/router.py::SendRequest - Request model for sending email.
+ir_engine/constraint_challenger.py::ChallengeResult - Result of constraint challenge analysis.
+ir_engine/constraint_challenger.py::ConstraintChallenger - Challenges constraints to identify false, hidden, and improv
+ir_engine/deliberation_cell.py::DeliberationCell - 2-agent deliberation cell for IR refinement.
+ir_engine/deliberation_cell.py::DeliberationResult - Result of deliberation process.
+ir_engine/deliberation_cell.py::DeliberationRound - Record of a single deliberation round.
+ir_engine/ir_generator.py::IRGenerator - Generates various output formats from IR graphs.
+ir_engine/ir_schema.py::ActionNode - Represents an executable action derived from intents.
+ir_engine/ir_schema.py::ActionType - Types of executable actions.
+ir_engine/ir_schema.py::ConstraintNode - Represents a constraint on intent execution.
+ir_engine/ir_schema.py::ConstraintStatus - Status of a constraint.
+ir_engine/ir_schema.py::ConstraintType - Types of constraints.
+ir_engine/ir_schema.py::IRGraph - Complete Intent Representation graph.
+ir_engine/ir_schema.py::IRMetadata - Metadata for an IR graph.
+ir_engine/ir_schema.py::IRNodeBase - Base class for all IR nodes.
+ir_engine/ir_schema.py::IRStatus - Status of IR processing.
+ir_engine/ir_schema.py::IRValidationResult - Result of IR validation.
+ir_engine/ir_schema.py::IntentNode - Represents a user intention extracted from input.
+ir_engine/ir_schema.py::IntentType - Types of user intents.
+ir_engine/ir_schema.py::NodePriority - Priority levels for nodes.
+ir_engine/ir_schema.py::ValidationError - A single validation error.
+ir_engine/ir_to_plan_adapter.py::ExecutionPlan - Complete execution plan from IR graph.
+ir_engine/ir_to_plan_adapter.py::ExecutionStep - A single step in an execution plan.
+ir_engine/ir_to_plan_adapter.py::IRToPlanAdapter - Adapts IR graphs to executable plans.
+ir_engine/ir_validator.py::IRValidator - Validates IR graphs for correctness and completeness.
+ir_engine/semantic_compiler.py::SemanticCompiler - Compiles natural language into IR graphs.
+ir_engine/simulation_router.py::RankedCandidate - A ranked IR candidate after simulation.
+ir_engine/simulation_router.py::SimulationRequest - Request to simulate an IR graph.
+ir_engine/simulation_router.py::SimulationResult - Result from simulation engine.
+ir_engine/simulation_router.py::SimulationRouter - Routes IR graphs to simulation engine and manages results.
+l9_langgraph/packet_node_adapter.py::PacketNodeAdapter - Wraps a node function, ensuring its input/output are logged 
+l9_os/bootstrap.py::Bootstrap - Bootstrap manager for L9 OS kernel.
+l9_os/controller.py::Controller - Main controller for L9 OS kernel.
+l9_os/local_api.py::LocalAPI - Safe local API for shell commands and file operations.
+l9_os/router.py::Router - Message router for L9 OS kernel.
+l9_os/runtime.py::Runtime - L9 OS runtime loop.
+mac_agent/config.py::MacAgentConfig - Configuration for Mac Agent V2.
+mac_agent/executor.py::AutomationExecutor - Executes automation steps using Playwright (primary) or pyau
+mac_agent/websocket_client.py::AgentConfig - Configuration for the Mac Agent WebSocket client.
+mac_agent/websocket_client.py::EventType - Event type constants matching server EventType enum.
+mac_agent/websocket_client.py::MacAgentClient - Persistent WebSocket client for L9 Mac Agent.
+mac_agent/websocket_client.py::TaskExecutor - Task executor for Mac Agent.
+memory/checkpoint_manager.py::CheckpointManager - Simple manager for saving/loading checkpoints per agent.
+memory/extractor/agent_config_extractor.py::AgentConfigExtractor - Extracts agent configuration (preferences, SOPs, roles).
+memory/extractor/base_extractor.py::BaseExtractor - Base class for all extractors.
+memory/extractor/code_extractor.py::CodeExtractor - Extracts code files from chat logs.
+memory/extractor/cursor_action_extractor.py::CursorActionExtractor - Extracts and reconstructs all files from chat history.
+memory/extractor/memory_extractor.py::MemoryExtractor - Extracts structured memory for Supabase.
+memory/extractor/module_schema_extractor.py::ModuleSchemaExtractor - Extracts L9 module schema definitions.
+memory/graph_client.py::Neo4jClient - Production Neo4j client with connection management.
+memory/housekeeping.py::HousekeepingEngine - Memory housekeeping engine for garbage collection and hygien
+memory/index_syncer.py::IndexSyncer - Lightweight index/extension checker.
+memory/ingestion.py::IngestionPipeline - PacketEnvelope ingestion pipeline.
+memory/insight_extraction.py::InsightExtractionPipeline - Heuristic insight extraction from packet content.
+memory/migration_runner.py::MigrationRunner - Runs database migrations automatically and idempotently.
+memory/retrieval.py::RetrievalPipeline - Memory retrieval pipeline with hybrid search capabilities.
+memory/state_manager.py::MemoryStateManager - High-level state manager for agent / graph state.
+memory/substrate_graph.py::SubstrateDAG - Wrapper for executing the substrate DAG with injected depend
+memory/substrate_graph.py::SubstrateGraphState - State passed through the LangGraph DAG.
+memory/substrate_models.py::AgentMemoryEventRow - DTO for agent_memory_events table.
+memory/substrate_models.py::Config - No docstring
+memory/substrate_models.py::ExtractedInsight - An insight extracted from packet reasoning.
+memory/substrate_models.py::GraphCheckpointRow - DTO for graph_checkpoints table.
+memory/substrate_models.py::KnowledgeFact - A knowledge fact extracted from packet processing.
+memory/substrate_models.py::KnowledgeFactRow - DTO for knowledge_facts table.
+memory/substrate_models.py::PacketConfidence - Confidence score and rationale for a packet.
+memory/substrate_models.py::PacketEnvelope - Canonical envelope for substrate writes and reasoning traces
+memory/substrate_models.py::PacketEnvelopeIn - Input model for packet submission (allows partial fields).
+memory/substrate_models.py::PacketLineage - Lineage information for packet genealogy tracking (v1.1.0).
+memory/substrate_models.py::PacketMetadata - Metadata attached to a packet envelope.
+memory/substrate_models.py::PacketProvenance - Provenance information for packet traceability.
+memory/substrate_models.py::PacketStoreRow - DTO for packet_store table (v1.1.0 extended).
+memory/substrate_models.py::PacketWriteResult - Result of writing a PacketEnvelope.
+memory/substrate_models.py::ReasoningTraceRow - DTO for reasoning_traces table.
+memory/substrate_models.py::SemanticHit - Single semantic search result.
+memory/substrate_models.py::SemanticMemoryRow - DTO for semantic_memory table.
+memory/substrate_models.py::SemanticSearchRequest - Request to search semantic memory.
+memory/substrate_models.py::SemanticSearchResult - Top-k semantic hits.
+memory/substrate_models.py::StructuredReasoningBlock - Structured reasoning block for capturing inference traces.
+memory/substrate_models.py::SubstrateState - State object passed through the LangGraph DAG.
+memory/substrate_repository.py::SubstrateRepository - Repository for memory substrate database operations.
+memory/substrate_semantic.py::EmbeddingProvider - Abstract base class for embedding providers.
+memory/substrate_semantic.py::OpenAIEmbeddingProvider - OpenAI embedding provider using text-embedding-3-large.
+memory/substrate_semantic.py::SemanticService - Service for semantic operations on the memory substrate.
+memory/substrate_semantic.py::StubEmbeddingProvider - Stub embedding provider for testing without API calls.
+memory/substrate_service.py::MemorySubstrateService - Main service class for the Memory Substrate.
+memory/timeline_service.py::TimelineService - Read-only service for reconstructing an agent's memory timel
+memory/validators/packet_validator.py::PacketValidationError - Raised when a packet fails custom validation.
+memory/validators/packet_validator.py::PacketValidator - Static helpers for validating PacketEnvelopeIn instances.
+orchestration/cell_orchestrator.py::CellOrchestrator - Orchestrates multi-cell workflows and provides glue interfac
+orchestration/cell_orchestrator.py::CellStep - A step in a cell workflow.
+orchestration/cell_orchestrator.py::CellType - Types of collaborative cells.
+orchestration/cell_orchestrator.py::CellWorkflow - A workflow of cell executions.
+orchestration/cell_orchestrator.py::WorkflowResult - Result of workflow execution.
+orchestration/cell_orchestrator.py::WorkflowStatus - Status of a workflow.
+orchestration/long_plan_graph.py::LongPlanState - State for long plan execution DAG.
+orchestration/orchestrator_kernel.py::ChainStatus - Status of an execution chain.
+orchestration/orchestrator_kernel.py::ChainStep - A step in an execution chain.
+orchestration/orchestrator_kernel.py::ExecutionChain - A deterministic execution chain.
+orchestration/orchestrator_kernel.py::IRPipelineResult - Result from running the IR Engine pipeline.
+orchestration/orchestrator_kernel.py::KernelConfig - Configuration for the orchestrator kernel.
+orchestration/orchestrator_kernel.py::KernelPhase - Phases of kernel execution - strict ordering enforced.
+orchestration/orchestrator_kernel.py::KernelState - State of the orchestrator kernel.
+orchestration/orchestrator_kernel.py::OrchestratorKernel - Core kernel for deterministic IR Engine execution.
+orchestration/plan_executor.py::ExecutionResult - Result of plan execution.
+orchestration/plan_executor.py::ExecutionStatus - Status of plan execution.
+orchestration/plan_executor.py::ExecutorConfig - Configuration for plan executor.
+orchestration/plan_executor.py::PlanExecutor - Executes finalized IR plans with memory integration.
+orchestration/plan_executor.py::StepResult - Result of executing a single step.
+orchestration/plan_executor.py::StepStatus - Status of a single step.
+orchestration/task_router.py::CapabilityEnforcedRouter - TaskRouter with capability enforcement.
+orchestration/task_router.py::ExecutionTarget - Execution targets for routing.
+orchestration/task_router.py::RoutingDecision - Result of routing decision.
+orchestration/task_router.py::TaskComplexity - Complexity levels for tasks.
+orchestration/task_router.py::TaskRisk - Risk levels for tasks.
+orchestration/task_router.py::TaskRoute - A route for task execution.
+orchestration/task_router.py::TaskRouter - Routes tasks to appropriate execution targets.
+orchestration/task_router.py::TaskType - Types of tasks for routing decisions.
+orchestration/unified_controller.py::ControllerConfig - Configuration for the unified controller.
+orchestration/unified_controller.py::ControllerPhase - Phases of controller execution (deterministic ordering).
+orchestration/unified_controller.py::ControllerResult - Result from controller execution.
+orchestration/unified_controller.py::ControllerState - Current state of the controller.
+orchestration/unified_controller.py::ExecutionMode - Execution modes for the controller.
+orchestration/unified_controller.py::UnifiedController - GOD-MODE unified controller for L9.
+orchestration/ws_task_router.py::LangGraphRouter - LangGraph-based state machine router.
+orchestration/ws_task_router.py::RouterConfig - Configuration for the WebSocket task router.
+orchestration/ws_task_router.py::RouterState - State for the routing graph.
+orchestration/ws_task_router.py::WSTaskRouter - Extensible WebSocket task router.
+orchestrators/action_tool/interface.py::ActionToolRequest - Request to action_tool orchestrator.
+orchestrators/action_tool/interface.py::ActionToolResponse - Response from action_tool orchestrator.
+orchestrators/action_tool/interface.py::IActionToolOrchestrator - Interface for ActionTool Orchestrator.
+orchestrators/action_tool/interface.py::ToolSafetyLevel - Tool safety levels.
+orchestrators/action_tool/orchestrator.py::ActionToolOrchestrator - ActionTool Orchestrator implementation.
+orchestrators/action_tool/validator.py::ValidationResult - Result of tool validation.
+orchestrators/action_tool/validator.py::Validator - Validator for ActionTool Orchestrator.
+orchestrators/evolution/apply_engine.py::ApplyEngine - Engine for applying system upgrades.
+orchestrators/evolution/interface.py::EvolutionOrchestratorRequest - Request to evolution orchestrator.
+orchestrators/evolution/interface.py::EvolutionOrchestratorResponse - Response from evolution orchestrator.
+orchestrators/evolution/interface.py::IEvolutionOrchestrator - Interface for Evolution Orchestrator.
+orchestrators/evolution/interface.py::Upgrade - An architectural upgrade.
+orchestrators/evolution/interface.py::UpgradeExecution - Execution record for an upgrade.
+orchestrators/evolution/interface.py::UpgradeStatus - Status of an upgrade.
+orchestrators/evolution/interface.py::UpgradeType - Types of upgrades that can be applied.
+orchestrators/evolution/interface.py::UpgradeValidation - Validation results for an upgrade.
+orchestrators/evolution/orchestrator.py::EvolutionOrchestrator - Evolution Orchestrator implementation.
+orchestrators/memory/housekeeping.py::Housekeeping - Housekeeping for Memory Orchestrator.
+orchestrators/memory/interface.py::IMemoryOrchestrator - Interface for Memory Orchestrator.
+orchestrators/memory/interface.py::MemoryOperation - Memory operation types.
+orchestrators/memory/interface.py::MemoryRequest - Request to memory orchestrator.
+orchestrators/memory/interface.py::MemoryResponse - Response from memory orchestrator.
+orchestrators/memory/orchestrator.py::MemoryOrchestrator - Memory Orchestrator implementation.
+orchestrators/meta/adapter.py::BlueprintAdapter - Adapter for LLM-based blueprint evaluation.
+orchestrators/meta/interface.py::Blueprint - A candidate blueprint/design.
+orchestrators/meta/interface.py::BlueprintEvaluation - Complete evaluation of a blueprint.
+orchestrators/meta/interface.py::BlueprintScore - Score for a single criterion.
+orchestrators/meta/interface.py::BlueprintType - Types of blueprints that can be evaluated.
+orchestrators/meta/interface.py::EvaluationCriteria - Criteria for evaluating blueprints.
+orchestrators/meta/interface.py::IMetaOrchestrator - Interface for Meta Orchestrator.
+orchestrators/meta/interface.py::MetaOrchestratorRequest - Request to meta orchestrator.
+orchestrators/meta/interface.py::MetaOrchestratorResponse - Response from meta orchestrator.
+orchestrators/meta/orchestrator.py::MetaOrchestrator - Meta Orchestrator implementation.
+orchestrators/reasoning/adapter_node.py::ReasoningAdapterNode - AdapterNode for Reasoning Orchestrator.
+orchestrators/reasoning/adapter_node.py::ReasoningNodeState - State for reasoning LangGraph node.
+orchestrators/reasoning/interface.py::IReasoningOrchestrator - Interface for Reasoning Orchestrator.
+orchestrators/reasoning/interface.py::ReasoningMode - Reasoning engine modes.
+orchestrators/reasoning/interface.py::ReasoningRequest - Request to reasoning orchestrator.
+orchestrators/reasoning/interface.py::ReasoningResponse - Response from reasoning orchestrator.
+orchestrators/reasoning/orchestrator.py::ReasoningOrchestrator - Reasoning Orchestrator implementation.
+orchestrators/research_swarm/convergence.py::Convergence - Convergence for ResearchSwarm Orchestrator.
+orchestrators/research_swarm/interface.py::IResearchSwarmOrchestrator - Interface for ResearchSwarm Orchestrator.
+orchestrators/research_swarm/interface.py::ResearchSwarmRequest - Request to research_swarm orchestrator.
+orchestrators/research_swarm/interface.py::ResearchSwarmResponse - Response from research_swarm orchestrator.
+orchestrators/research_swarm/orchestrator.py::ResearchSwarmOrchestrator - ResearchSwarm Orchestrator implementation.
+orchestrators/world_model/interface.py::IWorldModelOrchestrator - Interface for WorldModel Orchestrator.
+orchestrators/world_model/interface.py::WorldModelOperation - World model operation types.
+orchestrators/world_model/interface.py::WorldModelRequest - Request to world_model orchestrator.
+orchestrators/world_model/interface.py::WorldModelResponse - Response from world_model orchestrator.
+orchestrators/world_model/orchestrator.py::WorldModelOrchestrator - WorldModel Orchestrator implementation.
+orchestrators/world_model/scheduler.py::WorldModelScheduler - Scheduler for WorldModel Orchestrator.
+orchestrators/ws_bridge.py::WSBridgeConfig - Phase 3: Configuration for the WS bridge.
+orchestrators/ws_bridge.py::WSEventRouter - Phase 3: Extensible event router with handler registration.
+runtime/gmp_worker.py::GMPWorker - Worker for processing GMP runs.
+runtime/kernel_loader.py::KernelAwareAgent - Protocol for agents that can absorb kernels.
+runtime/kernel_loader.py::KernelStack - Lightweight context object for the 10-kernel stack.
+runtime/mcp_client.py::MCPClient - MCP client for connecting to MCP servers.
+runtime/mcp_client.py::MCPServerProcess - Manages a single MCP server subprocess.
+runtime/mcp_client.py::ToolMeta - Metadata for an MCP tool.
+runtime/rate_limiter.py::RateLimiter - Production rate limiter with Redis backend and in-memory fal
+runtime/redis_client.py::RedisClient - Production Redis client with connection pooling.
+runtime/task_queue.py::QueuedTask - A task waiting in the queue.
+runtime/task_queue.py::TaskQueue - Production task queue with Redis backend and in-memory fallb
+runtime/websocket_orchestrator.py::WebSocketOrchestrator - Manages live WebSocket connections from L9 agents.
+scripts/batch_generate_specs.py::BatchConfig - Batch processing configuration
+scripts/batch_generate_specs.py::BatchSpecGenerator - Orchestrates batch spec generation
+scripts/batch_generate_specs.py::PerplexityBatchClient - Async Perplexity client with rate limiting and retry
+scripts/batch_generate_specs.py::TokenBucketLimiter - Token bucket rate limiter for API calls
+services/mac_tasks.py::MacTask - Mac task dataclass.
+services/research/agents/base_agent.py::BaseAgent - Base class for all research agents.
+services/research/agents/critic_agent.py::CriticAgent - Critic Agent - Evaluates research quality.
+services/research/agents/planner_agent.py::PlannerAgent - Planner Agent - Decomposes research goals into steps.
+services/research/agents/researcher_agent.py::ResearcherAgent - Researcher Agent - Gathers evidence and information.
+services/research/graph_runtime.py::ResearchGraphRuntime - Runtime for managing research graph execution.
+services/research/graph_state.py::Evidence - Evidence gathered by a researcher.
+services/research/graph_state.py::ResearchGraphState - Shared state across all research graph nodes.
+services/research/graph_state.py::ResearchStep - Single step in a research plan.
+services/research/insight_extractor.py::InsightExtractorAgent - Agent that extracts structured insights from research result
+services/research/memory_adapter.py::ResearchMemoryAdapter - Adapter between Research Factory and Memory Substrate.
+services/research/research_api.py::Config - No docstring
+services/research/research_api.py::Config - No docstring
+services/research/research_api.py::ResearchRequest - Request model for research endpoint.
+services/research/research_api.py::ResearchResponse - Response model for research endpoint.
+services/research/research_api.py::ResearchStatusResponse - Response model for research status endpoint.
+services/research/tools/perplexity_client.py::PerplexityClient - Production Perplexity API client.
+services/research/tools/perplexity_client.py::PerplexityModel - Available Perplexity models with use cases.
+services/research/tools/perplexity_client.py::PerplexityRequest - Structured Perplexity API request.
+services/research/tools/perplexity_client.py::PerplexityResponse - Structured Perplexity API response.
+services/research/tools/perplexity_client.py::SearchContextSize - Search context size - controls how much web content is retri
+services/research/tools/tool_registry.py::Config - No docstring
+services/research/tools/tool_registry.py::Config - No docstring
+services/research/tools/tool_registry.py::RateLimitWindow - Sliding window rate limiter.
+services/research/tools/tool_registry.py::ToolMetadata - Metadata for a registered tool.
+services/research/tools/tool_registry.py::ToolRegistry - In-memory registry of available tools.
+services/research/tools/tool_registry.py::ToolSchema - JSON Schema for tool parameters (OpenAI function calling com
+services/research/tools/tool_registry.py::ToolType - Types of available tools.
+services/research/tools/tool_resolver.py::ToolResolver - Tool resolver with RBAC and rate limiting.
+services/research/tools/tool_wrappers.py::BaseTool - Base class for all tools.
+services/research/tools/tool_wrappers.py::HTTPTool - Generic HTTP request tool.
+services/research/tools/tool_wrappers.py::MockSearchTool - Mock search tool for testing.
+services/research/tools/tool_wrappers.py::PerplexityTool - Perplexity AI search tool.
+services/research_factory/extractor.py::ExtractionManifest - Manifest of extraction results.
+services/research_factory/extractor.py::ExtractionResult - Result of the extraction process.
+services/research_factory/extractor.py::GeneratedFile - A file generated by the extractor.
+services/research_factory/extractor.py::UniversalExtractor - Extracts production code from YAML agent schemas.
+services/research_factory/glue_resolver.py::CommunicationHarmonizationConfig - Shared communication configuration.
+services/research_factory/glue_resolver.py::DependencyGraph - Directed acyclic graph of agent dependencies.
+services/research_factory/glue_resolver.py::DependencyNode - Node in the dependency graph.
+services/research_factory/glue_resolver.py::GlueConfig - Complete glue layer configuration.
+services/research_factory/glue_resolver.py::GlueResolver - Resolves inter-agent dependencies from glue configuration.
+services/research_factory/glue_resolver.py::GovernanceHarmonizationConfig - Shared governance configuration.
+services/research_factory/glue_resolver.py::ImportSpec - Specification for a Python import.
+services/research_factory/glue_resolver.py::MemoryBackendsConfig - Shared memory backend configuration.
+services/research_factory/glue_resolver.py::WiringSpec - Specification for an agent-to-agent wiring.
+services/research_factory/schema_parser.py::AgentSchema - Complete agent schema model with all 12 required sections.
+services/research_factory/schema_parser.py::AutonomyProfileConfig - Autonomy profile configuration.
+services/research_factory/schema_parser.py::ChannelConfig - Communication channel configuration.
+services/research_factory/schema_parser.py::CollaborationNetworkBlock - Partner agents and interaction protocols.
+services/research_factory/schema_parser.py::CollaboratorConfig - Configuration for a collaborating agent.
+services/research_factory/schema_parser.py::CommunicationStackBlock - Input/output communication configuration.
+services/research_factory/schema_parser.py::CrossAgentSharingConfig - Cross-agent memory sharing configuration.
+services/research_factory/schema_parser.py::CursorInstructionsBlock - File generation directives for code extraction.
+services/research_factory/schema_parser.py::DeploymentBlock - Runtime, endpoints, and telemetry configuration.
+services/research_factory/schema_parser.py::GovernanceBlock - Escalation, compliance, and audit configuration.
+services/research_factory/schema_parser.py::IntegrationBlock - Dependencies and wiring points.
+services/research_factory/schema_parser.py::KnowledgeFusionConfig - Knowledge fusion layer configuration.
+services/research_factory/schema_parser.py::LearningSystemBlock - Feedback loops and autonomy profile.
+services/research_factory/schema_parser.py::MemoryLayerConfig - Configuration for a single memory layer.
+services/research_factory/schema_parser.py::MemoryTopologyBlock - Multi-layer memory architecture.
+services/research_factory/schema_parser.py::MetadataBlock - Version, owner, and status information.
+services/research_factory/schema_parser.py::ReasoningEngineBlock - Logic framework and reasoning modes.
+services/research_factory/schema_parser.py::ReasoningFeedbackConfig - Reasoning feedback loop configuration.
+services/research_factory/schema_parser.py::SystemBlock - Agent identity and role definition.
+services/research_factory/schema_parser.py::TelemetryConfig - Telemetry configuration.
+services/research_factory/schema_parser.py::WorldModelIntegrationBlock - External context integration.
+services/research_factory/schema_validator.py::SchemaValidator - Validates Research Factory agent schemas.
+services/research_factory/schema_validator.py::ValidationError - Single validation error.
+services/research_factory/schema_validator.py::ValidationResult - Result of schema validation.
+services/research_factory/validate_codegen.py::CodeValidationResult - Accumulates code validation errors.
+services/research_factory/validate_spec_v25.py::SpecValidationError - Raised when spec validation fails.
+services/research_factory/validate_spec_v25.py::ValidationResult - Accumulates validation errors.
+simulation/outcome_evaluator.py::CriterionResult - Result of evaluating a single criterion.
+simulation/outcome_evaluator.py::CriterionType - Types of evaluation criteria.
+simulation/outcome_evaluator.py::EvaluationCriteria - A single evaluation criterion.
+simulation/outcome_evaluator.py::EvaluationResult - Complete evaluation result.
+simulation/outcome_evaluator.py::EvaluationVerdict - Evaluation verdicts.
+simulation/outcome_evaluator.py::OutcomeEvaluator - Evaluates simulation outcomes.
+simulation/scenario_loader.py::Scenario - A complete simulation scenario.
+simulation/scenario_loader.py::ScenarioCondition - A condition within a scenario.
+simulation/scenario_loader.py::ScenarioLoader - Loads and manages simulation scenarios.
+simulation/scenario_loader.py::ScenarioType - Types of simulation scenarios.
+simulation/simulation_engine.py::SimulationConfig - Configuration for simulation.
+simulation/simulation_engine.py::SimulationEngine - Core simulation engine for IR graph evaluation.
+simulation/simulation_engine.py::SimulationMetrics - Metrics collected during simulation.
+simulation/simulation_engine.py::SimulationMode - Simulation modes.
+simulation/simulation_engine.py::SimulationRun - Complete simulation run.
+simulation/simulation_engine.py::SimulationStep - A single step in simulation.
+tests/api/test_auth.py::TestAuthValidation - Tests for API key authentication validation.
+tests/api/test_server_health.py::TestServerHealth - Tests for server health check endpoints.
+tests/conftest.py::AsyncMockCursor - No docstring
+tests/conftest.py::AsyncMockMemory - No docstring
+tests/conftest.py::AsyncMockRedis - No docstring
+tests/conftest.py::AsyncMockWM - No docstring
+tests/core/agents/test_executor.py::MockAIOSRuntime - Contract-grade mock AIOS runtime.
+tests/core/agents/test_executor.py::MockAgentRegistry - Mock agent registry for testing.
+tests/core/agents/test_executor.py::MockSubstrateService - Contract-grade mock substrate service.
+tests/core/agents/test_executor.py::MockToolRegistry - Contract-grade mock tool registry.
+tests/docker/test_env_validation.py::TestDockerNetworkConfig - Validate Docker-specific networking configuration.
+tests/docker/test_env_validation.py::TestEnvironmentVariables - Validate environment configuration.
+tests/docker/test_env_validation.py::TestRequiredVariables - Ensure required variables are present.
+tests/docker/test_migrations.py::TestMigrationFileStructure - Validate migration file naming and structure.
+tests/docker/test_migrations.py::TestMigrationIntegrity - Test migration file integrity.
+tests/docker/test_migrations.py::TestMigrationSQLSyntax - Validate SQL syntax in migration files.
+tests/docker/test_stack_smoke.py::TestAPIDocs - Verify FastAPI documentation is accessible.
+tests/docker/test_stack_smoke.py::TestAgentExecutor - Verify agent executor endpoint is functional.
+tests/docker/test_stack_smoke.py::TestDatabaseConnectivity - Verify database connectivity and DSN configuration.
+tests/docker/test_stack_smoke.py::TestHealthEndpoints - Verify all health endpoints respond correctly.
+tests/docker/test_stack_smoke.py::TestMemorySystem - Verify memory system is operational.
+tests/docker/test_stack_smoke.py::TestRouterWiring - Verify key routers are properly mounted.
+tests/docker/test_stack_smoke.py::TestSmokeSummary - Final summary test to confirm all critical paths work.
+tests/integration/test_api_agent_integration.py::TestAPIAgentIntegration - Test API to Agent Executor integration.
+tests/integration/test_api_memory_integration.py::TestAPIMemoryIntegration - Test API to Memory Substrate integration.
+tests/integration/test_kernel_agent_activation_integration.py::TestKernelAgentActivationIntegration - Test kernel loading to agent activation integration.
+tests/integration/test_kernel_router_orchestrator_end_to_end.py::MockWS - No docstring
+tests/integration/test_orchestrator_memory_integration.py::MockSubstrateService - Mock substrate for integration testing.
+tests/integration/test_orchestrator_memory_integration.py::TestOrchestratorMemoryIntegration - Test orchestrator to memory integration.
+tests/integration/test_research_tool_integration.py::TestResearchToolIntegration - Test research graph to tool execution integration.
+tests/integration/test_slack_dispatch_integration.py::TestSlackDispatchIntegration - Test Slack webhook to task dispatch integration.
+tests/integration/test_world_model_repository_integration.py::TestWorldModelRepositoryIntegration - Test world model to repository integration.
+tests/integration/test_ws_task_routing_integration.py::TestWSTaskRoutingIntegration - Test WebSocket to Task Router integration.
+tests/ir_engine/test_ir_packet_formats.py::TestComplexGraphSerialization - Test serialization of complex graphs.
+tests/ir_engine/test_ir_packet_formats.py::TestExecutionPlanSerialization - Test execution plan serialization.
+tests/ir_engine/test_ir_packet_formats.py::TestIRGeneratorToDict - Test IRGenerator.to_dict().
+tests/ir_engine/test_ir_packet_formats.py::TestIRGeneratorToJson - Test IRGenerator.to_json().
+tests/ir_engine/test_ir_packet_formats.py::TestIRGeneratorToPacketPayload - Test IRGenerator.to_packet_payload().
+tests/ir_engine/test_ir_packet_formats.py::TestIRGraphToSummary - Test IRGraph.to_summary().
+tests/ir_engine/test_ir_packet_formats.py::TestIRToPlanAdapterToMemoryPacket - Test IRToPlanAdapter.to_memory_packet().
+tests/ir_engine/test_ir_packet_formats.py::TestPacketEnvelopeCompatibility - Test compatibility with PacketEnvelope input schema.
+tests/ir_engine/test_ir_packet_formats.py::TestUUIDSerialization - Test UUID serialization in all formats.
+tests/ir_engine/test_ir_semantic_incremental.py::TestIncrementalCompilation - Test incremental compilation functionality.
+tests/ir_engine/test_ir_semantic_incremental.py::TestIncrementalEdgeCases - Test edge cases in incremental compilation.
+tests/ir_engine/test_ir_semantic_incremental.py::TestIncrementalValidation - Test validation after incremental compilation.
+tests/ir_engine/test_ir_semantic_to_plan_integration.py::TestLangGraphStateFormat - Test conversion to LangGraph state format.
+tests/ir_engine/test_ir_semantic_to_plan_integration.py::TestPlanGeneration - Test plan generation from validated graphs.
+tests/ir_engine/test_ir_semantic_to_plan_integration.py::TestPlanModification - Test plan modification capabilities.
+tests/ir_engine/test_ir_semantic_to_plan_integration.py::TestSemanticToPlanHappyPath - Test the happy path: compile → validate → plan.
+tests/ir_engine/test_ir_semantic_to_plan_integration.py::TestTaskQueueFormat - Test conversion to task queue format.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestMultiCandidateSimulation - Test multi-candidate simulation and ranking.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestResultRetrieval - Test simulation result retrieval.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestSelectBest - Test best candidate selection.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestSimulationEdgeCases - Test edge cases in simulation routing.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestSimulationRequestCreation - Test simulation request creation.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestSimulationResultSerialization - Test SimulationResult serialization.
+tests/ir_engine/test_ir_simulation_router_integration.py::TestSimulationRouting - Test simulation routing with stub mode.
+tests/ir_engine/test_ir_validation_and_status.py::TestCompletenessValidation - Test graph completeness validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestConstraintValidation - Test constraint consistency validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestDependencyValidation - Test action dependency validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestQuickValidate - Test quick_validate method.
+tests/ir_engine/test_ir_validation_and_status.py::TestReferentialIntegrity - Test referential integrity validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestSchemaValidation - Test schema compliance validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestStrictMode - Test strict mode validation.
+tests/ir_engine/test_ir_validation_and_status.py::TestValidateAndUpdateStatus - Test validate_and_update_status method.
+tests/ir_engine/test_ir_validation_and_status.py::TestValidationResult - Test IRValidationResult methods.
+tests/memory/test_memory_adapter_basic.py::FakeResponse - Fake httpx response for testing.
+tests/memory/test_packet_envelope.py::TestPacketEnvelopeRoundtrip - No docstring
+tests/mocks/kernel_mocks.py::KernelState - Mock Kernel State for L9 OS.
+tests/mocks/kernel_mocks.py::KernelViolationError - Raised when kernel constraints are violated.
+tests/mocks/memory_mocks.py::MockBlobStore - Mock blob storage for large content.
+tests/mocks/memory_mocks.py::MockMemoryAdapter - Mock Memory Adapter for testing.
+tests/mocks/memory_mocks.py::MockPostgresCursor - Mock PostgreSQL cursor for testing.
+tests/mocks/orchestrator_mocks.py::MockRedis - Mock Redis client for testing.
+tests/mocks/orchestrator_mocks.py::MockToolRegistry - Mock Tool Registry for testing.
+tests/mocks/world_model_mocks.py::MockEdge - A mock edge in the world model graph.
+tests/mocks/world_model_mocks.py::MockNode - A mock node in the world model graph.
+tests/mocks/world_model_mocks.py::MockWorldModel - Mock World Model for testing.
+tests/orchestrators/test_action_tool_orchestrator.py::TestActionToolOrchestrator - Tests for ActionToolOrchestrator.
+tests/orchestrators/test_ws_task_router_routing.py::TestWSTaskRouterRouting - No docstring
+tests/performance/test_state_bloat.py::ResearchGraphState - Mock research graph state for testing.
+tests/runtime/test_websocket_orchestrator_basic.py::FakeWebSocket - No docstring
+tests/runtime/test_websocket_orchestrator_basic.py::TestWebSocketOrchestratorBasic - No docstring
+tests/runtime/test_ws_protocol_static.py::TestAgentHeartbeat - No docstring
+tests/runtime/test_ws_protocol_static.py::TestErrorEvent - No docstring
+tests/runtime/test_ws_protocol_static.py::TestEventMessageBasics - No docstring
+tests/services/research_factory/test_extraction.py::TestFullPipeline - Integration tests for the full extraction pipeline.
+tests/services/research_factory/test_extraction.py::TestGlueResolver - Tests for glue layer resolution.
+tests/services/research_factory/test_extraction.py::TestSchemaParser - Tests for schema parsing.
+tests/services/research_factory/test_extraction.py::TestSchemaValidator - Tests for schema validation.
+tests/services/research_factory/test_extraction.py::TestUniversalExtractor - Tests for the universal extractor.
+tests/smoke_email.py::IngestTracker - Tracks calls to ingest_packet for verification.
+tests/smoke_email.py::MockGmailClient - Mock Gmail client for testing.
+tests/smoke_test.py::SmokeTestResults - No docstring
+tests/smoke_test_root.py::SmokeTestResults - No docstring
+tests/test_imports.py::TestCoreImports - Verify core modules can be imported.
+tests/test_imports.py::TestMemoryImports - Verify memory system modules can be imported.
+tests/test_imports.py::TestModuleAttributes - Verify expected attributes exist on modules.
+tests/test_imports.py::TestNoCircularImports - Detect circular import issues.
+tests/test_imports.py::TestOptionalImports - Verify optional modules import when present.
+tests/test_l_cto_kernel_activation.py::TestKernelAwareRegistry - Test kernel-aware agent registry.
+tests/test_l_cto_kernel_activation.py::TestKernelLoader - Test kernel loader functionality.
+tests/test_l_cto_kernel_activation.py::TestLCTOKernelActivation - Test L-CTO kernel activation and identity.
+tests/test_memory_adapter.py::TestAdapterSingleton - Tests for adapter singleton functions.
+tests/test_memory_adapter.py::TestResearchMemoryAdapter - Tests for ResearchMemoryAdapter class.
+tests/test_memory_substrate_basic.py::TestDAGNodes - Tests for individual DAG nodes.
+tests/test_memory_substrate_basic.py::TestFactoryFunctions - Tests for factory functions.
+tests/test_memory_substrate_basic.py::TestPacketEnvelope - Tests for PacketEnvelope model.
+tests/test_memory_substrate_basic.py::TestPacketWriteResult - Tests for PacketWriteResult model.
+tests/test_memory_substrate_basic.py::TestSemanticSearchModels - Tests for semantic search models.
+tests/test_memory_substrate_basic.py::TestStructuredReasoningBlock - Tests for StructuredReasoningBlock model.
+tests/test_memory_substrate_basic.py::TestStubEmbeddingProvider - Tests for stub embedding provider.
+tests/test_memory_substrate_basic.py::TestSubstrateDAGNoDB - Integration tests for DAG without database.
+tests/test_research_graph.py::TestBuildResearchGraph - Tests for graph building.
+tests/test_research_graph.py::TestResearchGraph - Tests for research graph nodes.
+tests/test_research_graph.py::TestResearchGraphState - Tests for ResearchGraphState and related functions.
+tests/test_slack_adapter.py::TestSlackAPIClient - Test Slack API client.
+tests/test_slack_adapter.py::TestSlackRequestNormalizer - Test Slack request normalization.
+tests/test_slack_adapter.py::TestSlackSignatureVerification - Test Slack HMAC-SHA256 signature verification.
+tests/test_tool_registry.py::TestDefaultTools - Tests for default tool initialization.
+tests/test_tool_registry.py::TestToolMetadata - Tests for ToolMetadata model.
+tests/test_tool_registry.py::TestToolRegistry - Tests for ToolRegistry class.
+tests/test_tool_registry.py::TestToolResolver - Tests for ToolResolver class.
+tests/world_model/test_world_model_repository_basic.py::FakeConnection - No docstring
+tests/world_model/test_world_model_repository_basic.py::FakePool - No docstring
+tests/world_model/test_world_model_repository_basic.py::TestWorldModelRepositoryBasic - No docstring
+tools/cursor_client.py::CursorClient - Client for Cursor remote API.
+tools/mac_protocol.py::Config - No docstring
+tools/mac_protocol.py::Config - No docstring
+tools/mac_protocol.py::MacMessage - Mac protocol message schema.
+tools/mac_protocol.py::MacResponse - Mac protocol response schema.
+world_model/causal_graph.py::CausalEdge - Directed edge in the causal graph (cause → effect).
+world_model/causal_graph.py::CausalGraph - Causal graph structure for the World Model.
+world_model/causal_graph.py::CausalNode - Node in the causal graph.
+world_model/causal_mapper.py::CausalEdge - An edge in the causal graph.
+world_model/causal_mapper.py::CausalLink - An inferred causal link between a decision and outcome.
+world_model/causal_mapper.py::CausalMapper - Maps and manages causal relationships.
+world_model/causal_mapper.py::CausalNode - A node in the causal graph.
+world_model/causal_mapper.py::CausalPath - A path through the causal graph.
+world_model/causal_mapper.py::CausalQuery - A causal query specification.
+world_model/causal_mapper.py::CausalQueryResult - Result of a causal query.
+world_model/causal_mapper.py::CausalRelationType - Types of causal relationships.
+world_model/causal_mapper.py::CausalStrength - Strength of causal relationships.
+world_model/causal_mapper.py::Decision - A recorded decision in the system.
+world_model/causal_mapper.py::Outcome - A recorded outcome in the system.
+world_model/engine.py::WorldModelEngine - Core engine for World Model operations.
+world_model/interfaces.py::ICausalGraph - Interface for Causal Graph operations.
+world_model/interfaces.py::IWorldModelEngine - Interface for World Model Engine.
+world_model/interfaces.py::IWorldModelLoader - Interface for World Model Loader.
+world_model/interfaces.py::IWorldModelState - Interface for World Model State management.
+world_model/interfaces.py::IWorldModelUpdater - Interface for World Model Updater.
+world_model/knowledge_ingestor.py::ExtractedFact - A fact extracted from source.
+world_model/knowledge_ingestor.py::IngestResult - Result of knowledge ingestion.
+world_model/knowledge_ingestor.py::IngestorConfig - Configuration for knowledge ingestor.
+world_model/knowledge_ingestor.py::KnowledgeIngestor - Ingests knowledge into the world model.
+world_model/knowledge_ingestor.py::NormalizedHeuristic - A normalized coding heuristic.
+world_model/knowledge_ingestor.py::NormalizedPattern - A normalized architectural pattern.
+world_model/knowledge_ingestor.py::SourceType - Types of knowledge sources.
+world_model/loader.py::WorldModelLoader - Loader for World Model specifications.
+world_model/nodes/service_nodes.py::WorldModelGraphState - State schema for World Model LangGraph nodes.
+world_model/nodes/update_world_model_node.py::WorldModelNodeState - State schema for World Model LangGraph nodes.
+world_model/reflection_memory.py::Improvement - A proposed or implemented improvement.
+world_model/reflection_memory.py::Pattern - A recognized pattern.
+world_model/reflection_memory.py::Reflection - A stored reflection.
+world_model/reflection_memory.py::ReflectionMemory - Stores and manages reflection data.
+world_model/reflection_memory.py::ReflectionPriority - Priority of reflections.
+world_model/reflection_memory.py::ReflectionType - Types of reflections.
+world_model/reflection_memory.py::TaskReflection - A reflection scoped to a specific task.
+world_model/registry.py::EntityTypeSchema - Schema definition for an entity type.
+world_model/registry.py::RelationTypeSchema - Schema definition for a relation type.
+world_model/registry.py::WorldModelRegistry - Registry for World Model type definitions and schemas.
+world_model/repository.py::WorldModelEntityRow - Row data from world_model_entities table.
+world_model/repository.py::WorldModelRepository - Database repository for World Model persistence.
+world_model/repository.py::WorldModelSnapshotRow - Row data from world_model_snapshots table.
+world_model/repository.py::WorldModelUpdateRow - Row data from world_model_updates table.
+world_model/runtime.py::MemorySubstratePacketSource - Packet source that fetches from Memory Substrate.
+world_model/runtime.py::PacketSource - Abstract packet source for runtime ingestion.
+world_model/runtime.py::QueryPattern - Pattern specification for queries.
+world_model/runtime.py::RuntimeConfig - Configuration for world model runtime.
+world_model/runtime.py::RuntimeMode - World model runtime modes.
+world_model/runtime.py::RuntimeStats - Runtime statistics.
+world_model/runtime.py::SimulationVariant - Variant specification for simulation.
+world_model/runtime.py::UpdateRecord - Record of a state update.
+world_model/runtime.py::WorldModelRuntime - Runtime for building and maintaining the world model.
+world_model/seed_loader.py::SeedLoader - Loads seed YAML files into the L9 memory substrate and world
+world_model/service.py::WorldModelService - Service layer for World Model operations.
+world_model/state.py::Entity - Single entity in the world model.
+world_model/state.py::Relation - Typed relation between entities.
+world_model/state.py::WorldModelState - Central state container for the World Model.
+world_model/updater.py::UpdateOperation - Single update operation to apply.
+world_model/updater.py::UpdateResult - Result of applying an update.
+world_model/updater.py::WorldModelUpdater - Applies updates to World Model state.
+world_model/world_model_service.py::ConstraintSet - Set of constraints for validation.
+world_model/world_model_service.py::HeuristicMatch - A matched coding heuristic.
+world_model/world_model_service.py::PatternMatch - A matched architectural pattern.
+world_model/world_model_service.py::WorldContext - Full context for reasoning tasks.
+world_model/world_model_service.py::WorldModelServiceAPI - High-level service API for World Model operations.
