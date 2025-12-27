@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Final summary (fixed)
 
@@ -220,4 +223,4 @@ Ready for: ✓ Code review ✓ Testing ✓ Production deployment
 Status: ✓ APPROVED FOR MERGE (feature flag OFF by default)
 """
 
-print(summary_final)
+logger.info("GMP-K.0 Final Summary", summary=summary_final)

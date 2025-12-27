@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 5-6: Final Evidence Report and Declaration
 
@@ -552,4 +555,4 @@ All code drop-in compatible with existing L9 infrastructure.
 Next: GMP-K.1 (Bayesian Node Integration with Executor) when ready.
 """
 
-print(gmp_report)
+logger.info("GMP Report", report=gmp_report)

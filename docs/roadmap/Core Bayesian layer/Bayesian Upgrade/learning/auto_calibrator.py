@@ -68,6 +68,9 @@ import json
 import math
 from pathlib import Path
 from collections import defaultdict
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -500,7 +503,7 @@ class AutoCalibrator:
             with open(self.registry_path, 'w') as f:
                 json.dump(self.registry, f, indent=2)
         except Exception as e:
-            print(f"Error saving registry: {e}")
+            logger.error("Error saving registry", error=str(e))
     
     def _log_to_meta_learning(
         self,
@@ -552,12 +555,14 @@ def run_nightly_calibration():
     calibrator = AutoCalibrator()
     report = calibrator.run_calibration()
     
-    print(f"=== Calibration Complete ===")
-    print(f"Decisions Analyzed: {report.decisions_analyzed}")
-    print(f"ECE: {report.ece_before:.4f} → {report.ece_after:.4f}")
-    print(f"Temperature: {report.temperature_before:.2f} → {report.temperature_after:.2f}")
-    print(f"Thresholds Adjusted: {len(report.thresholds_adjusted)}")
-    print(f"Time: {report.calibration_time_seconds:.2f}s")
+    logger.info("Calibration Complete",
+                decisions_analyzed=report.decisions_analyzed,
+                ece_before=f"{report.ece_before:.4f}",
+                ece_after=f"{report.ece_after:.4f}",
+                temperature_before=f"{report.temperature_before:.2f}",
+                temperature_after=f"{report.temperature_after:.2f}",
+                thresholds_adjusted=len(report.thresholds_adjusted),
+                time_seconds=f"{report.calibration_time_seconds:.2f}")
     
     return report
 

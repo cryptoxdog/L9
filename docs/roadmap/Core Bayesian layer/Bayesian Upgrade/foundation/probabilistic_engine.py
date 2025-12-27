@@ -65,6 +65,9 @@ import time
 import math
 from pathlib import Path
 from enum import Enum
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 class RiskLevel(Enum):
@@ -689,15 +692,16 @@ if __name__ == '__main__':
         references_count=8
     )
     
-    print("=== Test 1: Foundation Governance File ===")
-    print(f"Risk Probability: {assessment1.probability}")
-    print(f"Confidence: {assessment1.confidence}")
-    print(f"Risk Level: {assessment1.risk_level.value}")
-    print(f"Action: {assessment1.recommended_action}")
-    print(f"Subjective: T={assessment1.subjective_logic.trust}, D={assessment1.subjective_logic.disbelief}, U={assessment1.subjective_logic.uncertainty}")
-    print(f"Time: {assessment1.execution_time_ms}ms")
-    print(f"Reasoning: {assessment1.reasoning}")
-    print()
+    logger.info("Test 1: Foundation Governance File",
+                probability=assessment1.probability,
+                confidence=assessment1.confidence,
+                risk_level=assessment1.risk_level.value,
+                action=assessment1.recommended_action,
+                subjective_trust=assessment1.subjective_logic.trust,
+                subjective_disbelief=assessment1.subjective_logic.disbelief,
+                subjective_uncertainty=assessment1.subjective_logic.uncertainty,
+                time_ms=assessment1.execution_time_ms,
+                reasoning=assessment1.reasoning)
     
     # Test case 2: Low-risk user file
     assessment2 = engine.assess_file_compliance_risk(
@@ -708,11 +712,13 @@ if __name__ == '__main__':
         references_count=0
     )
     
-    print("=== Test 2: User Workspace File ===")
-    print(f"Risk Probability: {assessment2.probability}")
-    print(f"Confidence: {assessment2.confidence}")
-    print(f"Risk Level: {assessment2.risk_level.value}")
-    print(f"Action: {assessment2.recommended_action}")
-    print(f"Subjective: T={assessment2.subjective_logic.trust}, D={assessment2.subjective_logic.disbelief}, U={assessment2.subjective_logic.uncertainty}")
-    print(f"Time: {assessment2.execution_time_ms}ms")
+    logger.info("Test 2: User Workspace File",
+                probability=assessment2.probability,
+                confidence=assessment2.confidence,
+                risk_level=assessment2.risk_level.value,
+                action=assessment2.recommended_action,
+                subjective_trust=assessment2.subjective_logic.trust,
+                subjective_disbelief=assessment2.subjective_logic.disbelief,
+                subjective_uncertainty=assessment2.subjective_logic.uncertainty,
+                time_ms=assessment2.execution_time_ms)
 

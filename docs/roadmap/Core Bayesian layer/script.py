@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 1: Create Bayesian Kernel YAML definition
 bayesian_kernel_yaml = """# Bayesian Reasoning Kernel
@@ -114,6 +117,5 @@ version_history: |
   1.0.0 - Initial kernel with Bayesian reasoning patterns
 """
 
-print("✅ Bayesian Kernel YAML Definition:")
-print(bayesian_kernel_yaml[:500] + "...")
-print("\n📊 File location: /l9/core/kernels/bayesian_kernel.yaml")
+logger.info("Bayesian Kernel YAML Definition", preview=bayesian_kernel_yaml[:500])
+logger.info("File location", path="/l9/core/kernels/bayesian_kernel.yaml")

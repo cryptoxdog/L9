@@ -46,10 +46,10 @@ Feature Flag: ENABLE_SUBJECTIVE_LOGIC (default: false)
 """
 from typing import Dict, Any, Tuple
 import os
-import logging
+import structlog
 import math
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class SubjectiveLogicAdapter:
@@ -256,39 +256,39 @@ def subjective_logic_enabled() -> bool:
 
 # Validation
 if __name__ == "__main__":
-    print("Testing Subjective Logic Adapter...")
+    logger.info("Testing Subjective Logic Adapter...")
     
     adapter = SubjectiveLogicAdapter()
     
     # Test from_probability
     opinion1 = adapter.from_probability(probability=0.8, uncertainty=0.2)
-    print(f"\nFrom probability (p=0.8, u=0.2):")
-    print(f"  Belief: {opinion1['belief']:.3f}")
-    print(f"  Disbelief: {opinion1['disbelief']:.3f}")
-    print(f"  Uncertainty: {opinion1['uncertainty']:.3f}")
-    print(f"  Sum: {sum(opinion1.values()):.6f}")
+    logger.info("From probability (p=0.8, u=0.2)", 
+                belief=f"{opinion1['belief']:.3f}",
+                disbelief=f"{opinion1['disbelief']:.3f}",
+                uncertainty=f"{opinion1['uncertainty']:.3f}",
+                total=f"{sum(opinion1.values()):.6f}")
     
     # Test from_beta
     opinion2 = adapter.from_beta(alpha=10, beta=3)
-    print(f"\nFrom Beta(10, 3):")
-    print(f"  Belief: {opinion2['belief']:.3f}")
-    print(f"  Disbelief: {opinion2['disbelief']:.3f}")
-    print(f"  Uncertainty: {opinion2['uncertainty']:.3f}")
+    logger.info("From Beta(10, 3)",
+                belief=f"{opinion2['belief']:.3f}",
+                disbelief=f"{opinion2['disbelief']:.3f}",
+                uncertainty=f"{opinion2['uncertainty']:.3f}")
     
     # Test to_probability
     prob = adapter.to_probability(**opinion1)
-    print(f"\nBack to probability: {prob:.3f}")
+    logger.info("Back to probability", probability=f"{prob:.3f}")
     
     # Test combine
     combined = adapter.combine_opinions(opinion1, opinion2)
-    print(f"\nCombined opinion:")
-    print(f"  Belief: {combined['belief']:.3f}")
-    print(f"  Disbelief: {combined['disbelief']:.3f}")
-    print(f"  Uncertainty: {combined['uncertainty']:.3f}")
+    logger.info("Combined opinion",
+                belief=f"{combined['belief']:.3f}",
+                disbelief=f"{combined['disbelief']:.3f}",
+                uncertainty=f"{combined['uncertainty']:.3f}")
     
     # Test confidence
     confidence = adapter.opinion_to_confidence(opinion1)
-    print(f"\nConfidence: {confidence:.3f}")
+    logger.info("Confidence", value=f"{confidence:.3f}")
     
     # Validate constraints
     assert abs(sum(opinion1.values()) - 1.0) < 1e-6
@@ -296,5 +296,5 @@ if __name__ == "__main__":
     assert abs(sum(combined.values()) - 1.0) < 1e-6
     assert 0.0 <= confidence <= 1.0
     
-    print("\n✅ Subjective Logic adapter validated")
+    logger.info("Subjective Logic adapter validated", status="success")
 

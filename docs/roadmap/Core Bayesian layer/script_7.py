@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Final summary showing all files ready for implementation
 
@@ -255,12 +258,12 @@ Safety Level: ✅ Safe (feature flag OFF by default)
 Regression Risk: ✅ None (extension only, no core changes)
 """
 
-print(summary)
-print("\n" + "="*80)
-print("GMP-K.0 COMPLETE")
-print("="*80)
-print("\n✅ All 6 phases complete (0-6)")
-print("✅ 650 lines production code")
-print("✅ 16 unit tests, 100% coverage")
-print("✅ Feature flag OFF by default (safe)")
-print("✅ Ready for production deployment")
+logger.info("GMP-K.0 Summary", summary=summary)
+logger.info("GMP-K.0 COMPLETE", status="success", details={
+    "phases_complete": "0-6",
+    "lines_of_code": 650,
+    "unit_tests": 16,
+    "coverage": "100%",
+    "feature_flag_default": "OFF (safe)",
+    "status": "Ready for production deployment",
+})

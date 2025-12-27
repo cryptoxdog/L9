@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 4: Unit Tests
 
@@ -316,16 +319,16 @@ def test_confidence_from_distribution():
         assert conf < 0.4
 '''
 
-print("✅ Unit Tests for Bayesian Kernel:")
-print(test_bayesian_kernel[:800] + "...")
-print("\n📊 File location: /tests/core/test_bayesian_kernel.py")
-print("\n🧪 Test Coverage:")
-print("  ✓ Feature flag defaults to OFF (safe)")
-print("  ✓ Feature flag responds to environment")
-print("  ✓ Hypergraph node templates exist")
-print("  ✓ Belief state creation/updates")
-print("  ✓ Evidence addition")
-print("  ✓ Posterior calculations")
-print("  ✓ No regressions when disabled")
-print("  ✓ Thread-safe singleton pattern")
-print("  ✓ Confidence calculations")
+logger.info("Unit Tests for Bayesian Kernel", preview=test_bayesian_kernel[:800])
+logger.info("File location", path="/tests/core/test_bayesian_kernel.py")
+logger.info("Test Coverage", items=[
+    "Feature flag defaults to OFF (safe)",
+    "Feature flag responds to environment",
+    "Hypergraph node templates exist",
+    "Belief state creation/updates",
+    "Evidence addition",
+    "Posterior calculations",
+    "No regressions when disabled",
+    "Thread-safe singleton pattern",
+    "Confidence calculations",
+])

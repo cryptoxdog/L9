@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 1-2: Hypergraph node templates and Bayesian kernel class
 
@@ -246,6 +249,5 @@ TASK_NODE_TEMPLATE = NodeTemplate(
 )
 '''
 
-print("✅ Hypergraph Node Definitions:")
-print(hypergraph_py[500:1000] + "...")
-print("\n📊 File location: /l9/core/schemas/hypergraph.py")
+logger.info("Hypergraph Node Definitions", preview=hypergraph_py[500:1000])
+logger.info("File location", path="/l9/core/schemas/hypergraph.py")

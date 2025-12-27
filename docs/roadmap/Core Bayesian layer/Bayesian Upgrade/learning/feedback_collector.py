@@ -66,6 +66,9 @@ from datetime import datetime
 import json
 from pathlib import Path
 from enum import Enum
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 class FeedbackType(Enum):
@@ -405,7 +408,7 @@ class FeedbackCollector:
             with open(self.registry_path, 'w') as f:
                 json.dump(self.registry, f, indent=2)
         except Exception as e:
-            print(f"Error saving registry: {e}")
+            logger.error("Error saving registry", error=str(e))
     
     def get_feedback_summary(self, days: int = 7) -> Dict:
         """
@@ -437,8 +440,8 @@ if __name__ == '__main__':
     collector = FeedbackCollector()
     
     if len(sys.argv) < 3:
-        print("Usage: python feedback_collector.py <decision_id> <feedback>")
-        print("Feedback: correct | too_strict | too_lenient")
+        logger.info("Usage: python feedback_collector.py <decision_id> <feedback>")
+        logger.info("Feedback: correct | too_strict | too_lenient")
         sys.exit(1)
     
     decision_id = sys.argv[1]
@@ -446,7 +449,8 @@ if __name__ == '__main__':
     
     event = collector.record_explicit_feedback(decision_id, feedback)
     
-    print(f"Feedback recorded: {event.feedback_type.value}")
-    print(f"Immediate action: {event.immediate_action_taken}")
-    print(f"Logged to: {collector.feedback_log_path}")
+    logger.info("Feedback recorded",
+                feedback_type=event.feedback_type.value,
+                immediate_action=event.immediate_action_taken,
+                logged_to=str(collector.feedback_log_path))
 

@@ -123,6 +123,9 @@ import torch.nn.functional as F
 from typing import Dict, Any, Optional
 import numpy as np
 from collections import defaultdict
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 try:
     from bayesian_torch.layers import LinearReparameterization
@@ -425,7 +428,7 @@ class DeepEnsemble:
 
 # Example usage and validation
 if __name__ == "__main__":
-    print("Testing Bayesian Uncertainty Engine...")
+    logger.info("Testing Bayesian Uncertainty Engine...")
     
     # Create simple test model
     class TestModel(nn.Module):
@@ -447,12 +450,12 @@ if __name__ == "__main__":
     # Get posterior
     result = uncertainty.quantify(model, x)
     
-    print("\nBayesian Posterior:")
-    print(f"  Mean: {result['mean']:.3f}")
-    print(f"  Epistemic σ: {result['epistemic_std']:.3f}")
-    print(f"  Aleatoric σ: {result['aleatoric_std']:.3f}")
-    print(f"  Confidence: {result['confidence']:.3f}")
-    print(f"  OOD: {result['is_ood']}")
+    logger.info("Bayesian Posterior",
+                mean=f"{result['mean']:.3f}",
+                epistemic_std=f"{result['epistemic_std']:.3f}",
+                aleatoric_std=f"{result['aleatoric_std']:.3f}",
+                confidence=f"{result['confidence']:.3f}",
+                is_ood=result['is_ood'])
     
     # Validate requirements
     assert 'epistemic_std' in result
@@ -461,5 +464,5 @@ if __name__ == "__main__":
     assert result['epistemic_std'] >= 0
     assert 0 <= result['confidence'] <= 1
     
-    print("\n✅ Bayesian uncertainty engine validated")
+    logger.info("Bayesian uncertainty engine validated", status="success")
 

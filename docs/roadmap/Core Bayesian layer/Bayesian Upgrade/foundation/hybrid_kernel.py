@@ -64,6 +64,9 @@ from datetime import datetime
 import re
 import json
 from pathlib import Path
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Import components (will be available after deployment)
 try:
@@ -490,7 +493,6 @@ if __name__ == '__main__':
     kernel = HybridInferenceKernel()
     
     # Test 1: Pure probabilistic decision (file edit)
-    print("=== Test 1: File Edit Assessment ===")
     decision1 = kernel.evaluate_governance_action(
         action_type='file_edit',
         context={
@@ -501,14 +503,13 @@ if __name__ == '__main__':
             'references_count': 5
         }
     )
-    print(f"Decision: {'ALLOW' if decision1.result else 'BLOCK'}")
-    print(f"Confidence: {decision1.confidence}")
-    print(f"Reasoning: {decision1.reasoning}")
-    print(f"Time: {decision1.execution_time_ms}ms")
-    print()
+    logger.info("Test 1: File Edit Assessment",
+                decision="ALLOW" if decision1.result else "BLOCK",
+                confidence=decision1.confidence,
+                reasoning=decision1.reasoning,
+                time_ms=decision1.execution_time_ms)
     
     # Test 2: Command risk assessment
-    print("=== Test 2: Command Risk Assessment ===")
     decision2 = kernel.evaluate_governance_action(
         action_type='command_execution',
         context={
@@ -517,13 +518,12 @@ if __name__ == '__main__':
             'user_approval_rate': 0.85
         }
     )
-    print(f"Decision: {'APPROVE' if decision2.result else 'REQUIRE_CONFIRMATION'}")
-    print(f"Confidence: {decision2.confidence}")
-    print(f"Reasoning: {decision2.reasoning}")
-    print()
+    logger.info("Test 2: Command Risk Assessment",
+                decision="APPROVE" if decision2.result else "REQUIRE_CONFIRMATION",
+                confidence=decision2.confidence,
+                reasoning=decision2.reasoning)
     
     # Test 3: Hybrid rule evaluation
-    print("=== Test 3: Hybrid Rule Evaluation ===")
     decision3 = kernel.evaluate_rule_with_probabilistic_predicate(
         rule_fol="IF P(FileComplianceRisk) > threshold('high_risk') THEN REQUIRE_REVIEW()",
         context={
@@ -534,7 +534,8 @@ if __name__ == '__main__':
             'references_count': 15
         }
     )
-    print(f"Result: {decision3.result}")
-    print(f"Confidence: {decision3.confidence}")
-    print(f"Audit Trail: {len(decision3.audit_trail)} steps")
+    logger.info("Test 3: Hybrid Rule Evaluation",
+                result=decision3.result,
+                confidence=decision3.confidence,
+                audit_trail_steps=len(decision3.audit_trail))
 

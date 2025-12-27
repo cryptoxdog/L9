@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 3: Feature flags configuration
 
@@ -79,7 +82,6 @@ def reset_flags_for_testing() -> None:
     _flags = None
 '''
 
-print("✅ Feature Flags Configuration:")
-print(config_snippet)
-print("\n📊 File location: /l9/config.py")
-print("\n🔧 Default: L9_ENABLE_BAYESIAN_REASONING=false (safe)")
+logger.info("Feature Flags Configuration", snippet=config_snippet)
+logger.info("File location", path="/l9/config.py")
+logger.info("Default flag", flag="L9_ENABLE_BAYESIAN_REASONING=false (safe)")

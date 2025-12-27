@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 2 (continued): Kernel Loader Wiring for Bayesian Kernel
 
@@ -194,10 +197,10 @@ async def agent_execute_with_bayesian(
     return result
 '''
 
-print("✅ Kernel Loader Extension for Bayesian Kernel:")
-print(kernel_loader_extension[:800] + "...")
-print("\n📍 Add to /l9/core/kernel_loader.py:")
-print("  - Import BayesianKernel")
-print("  - Add load_bayesian_kernel() method")
-print("  - Add build_system_prompt_with_bayesian() method")
-print("  - Update load_all_kernels() to include Bayesian status")
+logger.info("Kernel Loader Extension for Bayesian Kernel", preview=kernel_loader_extension[:800])
+logger.info("Add to /l9/core/kernel_loader.py", items=[
+    "Import BayesianKernel",
+    "Add load_bayesian_kernel() method",
+    "Add build_system_prompt_with_bayesian() method",
+    "Update load_all_kernels() to include Bayesian status",
+])

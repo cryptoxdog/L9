@@ -66,6 +66,9 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 from collections import defaultdict
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -505,13 +508,12 @@ def generate_weekly_report():
     dashboard = CalibrationDashboard()
     report = dashboard.generate_weekly_report()
     
-    print(report)
+    logger.info("Weekly report generated", report=report)
     
     # Check for drift
     drift_alert = dashboard.detect_calibration_drift()
     if drift_alert:
-        print("\n⚠️  DRIFT ALERT DETECTED")
-        print(json.dumps(drift_alert, indent=2))
+        logger.warning("DRIFT ALERT DETECTED", alert=drift_alert)
     
     return report
 

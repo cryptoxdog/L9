@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Phase 2: Bayesian Kernel Class and kernel_loader wiring
 
@@ -206,6 +209,5 @@ def reset_bayesian_kernel() -> None:
     _bayesian_kernel = None
 '''
 
-print("✅ Bayesian Kernel Class:")
-print(bayesian_kernel_class[500:1000] + "...")
-print("\n📊 File location: /l9/core/kernels/bayesian_kernel.py")
+logger.info("Bayesian Kernel Class", preview=bayesian_kernel_class[500:1000])
+logger.info("File location", path="/l9/core/kernels/bayesian_kernel.py")

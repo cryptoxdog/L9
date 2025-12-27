@@ -1,3 +1,6 @@
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 final_summary = """
 ================================================================================
@@ -134,5 +137,5 @@ GENERATED FILE LOCATIONS IN SPACES
 ================================================================================
 """
 
-print(final_summary)
-print("\n✅ ALL PRODUCTION FILES GENERATED AND READY FOR DOWNLOAD")
+logger.info("GMP-K.0 Summary", summary=final_summary)
+logger.info("ALL PRODUCTION FILES GENERATED AND READY FOR DOWNLOAD", status="complete")
