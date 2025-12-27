@@ -8,7 +8,6 @@ or:
 """
 
 import asyncio
-import structlog
 import secrets
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -23,17 +22,6 @@ from .db import init_db, close_db
 from .routes import router
 from .routes.memory import cleanup_task
 from .mcpserver import get_mcp_tools, handle_tool_call, MCPToolCall
-
-# Configure structlog with standard logging integration
-logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(
-        getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
-    ),
-)
 logger = structlog.get_logger(__name__)
 
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
