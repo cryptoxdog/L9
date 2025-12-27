@@ -629,10 +629,12 @@ L_INTERNAL_TOOLS = [
         name="mac_agent_exec_task",
         description="Execute task via Mac Agent (backed by vps_executor.py)",
         category="execution",
-        scope="internal",
+        # High-risk: requires Igor approval for actual execution
+        scope="requires_igor_approval",
         is_destructive=True,
         requires_confirmation=True,
-        risk_level="medium",
+        risk_level="high",
+        requires_igor_approval=True,
         agent_id="L",
     ),
     # GMP Execution (God Mode Prompt)

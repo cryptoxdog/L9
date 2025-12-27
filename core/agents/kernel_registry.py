@@ -15,6 +15,7 @@ import os
 from typing import Any, Dict, Optional
 
 from core.agents.schemas import AgentConfig
+from core.schemas.capabilities import DEFAULT_L_CAPABILITIES
 
 logger = structlog.get_logger(__name__)
 
@@ -68,6 +69,8 @@ class KernelAwareAgentRegistry:
             self._kernel_system_prompt = agent.get_system_prompt()
             
             # Register as agent config
+            # NOTE: Capabilities: attach DEFAULT_L_CAPABILITIES so L always
+            # runs with the tool + approval profile defined in capabilities.py.
             self._agents["l9-standard-v1"] = AgentConfig(
                 agent_id="l9-standard-v1",
                 personality_id="l-cto",
@@ -75,6 +78,7 @@ class KernelAwareAgentRegistry:
                 model=os.getenv("L9_LLM_MODEL", "gpt-4o"),
                 temperature=0.3,
                 max_tokens=4000,
+                capabilities=DEFAULT_L_CAPABILITIES,
             )
             
             # Also register as "l-cto" alias

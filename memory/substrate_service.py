@@ -443,7 +443,7 @@ class MemorySubstrateService:
         Trigger world model update from insights.
         
         Calls WorldModelService.update_from_insights() to propagate
-        insights to the world model.
+        insights to the world model with DB persistence.
         
         Args:
             insights: List of insights to propagate
@@ -466,7 +466,7 @@ class MemorySubstrateService:
             # Lazy import to avoid circular dependencies
             from world_model.service import get_world_model_service
             
-            # Get or create singleton service instance (DB-backed)
+            # Get singleton service instance (DB-backed)
             if not hasattr(self, '_world_model_service'):
                 self._world_model_service = get_world_model_service()
             

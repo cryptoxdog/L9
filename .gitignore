@@ -1,5 +1,8 @@
-# Secrets
+# Secrets (but allow .example templates)
 .env
+.env.cursor
+.env.local
+!*.example
 
 # Virtualenvs
 venv/
@@ -59,22 +62,10 @@ dev/_quarantine/
 # --- local/dev junk ---
 .venv/
 openapi.json
-tree.txt
 *_REPORT*.md
 *.bak.*
 .suite6-config.json
 
-# --- generated index files ---
-api_surfaces.txt
-architecture.txt
-class_definitions.txt
-config_files.txt
-dependencies.txt
-env_refs.txt
-fastapi_routes.txt
-function_signatures.txt
-imports.txt
-entrypoints.txt
 
 # --- quarantine ---
 _l9_GHOST_REPO-DON'T USE/

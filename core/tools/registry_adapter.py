@@ -26,6 +26,7 @@ from core.agents.schemas import (
     ToolBinding,
     ToolCallResult,
 )
+from core.schemas.capabilities import ToolName, DEFAULT_L_CAPABILITIES
 
 if TYPE_CHECKING:
     from core.governance.engine import GovernanceEngineService
@@ -158,6 +159,25 @@ class ExecutorToolRegistry:
         bindings: list[ToolBinding] = []
         
         for tool_meta in self._registry.list_enabled():
+            # Map registry tool ID to ToolName enum when possible so we can
+            # enforce capabilities for L using DEFAULT_L_CAPABILITIES.
+            tool_enum: Optional[ToolName] = None
+            try:
+                tool_enum = ToolName(tool_meta.id)
+            except ValueError:
+                tool_enum = None
+
+            # Enforce AgentCapabilities for L (agent ids that alias L)
+            if agent_id in ("L", "l-cto", "l9-standard-v1") and tool_enum is not None:
+                cap = DEFAULT_L_CAPABILITIES.get_capability(tool_enum)
+                if not cap or not cap.allowed:
+                    logger.debug(
+                        "Tool %s denied for agent %s by capabilities profile",
+                        tool_meta.id,
+                        agent_id,
+                    )
+                    continue
+
             # Use governance engine if available
             if self._governance_engine:
                 allowed = self._governance_engine.is_allowed(
@@ -594,5 +614,200 @@ __all__ = [
     "RiskLevel",
     "SIDE_EFFECT_TOOLS",
     "HIGH_RISK_TOOLS",
+    "register_l_tools",
 ]
+
+
+# =============================================================================
+# L-CTO Tool Registration
+# =============================================================================
+
+async def register_l_tools() -> int:
+    """
+    Register all L-CTO tools in the tool registry with governance metadata.
+    
+    Called once at server startup.
+    Each tool gets:
+      - Execution function from runtime.l_tools
+      - Governance metadata (scope, risk_level, requires_approval)
+      - Input schema for validation
+      - Registration in base registry for dispatch
+    
+    Returns:
+        Number of tools registered
+        
+    Raises:
+        Exception: If registration fails
+    """
+    from core.tools.tool_graph import ToolGraph, ToolDefinition
+    from runtime.l_tools import (
+        memory_search,
+        memory_write,
+        gmp_run,
+        git_commit,
+        mac_agent_exec_task,
+        mcp_call_tool,
+        world_model_query,
+        kernel_read,
+    )
+    from services.research.tools.tool_registry import (
+        get_tool_registry,
+        ToolMetadata,
+        ToolType,
+        ToolSchema,
+    )
+    
+    # Get base registry for executor registration
+    base_registry = get_tool_registry()
+    
+    # Map tool names to their executor functions
+    TOOL_EXECUTORS = {
+        "memory_search": memory_search,
+        "memory_write": memory_write,
+        "gmp_run": gmp_run,
+        "git_commit": git_commit,
+        "mac_agent_exec_task": mac_agent_exec_task,
+        "mcp_call_tool": mcp_call_tool,
+        "world_model_query": world_model_query,
+        "kernel_read": kernel_read,
+    }
+    
+    logger.info("Registering L-CTO tools...")
+    
+    # Define all L-CTO tools with metadata
+    tools_to_register = [
+        ToolDefinition(
+            name="memory_search",
+            description="Search L's memory substrate using semantic search",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_write",
+            description="Write to L's memory substrate",
+            category="memory",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="gmp_run",
+            description="Execute a GMP (Governance Management Process)",
+            category="governance",
+            scope="requires_igor_approval",
+            risk_level="high",
+            requires_igor_approval=True,
+            requires_confirmation=True,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="git_commit",
+            description="Commit code changes to git repository",
+            category="vcs",
+            scope="requires_igor_approval",
+            risk_level="high",
+            requires_igor_approval=True,
+            requires_confirmation=True,
+            is_destructive=True,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mac_agent_exec_task",
+            description="Execute command via Mac agent",
+            category="execution",
+            scope="requires_igor_approval",
+            risk_level="high",
+            requires_igor_approval=True,
+            requires_confirmation=True,
+            is_destructive=True,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mcp_call_tool",
+            description="Call a tool via MCP (Model Context Protocol)",
+            category="external",
+            scope="external",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_query",
+            description="Query the world model",
+            category="world_model",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="kernel_read",
+            description="Read a property from a kernel",
+            category="kernel",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+    ]
+    
+    # Register each tool in BOTH Neo4j AND base registry
+    registered_count = 0
+    for tool_def in tools_to_register:
+        try:
+            # 1. Register in Neo4j (for graph queries and governance metadata)
+            success = await ToolGraph.register_tool(tool_def)
+            if success:
+                logger.debug(f"Neo4j: registered {tool_def.name}")
+            else:
+                logger.debug(f"Neo4j: skipped {tool_def.name} (unavailable)")
+            
+            # 2. Register in base registry (for dispatch execution)
+            executor_func = TOOL_EXECUTORS.get(tool_def.name)
+            if executor_func:
+                metadata = ToolMetadata(
+                    id=tool_def.name,
+                    name=tool_def.name,
+                    description=tool_def.description,
+                    tool_type=ToolType.CUSTOM,
+                    allowed_roles=["l-cto", "researcher", "agent"],
+                    rate_limit=60,
+                    timeout_seconds=120 if tool_def.name in ["gmp_run", "mac_agent_exec_task"] else 30,
+                    enabled=True,
+                    requires_api_key=False,
+                    input_schema=None,  # Schemas are in core/schemas/l_tools.py
+                )
+                base_registry.register(metadata, executor_func)
+                logger.info(f"✓ Registered tool: {tool_def.name} (risk={tool_def.risk_level})")
+            else:
+                logger.warning(f"No executor found for tool: {tool_def.name}")
+            
+            registered_count += 1
+        except Exception as e:
+            logger.error(f"✗ Failed to register {tool_def.name}: {e}")
+            raise
+    
+    high_risk_count = sum(1 for t in tools_to_register if t.requires_igor_approval)
+    logger.info(
+        f"✓✓ L-CTO tools registered: {registered_count} total, "
+        f"{high_risk_count} high-risk requiring approval, "
+        f"executors wired to base registry"
+    )
+    
+    return registered_count
 

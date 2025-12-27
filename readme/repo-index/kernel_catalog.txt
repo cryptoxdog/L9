@@ -1,0 +1,89 @@
+# L9 Kernel Catalog
+# ==================
+# 10 governance/identity/behavior kernels that define L's identity and constraints.
+
+## Kernel Stack (l9_private/kernels/00_system/)
+
+### 01_master_kernel.yaml
+- **ID**: 01_master_kernel
+- **Name**: 01_master_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 02_identity_kernel.yaml
+- **ID**: 02_identity_kernel
+- **Name**: 02_identity_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 03_cognitive_kernel.yaml
+- **ID**: 03_cognitive_kernel
+- **Name**: 03_cognitive_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 04_behavioral_kernel.yaml
+- **ID**: 04_behavioral_kernel
+- **Name**: 04_behavioral_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 05_memory_kernel.yaml
+- **ID**: 05_memory_kernel
+- **Name**: 05_memory_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 06_worldmodel_kernel.yaml
+- **ID**: 06_worldmodel_kernel
+- **Name**: 06_worldmodel_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+### 07_execution_kernel.yaml
+- **ID**: 07_execution_kernel
+- **Name**: 07_execution_kernel
+- **Version**: 1.0.0
+- **Purpose**: Governs deterministic execution flow for L9. Converts user intent into validated steps, planned acti
+
+### 08_safety_kernel.yaml
+- **ID**: 08_safety_kernel
+- **Name**: 08_safety_kernel
+- **Version**: 1.0.0
+- **Purpose**: Provides engineering safety, not generic AI policy. Scans all code, commands, SQL, migrations, Docke
+
+### 09_developer_kernel.yaml
+- **ID**: 09_developer_kernel
+- **Name**: 09_developer_kernel
+- **Version**: 1.0.0
+- **Purpose**: Governs engineering-grade execution for AI/agent development: spec-first, schema-first, test-bound, 
+
+### 10_packet_protocol_kernel.yaml
+- **ID**: 10_packet_protocol_kernel
+- **Name**: 10_packet_protocol_kernel
+- **Version**: 1.0.0
+- **Purpose**: 
+
+
+## Kernel Wiring Functions (core/kernel_wiring/)
+
+| Function | Source File | Purpose |
+|----------|-------------|---------|
+| `get_active_mode()` | master_wiring.py | Get current system mode |
+| `get_identity_profile()` | identity_wiring.py | Get L's identity profile |
+| `apply_identity_to_response()` | identity_wiring.py | Apply identity to outputs |
+| `get_reasoning_mode()` | cognitive_wiring.py | Get reasoning mode config |
+| `should_enable_meta_cognition()` | cognitive_wiring.py | Check meta-cognition flag |
+| `get_output_verbosity()` | behavioral_wiring.py | Get output verbosity level |
+| `is_topic_blocked()` | behavioral_wiring.py | Check if topic is blocked |
+| `get_memory_layers_config()` | memory_wiring.py | Get memory layer config |
+| `should_checkpoint_now()` | memory_wiring.py | Check checkpoint trigger |
+| `get_worldmodel_schema()` | worldmodel_wiring.py | Get world model schema |
+| `get_execution_state_machine()` | execution_wiring.py | Get execution FSM |
+| `get_allowed_transitions()` | execution_wiring.py | Get allowed state transitions |
+| `get_safety_policies()` | safety_wiring.py | Get safety policies |
+| `is_destructive_action()` | safety_wiring.py | Check if action is destructive |
+| `get_dev_policies()` | developer_wiring.py | Get developer policies |
+| `get_packet_protocol()` | packet_protocol_wiring.py | Get packet protocol config |
+| `get_allowed_event_types()` | packet_protocol_wiring.py | Get allowed event types |
+| `get_default_channel()` | packet_protocol_wiring.py | Get default channel |

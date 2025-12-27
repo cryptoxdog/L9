@@ -982,6 +982,23 @@ class AgentExecutorService:
                     "completed_at": datetime.utcnow().isoformat(),
                 },
             )
+
+            # Audit: log tool call in ToolGraph (best-effort)
+            try:
+                await ToolGraph.log_tool_call(
+                    tool_name=tool_call.tool_id,
+                    agent_id=instance.config.agent_id,
+                    success=result.success,
+                    duration_ms=result.duration_ms,
+                    error=result.error,
+                )
+            except Exception as log_err:
+                logger.warning(
+                    "tool_call_audit_failed: task_id=%s, tool_id=%s, error=%s",
+                    str(instance.task.id),
+                    tool_call.tool_id,
+                    str(log_err),
+                )
             
             return result
             
@@ -992,6 +1009,23 @@ class AgentExecutorService:
                 tool_call.tool_id,
                 str(e),
             )
+            # Audit failure case as well
+            try:
+                await ToolGraph.log_tool_call(
+                    tool_name=tool_call.tool_id,
+                    agent_id=instance.config.agent_id,
+                    success=False,
+                    duration_ms=None,
+                    error=str(e),
+                )
+            except Exception as log_err:
+                logger.warning(
+                    "tool_call_audit_failed: task_id=%s, tool_id=%s, error=%s",
+                    str(instance.task.id),
+                    tool_call.tool_id,
+                    str(log_err),
+                )
+
             return ToolCallResult(
                 call_id=tool_call.call_id,
                 tool_id=tool_call.tool_id,

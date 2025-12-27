@@ -6,10 +6,8 @@ from pydantic import BaseModel
 import uvicorn
 import httpx
 
-# Load from environment
-EXECUTOR_KEY = os.getenv("L9_EXECUTOR_API_KEY")
-if not EXECUTOR_KEY:
-    raise RuntimeError("L9_EXECUTOR_API_KEY not set")
+# Load from environment (required for server mode, optional for client imports)
+EXECUTOR_KEY = os.getenv("L9_EXECUTOR_API_KEY", "")
 
 MEMORY_HEALTH_URL = "http://127.0.0.1:8000/memory/stats"
 
@@ -44,6 +42,8 @@ class CompositeTask(BaseModel):
     working_dir: Optional[str] = "/opt/l9"
 
 def check_auth(authorization: str = Header(...)) -> None:
+    if not EXECUTOR_KEY:
+        raise HTTPException(status_code=500, detail="L9_EXECUTOR_API_KEY not configured on server")
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid auth header")
     token = authorization.split(" ", 1)[1].strip()
@@ -121,6 +121,75 @@ def agent_exec(task: CompositeTask, authorization: str = Header(...)):
         return {"mode": "memory_health", "result": result}
     
     raise HTTPException(status_code=400, detail=f"Unsupported task type: {task.type}")
+
+# =============================================================================
+# Client Function (called by runtime/l_tools.py)
+# =============================================================================
+
+async def send_mac_task(command: str, timeout: int = 30) -> dict:
+    """
+    Send a task to the VPS executor service.
+    
+    This is called by L's mac_agent_exec_task tool.
+    
+    Args:
+        command: Shell command to execute
+        timeout: Timeout in seconds
+        
+    Returns:
+        Dict with success, output, exit_code, error
+    """
+    executor_url = os.getenv("VPS_EXECUTOR_URL", "http://127.0.0.1:8100")
+    executor_key = os.getenv("L9_EXECUTOR_API_KEY", "")
+    
+    if not executor_key:
+        return {
+            "success": False,
+            "output": "",
+            "exit_code": None,
+            "error": "L9_EXECUTOR_API_KEY not configured",
+        }
+    
+    try:
+        async with httpx.AsyncClient(timeout=timeout + 5) as client:
+            response = await client.post(
+                f"{executor_url}/agent/exec",
+                headers={
+                    "Authorization": f"Bearer {executor_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "type": "shell",
+                    "command": command,
+                    "working_dir": "/opt/l9",
+                },
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                result = data.get("result", {})
+                return {
+                    "success": result.get("ok", False),
+                    "output": result.get("stdout", "") or result.get("stderr", ""),
+                    "exit_code": result.get("exit_code"),
+                    "error": result.get("stderr") if not result.get("ok") else None,
+                }
+            else:
+                return {
+                    "success": False,
+                    "output": "",
+                    "exit_code": None,
+                    "error": f"HTTP {response.status_code}: {response.text}",
+                }
+                
+    except Exception as e:
+        return {
+            "success": False,
+            "output": "",
+            "exit_code": None,
+            "error": str(e),
+        }
+
 
 if __name__ == "__main__":
     uvicorn.run(

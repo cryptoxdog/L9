@@ -72,8 +72,10 @@
   api.db
   api.memory.router
   api.os_routes
+  api.server
   api.slack_adapter
   api.slack_client
+  api.tools.router
 # apply_policy_rules
   apply_policy_rules
 # argparse
@@ -112,22 +114,24 @@
   core.agents.schemas
   core.aios.runtime
   core.boundary.enforcer
+  core.config
   core.governance.approvals
   core.governance.engine
   core.governance.loader
   core.governance.schemas
   core.kernel_wiring.packet_protocol_wiring
+  core.kernels.bayesian_kernel
   core.kernels.integrity
   core.retrievers.substrate_retriever
   core.schemas.capabilities
   core.schemas.event_stream
+  core.schemas.hypergraph
   core.schemas.packet_envelope
   core.schemas.research_factory_models
   core.schemas.research_factory_nodes
   core.schemas.research_factory_state
   core.schemas.tasks
   core.schemas.ws_event_stream
-  core.security.permission_graph
   core.tools.registry_adapter
   core.tools.tool_graph
 # dataclasses
@@ -149,6 +153,15 @@
   email_agent.credentials
   email_agent.gmail_client
   email_agent.triage
+# emma_agent
+  emma_agent.controller
+  emma_agent.infra.cache
+  emma_agent.infra.database
+  emma_agent.infra.health
+  emma_agent.infra.metrics
+  emma_agent.modules.escalation_manager
+  emma_agent.modules.governance_handler
+  emma_agent.modules.memory_manager
 # enum
   enum
 # fastapi
@@ -182,6 +195,8 @@
   ir_engine.ir_validator
   ir_engine.semantic_compiler
   ir_engine.simulation_router
+# itertools
+  itertools
 # jinja2
   jinja2
 # json
@@ -201,6 +216,8 @@
   mac_agent.config
   mac_agent.executor
   mac_agent.helpers.logging
+# math
+  math
 # memory
   memory.graph_client
   memory.housekeeping
@@ -233,12 +250,23 @@
   orchestration.task_router
   orchestration.unified_controller
   orchestration.ws_task_router
+# orchestrators
+  orchestrators.action_tool.interface
+  orchestrators.action_tool.orchestrator
+  orchestrators.reasoning.interface
+  orchestrators.reasoning.orchestrator
+  orchestrators.research_swarm.interface
+  orchestrators.research_swarm.orchestrator
 # os
   os
+# pandas
+  pandas
 # pathlib
   pathlib
 # platform
   platform
+# plotly
+  plotly.graph_objects
 # psycopg
   psycopg
   psycopg.rows
@@ -319,6 +347,8 @@
   tempfile
 # tenacity
   tenacity
+# tensorflow
+  tensorflow
 # tests
   tests.core.agents.test_executor
   tests.ir_engine.conftest

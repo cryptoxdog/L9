@@ -65,7 +65,14 @@ except ImportError:
 # Optional: Agent Executor (v2.2+)
 try:
     from core.agents.executor import AgentExecutorService
-    from core.agents.schemas import AgentConfig, ToolBinding
+    from core.agents.schemas import (
+        AgentConfig,
+        AgentTask,
+        DuplicateTaskResponse,
+        ExecutionResult,
+        TaskKind,
+        ToolBinding,
+    )
     _has_agent_executor = True
 except ImportError:
     _has_agent_executor = False
@@ -591,6 +598,17 @@ async def lifespan(app: FastAPI):
     if not hasattr(app.state, 'rate_limiter') or app.state.rate_limiter is None:
         logger.warning("STARTUP VALIDATION: Rate limiter not initialized")
     
+    # ========================================================================
+    # REGISTER L-CTO TOOLS
+    # ========================================================================
+    try:
+        from core.tools.registry_adapter import register_l_tools
+        tool_count = await register_l_tools()
+        logger.info(f"✓ L-CTO tools registered: {tool_count} tools available")
+    except Exception as e:
+        logger.warning(f"L-CTO tool registration skipped: {e}")
+        # Non-fatal: tools still work via direct executor dispatch
+    
     yield
     
     # ========================================================================
@@ -765,69 +783,185 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
 
+
+# =============================================================================
+# L-CTO Agent Chat Endpoint (kernel-aware via AgentExecutorService)
+# =============================================================================
+
+from typing import Any, Optional
+from pydantic import Field
+
+
+class LChatRequest(BaseModel):
+    """Request for L-CTO agent chat via AgentExecutorService."""
+    message: str = Field(..., description="User message to send to L")
+    thread_id: Optional[str] = Field(None, description="Thread identifier for conversation grouping")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+
+class LChatResponse(BaseModel):
+    """Response from L-CTO agent chat."""
+    reply: str = Field(..., description="Agent reply content")
+    task_id: str = Field(..., description="Task identifier")
+    status: str = Field(..., description="Execution status (completed, duplicate, failed)")
+
+
+@app.post("/lchat", response_model=LChatResponse)
+async def lchat(
+    request: LChatRequest,
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """
+    L-CTO agent chat endpoint using AgentExecutorService.
+    
+    Routes messages through the kernel-aware agent stack:
+    AgentTask -> AgentExecutorService -> AIOSRuntime
+    
+    This is the recommended endpoint for interacting with L.
+    """
+    # Check if agent executor is available
+    if not _has_agent_executor:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent executor not available. L-CTO agent stack not initialized."
+        )
+    
+    agent_executor = getattr(app.state, "agent_executor", None)
+    if agent_executor is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent executor not initialized. Check server startup logs."
+        )
+    
+    # Construct AgentTask for L-CTO
+    # Use deterministic thread identifier fallback
+    thread_identifier = request.thread_id or "http-default"
+    
+    task = AgentTask(
+        agent_id="l-cto",
+        kind=TaskKind.CONVERSATION,
+        source_id="http",
+        thread_identifier=thread_identifier,
+        payload={
+            "message": request.message,
+            "channel": "http",
+            "metadata": request.metadata,
+        },
+    )
+    
+    logger.info(
+        "lchat: task_id=%s, agent_id=%s, thread=%s",
+        str(task.id),
+        task.agent_id,
+        thread_identifier,
+    )
+    
+    # Execute task via AgentExecutorService
+    try:
+        result = await agent_executor.start_agent_task(task)
+    except Exception as e:
+        logger.exception("lchat: execution failed: %s", str(e))
+        raise HTTPException(status_code=500, detail=f"Agent execution error: {e}")
+    
+    # Handle duplicate detection
+    if isinstance(result, DuplicateTaskResponse):
+        logger.info("lchat: duplicate task detected: %s", str(result.task_id))
+        return LChatResponse(
+            reply="Duplicate task",
+            task_id=str(result.task_id),
+            status="duplicate",
+        )
+    
+    # Handle ExecutionResult
+    if isinstance(result, ExecutionResult):
+        reply = result.result or result.error or "No response"
+        return LChatResponse(
+            reply=reply,
+            task_id=str(result.task_id),
+            status=result.status,
+        )
+    
+    # Fallback (should not happen)
+    logger.warning("lchat: unexpected result type: %s", type(result))
+    return LChatResponse(
+        reply="Unexpected result format",
+        task_id=str(task.id),
+        status="error",
+    )
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if OPENAI_API_KEY:
     chat_client = OpenAI(api_key=OPENAI_API_KEY)
 else:
     chat_client = None
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(
-    payload: ChatRequest,
-    authorization: str = Header(None),
-    _: bool = Depends(verify_api_key),
-):
-    """
-    Basic LLM chat endpoint using OpenAI.
-    Ingests both request and response to memory for audit trail.
-    """
-    if not chat_client:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
-    
-    from memory.ingestion import ingest_packet
-    from memory.substrate_models import PacketEnvelopeIn
-    
-    try:
-        messages = []
-        if payload.system_prompt:
-            messages.append({"role": "system", "content": payload.system_prompt})
-        else:
-            messages.append({
-                "role": "system",
-                "content": (
-                    "You are L, an infrastructure-focused assistant connected to an L9 "
-                    "backend and memory system. Be concise, precise, and avoid destructive "
-                    "actions. When appropriate, suggest using tools like the CTO agent."
-                ),
-            })
-        messages.append({"role": "user", "content": payload.message})
-
-        completion = chat_client.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=messages,
-        )
-        reply = completion.choices[0].message.content
+# Legacy /chat route - gated by L9_ENABLE_LEGACY_CHAT flag
+if settings.l9_enable_legacy_chat:
+    @app.post("/chat", response_model=ChatResponse)
+    async def chat(
+        payload: ChatRequest,
+        authorization: str = Header(None),
+        _: bool = Depends(verify_api_key),
+    ):
+        """
+        Basic LLM chat endpoint using OpenAI.
+        Ingests both request and response to memory for audit trail.
         
-        # Ingest chat interaction to memory (audit trail)
+        LEGACY: This route calls OpenAI directly. Use POST /lchat for
+        kernel-aware agent execution via AgentExecutorService.
+        """
+        if not chat_client:
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+        
+        from memory.ingestion import ingest_packet
+        from memory.substrate_models import PacketEnvelopeIn
+        
         try:
-            packet_in = PacketEnvelopeIn(
-                packet_type="chat_interaction",
-                payload={
-                    "user_message": payload.message,
-                    "system_prompt": payload.system_prompt,
-                    "assistant_reply": reply,
-                    "model": "gpt-4.1-mini",
-                },
-                metadata={"agent": "chat_api", "source": "server"},
+            messages = []
+            if payload.system_prompt:
+                messages.append({"role": "system", "content": payload.system_prompt})
+            else:
+                messages.append({
+                    "role": "system",
+                    "content": (
+                        "You are L, an infrastructure-focused assistant connected to an L9 "
+                        "backend and memory system. Be concise, precise, and avoid destructive "
+                        "actions. When appropriate, suggest using tools like the CTO agent."
+                    ),
+                })
+            messages.append({"role": "user", "content": payload.message})
+
+            completion = chat_client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=messages,
             )
-            await ingest_packet(packet_in)
-        except Exception as mem_err:
-            # Log but don't fail the request if memory ingestion fails
-            logger.warning(f"Failed to ingest chat to memory: {mem_err}")
-        
-        return ChatResponse(reply=reply)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat backend error: {e}")
+            reply = completion.choices[0].message.content
+            
+            # Ingest chat interaction to memory (audit trail)
+            try:
+                packet_in = PacketEnvelopeIn(
+                    packet_type="chat_interaction",
+                    payload={
+                        "user_message": payload.message,
+                        "system_prompt": payload.system_prompt,
+                        "assistant_reply": reply,
+                        "model": "gpt-4.1-mini",
+                    },
+                    metadata={"agent": "chat_api", "source": "server"},
+                )
+                await ingest_packet(packet_in)
+            except Exception as mem_err:
+                # Log but don't fail the request if memory ingestion fails
+                logger.warning(f"Failed to ingest chat to memory: {mem_err}")
+            
+            return ChatResponse(reply=reply)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Chat backend error: {e}")
+    
+    logger.info("Legacy /chat route registered (L9_ENABLE_LEGACY_CHAT=true)")
+else:
+    logger.info("Legacy /chat route DISABLED (L9_ENABLE_LEGACY_CHAT=false)")
 
 # --- Routers ---
 # OS health + metrics + routing
@@ -1034,3 +1168,146 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
         )
         if agent_id:
             await ws_orchestrator.unregister(agent_id)
+
+
+# =============================================================================
+# L-CTO Agent WebSocket Endpoint (kernel-aware via AgentExecutorService)
+# =============================================================================
+
+@app.websocket("/lws")
+async def l_ws(websocket: WebSocket) -> None:
+    """
+    WebSocket entrypoint for L-CTO agent interactions.
+    
+    Routes messages through the kernel-aware agent stack:
+    AgentTask -> AgentExecutorService -> AIOSRuntime
+    
+    Protocol:
+    1) Client connects (no handshake required).
+    2) Client sends JSON frames with:
+       - message: str (required)
+       - thread_id: str (optional, for conversation grouping)
+       - metadata: dict (optional)
+    3) Server executes via AgentExecutorService and returns:
+       - task_id: str
+       - status: str (completed, duplicate, failed, error)
+       - reply: str
+    
+    Example client:
+        import websockets
+        import json
+        
+        async with websockets.connect("ws://localhost:8000/lws") as ws:
+            await ws.send(json.dumps({
+                "message": "What is L9?",
+                "thread_id": "my-session-123"
+            }))
+            response = json.loads(await ws.recv())
+            print(response["reply"])
+    """
+    await websocket.accept()
+    
+    # Check if agent executor is available
+    if not _has_agent_executor:
+        await websocket.send_json({
+            "task_id": "",
+            "status": "error",
+            "reply": "Agent executor not available. L-CTO agent stack not initialized."
+        })
+        await websocket.close(code=1011, reason="Agent executor unavailable")
+        return
+    
+    agent_executor = getattr(app.state, "agent_executor", None)
+    if agent_executor is None:
+        await websocket.send_json({
+            "task_id": "",
+            "status": "error",
+            "reply": "Agent executor not initialized. Check server startup logs."
+        })
+        await websocket.close(code=1011, reason="Agent executor not initialized")
+        return
+    
+    try:
+        # Message loop
+        while True:
+            try:
+                data = await websocket.receive_json()
+            except Exception as recv_err:
+                logger.warning("lws: failed to receive JSON: %s", str(recv_err))
+                break
+            
+            # Extract fields from frame
+            message = data.get("message")
+            if not message:
+                await websocket.send_json({
+                    "task_id": "",
+                    "status": "error",
+                    "reply": "Missing required field: message"
+                })
+                continue
+            
+            thread_id = data.get("thread_id") or "ws-default"
+            metadata = data.get("metadata", {})
+            
+            # Build AgentTask for L-CTO
+            try:
+                task = AgentTask(
+                    agent_id="l-cto",
+                    kind=TaskKind.CONVERSATION,
+                    source_id="ws",
+                    thread_identifier=thread_id,
+                    payload={
+                        "message": message,
+                        "channel": "ws",
+                        "metadata": metadata,
+                    },
+                )
+                
+                logger.info(
+                    "lws: task_id=%s, thread=%s",
+                    str(task.id),
+                    thread_id,
+                )
+                
+                # Execute task via AgentExecutorService
+                result = await agent_executor.start_agent_task(task)
+                
+                # Handle duplicate detection
+                if isinstance(result, DuplicateTaskResponse):
+                    await websocket.send_json({
+                        "task_id": str(result.task_id),
+                        "status": "duplicate",
+                        "reply": "Duplicate task"
+                    })
+                    continue
+                
+                # Handle ExecutionResult
+                if isinstance(result, ExecutionResult):
+                    reply = result.result or result.error or "No response"
+                    await websocket.send_json({
+                        "task_id": str(result.task_id),
+                        "status": result.status,
+                        "reply": reply
+                    })
+                    continue
+                
+                # Fallback (should not happen)
+                logger.warning("lws: unexpected result type: %s", type(result))
+                await websocket.send_json({
+                    "task_id": str(task.id),
+                    "status": "error",
+                    "reply": "Unexpected result format"
+                })
+                
+            except Exception as exec_err:
+                logger.exception("lws: execution error: %s", str(exec_err))
+                await websocket.send_json({
+                    "task_id": "",
+                    "status": "error",
+                    "reply": f"Execution error: {str(exec_err)}"
+                })
+                
+    except WebSocketDisconnect:
+        logger.debug("lws: client disconnected")
+    except Exception as exc:
+        logger.error("lws: unexpected error: %s", str(exc), exc_info=True)

@@ -62,6 +62,19 @@ class IntegrationSettings(BaseSettings):
         description="Enable WABA (WhatsApp Business Account) integration"
     )
     
+    # Feature flags for legacy route migration
+    l9_enable_legacy_chat: bool = Field(
+        default=True,
+        alias="L9_ENABLE_LEGACY_CHAT",
+        description="Enable legacy /chat route (direct OpenAI). Set False to disable."
+    )
+    
+    l9_enable_legacy_slack_router: bool = Field(
+        default=True,
+        alias="L9_ENABLE_LEGACY_SLACK_ROUTER",
+        description="Enable legacy Slack routing. Set False to use AgentTask routing."
+    )
+    
     # Storage configuration
     l9_data_root: str = Field(
         default=os.path.expanduser("~/.l9"),

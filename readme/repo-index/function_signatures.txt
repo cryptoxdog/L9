@@ -132,8 +132,6 @@ core/retrievers/substrate_retriever.py::__init__(self, service, agent_id, top_k)
 core/retrievers/substrate_retriever.py::_get_relevant_documents(self, query) - Synchronous wrapper required by BaseRetr
 core/schemas/capabilities.py::get_capability(self, tool) - Get the capability for a specific tool.
 core/schemas/capabilities.py::is_tool_allowed(self, tool) - Check if a specific tool is allowed for 
-core/schemas/capabilities.py::list_allowed_tools(self) - List all explicitly allowed tools.
-core/schemas/capabilities.py::list_denied_tools(self) - List all explicitly denied tools.
 core/schemas/capabilities.py::requires_igor_approval(self) - Check if this capability requires Igor's
 core/schemas/event_stream.py::create_handshake_event(handshake) - Create a security event for an agent han
 core/schemas/event_stream.py::create_violation_event(violation) - Create a security event for a capability
@@ -150,20 +148,15 @@ core/schemas/research_factory_state.py::has_errors(self) - Check if any errors o
 core/schemas/research_factory_state.py::is_complete(self) - Check if all passes are complete.
 core/schemas/research_factory_state.py::start_pass(self, pass_num) - Mark a pass as started and update state.
 core/schemas/research_factory_state.py::to_metrics(self) - Generate metrics from current state.
+core/schemas/tasks.py::all_succeeded(self) - Check if all tasks in batch succeeded.
+core/schemas/tasks.py::any_failed(self) - Check if any task in batch failed.
 core/schemas/tasks.py::assign_to(self, agent_id) - Assign this envelope to a specific agent
+core/schemas/tasks.py::get_ready_tasks(self) - Get tasks whose dependencies have all co
+core/schemas/tasks.py::mark_completed(self, envelope_id) - Mark an envelope as completed.
+core/schemas/tasks.py::mark_failed(self, envelope_id) - Mark an envelope as failed.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
 core/schemas/tasks.py::to_dict(self) - Serialize to dictionary.
-core/schemas/tests/test_research_factory.py::test_confidence_bounds(self) - Verify confidence bounds are enforced.
-core/schemas/tests/test_research_factory.py::test_empty_queries_rejected(self) - Verify empty queries list is rejected.
-core/schemas/tests/test_research_factory.py::test_empty_regions_rejected(self) - Verify empty regions list is rejected.
-core/schemas/tests/test_research_factory.py::test_initial_state(self) - Verify initial state creation.
-core/schemas/tests/test_research_factory.py::test_max_results_bounds(self) - Verify max_results bounds are enforced.
-core/schemas/tests/test_research_factory.py::test_regions_normalized_to_uppercase(self) - Verify regions are normalized to upperca
-core/schemas/tests/test_research_factory.py::test_valid_job_spec(self) - Verify valid job spec creation.
-core/schemas/tests/test_research_factory.py::test_valid_metrics(self) - Verify valid metrics creation.
-core/schemas/tests/test_research_factory.py::test_valid_parsed_object(self) - Verify valid parsed object creation.
-core/schemas/tests/test_research_factory.py::test_valid_query_plan(self) - Verify valid query plan creation.
 core/schemas/universal_schema.py::get_schema_info() - Return schema version information.
 core/tools/registry_adapter.py::__init__(self, base_registry, governance_enabled, governance_engine) - Initialize the adapter.
 core/tools/registry_adapter.py::_get_tool_schema(self, tool_id) - Get JSON Schema for a tool's parameters.
@@ -182,16 +175,23 @@ tools/cursor_client.py::_request(self, endpoint, method, data) - Make HTTP reque
 tools/cursor_client.py::health_check(self) - Check Cursor API health.
 tools/cursor_client.py::send_code(self, code) - Send code to Cursor.
 tools/cursor_client.py::send_command(self, command) - Send command to Cursor.
+tools/export_repo_indexes.py::generate_agent_catalog() - Generate catalog of all agents with role
 tools/export_repo_indexes.py::generate_api_surfaces() - Map all callable interfaces across diffe
 tools/export_repo_indexes.py::generate_class_definitions() - Extract class definitions with docstring
 tools/export_repo_indexes.py::generate_config_files() - List all configuration files.
 tools/export_repo_indexes.py::generate_dependencies() - Parse requirements.txt and show actual v
 tools/export_repo_indexes.py::generate_entrypoints() - Identify app entrypoints with useful met
 tools/export_repo_indexes.py::generate_env_refs() - Extract environment variable references.
+tools/export_repo_indexes.py::generate_event_types() - Generate catalog of event types and pack
 tools/export_repo_indexes.py::generate_function_signatures() - Extract function names and signatures.
 tools/export_repo_indexes.py::generate_imports() - Extract top-level Python imports from so
+tools/export_repo_indexes.py::generate_kernel_catalog() - Generate catalog of the 10 governance ke
 tools/export_repo_indexes.py::generate_module_architecture() - Map module structure and purposes from _
+tools/export_repo_indexes.py::generate_orchestrator_catalog() - Generate catalog of all orchestrators.
+tools/export_repo_indexes.py::generate_singleton_registry() - Generate registry of key singleton insta
+tools/export_repo_indexes.py::generate_tool_catalog() - Generate catalog of all tools with metad
 tools/export_repo_indexes.py::generate_tree() - Generate tree.txt using actual directory
+tools/export_repo_indexes.py::generate_wiring_map() - Generate high-level wiring/execution spi
 tools/export_repo_indexes.py::is_ignored(rel_path, patterns, is_dir) - Check if a path matches any gitignore pa
 tools/export_repo_indexes.py::load_gitignore_patterns() - Load and parse .gitignore patterns.
 tools/export_repo_indexes.py::main() - Generate index files and export them.

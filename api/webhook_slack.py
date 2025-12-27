@@ -6,10 +6,115 @@ import structlog
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
 
+from config.settings import settings
+
 logger = structlog.get_logger(__name__)
 
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+
+# Feature flag for legacy Slack routing
+# When False, route Slack messages through AgentTask + AgentExecutorService
+L9_ENABLE_LEGACY_SLACK_ROUTER = settings.l9_enable_legacy_slack_router
+
+
+# =============================================================================
+# L-CTO Agent Handler for Slack (Phase 2 prep - not yet wired)
+# =============================================================================
+
+async def handle_slack_with_l_agent(
+    app,
+    text: str,
+    thread_uuid: str,
+    team_id: str,
+    channel_id: str,
+    user_id: str,
+) -> tuple[str, str]:
+    """
+    Route a Slack message through the L-CTO agent via AgentExecutorService.
+    
+    This helper constructs an AgentTask and executes it via the kernel-aware
+    agent stack. It does NOT call OpenAI directly.
+    
+    Args:
+        app: FastAPI app instance (for accessing app.state.agent_executor)
+        text: Message text from Slack
+        thread_uuid: Slack thread UUID for conversation grouping
+        team_id: Slack workspace/team ID
+        channel_id: Slack channel ID
+        user_id: Slack user ID
+    
+    Returns:
+        Tuple of (reply_text, status) where:
+        - reply_text: The agent's response formatted for Slack
+        - status: One of "completed", "duplicate", "failed", "error"
+    
+    Example:
+        reply, status = await handle_slack_with_l_agent(
+            app=request.app,
+            text="What is the status of L9?",
+            thread_uuid="slack-1234567890.123456",
+            team_id="T12345678",
+            channel_id="C12345678",
+            user_id="U12345678",
+        )
+        if status == "completed":
+            slack_post(channel_id, reply)
+    """
+    try:
+        # Import here to avoid circular imports
+        from core.agents.schemas import AgentTask, TaskKind, ExecutionResult, DuplicateTaskResponse
+        
+        # Check if agent executor is available
+        agent_executor = getattr(app.state, "agent_executor", None)
+        if agent_executor is None:
+            logger.error("handle_slack_with_l_agent: agent_executor not available")
+            return ("L9 agent executor not available. Please try again later.", "error")
+        
+        # Construct AgentTask for L-CTO
+        task = AgentTask(
+            agent_id="l-cto",
+            kind=TaskKind.CONVERSATION,
+            source_id="slack",
+            thread_identifier=thread_uuid,
+            payload={
+                "message": text,
+                "channel": "slack",
+                "slack": {
+                    "team_id": team_id,
+                    "channel_id": channel_id,
+                    "user_id": user_id,
+                },
+            },
+        )
+        
+        logger.info(
+            "handle_slack_with_l_agent: task_id=%s, thread=%s, user=%s",
+            str(task.id),
+            thread_uuid,
+            user_id,
+        )
+        
+        # Execute task via AgentExecutorService
+        result = await agent_executor.start_agent_task(task)
+        
+        # Handle duplicate detection
+        if isinstance(result, DuplicateTaskResponse):
+            logger.info("handle_slack_with_l_agent: duplicate task: %s", str(result.task_id))
+            return ("This message has already been processed.", "duplicate")
+        
+        # Handle ExecutionResult
+        if isinstance(result, ExecutionResult):
+            reply = result.result or result.error or "No response from agent."
+            return (reply, result.status)
+        
+        # Fallback (should not happen)
+        logger.warning("handle_slack_with_l_agent: unexpected result type: %s", type(result))
+        return ("Unexpected result format.", "error")
+        
+    except Exception as e:
+        logger.exception("handle_slack_with_l_agent: error: %s", str(e))
+        return (f"Error processing message: {str(e)}", "error")
 
 router = APIRouter()
 
@@ -275,6 +380,39 @@ async def slack_events(
             user = event.get("user")
             text = event.get("text", "")
             files = event.get("files", [])  # File attachments
+            thread_ts = event.get("thread_ts") or event.get("ts", "")
+            team_id = data.get("team_id", "")
+            
+            # === NEW: L-AgentTask routing when legacy flag is False ===
+            if not L9_ENABLE_LEGACY_SLACK_ROUTER and channel and user and text.strip():
+                try:
+                    from services.slack_client import slack_post
+                    
+                    # Use thread_ts as thread_uuid for conversation grouping
+                    thread_uuid = f"slack-{team_id}-{channel}-{thread_ts}" if thread_ts else f"slack-{team_id}-{channel}"
+                    
+                    # Route through L-CTO agent via AgentExecutorService
+                    reply, status = await handle_slack_with_l_agent(
+                        app=request.app,
+                        text=text,
+                        thread_uuid=thread_uuid,
+                        team_id=team_id,
+                        channel_id=channel,
+                        user_id=user,
+                    )
+                    
+                    # Post reply to Slack
+                    if status in ("completed", "duplicate"):
+                        slack_post(channel, reply, thread_ts=thread_ts if thread_ts else None)
+                    else:
+                        slack_post(channel, f"⚠️ {reply}", thread_ts=thread_ts if thread_ts else None)
+                    
+                    logger.info(f"[SLACK] L-AgentTask app_mention: status={status}, user={user}, channel={channel}")
+                    return JSONResponse(content={"status": "ok"})
+                    
+                except Exception as e:
+                    logger.error(f"[SLACK] L-AgentTask app_mention failed: {e}", exc_info=True)
+                    # Fall through to legacy handling
             
             if channel and user:
                 # Process file attachments if present
@@ -384,9 +522,47 @@ async def slack_events(
             text = text_original.lower()
             files = event.get("files", [])  # File attachments
             channel_type = event.get("channel_type", "")  # "im" for DMs
+            thread_ts = event.get("thread_ts") or event.get("ts", "")
+            team_id = data.get("team_id", "")
             
             # Detect if this is a DM (direct message)
             is_dm = channel_type == "im" or (channel and channel.startswith("D"))
+            
+            # === NEW: L-AgentTask routing when legacy flag is False ===
+            # Route DMs and messages containing "l9" through L-CTO agent
+            should_use_l_agent = is_dm or "l9" in text
+            
+            if not L9_ENABLE_LEGACY_SLACK_ROUTER and channel and user and text_original.strip() and should_use_l_agent:
+                # Skip !mac commands - those still go through legacy path
+                if not text.strip().startswith("!mac"):
+                    try:
+                        from services.slack_client import slack_post
+                        
+                        # Use thread_ts as thread_uuid for conversation grouping
+                        thread_uuid = f"slack-{team_id}-{channel}-{thread_ts}" if thread_ts else f"slack-{team_id}-{channel}"
+                        
+                        # Route through L-CTO agent via AgentExecutorService
+                        reply, status = await handle_slack_with_l_agent(
+                            app=request.app,
+                            text=text_original,
+                            thread_uuid=thread_uuid,
+                            team_id=team_id,
+                            channel_id=channel,
+                            user_id=user,
+                        )
+                        
+                        # Post reply to Slack
+                        if status in ("completed", "duplicate"):
+                            slack_post(channel, reply, thread_ts=thread_ts if thread_ts else None)
+                        else:
+                            slack_post(channel, f"⚠️ {reply}", thread_ts=thread_ts if thread_ts else None)
+                        
+                        logger.info(f"[SLACK] L-AgentTask message: status={status}, user={user}, channel={channel}")
+                        return JSONResponse(content={"status": "ok"})
+                        
+                    except Exception as e:
+                        logger.error(f"[SLACK] L-AgentTask message failed: {e}", exc_info=True)
+                        # Fall through to legacy handling
             
             # Process file attachments if present
             file_artifacts = []

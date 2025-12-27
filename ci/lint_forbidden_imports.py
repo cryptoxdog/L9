@@ -47,6 +47,9 @@ SKIP_PATTERNS = [
     "*.egg-info",
     "docs/Quantum Research Factory",  # Legacy docs
     "docs/12-23-25",  # Legacy documentation scripts
+    "docs/_GMP-Active",  # GMP documentation and analysis scripts
+    "docs/CodeGen",  # CodeGen documentation scripts
+    "docs/roadmap",  # Roadmap documentation and example scripts
     "ci/lint_forbidden_imports.py",  # This script references print() in its documentation
 ]
 
@@ -458,7 +461,10 @@ def main() -> int:
     
     # Find files to lint
     if args.files:
-        files_to_lint = [Path(f).resolve() for f in args.files]
+        files_to_lint = [
+            Path(f).resolve() for f in args.files
+            if not should_skip_file(Path(f).resolve())
+        ]
     else:
         files_to_lint = find_python_files(root)
     
