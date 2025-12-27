@@ -1,0 +1,80 @@
+# ============================================================================
+# CONFIG.PY EXTENSION: Feature Flags
+# ============================================================================
+# Add this to your existing /l9/config.py file
+#
+# Location: Add to existing FeatureFlags dataclass and from_env() method
+
+# ============================================================================
+# ADD TO @dataclass FeatureFlags:
+# ============================================================================
+
+# Bayesian reasoning (EXPERIMENTAL)
+# When enabled, agents can perform probabilistic reasoning with uncertainty
+# quantification and belief state tracking
+BAYESIAN_REASONING: bool = False  # Safe default
+
+# (other existing flags...)
+# LONG_PLANS: bool = True
+# SEMANTIC_MEMORY: bool = True
+# TOOL_AUDIT: bool = True
+# WEBHOOK_INGESTION: bool = False
+# WORLD_MODEL: bool = True
+
+
+# ============================================================================
+# ADD TO @classmethod from_env(cls) -> "FeatureFlags":
+# ============================================================================
+
+@classmethod
+def from_env(cls) -> "FeatureFlags":
+    """Load flags from environment variables."""
+    return cls(
+        BAYESIAN_REASONING=os.environ.get(
+            "L9_ENABLE_BAYESIAN_REASONING", "false"
+        ).lower() == "true",
+        # ... (other existing flags) ...
+        LONG_PLANS=os.environ.get(
+            "L9_ENABLE_LONG_PLANS", "true"
+        ).lower() == "true",
+        # ... etc ...
+    )
+
+
+# ============================================================================
+# GLOBAL FLAGS INSTANCE (already exists, no changes needed)
+# ============================================================================
+
+_flags: Optional[FeatureFlags] = None
+
+
+def get_feature_flags() -> FeatureFlags:
+    """Get current feature flags."""
+    global _flags
+    if _flags is None:
+        _flags = FeatureFlags.from_env()
+    return _flags
+
+
+def reset_flags_for_testing() -> None:
+    """Reset flags (for unit tests)."""
+    global _flags
+    _flags = None
+
+
+# ============================================================================
+# ENVIRONMENT VARIABLE CONTROL
+# ============================================================================
+#
+# Export before starting L9 server:
+#
+# Enable Bayesian reasoning:
+#   export L9_ENABLE_BAYESIAN_REASONING=true
+#   python -m api.server
+#
+# Disable Bayesian reasoning (default):
+#   unset L9_ENABLE_BAYESIAN_REASONING
+#   python -m api.server
+#   # or explicitly:
+#   export L9_ENABLE_BAYESIAN_REASONING=false
+#   python -m api.server

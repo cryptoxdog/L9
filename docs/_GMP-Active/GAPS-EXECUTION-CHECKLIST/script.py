@@ -1,4 +1,4 @@
-# noqa: print-forbidden
+
 # Analyze C's edits - read and summarize each file
 import re
 

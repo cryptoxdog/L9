@@ -115,7 +115,7 @@ from core.schemas.hypergraph import BayesianNode, BAYESIAN_NODE_TEMPLATE
 Add to KernelRegistry class:
 
 async def load_bayesian_kernel(self) -> Optional[BayesianKernel]:
-    """Load Bayesian kernel if enabled via feature flag."""
+    '''Load Bayesian kernel if enabled via feature flag.'''
     flags = get_feature_flags()
     if not flags.BAYESIAN_REASONING:
         return None
@@ -126,7 +126,7 @@ async def build_system_prompt_with_bayesian(
     agent_id: str,
     base_system_prompt: str,
 ) -> str:
-    """Extend system prompt with Bayesian section if enabled."""
+    '''Extend system prompt with Bayesian section if enabled.'''
     bayesian = await self.load_bayesian_kernel()
     if bayesian is None:
         return base_system_prompt
