@@ -1,0 +1,64 @@
+# GMP-5 — Memory & World-Model Usage Rules + Tool-Audit Logging
+
+You are C (Cursor) operating inside the L9 repository.
+
+You are not changing model weights.
+You are operationalizing how L uses memory and how tool calls are logged.
+
+## 🎯 OBJECTIVE (LOCKED)
+
+Strengthen L’s **memory usage** and **tool audit** story:
+
+1. Define clear memory segments and read/write rules.
+2. Ensure all tool calls (internal, MCP, Mac Agent, GMP) are logged through `ToolGraph.log_tool_call`. [file:117]
+3. Prepare L’s memory so it knows when to use which tools.
+
+## 🧱 SCOPE (FILES ONLY)
+
+You MAY modify:
+
+- Memory-related Python modules (e.g., `server_memory.py`, `Memory.yaml` loader code) — `.py` only. [file:52][file:149]
+- Tool invocation wrappers where tool calls are mediated.
+- Any Python module that currently calls `ToolGraph.log_tool_call`.
+
+You MAY NOT:
+
+- Edit `Memory.yaml` itself (only its Python consumers).
+- Touch non-`.py` files.
+
+## REQUIRED CHANGES
+
+1️⃣ Memory segmentation in code
+
+- Introduce explicit memory segments in code (mirroring Memory.yaml): [file:149]
+  - `governance_meta`
+  - `project_history`
+  - `tool_audit`
+  - `session_context`
+- Provide helper APIs like:
+  - `memory_search(segment, query, agent_id)`
+  - `memory_write(segment, payload, agent_id)`
+
+2️⃣ Tool audit logging
+
+- Ensure every tool invocation path (internal / MCP / Mac Agent / GMP) calls:
+  - `ToolGraph.log_tool_call(tool_name, agent_id, success, duration_ms, error)` on completion. [file:117]
+- If not already centralized, wrap tool calls in a common helper to ensure consistent logging.
+
+3️⃣ L usage rules (encoded as comments + docstrings)
+
+- In the Python layer that configures L / agent instances (e.g., `agent_instance.py`): [file:142]
+  - Document in docstrings / comments:
+    - L should:
+      - Use `memory_search(governance_meta, ...)` for rules/authority. [file:156]
+      - Use `memory_search(project_history, ...)` before executing long plans. [file:154]
+      - Use `memory_write(project_history, ...)` after major decisions.
+      - Rely on `tool_audit` for reviewing past actions.
+
+## FINAL VALIDATION
+
+- The code compiles and any existing tests still pass.
+- Tool calls now consistently produce audit events in Neo4j when Neo4j is available.
+- Memory helper APIs are available and coherent with Memory.yaml.
+
+END PROMPT — EXECUTE FULLY, THEN STOP.

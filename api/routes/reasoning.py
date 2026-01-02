@@ -13,7 +13,6 @@ import structlog
 
 from orchestrators.reasoning.interface import (
     ReasoningRequest,
-    ReasoningResponse,
     ReasoningMode,
 )
 from orchestrators.reasoning.orchestrator import ReasoningOrchestrator
@@ -34,7 +33,7 @@ def get_reasoning_orchestrator(request: Request) -> ReasoningOrchestrator:
     if orchestrator is None:
         raise HTTPException(
             status_code=503,
-            detail="ReasoningOrchestrator not initialized. Check server logs."
+            detail="ReasoningOrchestrator not initialized. Check server logs.",
         )
     return orchestrator
 
@@ -46,20 +45,26 @@ def get_reasoning_orchestrator(request: Request) -> ReasoningOrchestrator:
 
 class ReasoningExecuteRequest(BaseModel):
     """Request model for reasoning execution."""
+
     context: str = Field(..., description="Input context to reason about")
     mode: str = Field(
         default="chain_of_thought",
-        description="Reasoning mode: chain_of_thought, tree_of_thought, forest_of_thought, beam_search"
+        description="Reasoning mode: chain_of_thought, tree_of_thought, forest_of_thought, beam_search",
     )
     depth: int = Field(default=3, ge=1, le=10, description="Reasoning depth (1-10)")
-    branch_factor: int = Field(default=3, ge=1, le=10, description="Branch factor for tree modes")
+    branch_factor: int = Field(
+        default=3, ge=1, le=10, description="Branch factor for tree modes"
+    )
 
 
 class ReasoningExecuteResponse(BaseModel):
     """Response model for reasoning execution."""
+
     success: bool = Field(..., description="Whether operation succeeded")
     message: str = Field(default="", description="Result message")
-    reasoning_trace: List[str] = Field(default_factory=list, description="Reasoning steps")
+    reasoning_trace: List[str] = Field(
+        default_factory=list, description="Reasoning steps"
+    )
     conclusion: Optional[str] = Field(default=None, description="Final conclusion")
 
 
@@ -118,7 +123,7 @@ async def execute_reasoning(
 ):
     """
     Execute reasoning via ReasoningOrchestrator.
-    
+
     Supports multiple reasoning modes:
     - chain_of_thought: Sequential step-by-step reasoning
     - tree_of_thought: Branching exploration
@@ -133,9 +138,9 @@ async def execute_reasoning(
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid reasoning mode: {request.mode}. "
-                       f"Valid modes: chain_of_thought, tree_of_thought, forest_of_thought, beam_search"
+                f"Valid modes: chain_of_thought, tree_of_thought, forest_of_thought, beam_search",
             )
-        
+
         logger.info(
             "Reasoning execution request",
             mode=mode.value,
@@ -143,7 +148,7 @@ async def execute_reasoning(
             branch_factor=request.branch_factor,
             context_length=len(request.context),
         )
-        
+
         # Build orchestrator request
         reasoning_request = ReasoningRequest(
             context=request.context,
@@ -151,17 +156,17 @@ async def execute_reasoning(
             depth=request.depth,
             branch_factor=request.branch_factor,
         )
-        
+
         # Execute via orchestrator
         result = await orchestrator.execute(reasoning_request)
-        
+
         logger.info(
             "Reasoning execution complete",
             mode=mode.value,
             success=result.success,
             trace_length=len(result.reasoning_trace),
         )
-        
+
         return ReasoningExecuteResponse(
             success=result.success,
             message=result.message,
@@ -172,7 +177,9 @@ async def execute_reasoning(
         raise
     except Exception as e:
         logger.error(f"Reasoning execution failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Reasoning execution failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Reasoning execution failed: {str(e)}"
+        )
 
 
 

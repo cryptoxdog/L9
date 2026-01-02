@@ -2,7 +2,7 @@
 # ==================
 # 10 governance/identity/behavior kernels that define L's identity and constraints.
 
-## Kernel Stack (l9_private/kernels/00_system/)
+## Kernel Stack (private/kernels/00_system/)
 
 ### 01_master_kernel.yaml
 - **ID**: 01_master_kernel

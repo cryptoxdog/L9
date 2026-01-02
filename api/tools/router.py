@@ -14,8 +14,6 @@ import structlog
 
 from orchestrators.action_tool.interface import (
     ActionToolRequest,
-    ActionToolResponse,
-    ToolSafetyLevel,
 )
 from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
 
@@ -31,16 +29,22 @@ router = APIRouter()
 
 class ToolExecuteRequest(BaseModel):
     """Request model for tool execution."""
+
     tool_id: str = Field(..., description="Canonical tool identity")
-    arguments: Dict[str, Any] = Field(default_factory=dict, description="Tool arguments")
+    arguments: Dict[str, Any] = Field(
+        default_factory=dict, description="Tool arguments"
+    )
     max_retries: int = Field(default=3, description="Max retry attempts")
     require_approval: bool = Field(default=False, description="Require human approval")
 
 
 class ToolExecuteResponse(BaseModel):
     """Response model for tool execution."""
+
     success: bool = Field(..., description="Whether operation succeeded")
-    result: Optional[Dict[str, Any]] = Field(default=None, description="Tool execution result")
+    result: Optional[Dict[str, Any]] = Field(
+        default=None, description="Tool execution result"
+    )
     safety_level: str = Field(default="safe", description="Safety assessment")
     retries_used: int = Field(default=0, description="Number of retries used")
     message: str = Field(default="", description="Result message")
@@ -57,7 +61,7 @@ def get_action_tool_orchestrator(request: Request) -> ActionToolOrchestrator:
     if orchestrator is None:
         raise HTTPException(
             status_code=503,
-            detail="ActionToolOrchestrator not initialized. Check server logs."
+            detail="ActionToolOrchestrator not initialized. Check server logs.",
         )
     return orchestrator
 
@@ -85,7 +89,7 @@ async def execute_tool(
 ):
     """
     Execute a tool via ActionToolOrchestrator.
-    
+
     The orchestrator handles:
     - Tool validation
     - Safety assessment
@@ -99,7 +103,7 @@ async def execute_tool(
             max_retries=request.max_retries,
             require_approval=request.require_approval,
         )
-        
+
         # Build orchestrator request
         action_request = ActionToolRequest(
             tool_id=request.tool_id,
@@ -107,10 +111,10 @@ async def execute_tool(
             max_retries=request.max_retries,
             require_approval=request.require_approval,
         )
-        
+
         # Execute via orchestrator
         result = await orchestrator.execute(action_request)
-        
+
         logger.info(
             "Tool execution complete",
             tool_id=request.tool_id,
@@ -118,7 +122,7 @@ async def execute_tool(
             safety_level=result.safety_level.value,
             retries_used=result.retries_used,
         )
-        
+
         return ToolExecuteResponse(
             success=result.success,
             result=result.result,
@@ -129,4 +133,3 @@ async def execute_tool(
     except Exception as e:
         logger.error(f"Tool execution failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Tool execution failed: {str(e)}")
-

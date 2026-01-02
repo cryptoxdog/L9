@@ -71,19 +71,20 @@ RESPONSE FORMAT
 # AIOS Runtime
 # =============================================================================
 
+
 class AIOSRuntime:
     """
     AIOS Runtime for agent reasoning.
-    
+
     Handles LLM calls with tool support and returns structured results.
-    
+
     Attributes:
         model: LLM model to use
         temperature: Default temperature
         max_tokens: Max response tokens
         default_system_prompt: System prompt when none provided
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -94,7 +95,7 @@ class AIOSRuntime:
     ):
         """
         Initialize AIOS Runtime.
-        
+
         Args:
             api_key: OpenAI API key (from env if not provided)
             model: LLM model (from env if not provided)
@@ -106,41 +107,41 @@ class AIOSRuntime:
         self._api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self._api_key:
             logger.warning("OPENAI_API_KEY not set - AIOS runtime will fail on calls")
-        
+
         # Configuration
         self._model = model or os.getenv("L9_LLM_MODEL", "gpt-4o")
         self._temperature = temperature
         self._max_tokens = max_tokens
         self._default_system_prompt = default_system_prompt or DEFAULT_SYSTEM_PROMPT
-        
+
         # Initialize client (lazy)
         self._client: Optional[AsyncOpenAI] = None
-        
+
         logger.info(
             "AIOSRuntime initialized: model=%s, temperature=%.1f, max_tokens=%d",
             self._model,
             self._temperature,
             self._max_tokens,
         )
-    
+
     # =========================================================================
     # Properties
     # =========================================================================
-    
+
     @property
     def model(self) -> str:
         """Get model name."""
         return self._model
-    
+
     @property
     def temperature(self) -> float:
         """Get default temperature."""
         return self._temperature
-    
+
     # =========================================================================
     # Client Management
     # =========================================================================
-    
+
     def _get_client(self) -> AsyncOpenAI:
         """Get or create OpenAI client."""
         if self._client is None:
@@ -148,20 +149,20 @@ class AIOSRuntime:
                 raise RuntimeError("OPENAI_API_KEY not configured")
             self._client = AsyncOpenAI(api_key=self._api_key)
         return self._client
-    
+
     # =========================================================================
     # Main API
     # =========================================================================
-    
+
     async def execute_reasoning(
         self,
         context: dict[str, Any],
     ) -> AIOSResult:
         """
         Execute reasoning with the given context.
-        
+
         This is the main entry point called by AgentExecutorService.
-        
+
         Args:
             context: Context bundle from AgentInstance.assemble_context()
                 - system_prompt: Optional system prompt override
@@ -169,42 +170,46 @@ class AIOSRuntime:
                 - tools: Available tool definitions
                 - task: Current task info
                 - metadata: Agent metadata
-        
+
         Returns:
             AIOSResult with response or tool call
         """
         start_time = datetime.utcnow()
-        
+
         try:
             # Extract context
             system_prompt = context.get("system_prompt") or self._default_system_prompt
             messages = context.get("messages", [])
             tools = context.get("tools", [])
             metadata = context.get("metadata", {})
-            
+
             # Build messages list
             api_messages = [{"role": "system", "content": system_prompt}]
-            
+
             # Add conversation history
             for msg in messages:
                 if msg.get("role") == "tool":
                     # Tool results need special formatting
-                    api_messages.append({
-                        "role": "tool",
-                        "tool_call_id": msg.get("tool_call_id", ""),
-                        "content": msg.get("content", ""),
-                    })
+                    api_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": msg.get("tool_call_id", ""),
+                            "content": msg.get("content", ""),
+                        }
+                    )
                 else:
-                    api_messages.append({
-                        "role": msg.get("role", "user"),
-                        "content": msg.get("content", ""),
-                    })
-            
+                    api_messages.append(
+                        {
+                            "role": msg.get("role", "user"),
+                            "content": msg.get("content", ""),
+                        }
+                    )
+
             # Get model params from metadata or use defaults
             model = metadata.get("model", self._model)
             temperature = metadata.get("temperature", self._temperature)
             max_tokens = metadata.get("max_tokens", self._max_tokens)
-            
+
             # Build API call kwargs
             kwargs: dict[str, Any] = {
                 "model": model,
@@ -212,33 +217,33 @@ class AIOSRuntime:
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            
+
             # Add tools if available
             if tools:
                 kwargs["tools"] = tools
                 kwargs["tool_choice"] = "auto"
-            
+
             # Call LLM
             client = self._get_client()
             response = await client.chat.completions.create(**kwargs)
-            
+
             # Parse response
             choice = response.choices[0]
             message = choice.message
             tokens_used = response.usage.total_tokens if response.usage else 0
             finish_reason = choice.finish_reason
-            
+
             # Check for tool calls
             if message.tool_calls and len(message.tool_calls) > 0:
                 # Extract first tool call (handle one at a time)
                 tool_call = message.tool_calls[0]
-                
+
                 # Parse tool arguments
                 try:
                     arguments = json.loads(tool_call.function.arguments)
                 except json.JSONDecodeError:
                     arguments = {}
-                
+
                 # Create tool call request
                 # function.name IS the tool_id (canonical identity)
                 tool_request = ToolCallRequest(
@@ -248,63 +253,63 @@ class AIOSRuntime:
                     task_id=UUID(metadata.get("task_id", str(uuid4()))),
                     iteration=metadata.get("iteration", 0),
                 )
-                
+
                 logger.info(
                     "AIOS tool call: tool_id=%s, arguments=%s",
                     tool_request.tool_id,
                     tool_request.arguments,
                 )
-                
+
                 return AIOSResult.tool_request(tool_request, tokens_used=tokens_used)
-            
+
             # No tool call - return response
             content = message.content or ""
-            
+
             logger.debug(
                 "AIOS response: %d chars, %d tokens, finish=%s",
                 len(content),
                 tokens_used,
                 finish_reason,
             )
-            
+
             return AIOSResult(
                 result_type=AIOSResultType.RESPONSE,
                 content=content,
                 tokens_used=tokens_used,
                 finish_reason=finish_reason,
             )
-            
+
         except Exception as e:
             logger.exception("AIOS reasoning failed: %s", str(e))
             return AIOSResult.error_result(str(e))
-    
+
     # =========================================================================
     # Health Check
     # =========================================================================
-    
+
     async def health_check(self) -> dict[str, Any]:
         """
         Check AIOS runtime health.
-        
+
         Returns:
             Health status dict
         """
         try:
             client = self._get_client()
-            
+
             # Simple test call
             response = await client.chat.completions.create(
                 model=self._model,
                 messages=[{"role": "user", "content": "Reply with 'ok'"}],
                 max_tokens=10,
             )
-            
+
             return {
                 "status": "healthy",
                 "model": self._model,
                 "response": response.choices[0].message.content,
             }
-            
+
         except Exception as e:
             return {
                 "status": "unhealthy",
@@ -317,6 +322,7 @@ class AIOSRuntime:
 # Factory Function
 # =============================================================================
 
+
 def create_aios_runtime(
     api_key: Optional[str] = None,
     model: Optional[str] = None,
@@ -324,12 +330,12 @@ def create_aios_runtime(
 ) -> AIOSRuntime:
     """
     Factory function to create an AIOS runtime.
-    
+
     Args:
         api_key: OpenAI API key
         model: LLM model name
         **kwargs: Additional runtime options
-    
+
     Returns:
         Configured AIOSRuntime
     """
@@ -349,4 +355,3 @@ __all__ = [
     "create_aios_runtime",
     "DEFAULT_SYSTEM_PROMPT",
 ]
-

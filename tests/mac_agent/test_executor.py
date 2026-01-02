@@ -11,7 +11,7 @@ Version: 1.0.0
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -28,24 +28,25 @@ except ImportError as e:
 # Test: Executor runs command
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_executor_runs_command():
     """
     Contract: Executor can execute automation commands.
     """
     executor = AutomationExecutor()
-    
+
     # Mock browser/page operations
-    with patch('mac_agent.executor.PLAYWRIGHT_AVAILABLE', True):
-        with patch('playwright.async_api.async_playwright') as mock_playwright:
+    with patch("mac_agent.executor.PLAYWRIGHT_AVAILABLE", True):
+        with patch("playwright.async_api.async_playwright") as mock_playwright:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
             mock_page = AsyncMock()
-            
+
             mock_browser.new_context.return_value = mock_context
             mock_context.new_page.return_value = mock_page
             mock_playwright.return_value.__aenter__.return_value.chromium.launch.return_value = mock_browser
-            
+
             # Test that executor can be initialized
             assert executor is not None
             assert executor.config is not None
@@ -55,13 +56,14 @@ async def test_executor_runs_command():
 # Test: Executor handles timeout
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_executor_handles_timeout():
     """
     Contract: Executor handles timeout errors gracefully.
     """
     executor = AutomationExecutor()
-    
+
     # Verify executor has timeout handling
     assert executor is not None
     # Timeout handling is typically in the execute methods
@@ -72,16 +74,17 @@ async def test_executor_handles_timeout():
 # Test: Executor captures output
 # =============================================================================
 
+
 def test_executor_captures_output():
     """
     Contract: Executor captures and stores execution output.
     """
     executor = AutomationExecutor()
-    
+
     # Verify executor has logs attribute for capturing output
     assert hasattr(executor, "logs")
     assert isinstance(executor.logs, list)
-    
+
     # Test that logs can be appended
     executor.logs.append("test log entry")
     assert len(executor.logs) == 1

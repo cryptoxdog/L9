@@ -14,12 +14,47 @@ import structlog
 from typing import Any, Optional
 from datetime import datetime
 
+from runtime.long_plan_tool import long_plan_execute_tool, long_plan_simulate_tool
+
+# Lazy import for symbolic tools (requires sympy)
+symbolic_compute = None
+symbolic_codegen = None
+
+
+def _get_symbolic_compute():
+    """Lazy import symbolic_compute to avoid startup crash if sympy not installed."""
+    global symbolic_compute
+    if symbolic_compute is None:
+        try:
+            from core.tools.symbolic_tool import symbolic_compute as _sc
+            symbolic_compute = _sc
+        except ImportError:
+            async def _missing(**kwargs):
+                return {"error": "sympy not installed", "status": "error"}
+            symbolic_compute = _missing
+    return symbolic_compute
+
+
+def _get_symbolic_codegen():
+    """Lazy import symbolic_codegen to avoid startup crash if sympy not installed."""
+    global symbolic_codegen
+    if symbolic_codegen is None:
+        try:
+            from core.tools.symbolic_tool import symbolic_codegen as _sc
+            symbolic_codegen = _sc
+        except ImportError:
+            async def _missing(**kwargs):
+                return {"error": "sympy not installed", "status": "error"}
+            symbolic_codegen = _missing
+    return symbolic_codegen
+
 logger = structlog.get_logger(__name__)
 
 
 # ============================================================================
 # MEMORY SUBSTRATE TOOLS
 # ============================================================================
+
 
 async def memory_search(
     query: str,
@@ -29,27 +64,29 @@ async def memory_search(
 ) -> dict[str, Any]:
     """
     Search L's memory substrate using semantic search.
-    
+
     Args:
         query: Natural language search query
         segment: Memory segment to search ("all", "governance", "project", "session")
         limit: Maximum results to return (1-100)
-        
+
     Returns:
         Dict with 'hits' list containing search results
     """
     try:
         from clients.memory_client import get_memory_client
-        
+
         client = get_memory_client()
         result = await client.semantic_search(
             query=query,
             top_k=limit,
             agent_id=kwargs.get("agent_id"),
         )
-        
-        logger.info(f"Memory search: query='{query[:50]}...' segment={segment} hits={len(result.hits)}")
-        
+
+        logger.info(
+            f"Memory search: query='{query[:50]}...' segment={segment} hits={len(result.hits)}"
+        )
+
         return {
             "query": query,
             "segment": segment,
@@ -74,23 +111,23 @@ async def memory_write(
 ) -> dict[str, Any]:
     """
     Write a packet to L's memory substrate.
-    
+
     Args:
         packet: Packet data to write
         segment: Target memory segment
-        
+
     Returns:
         Dict with write result status
     """
     try:
         from clients.memory_client import get_memory_client
-        
+
         client = get_memory_client()
-        
+
         # Build metadata with segment
         metadata = packet.get("metadata", {})
         metadata["segment"] = segment
-        
+
         result = await client.write_packet(
             packet_type=packet.get("packet_type", "agent_memory"),
             payload=packet.get("payload", packet),
@@ -98,9 +135,9 @@ async def memory_write(
             provenance=packet.get("provenance"),
             confidence=packet.get("confidence"),
         )
-        
+
         logger.info(f"Memory write: segment={segment} packet_id={result.packet_id}")
-        
+
         return {
             "status": result.status,
             "packet_id": str(result.packet_id),
@@ -116,6 +153,7 @@ async def memory_write(
 # GOVERNANCE TOOLS (High-Risk: Requires Igor Approval)
 # ============================================================================
 
+
 async def gmp_run(
     gmp_id: str,
     params: Optional[dict[str, Any]] = None,
@@ -123,35 +161,37 @@ async def gmp_run(
 ) -> dict[str, Any]:
     """
     Execute a GMP (Governance Management Process).
-    
+
     WARNING: This is a high-risk tool that requires Igor approval.
-    
+
     Args:
         gmp_id: GMP identifier (e.g., "GMP-L-CTO-P0-TOOLS")
         params: GMP execution parameters
-        
+
     Returns:
         Dict with queued GMP task info
     """
     if params is None:
         params = {}
-    
+
     try:
         from runtime.task_queue import TaskQueue
-        
+
         task_queue = TaskQueue()
-        
+
         # Enqueue GMP task
-        task_id = await task_queue.enqueue({
-            "kind": "gmp_run",
-            "gmp_id": gmp_id,
-            "params": params,
-            "agent_id": kwargs.get("agent_id", "L"),
-            "queued_at": datetime.utcnow().isoformat(),
-        })
-        
+        task_id = await task_queue.enqueue(
+            {
+                "kind": "gmp_run",
+                "gmp_id": gmp_id,
+                "params": params,
+                "agent_id": kwargs.get("agent_id", "L"),
+                "queued_at": datetime.utcnow().isoformat(),
+            }
+        )
+
         logger.info(f"GMP run queued: gmp_id={gmp_id} task_id={task_id}")
-        
+
         return {
             "status": "queued",
             "gmp_id": gmp_id,
@@ -168,6 +208,7 @@ async def gmp_run(
 # VERSION CONTROL TOOLS (High-Risk: Requires Igor Approval)
 # ============================================================================
 
+
 async def git_commit(
     message: str,
     files: Optional[list[str]] = None,
@@ -175,35 +216,37 @@ async def git_commit(
 ) -> dict[str, Any]:
     """
     Commit code changes to git repository.
-    
+
     WARNING: This is a high-risk, destructive tool that requires Igor approval.
-    
+
     Args:
         message: Commit message
         files: List of files to commit (empty = all staged)
-        
+
     Returns:
         Dict with queued commit task info
     """
     if files is None:
         files = []
-    
+
     try:
         from runtime.task_queue import TaskQueue
-        
+
         task_queue = TaskQueue()
-        
+
         # Enqueue git commit task
-        task_id = await task_queue.enqueue({
-            "kind": "git_commit",
-            "message": message,
-            "files": files,
-            "agent_id": kwargs.get("agent_id", "L"),
-            "queued_at": datetime.utcnow().isoformat(),
-        })
-        
+        task_id = await task_queue.enqueue(
+            {
+                "kind": "git_commit",
+                "message": message,
+                "files": files,
+                "agent_id": kwargs.get("agent_id", "L"),
+                "queued_at": datetime.utcnow().isoformat(),
+            }
+        )
+
         logger.info(f"Git commit queued: files={len(files)} msg='{message[:50]}...'")
-        
+
         return {
             "status": "queued",
             "task_id": task_id,
@@ -220,6 +263,7 @@ async def git_commit(
 # EXECUTION TOOLS (High-Risk: Requires Igor Approval)
 # ============================================================================
 
+
 async def mac_agent_exec_task(
     command: str,
     timeout: int = 30,
@@ -227,23 +271,23 @@ async def mac_agent_exec_task(
 ) -> dict[str, Any]:
     """
     Execute command via Mac agent.
-    
+
     WARNING: This is a high-risk, destructive tool that requires Igor approval.
-    
+
     Args:
         command: Shell command to execute
         timeout: Timeout in seconds (5-300)
-        
+
     Returns:
         Dict with execution result
     """
     try:
         from api.vps_executor import send_mac_task
-        
+
         logger.info(f"Mac exec: command='{command[:50]}...' timeout={timeout}s")
-        
+
         result = await send_mac_task(command, timeout)
-        
+
         return {
             "status": "completed" if result.get("success") else "failed",
             "command": command,
@@ -260,6 +304,7 @@ async def mac_agent_exec_task(
 # EXTERNAL PROTOCOL TOOLS
 # ============================================================================
 
+
 async def mcp_call_tool(
     tool_name: str,
     params: Optional[dict[str, Any]] = None,
@@ -267,25 +312,25 @@ async def mcp_call_tool(
 ) -> dict[str, Any]:
     """
     Call a tool via MCP (Model Context Protocol).
-    
+
     Args:
         tool_name: Tool name in MCP catalog
         params: Tool parameters
-        
+
     Returns:
         Dict with tool call result
     """
     if params is None:
         params = {}
-    
+
     try:
         from runtime.mcp_tool import MCPToolClient
-        
+
         client = MCPToolClient()
         result = await client.call_tool(tool_name, params)
-        
+
         logger.info(f"MCP call: tool={tool_name} params_count={len(params)}")
-        
+
         return {
             "status": "success",
             "tool_name": tool_name,
@@ -297,8 +342,75 @@ async def mcp_call_tool(
 
 
 # ============================================================================
+# SIMULATION TOOLS
+# ============================================================================
+
+
+async def simulation_execute(
+    graph_data: dict[str, Any],
+    scenario_params: Optional[dict[str, Any]] = None,
+    mode: str = "standard",
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """
+    Execute a simulation on an IR graph.
+
+    Args:
+        graph_data: IR graph data (from IRGenerator.to_dict())
+        scenario_params: Optional scenario configuration
+        mode: Simulation mode ("fast", "standard", "thorough")
+
+    Returns:
+        Dict with simulation results including score, metrics, failure_modes
+    """
+    try:
+        from simulation.simulation_engine import (
+            SimulationEngine,
+            SimulationConfig,
+            SimulationMode,
+        )
+
+        # Map mode string to enum
+        mode_map = {
+            "fast": SimulationMode.FAST,
+            "standard": SimulationMode.STANDARD,
+            "thorough": SimulationMode.THOROUGH,
+        }
+        sim_mode = mode_map.get(mode, SimulationMode.STANDARD)
+
+        config = SimulationConfig(mode=sim_mode)
+        engine = SimulationEngine(config=config)
+
+        # Run simulation
+        run = await engine.simulate(graph_data, scenario=scenario_params)
+
+        logger.info(
+            f"Simulation complete: run_id={run.run_id} score={run.score:.2f}"
+        )
+
+        return {
+            "status": "success",
+            "run_id": str(run.run_id),
+            "graph_id": str(run.graph_id),
+            "score": run.score,
+            "metrics": {
+                "total_steps": run.metrics.total_steps,
+                "successful_steps": run.metrics.successful_steps,
+                "failed_steps": run.metrics.failed_steps,
+                "duration_ms": run.metrics.total_duration_ms,
+                "parallelism_factor": run.metrics.parallelism_factor,
+            },
+            "failure_modes": run.failure_modes,
+        }
+    except Exception as e:
+        logger.error(f"Simulation failed: {e}")
+        return {"error": str(e), "status": "error"}
+
+
+# ============================================================================
 # WORLD MODEL TOOLS
 # ============================================================================
+
 
 async def world_model_query(
     query_type: str,
@@ -307,22 +419,22 @@ async def world_model_query(
 ) -> dict[str, Any]:
     """
     Query the world model.
-    
+
     Args:
         query_type: Query type (e.g., "entity_search", "get_entity", "list_entities")
         params: Query parameters
-        
+
     Returns:
         Dict with query result
     """
     if params is None:
         params = {}
-    
+
     try:
         from clients.world_model_client import get_world_model_client
-        
+
         client = get_world_model_client()
-        
+
         # Route to appropriate method based on query_type
         if query_type == "get_entity":
             entity = await client.get_entity(params.get("entity_id", ""))
@@ -340,9 +452,9 @@ async def world_model_query(
         else:
             # Default: health check
             result = await client.health_check()
-        
+
         logger.info(f"World model query: type={query_type}")
-        
+
         return {
             "status": "success",
             "query_type": query_type,
@@ -357,6 +469,7 @@ async def world_model_query(
 # KERNEL TOOLS
 # ============================================================================
 
+
 async def kernel_read(
     kernel_name: str,
     property: str,
@@ -364,30 +477,30 @@ async def kernel_read(
 ) -> dict[str, Any]:
     """
     Read a property from a kernel.
-    
+
     Args:
         kernel_name: Kernel identifier (e.g., "identity", "safety", "execution")
         property: Property to read
-        
+
     Returns:
         Dict with kernel property value
     """
     try:
         from runtime.kernel_loader import get_kernel_by_name
-        
+
         kernel = get_kernel_by_name(kernel_name)
-        
+
         if kernel is None:
             return {
                 "error": f"Kernel '{kernel_name}' not found",
                 "status": "error",
             }
-        
+
         # Get property from kernel dict
         value = kernel.get(property)
-        
+
         logger.info(f"Kernel read: kernel={kernel_name} property={property}")
-        
+
         return {
             "kernel": kernel_name,
             "property": property,
@@ -413,16 +526,23 @@ TOOL_EXECUTORS: dict[str, Any] = {
     "mcp_call_tool": mcp_call_tool,
     "world_model_query": world_model_query,
     "kernel_read": kernel_read,
+    "long_plan.execute": long_plan_execute_tool,
+    "long_plan.simulate": long_plan_simulate_tool,
+    # Symbolic computation tools (Quantum AI Factory) - lazy loaded
+    "symbolic_compute": lambda **kwargs: _get_symbolic_compute()(**kwargs),
+    "symbolic_codegen": lambda **kwargs: _get_symbolic_codegen()(**kwargs),
+    # Simulation tools (IR graph evaluation)
+    "simulation": simulation_execute,
 }
 
 
 def get_tool_executor(tool_name: str) -> Optional[Any]:
     """
     Get executor function for a tool by name.
-    
+
     Args:
         tool_name: Name of the tool
-        
+
     Returns:
         Executor function or None if not found
     """
@@ -432,9 +552,8 @@ def get_tool_executor(tool_name: str) -> Optional[Any]:
 def list_available_tools() -> list[str]:
     """
     List all available tool names.
-    
+
     Returns:
         List of tool names
     """
     return list(TOOL_EXECUTORS.keys())
-

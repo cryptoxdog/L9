@@ -10,40 +10,40 @@ Provides a pluggable embedding provider interface.
 
 import structlog
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 logger = structlog.get_logger(__name__)
 
 
 class EmbeddingProvider(ABC):
     """Abstract base class for embedding providers."""
-    
+
     @abstractmethod
     async def embed_text(self, text: str) -> list[float]:
         """
         Generate embedding for text.
-        
+
         Args:
             text: Input text to embed
-            
+
         Returns:
             Embedding vector (list of floats)
         """
         pass
-    
+
     @abstractmethod
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """
         Generate embeddings for multiple texts.
-        
+
         Args:
             texts: List of input texts
-            
+
         Returns:
             List of embedding vectors
         """
         pass
-    
+
     @property
     @abstractmethod
     def dimensions(self) -> int:
@@ -54,10 +54,10 @@ class EmbeddingProvider(ABC):
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     """
     OpenAI embedding provider using text-embedding-3-large.
-    
+
     Requires OPENAI_API_KEY environment variable.
     """
-    
+
     def __init__(
         self,
         model: str = "text-embedding-3-large",
@@ -68,12 +68,13 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         self._dimensions = dimensions
         self._api_key = api_key
         self._client = None
-    
+
     def _get_client(self):
         """Lazy initialization of OpenAI client."""
         if self._client is None:
             try:
                 from openai import AsyncOpenAI
+
                 self._client = AsyncOpenAI(api_key=self._api_key)
             except ImportError:
                 raise ImportError(
@@ -81,7 +82,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
                     "Install with: pip install openai"
                 )
         return self._client
-    
+
     async def embed_text(self, text: str) -> list[float]:
         """Generate embedding using OpenAI API."""
         client = self._get_client()
@@ -91,7 +92,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             dimensions=self._dimensions,
         )
         return response.data[0].embedding
-    
+
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for batch of texts."""
         client = self._get_client()
@@ -103,7 +104,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         # Sort by index to maintain order
         sorted_data = sorted(response.data, key=lambda x: x.index)
         return [item.embedding for item in sorted_data]
-    
+
     @property
     def dimensions(self) -> int:
         return self._dimensions
@@ -112,34 +113,35 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 class StubEmbeddingProvider(EmbeddingProvider):
     """
     Stub embedding provider for testing without API calls.
-    
+
     Generates deterministic pseudo-random vectors based on text hash.
     """
-    
+
     def __init__(self, dimensions: int = 1536):
         self._dimensions = dimensions
-    
+
     async def embed_text(self, text: str) -> list[float]:
         """Generate stub embedding from text hash."""
         import hashlib
-        
+
         # Create deterministic seed from text
         text_hash = hashlib.sha256(text.encode()).hexdigest()
         seed = int(text_hash[:8], 16)
-        
+
         # Generate pseudo-random vector
         import random
+
         rng = random.Random(seed)
         vector = [rng.gauss(0, 1) for _ in range(self._dimensions)]
-        
+
         # Normalize to unit vector
         magnitude = sum(v * v for v in vector) ** 0.5
         return [v / magnitude for v in vector]
-    
+
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate stub embeddings for batch."""
         return [await self.embed_text(text) for text in texts]
-    
+
     @property
     def dimensions(self) -> int:
         return self._dimensions
@@ -148,12 +150,12 @@ class StubEmbeddingProvider(EmbeddingProvider):
 class SemanticService:
     """
     Service for semantic operations on the memory substrate.
-    
+
     Wraps embedding provider and repository for semantic search.
-    
+
     # bound to memory-yaml2.0 semantic layer (embedding_storage, semantic_recall, similarity_ranking)
     """
-    
+
     def __init__(
         self,
         embedding_provider: EmbeddingProvider,
@@ -161,14 +163,14 @@ class SemanticService:
     ):
         """
         Initialize semantic service.
-        
+
         Args:
             embedding_provider: Provider for generating embeddings
             repository: SubstrateRepository instance for DB access
         """
         self._provider = embedding_provider
         self._repository = repository
-    
+
     async def embed_and_store(
         self,
         text: str,
@@ -177,37 +179,37 @@ class SemanticService:
     ) -> str:
         """
         Generate embedding for text and store in semantic_memory.
-        
+
         Args:
             text: Text to embed
             payload: Metadata payload to store with embedding
             agent_id: Optional agent identifier
-            
+
         Returns:
             embedding_id as string
         """
         logger.debug(f"Generating embedding for text: {text[:100]}...")
-        
+
         # Generate embedding
         vector = await self._provider.embed_text(text)
-        
+
         # Enrich payload with original text
         enriched_payload = {
             **payload,
             "_text": text,
             "_model": getattr(self._provider, "_model", "unknown"),
         }
-        
+
         # Store in database
         embedding_id = await self._repository.insert_semantic_embedding(
             vector=vector,
             payload=enriched_payload,
             agent_id=agent_id,
         )
-        
+
         logger.debug(f"Stored embedding {embedding_id}")
         return str(embedding_id)
-    
+
     async def search(
         self,
         query: str,
@@ -216,30 +218,30 @@ class SemanticService:
     ) -> list[dict[str, Any]]:
         """
         Search semantic memory for similar content.
-        
+
         Args:
             query: Natural language query
             top_k: Number of results
             agent_id: Optional filter by agent
-            
+
         Returns:
             List of hits with embedding_id, score, payload
         """
         logger.debug(f"Semantic search: {query[:100]}...")
-        
+
         # Generate query embedding
         query_vector = await self._provider.embed_text(query)
-        
+
         # Search database
         hits = await self._repository.search_semantic_memory(
             query_embedding=query_vector,
             top_k=top_k,
             agent_id=agent_id,
         )
-        
+
         logger.debug(f"Found {len(hits)} results")
         return [hit.model_dump() for hit in hits]
-    
+
     async def batch_embed_and_store(
         self,
         items: list[dict[str, Any]],
@@ -248,18 +250,18 @@ class SemanticService:
     ) -> list[str]:
         """
         Embed and store multiple items.
-        
+
         Args:
             items: List of dicts with text and payload
             text_key: Key in dict containing text to embed
             agent_id: Optional agent identifier
-            
+
         Returns:
             List of embedding_ids
         """
         texts = [item[text_key] for item in items]
         vectors = await self._provider.embed_batch(texts)
-        
+
         embedding_ids = []
         for item, vector in zip(items, vectors):
             text = item.pop(text_key)
@@ -274,13 +276,14 @@ class SemanticService:
                 agent_id=agent_id,
             )
             embedding_ids.append(str(embedding_id))
-        
+
         return embedding_ids
 
 
 # =============================================================================
 # Factory Functions
 # =============================================================================
+
 
 def create_embedding_provider(
     provider_type: str = "openai",
@@ -290,13 +293,13 @@ def create_embedding_provider(
 ) -> EmbeddingProvider:
     """
     Factory function to create embedding provider.
-    
+
     Args:
         provider_type: "openai" or "stub"
         model: Model name for OpenAI
         dimensions: Vector dimensions
         api_key: API key for OpenAI
-        
+
     Returns:
         EmbeddingProvider instance
     """
@@ -323,15 +326,15 @@ async def embed_text(
 ) -> list[float]:
     """
     Standalone function to embed text.
-    
+
     Creates a provider if not provided.
-    
+
     Args:
         text: Text to embed
         provider: Optional pre-configured provider
         model: Model name if creating provider
         api_key: API key if creating provider
-        
+
     Returns:
         Embedding vector
     """
@@ -342,6 +345,5 @@ async def embed_text(
             # Default to stub if no API key
             logger.warning("No API key provided, using stub embeddings")
             provider = StubEmbeddingProvider()
-    
-    return await provider.embed_text(text)
 
+    return await provider.embed_text(text)

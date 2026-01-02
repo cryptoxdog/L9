@@ -4,6 +4,7 @@ Email Agent Configuration
 
 Centralized configuration for Gmail agent paths and settings.
 """
+
 import os
 from pathlib import Path
 
@@ -20,9 +21,9 @@ GMAIL_ACCOUNT = "nc@scrapmanagement.com"
 
 # Gmail API scopes
 SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.modify',
-    'https://www.googleapis.com/auth/gmail.send'
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.send",
 ]
 
 
@@ -37,5 +38,5 @@ def ensure_dirs():
         "gmail_data_root": str(GMAIL_DATA_ROOT),
         "tokens_file": str(TOKENS_FILE),
         "client_secret_file": str(CLIENT_SECRET_FILE),
-        "attachments_dir": str(ATTACHMENTS_DIR)
+        "attachments_dir": str(ATTACHMENTS_DIR),
     }

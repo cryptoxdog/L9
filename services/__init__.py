@@ -6,4 +6,3 @@ Contains domain-specific services that integrate with the L9 Memory Substrate.
 """
 
 __version__ = "1.0.0"
-

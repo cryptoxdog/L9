@@ -63,11 +63,12 @@ PACKET_TYPE_ERROR = "twilio_adapter.error"
 @dataclass
 class TwilioAdapterRequest:
     """Inbound request schema."""
+
     event_id: Optional[str] = None
     source: Optional[str] = None
     payload: dict = None
     attachments: list = None
-    
+
     def __post_init__(self):
         self.payload = self.payload or {}
         self.attachments = self.attachments or []
@@ -76,6 +77,7 @@ class TwilioAdapterRequest:
 @dataclass
 class TwilioAdapterResponse:
     """Response schema."""
+
     ok: bool
     packet_id: Optional[UUID] = None
     dedupe: bool = False
@@ -86,6 +88,7 @@ class TwilioAdapterResponse:
 @dataclass
 class TwilioAdapterContext:
     """Execution context."""
+
     thread_uuid: UUID
     source: str = "twilio.adapter"
     task_id: Optional[str] = None
@@ -100,7 +103,7 @@ class TwilioAdapterContext:
 class TwilioAdapterAdapter:
     """
     Twilio Adapter Adapter
-    
+
     Responsibilities:
     - Receives Twilio SMS/voice webhooks, validates signatures, and routes to AIOS for processing. Supports outbound messaging via Twilio API.
     - Emit standardized packets (twilio_adapter.*)
@@ -131,7 +134,7 @@ class TwilioAdapterAdapter:
     ) -> TwilioAdapterResponse:
         """
         Main entry point for handling requests.
-        
+
         Flow:
         1. Generate deterministic thread context (UUIDv5)
         2. Check idempotency via substrate search
@@ -140,7 +143,7 @@ class TwilioAdapterAdapter:
         5. Write outbound packet
         6. Handle attachments
         7. Return response
-        
+
         On error: emit error packet, return ok=False
         """
         try:
@@ -234,7 +237,7 @@ class TwilioAdapterAdapter:
         """Generate execution context with deterministic thread UUID."""
         thread_key = self._get_thread_key(request)
         thread_uuid = uuid5(TWILIO_ADAPTER_NAMESPACE, thread_key)
-        
+
         return TwilioAdapterContext(
             thread_uuid=thread_uuid,
             source="twilio.adapter",
@@ -243,15 +246,15 @@ class TwilioAdapterAdapter:
     def _get_thread_key(self, request: TwilioAdapterRequest) -> str:
         """
         Generate deterministic thread key from request.
-        
+
         Uses fields: ['from_number', 'to_number', 'account_sid']
         """
         parts = []
         # Extract thread key from configured fields
-        for field in ['from_number', 'to_number', 'account_sid']:
+        for field in ["from_number", "to_number", "account_sid"]:
             value = getattr(request, field, None) or request.payload.get(field, "")
             parts.append(str(value))
-        
+
         return ":".join(parts) if parts else str(request.event_id or "default")
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -261,12 +264,12 @@ class TwilioAdapterAdapter:
     async def _check_idempotency(self, event_id: str) -> Optional[dict]:
         """
         Check if event_id already processed via substrate search.
-        
+
         Pattern: event_id
         """
         if not self.substrate_service:
             return None
-        
+
         try:
             results = await self.substrate_service.search_packets(
                 packet_type=PACKET_TYPE_IN,
@@ -277,7 +280,7 @@ class TwilioAdapterAdapter:
                 return {"packet_id": results[0].get("packet_id")}
         except Exception as e:
             self.logger.warning("idempotency_check_failed", error=str(e))
-        
+
         return None
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -289,13 +292,13 @@ class TwilioAdapterAdapter:
     ) -> dict:
         """
         Call AIOS runtime for processing.
-        
+
         Uses injected aios_runtime_client.
         """
         if not self.aios_runtime_client:
             self.logger.warning("aios_client_not_configured")
             return {"status": "processed_locally"}
-        
+
         try:
             response = await self.aios_runtime_client.chat(
                 message=request.payload,
@@ -316,26 +319,28 @@ class TwilioAdapterAdapter:
     ) -> dict:
         """
         Process and store attachment metadata.
-        
+
         Returns metadata dict with attachment info.
         """
         metadata = {
             "count": len(attachments),
             "attachments": [],
         }
-        
+
         for attachment in attachments:
-            metadata["attachments"].append({
-                "filename": attachment.get("filename"),
-                "content_type": attachment.get("content_type"),
-                "size": attachment.get("size"),
-            })
-        
+            metadata["attachments"].append(
+                {
+                    "filename": attachment.get("filename"),
+                    "content_type": attachment.get("content_type"),
+                    "size": attachment.get("size"),
+                }
+            )
+
         self.logger.info(
             "attachments_processed",
             count=len(attachments),
         )
-        
+
         return metadata
 
     # ──────────────────────────────────────────────────────────────────────────

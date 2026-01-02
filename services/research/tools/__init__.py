@@ -53,4 +53,3 @@ __all__ = [
     "SearchContextSize",
     "get_perplexity_client",
 ]
-

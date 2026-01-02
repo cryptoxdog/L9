@@ -27,13 +27,16 @@ from core.agents.schemas import (
 )
 from core.agents.agent_instance import AgentInstance
 
+
 # Lazy import for executor (heavy deps)
 def __getattr__(name: str):
     """Lazy import for heavy dependency modules."""
     if name == "AgentExecutorService":
         from core.agents.executor import AgentExecutorService
+
         return AgentExecutorService
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     # Schemas
@@ -47,4 +50,3 @@ __all__ = [
     "AgentInstance",
     "AgentExecutorService",
 ]
-

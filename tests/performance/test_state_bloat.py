@@ -6,13 +6,14 @@ Tests for monitoring state size and memory usage.
 """
 
 import sys
-from typing import Any, TypedDict, Optional
+from typing import TypedDict, Optional
 from datetime import datetime
 
 
 # Mock ResearchGraphState for testing without production dependencies
 class ResearchGraphState(TypedDict, total=False):
     """Mock research graph state for testing."""
+
     thread_id: str
     request_id: str
     user_id: str
@@ -66,7 +67,7 @@ def create_initial_state(
 
 def test_state_bloat():
     """Test that state size stays within reasonable bounds.
-    
+
     Note: This test validates that state serialization works and
     size scales predictably with content. 50x1MB = ~50MB expected.
     """
@@ -88,9 +89,9 @@ def test_initial_state_size():
         thread_id="thread-123",
         request_id="req-456",
     )
-    
+
     size_bytes = sys.getsizeof(str(state))
-    
+
     # Initial state should be small (less than 1KB)
     assert size_bytes < 1024
 
@@ -98,21 +99,23 @@ def test_initial_state_size():
 def test_state_with_plan():
     """Test state size with plan entries."""
     state = create_initial_state("test", "thread", "req")
-    
+
     # Add plan steps
     for i in range(10):
-        state["plan"].append({
-            "step_id": f"step-{i}",
-            "agent": "researcher",
-            "description": f"Research step {i}",
-            "query": f"Query {i}",
-            "tools": ["web_search"],
-            "status": "pending",
-            "result": None,
-        })
-    
+        state["plan"].append(
+            {
+                "step_id": f"step-{i}",
+                "agent": "researcher",
+                "description": f"Research step {i}",
+                "query": f"Query {i}",
+                "tools": ["web_search"],
+                "status": "pending",
+                "result": None,
+            }
+        )
+
     size_kb = sys.getsizeof(str(state)) / 1024
-    
+
     # With 10 steps should still be under 10KB
     assert size_kb < 10
 
@@ -120,19 +123,21 @@ def test_state_with_plan():
 def test_evidence_accumulation():
     """Test evidence accumulation doesn't bloat state."""
     state = create_initial_state("test", "thread", "req")
-    
+
     # Add moderate evidence
     for i in range(100):
-        state["evidence"].append({
-            "source": f"source-{i}",
-            "content": f"Evidence content {i}" * 10,  # ~150 bytes each
-            "confidence": 0.8,
-            "timestamp": "2024-01-01T00:00:00",
-            "metadata": {},
-        })
-    
+        state["evidence"].append(
+            {
+                "source": f"source-{i}",
+                "content": f"Evidence content {i}" * 10,  # ~150 bytes each
+                "confidence": 0.8,
+                "timestamp": "2024-01-01T00:00:00",
+                "metadata": {},
+            }
+        )
+
     size_kb = sys.getsizeof(str(state)) / 1024
-    
+
     # 100 evidence items should be under 100KB
     assert size_kb < 100
 
@@ -140,15 +145,15 @@ def test_evidence_accumulation():
 def test_sources_deduplication_effect():
     """Test that sources list doesn't grow unbounded."""
     state = create_initial_state("test", "thread", "req")
-    
+
     # Add many sources (some duplicates)
     sources = set()
     for i in range(1000):
         source = f"source-{i % 50}"  # Only 50 unique sources
         sources.add(source)
-    
+
     state["sources"] = list(sources)
-    
+
     # Should have deduplicated to 50
     assert len(state["sources"]) == 50
 
@@ -156,13 +161,13 @@ def test_sources_deduplication_effect():
 def test_error_accumulation():
     """Test error accumulation stays bounded."""
     state = create_initial_state("test", "thread", "req")
-    
+
     # Add many errors
     for i in range(100):
         state["errors"].append(f"Error {i}: Something went wrong")
-    
+
     size_kb = sys.getsizeof(str(state)) / 1024
-    
+
     # Errors shouldn't dominate state size
     assert size_kb < 50
 
@@ -170,20 +175,21 @@ def test_error_accumulation():
 def test_swarm_results_size():
     """Test swarm results don't cause bloat."""
     state = create_initial_state("test", "thread", "req")
-    
+
     # Simulate swarm results
     for i in range(10):
-        state["swarm_results"].append({
-            "researcher_id": f"researcher-{i}",
-            "findings": [
-                {"text": "Finding 1" * 100, "confidence": 0.9},
-                {"text": "Finding 2" * 100, "confidence": 0.8},
-            ],
-            "status": "completed",
-        })
-    
+        state["swarm_results"].append(
+            {
+                "researcher_id": f"researcher-{i}",
+                "findings": [
+                    {"text": "Finding 1" * 100, "confidence": 0.9},
+                    {"text": "Finding 2" * 100, "confidence": 0.8},
+                ],
+                "status": "completed",
+            }
+        )
+
     size_kb = sys.getsizeof(str(state)) / 1024
-    
+
     # Should be manageable
     assert size_kb < 100
-

@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -48,10 +48,10 @@ class CoderAgentB(BaseAgent):
     """
     Secondary coder agent for parallel work and review.
     """
-    
+
     agent_role = AgentRole.CODER_SECONDARY
     agent_name = "coder_b"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -59,11 +59,11 @@ class CoderAgentB(BaseAgent):
     ):
         """Initialize Coder Agent B."""
         super().__init__(agent_id, config)
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -71,21 +71,21 @@ class CoderAgentB(BaseAgent):
     ) -> AgentResponse:
         """
         Execute task (implementation or review).
-        
+
         Args:
             task: Task with 'type' (implement/review) and details
             context: Optional context
-            
+
         Returns:
             AgentResponse with result
         """
         task_type = task.get("type", "implement")
-        
+
         if task_type == "review":
             return await self._review_code(task, context)
         else:
             return await self._implement(task, context)
-    
+
     async def _implement(
         self,
         task: dict[str, Any],
@@ -94,7 +94,7 @@ class CoderAgentB(BaseAgent):
         """Implement code."""
         specification = task.get("specification", "")
         language = task.get("language", "python")
-        
+
         prompt = f"""Implement the following (as secondary/parallel implementation):
 
 Specification:
@@ -117,13 +117,13 @@ Provide:
     "notes": ["..."]
 }}
 """
-        
+
         if context:
             prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         return await self.call_llm(messages, json_mode=True)
-    
+
     async def _review_code(
         self,
         task: dict[str, Any],
@@ -132,7 +132,7 @@ Provide:
         """Review code from another coder."""
         code = task.get("code", {})
         requirements = task.get("requirements", "")
-        
+
         prompt = f"""Review this code implementation:
 
 Code:
@@ -166,13 +166,13 @@ Provide thorough review:
     "summary": "..."
 }}
 """
-        
+
         if context:
             prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         return await self.call_llm(messages, json_mode=True)
-    
+
     async def write_tests(
         self,
         code: str,
@@ -180,11 +180,11 @@ Provide thorough review:
     ) -> dict[str, Any]:
         """
         Write tests for code.
-        
+
         Args:
             code: Code to test
             framework: Test framework
-            
+
         Returns:
             Test code
         """
@@ -209,9 +209,9 @@ Provide:
     "coverage_estimate": "percentage"
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def write_documentation(
         self,
         code: str,
@@ -219,11 +219,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Write documentation for code.
-        
+
         Args:
             code: Code to document
             doc_type: Type of documentation
-            
+
         Returns:
             Documentation
         """
@@ -244,9 +244,9 @@ Provide:
     "api_reference": "if applicable"
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def implement_utilities(
         self,
         main_code: str,
@@ -254,11 +254,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Implement utility functions for main code.
-        
+
         Args:
             main_code: Main implementation
             utilities_needed: List of utilities to implement
-            
+
         Returns:
             Utility implementations
         """
@@ -286,9 +286,9 @@ Provide:
     "notes": ["..."]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def create_config(
         self,
         application: str,
@@ -296,11 +296,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Create configuration files.
-        
+
         Args:
             application: Application description
             environment: Target environment
-            
+
         Returns:
             Configuration files
         """
@@ -326,6 +326,5 @@ Provide:
     "notes": ["..."]
 }}
 """
-        
-        return await self.call_llm_json(prompt)
 
+        return await self.call_llm_json(prompt)

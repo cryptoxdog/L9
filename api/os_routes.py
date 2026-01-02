@@ -23,6 +23,5 @@ async def os_status():
         "components": {
             "memory_substrate": "active",
             "orchestrators": "ready",
-        }
+        },
     }
-

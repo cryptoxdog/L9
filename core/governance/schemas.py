@@ -26,14 +26,17 @@ from pydantic import BaseModel, Field
 # Enums
 # =============================================================================
 
+
 class PolicyEffect(str, Enum):
     """Effect of a policy when matched."""
+
     ALLOW = "allow"
     DENY = "deny"
 
 
 class ConditionOperator(str, Enum):
     """Operators for policy conditions."""
+
     EQUALS = "equals"
     NOT_EQUALS = "not_equals"
     CONTAINS = "contains"
@@ -49,60 +52,79 @@ class ConditionOperator(str, Enum):
 # Condition Model
 # =============================================================================
 
+
 class Condition(BaseModel):
     """
     A condition that must be met for a policy to apply.
-    
+
     Conditions allow fine-grained control over when policies match.
     Example: Only allow tool X between 9am-5pm.
-    
+
     Attributes:
         field: The context field to evaluate (e.g., "time_of_day", "resource_id")
         operator: How to compare the field value
         value: The value to compare against
     """
+
     field: str = Field(..., description="Context field to evaluate")
     operator: ConditionOperator = Field(..., description="Comparison operator")
     value: Any = Field(..., description="Value to compare against")
-    
+
     model_config = {"extra": "forbid"}
-    
+
     def evaluate(self, context: dict[str, Any]) -> bool:
         """
         Evaluate this condition against a context.
-        
+
         Args:
             context: Evaluation context containing field values
-            
+
         Returns:
             True if condition is met, False otherwise
         """
         field_value = context.get(self.field)
-        
+
         # Missing field means condition not met
         if field_value is None:
             return False
-        
+
         if self.operator == ConditionOperator.EQUALS:
             return field_value == self.value
         elif self.operator == ConditionOperator.NOT_EQUALS:
             return field_value != self.value
         elif self.operator == ConditionOperator.CONTAINS:
-            return self.value in field_value if hasattr(field_value, "__contains__") else False
+            return (
+                self.value in field_value
+                if hasattr(field_value, "__contains__")
+                else False
+            )
         elif self.operator == ConditionOperator.NOT_CONTAINS:
-            return self.value not in field_value if hasattr(field_value, "__contains__") else True
+            return (
+                self.value not in field_value
+                if hasattr(field_value, "__contains__")
+                else True
+            )
         elif self.operator == ConditionOperator.IN:
-            return field_value in self.value if hasattr(self.value, "__contains__") else False
+            return (
+                field_value in self.value
+                if hasattr(self.value, "__contains__")
+                else False
+            )
         elif self.operator == ConditionOperator.NOT_IN:
-            return field_value not in self.value if hasattr(self.value, "__contains__") else True
+            return (
+                field_value not in self.value
+                if hasattr(self.value, "__contains__")
+                else True
+            )
         elif self.operator == ConditionOperator.GREATER_THAN:
             return field_value > self.value
         elif self.operator == ConditionOperator.LESS_THAN:
             return field_value < self.value
         elif self.operator == ConditionOperator.MATCHES:
             import re
+
             return bool(re.match(self.value, str(field_value)))
-        
+
         return False
 
 
@@ -110,13 +132,14 @@ class Condition(BaseModel):
 # Policy Model
 # =============================================================================
 
+
 class Policy(BaseModel):
     """
     A governance policy defining access control rules.
-    
+
     Policies use a first-match-wins evaluation strategy.
     Higher priority policies are evaluated first.
-    
+
     Attributes:
         id: Unique policy identifier
         name: Human-readable policy name
@@ -129,19 +152,28 @@ class Policy(BaseModel):
         conditions: Additional conditions for matching
         enabled: Whether policy is active
     """
+
     id: str = Field(..., description="Unique policy identifier")
     name: str = Field(..., description="Human-readable name")
     description: Optional[str] = Field(None, description="Policy description")
     effect: PolicyEffect = Field(..., description="Allow or deny")
-    priority: int = Field(default=0, ge=0, description="Evaluation priority (higher first)")
-    subjects: list[str] = Field(default_factory=lambda: ["*"], description="Subject patterns")
+    priority: int = Field(
+        default=0, ge=0, description="Evaluation priority (higher first)"
+    )
+    subjects: list[str] = Field(
+        default_factory=lambda: ["*"], description="Subject patterns"
+    )
     actions: list[str] = Field(default_factory=list, description="Action patterns")
-    resources: list[str] = Field(default_factory=lambda: ["*"], description="Resource patterns")
-    conditions: list[Condition] = Field(default_factory=list, description="Additional conditions")
+    resources: list[str] = Field(
+        default_factory=lambda: ["*"], description="Resource patterns"
+    )
+    conditions: list[Condition] = Field(
+        default_factory=list, description="Additional conditions"
+    )
     enabled: bool = Field(default=True, description="Whether policy is active")
-    
+
     model_config = {"extra": "forbid"}
-    
+
     def matches(
         self,
         subject: str,
@@ -151,43 +183,43 @@ class Policy(BaseModel):
     ) -> bool:
         """
         Check if this policy matches the given request.
-        
+
         Args:
             subject: The subject (e.g., agent_id, user_id)
             action: The action being performed
             resource: The resource being accessed
             context: Additional context for condition evaluation
-            
+
         Returns:
             True if policy matches, False otherwise
         """
         if not self.enabled:
             return False
-        
+
         # Check subject match
         if not self._pattern_matches(subject, self.subjects):
             return False
-        
+
         # Check action match
         if not self._pattern_matches(action, self.actions):
             return False
-        
+
         # Check resource match
         if not self._pattern_matches(resource, self.resources):
             return False
-        
+
         # Check all conditions
         for condition in self.conditions:
             if not condition.evaluate(context):
                 return False
-        
+
         return True
-    
+
     def _pattern_matches(self, value: str, patterns: list[str]) -> bool:
         """Check if value matches any of the patterns."""
         if not patterns:
             return True  # Empty patterns match everything
-        
+
         for pattern in patterns:
             if pattern == "*":
                 return True
@@ -198,7 +230,7 @@ class Policy(BaseModel):
                 return True
             if pattern.startswith("*") and value.endswith(pattern[1:]):
                 return True
-        
+
         return False
 
 
@@ -206,12 +238,13 @@ class Policy(BaseModel):
 # Evaluation Request
 # =============================================================================
 
+
 class EvaluationRequest(BaseModel):
     """
     Request to evaluate governance policies for an action.
-    
+
     Submitted by services (e.g., tool registry) to check if an action is permitted.
-    
+
     Attributes:
         request_id: Unique request identifier
         subject: The entity performing the action (e.g., agent_id)
@@ -220,13 +253,18 @@ class EvaluationRequest(BaseModel):
         context: Additional context for condition evaluation
         timestamp: When the request was made
     """
+
     request_id: UUID = Field(default_factory=uuid4, description="Request identifier")
     subject: str = Field(..., description="Subject performing the action")
     action: str = Field(..., description="Action being performed")
     resource: str = Field(..., description="Resource being accessed")
-    context: dict[str, Any] = Field(default_factory=dict, description="Additional context")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Request timestamp")
-    
+    context: dict[str, Any] = Field(
+        default_factory=dict, description="Additional context"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="Request timestamp"
+    )
+
     model_config = {"extra": "forbid"}
 
 
@@ -234,10 +272,11 @@ class EvaluationRequest(BaseModel):
 # Evaluation Result
 # =============================================================================
 
+
 class EvaluationResult(BaseModel):
     """
     Result of governance policy evaluation.
-    
+
     Attributes:
         request_id: Original request identifier
         allowed: Whether the action is permitted
@@ -248,6 +287,7 @@ class EvaluationResult(BaseModel):
         evaluated_at: When evaluation completed
         duration_ms: Evaluation duration in milliseconds
     """
+
     request_id: UUID = Field(..., description="Original request ID")
     allowed: bool = Field(..., description="Whether action is permitted")
     effect: PolicyEffect = Field(..., description="Applied effect")
@@ -256,9 +296,9 @@ class EvaluationResult(BaseModel):
     reason: str = Field(..., description="Explanation")
     evaluated_at: datetime = Field(default_factory=datetime.utcnow)
     duration_ms: int = Field(default=0, ge=0, description="Evaluation duration")
-    
+
     model_config = {"extra": "forbid"}
-    
+
     @classmethod
     def allow(
         cls,
@@ -276,7 +316,7 @@ class EvaluationResult(BaseModel):
             reason=f"Allowed by policy: {policy.name}",
             duration_ms=duration_ms,
         )
-    
+
     @classmethod
     def deny(
         cls,

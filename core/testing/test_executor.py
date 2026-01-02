@@ -1,0 +1,302 @@
+"""
+L9 Core Testing - Test Executor
+================================
+
+Executes tests in isolated sandbox environments.
+Captures results, coverage, and output for validation.
+
+Version: 1.0.0 (GMP-19)
+"""
+
+from __future__ import annotations
+
+import asyncio
+import os
+import subprocess
+import tempfile
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from uuid import UUID, uuid4
+
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+
+@dataclass
+class TestResult:
+    """Result of a single test."""
+    
+    name: str
+    passed: bool
+    duration_ms: float
+    error: Optional[str] = None
+    output: Optional[str] = None
+
+
+@dataclass
+class TestResults:
+    """Results of a test run."""
+    
+    run_id: UUID = field(default_factory=uuid4)
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    total_tests: int = 0
+    passed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    coverage_percent: Optional[float] = None
+    duration_ms: float = 0.0
+    results: List[TestResult] = field(default_factory=list)
+    stdout: str = ""
+    stderr: str = ""
+    success: bool = False
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for storage."""
+        return {
+            "run_id": str(self.run_id),
+            "timestamp": self.timestamp.isoformat(),
+            "total_tests": self.total_tests,
+            "passed": self.passed,
+            "failed": self.failed,
+            "skipped": self.skipped,
+            "coverage_percent": self.coverage_percent,
+            "duration_ms": self.duration_ms,
+            "success": self.success,
+            "results": [
+                {
+                    "name": r.name,
+                    "passed": r.passed,
+                    "duration_ms": r.duration_ms,
+                    "error": r.error,
+                }
+                for r in self.results
+            ],
+        }
+
+
+class TestExecutor:
+    """
+    Executes tests in a sandbox environment.
+    
+    Creates isolated test environments using temp directories
+    or Docker containers for running generated tests.
+    """
+
+    def __init__(
+        self,
+        use_docker: bool = False,
+        timeout_seconds: int = 60,
+        coverage_enabled: bool = True,
+    ):
+        """
+        Initialize TestExecutor.
+        
+        Args:
+            use_docker: Whether to use Docker for isolation
+            timeout_seconds: Max time for test execution
+            coverage_enabled: Whether to collect coverage
+        """
+        self._use_docker = use_docker
+        self._timeout = timeout_seconds
+        self._coverage = coverage_enabled
+
+    async def run_tests(
+        self,
+        test_code: str,
+        source_code: Optional[str] = None,
+        env_config: Optional[Dict[str, str]] = None,
+    ) -> TestResults:
+        """
+        Run tests in a sandbox environment.
+        
+        Args:
+            test_code: Python test code to execute
+            source_code: Optional source code being tested
+            env_config: Optional environment variables
+            
+        Returns:
+            TestResults with execution results
+        """
+        start_time = datetime.utcnow()
+        
+        # Create temp directory for test execution
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            
+            # Write test file
+            test_file = tmppath / "test_generated.py"
+            test_file.write_text(test_code)
+            
+            # Write source file if provided
+            if source_code:
+                source_file = tmppath / "module_under_test.py"
+                source_file.write_text(source_code)
+            
+            # Write conftest for pytest
+            conftest = tmppath / "conftest.py"
+            conftest.write_text("""
+import pytest
+
+@pytest.fixture
+def mock_substrate():
+    \"\"\"Mock substrate service fixture.\"\"\"
+    from unittest.mock import AsyncMock
+    return AsyncMock()
+""")
+            
+            # Run pytest
+            try:
+                results = await self._run_pytest(tmppath, test_file, env_config)
+            except Exception as e:
+                logger.error(f"Test execution failed: {e}")
+                results = TestResults(
+                    success=False,
+                    stderr=str(e),
+                )
+        
+        # Calculate duration
+        results.duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+        
+        return results
+
+    async def _run_pytest(
+        self,
+        working_dir: Path,
+        test_file: Path,
+        env_config: Optional[Dict[str, str]],
+    ) -> TestResults:
+        """Run pytest and parse results."""
+        # Build pytest command
+        cmd = [
+            "python3", "-m", "pytest",
+            str(test_file),
+            "-v",
+            "--tb=short",
+            "-q",
+        ]
+        
+        if self._coverage:
+            cmd.extend(["--cov=.", "--cov-report=term-missing"])
+        
+        # Set up environment
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(working_dir)
+        if env_config:
+            env.update(env_config)
+        
+        # Run pytest
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=working_dir,
+                env=env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=self._timeout,
+            )
+            
+            stdout_str = stdout.decode("utf-8", errors="replace")
+            stderr_str = stderr.decode("utf-8", errors="replace")
+            
+            return self._parse_pytest_output(stdout_str, stderr_str, process.returncode)
+            
+        except asyncio.TimeoutError:
+            return TestResults(
+                success=False,
+                stderr=f"Test execution timed out after {self._timeout}s",
+            )
+
+    def _parse_pytest_output(
+        self,
+        stdout: str,
+        stderr: str,
+        returncode: int,
+    ) -> TestResults:
+        """Parse pytest output into TestResults."""
+        results = TestResults(
+            stdout=stdout,
+            stderr=stderr,
+            success=(returncode == 0),
+        )
+        
+        # Parse test counts from output
+        # Example: "5 passed, 2 failed, 1 skipped"
+        import re
+        
+        passed_match = re.search(r"(\d+) passed", stdout)
+        failed_match = re.search(r"(\d+) failed", stdout)
+        skipped_match = re.search(r"(\d+) skipped", stdout)
+        
+        if passed_match:
+            results.passed = int(passed_match.group(1))
+        if failed_match:
+            results.failed = int(failed_match.group(1))
+        if skipped_match:
+            results.skipped = int(skipped_match.group(1))
+        
+        results.total_tests = results.passed + results.failed + results.skipped
+        
+        # Parse coverage if present
+        cov_match = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", stdout)
+        if cov_match:
+            results.coverage_percent = float(cov_match.group(1))
+        
+        # Parse individual test results
+        for line in stdout.split("\n"):
+            if "PASSED" in line:
+                test_name = line.split("::")[1].split()[0] if "::" in line else "unknown"
+                results.results.append(TestResult(
+                    name=test_name,
+                    passed=True,
+                    duration_ms=0,  # Would need timing info
+                ))
+            elif "FAILED" in line:
+                test_name = line.split("::")[1].split()[0] if "::" in line else "unknown"
+                results.results.append(TestResult(
+                    name=test_name,
+                    passed=False,
+                    duration_ms=0,
+                    error="Test failed",
+                ))
+        
+        return results
+
+
+async def run_tests_in_sandbox(
+    test_code: str,
+    source_code: Optional[str] = None,
+    env_config: Optional[Dict[str, str]] = None,
+) -> TestResults:
+    """
+    Convenience function to run tests in sandbox.
+    
+    Args:
+        test_code: Test code to execute
+        source_code: Optional source code
+        env_config: Optional environment config
+        
+    Returns:
+        TestResults
+    """
+    executor = TestExecutor()
+    return await executor.run_tests(test_code, source_code, env_config)
+
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+__all__ = [
+    "TestExecutor",
+    "TestResult",
+    "TestResults",
+    "run_tests_in_sandbox",
+]
+

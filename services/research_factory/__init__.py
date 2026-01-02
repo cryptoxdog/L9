@@ -19,10 +19,10 @@ Usage:
         validate_schema,
         UniversalExtractor,
     )
-    
+
     # Parse schema
     schema = parse_schema("path/to/schema.yaml")
-    
+
     # Validate
     result = validate_schema(schema)
     if result.valid:
@@ -119,4 +119,3 @@ __all__ = [
     "extract_agent",
     "create_extractor",
 ]
-

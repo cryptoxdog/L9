@@ -1,0 +1,41 @@
+---
+description: "Observability and performance rules for L9 runtime, agents, memory, and orchestration."
+globs:
+  - "l9/runtime/**/*"
+  - "l9/core/agents/**/*"
+  - "l9/memory/**/*"
+  - "l9/orchestration/**/*"
+alwaysApply: false
+---
+
+# Observability and performance (L9)
+
+## Structured logging for AI flows
+
+- Log entries in runtime/agents/memory/orchestration should include, where available:
+  - `agent_id`, `task_id`, `thread_id`.
+  - Phase or state (e.g., `phase`: plan/execute/validate).
+  - Tool name, model name, and latency (seconds or ms).
+  - Error context (exception type/message) when failures occur.
+- Prefer **structured logs** (key/value) over free-form strings to simplify search and analysis.
+
+---
+
+## Metrics and SLIs
+
+- Define and track basic service-level indicators for critical AI paths:
+  - Request and task latency (p50/p95).
+  - Tool call counts and error rates.
+  - Queue depth / backlog for task queues.
+- Use these metrics to detect regressions after changes to executor, orchestrators, or memory flows.
+
+---
+
+## Performance and load testing
+
+- For changes that may affect runtime performance:
+  - Add or update tests that measure throughput and latency for representative workloads.
+  - Re-use patterns from `50-qa-testing.mdc` (latency SLA and ingestion throughput examples).
+- Avoid premature micro-optimizations; prioritize **clear invariants and observability** so regressions are easy to spot.
+
+---

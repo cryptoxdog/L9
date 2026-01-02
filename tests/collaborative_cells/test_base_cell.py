@@ -20,12 +20,15 @@ if str(project_root) not in sys.path:
 try:
     from collaborative_cells.base_cell import BaseCell, CellConfig, ConsensusStrategy
 except ImportError as e:
-    pytest.skip(f"Could not import collaborative_cells.base_cell: {e}", allow_module_level=True)
+    pytest.skip(
+        f"Could not import collaborative_cells.base_cell: {e}", allow_module_level=True
+    )
 
 
 # =============================================================================
 # Test: Base cell initialization
 # =============================================================================
+
 
 def test_base_cell_initialization():
     """
@@ -40,6 +43,7 @@ def test_base_cell_initialization():
 # Test: Cell state management
 # =============================================================================
 
+
 def test_cell_state_management():
     """
     Contract: CellConfig can be created and manages state.
@@ -49,7 +53,7 @@ def test_cell_state_management():
         consensus_threshold=0.9,
         consensus_strategy=ConsensusStrategy.MAJORITY,
     )
-    
+
     assert config.max_rounds == 10
     assert config.consensus_threshold == 0.9
     assert config.consensus_strategy == ConsensusStrategy.MAJORITY
@@ -60,6 +64,7 @@ def test_cell_state_management():
 # =============================================================================
 # Test: ConsensusStrategy enum
 # =============================================================================
+
 
 def test_consensus_strategy_enum():
     """

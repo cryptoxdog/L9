@@ -12,6 +12,7 @@ def _get_kernels():
     global _KERNELS
     if _KERNELS is None:
         from runtime.kernel_loader import load_kernel_stack
+
         _KERNELS = load_kernel_stack()
     return _KERNELS
 
@@ -21,5 +22,7 @@ def get_memory_layers_config() -> dict:
 
 
 def should_checkpoint_now(event_type: str) -> bool:
-    rules = _get_kernels().get_rule("memory", "checkpointing.triggers", default=[]) or []
+    rules = (
+        _get_kernels().get_rule("memory", "checkpointing.triggers", default=[]) or []
+    )
     return event_type in rules

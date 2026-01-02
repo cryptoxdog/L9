@@ -28,16 +28,16 @@ async def mcp_call_tool(
 ) -> Dict[str, Any]:
     """
     MCP call tool implementation.
-    
+
     Validates server_id and tool_name against registry, then calls the MCP client.
     Logs tool calls via ToolGraph.log_tool_call.
-    
+
     Args:
         server_id: MCP server identifier (e.g., "github", "notion", "vercel", "godaddy")
         tool_name: Tool name (e.g., "github.create_issue", "notion.create_page")
         arguments: Tool arguments dictionary
         agent_id: Agent identifier (default: "L")
-        
+
     Returns:
         Dictionary with:
             - success: bool
@@ -49,53 +49,53 @@ async def mcp_call_tool(
             "success": False,
             "error": "server_id is required",
         }
-    
+
     if not tool_name:
         return {
             "success": False,
             "error": "tool_name is required",
         }
-    
+
     arguments = arguments or {}
-    
+
     # Get MCP client
     mcp_client = get_mcp_client()
-    
+
     # Validate server is available
     if not mcp_client.is_server_available(server_id):
         return {
             "success": False,
             "error": f"MCP server {server_id} is not configured or available",
         }
-    
+
     # Validate tool is allowed
     if not mcp_client.is_tool_allowed(server_id, tool_name):
         return {
             "success": False,
             "error": f"Tool {tool_name} is not allowed for server {server_id}",
         }
-    
+
     # Call tool with timing
     start_time = time.time()
     success = False
     result = None
     error = None
-    
+
     try:
         result = await mcp_client.call_tool(
             server_id=server_id,
             tool_name=tool_name,
             arguments=arguments,
         )
-        
+
         success = result.get("success", False)
         if not success:
             error = result.get("error", "Unknown error")
-        
+
         logger.info(
             f"MCP tool call: server={server_id}, tool={tool_name}, success={success}"
         )
-        
+
     except Exception as e:
         success = False
         error = str(e)
@@ -103,13 +103,13 @@ async def mcp_call_tool(
             f"MCP tool call failed: server={server_id}, tool={tool_name}, error={error}",
             exc_info=True,
         )
-    
+
     duration_ms = int((time.time() - start_time) * 1000)
-    
+
     # Log tool call via ToolGraph
     try:
         from core.tools.tool_graph import ToolGraph
-        
+
         await ToolGraph.log_tool_call(
             tool_name=tool_name,
             agent_id=agent_id,
@@ -117,11 +117,11 @@ async def mcp_call_tool(
             duration_ms=duration_ms,
             error=error,
         )
-        
+
         # Also write to tool_audit memory segment
         try:
             from runtime.memory_helpers import memory_write
-            
+
             await memory_write(
                 segment="tool_audit",
                 payload={
@@ -136,10 +136,10 @@ async def mcp_call_tool(
             )
         except Exception as mem_err:
             logger.warning(f"Failed to write MCP tool audit to memory: {mem_err}")
-            
+
     except Exception as e:
         logger.warning(f"Failed to log MCP tool call: {e}")
-    
+
     # Return result
     if success:
         return {
@@ -156,4 +156,3 @@ async def mcp_call_tool(
 
 
 __all__ = ["mcp_call_tool"]
-

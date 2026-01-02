@@ -1,0 +1,52 @@
+---
+description: "Guardrails for wiring changes between kernels, executors, orchestrators, and infra in the L9 OS."
+globs:
+  - "l9/**/orchestrator*.py"
+  - "l9/**/router*.py"
+  - "l9/**/controller*.py"
+  - "infra/**/*"
+  - "deploy/**/*"
+alwaysApply: false
+---
+
+# Wiring and workflow guards (L9)
+
+## Single responsibility for wiring changes
+
+- Treat wiring edits (routes, orchestrators, controllers, infra) as **workflow changes**, not generic refactors.
+- For any wiring change, explicitly document:
+  - **Source → destination**: which component calls which.
+  - **Transport**: HTTP, WebSocket, queue, direct call.
+  - **Contract**: request/response schema or message envelope.
+
+Before editing:
+
+1. Describe the _current_ wiring in 3–5 bullets.
+2. Describe the _target_ wiring in 3–5 bullets.
+3. Only then modify the code.
+
+---
+
+## No hidden behavior changes
+
+- Wiring changes must not:
+  - Alter auth behavior silently.
+  - Bypass safety kernels or approval gates.
+  - Change timeouts, retries, or error handling without stating it explicitly.
+- If such changes are necessary, treat them as separate **GMP actions** with their own phases and tests.
+
+---
+
+## Required tests for wiring work
+
+For any accepted wiring change:
+
+- Add or update at least:
+  - One integration test that exercises the new path end-to-end.
+  - One critical-path test if the path touches execution or memory flows.
+- Infra wiring (compose/k8s) must have a smoke test:
+  - All services start.
+  - Health endpoints respond OK.
+  - One minimal L9 agent flow completes successfully.
+
+---

@@ -9,14 +9,12 @@ Covers:
 - broadcast
 """
 
-import asyncio
-import sys
-
 import pytest
 
 # Try to import the orchestrator - may fail if runtime path not in sys.path
 try:
     from runtime.websocket_orchestrator import WebSocketOrchestrator
+
     HAS_ORCHESTRATOR = True
 except ImportError:
     HAS_ORCHESTRATOR = False
@@ -42,7 +40,10 @@ class FakeWebSocket:
         self.close_code = code
 
 
-@pytest.mark.skipif(not HAS_ORCHESTRATOR, reason="WebSocketOrchestrator not importable in test environment")
+@pytest.mark.skipif(
+    not HAS_ORCHESTRATOR,
+    reason="WebSocketOrchestrator not importable in test environment",
+)
 @pytest.mark.asyncio
 class TestWebSocketOrchestratorBasic:
     async def test_register_and_is_connected(self):

@@ -29,6 +29,7 @@ except ImportError as e:
 # Test: ArchitectAgentA instantiation
 # =============================================================================
 
+
 def test_architect_agent_a_instantiation():
     """
     Contract: ArchitectAgentA can be instantiated.
@@ -41,6 +42,7 @@ def test_architect_agent_a_instantiation():
 # =============================================================================
 # Test: ArchitectAgentB instantiation
 # =============================================================================
+
 
 def test_architect_agent_b_instantiation():
     """
@@ -55,18 +57,18 @@ def test_architect_agent_b_instantiation():
 # Test: Architect agents have system prompts
 # =============================================================================
 
+
 def test_architect_agents_have_system_prompts():
     """
     Contract: Architect agents implement get_system_prompt.
     """
     agent_a = ArchitectAgentA()
     agent_b = ArchitectAgentB()
-    
+
     prompt_a = agent_a.get_system_prompt()
     prompt_b = agent_b.get_system_prompt()
-    
+
     assert isinstance(prompt_a, str)
     assert len(prompt_a) > 0
     assert isinstance(prompt_b, str)
     assert len(prompt_b) > 0
-

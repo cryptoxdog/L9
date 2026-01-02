@@ -1,0 +1,184 @@
+---
+description: "Developer tooling efficiency: terminal usage, command batching, context budgeting, and Cursor tool ergonomics."
+alwaysApply: true
+---
+
+# Tool efficiency and workflow
+
+## Terminal command patterns
+
+### Batch validation
+
+- Always prefer **one combined command** over multiple partial runs.
+- Use `&&` so later steps only run if earlier ones succeed.
+
+✅ **DO:**
+```
+npm run lint && npm run type-check && npm run test
+```
+
+❌ **DON'T:**
+```
+npm run lint
+npm run type-check
+npm run test # then forget to run this sometimes
+```
+
+### Targeted tests
+
+- Scope tests to changed modules where safe.
+
+✅ **DO:**
+```
+pytest tests/core/agents/test_executor.py -k "timeout"
+npm run test -- --runTestsByPath src/components/Button.test.tsx
+```
+
+---
+
+## Cursor command efficiency
+
+### Use selection for surgical edits
+
+- Select exactly the function/component to change, then instruct Cursor on that selection.
+- Avoid whole-file rewrites unless necessary.
+
+✅ **DO:**
+> "On the selected function only: add a timeout parameter and log when it triggers. Do not change the signature anywhere else."
+
+### Use `@` context wisely
+
+- `@linter-errors` to fix concrete issues.
+- `@tests-failed` (or failed output) to drive test fixes.
+- Avoid `@codebase` unless performing high-level analysis.
+
+✅ **DO:**
+> `@linter-errors` "Fix all TypeScript errors without changing public APIs."
+
+---
+
+## File and scope budgeting
+
+### Explicit file budgets in prompts
+
+- Always specify what Cursor **may** and **may not** touch.
+
+✅ **DO:**
+```
+You may modify:
+- src/auth/loginForm.tsx
+- src/auth/loginForm.test.tsx
+
+You may NOT modify:
+- src/auth/context.tsx
+- any backend files
+
+If more changes are required, stop and propose a plan.
+```
+
+---
+
+## Command library
+
+### Common package scripts
+
+Standardize NPM scripts:
+
+```
+{
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
+```
+
+Use them consistently:
+
+```
+npm run lint
+npm run type-check
+npm run test
+```
+
+---
+
+## When to skip heavy checks
+
+- **Comments-only changes:** Run formatter, skip full test suite.
+- **Docs-only changes:** No lint/type-check needed.
+
+✅ **DO:**
+```
+# For docs-only commit
+npm run format
+```
+
+❌ **DON'T:**
+> Run full e2e suite after changing a README line.
+
+---
+
+## Git workflow
+
+### Clean, small commits
+
+- Commit **one concern per commit**.
+- Avoid giant "mixed bag" commits.
+
+✅ **DO:**
+```
+git add src/api/client.ts
+git commit -m "feat(api): add timeout and structured logging"
+```
+
+### Use branch naming conventions
+
+- `feat/…`, `fix/…`, `chore/…`, `refactor/…`.
+
+```
+git checkout -b feat/agent-ws-console
+```
+
+---
+
+## Local automation
+
+### Pre-commit hooks
+
+Use a hook script to enforce basic checks:
+
+```
+#!/usr/bin/env bash
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "Lint failed"; exit 1
+fi
+
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "Type-check failed"; exit 1
+fi
+
+npm run test
+if [ $? -ne 0 ]; then
+  echo "Tests failed"; exit 1
+fi
+```
+
+Mark executable:
+
+```
+chmod +x .git/hooks/pre-commit
+```
+
+---
+
+## Pipeline and review links
+
+- For CI/CD pipeline structure, required jobs, and merge policies, see `71-ci-cd-pipeline.mdc`.
+- For PR sizing, review checklists, and documentation expectations, see `72-review-ergonomics.mdc`.

@@ -18,6 +18,7 @@ logger = structlog.get_logger(__name__)
 
 MODEL = os.getenv("L9_LLM_MODEL", "gpt-4o-mini")
 
+
 def get_client() -> OpenAI:
     """Get OpenAI client."""
     api_key = os.getenv("OPENAI_API_KEY")
@@ -26,20 +27,22 @@ def get_client() -> OpenAI:
     return OpenAI(api_key=api_key)
 
 
-def route_slack_message(text: str, artifacts: List[Dict[str, Any]], user: str) -> Dict[str, Any]:
+def route_slack_message(
+    text: str, artifacts: List[Dict[str, Any]], user: str
+) -> Dict[str, Any]:
     """
     Convert Slack message + file artifacts into Mac Agent task structure.
-    
+
     Args:
         text: User message text
         artifacts: List of file artifact dictionaries from slack_files.py
         user: Slack user ID
-    
+
     Returns:
         Task dictionary with type, steps, artifacts, and metadata
     """
     client = get_client()
-    
+
     system_prompt = """You are L9 Planner v2. When the instruction is about email (reading, drafting, replying, forwarding, summarizing, searching), output a JSON email_task. Otherwise, output a mac_task.
 
 You must ALWAYS output valid JSON. Include steps for browser or email depending on intent.
@@ -100,34 +103,38 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
 
     # Build user message with artifact context
     user_message = f"User request: {text}\n\n"
-    
+
     if artifacts:
         user_message += "Attached files:\n"
         for artifact in artifacts:
             user_message += f"- {artifact.get('name', 'unknown')} ({artifact.get('type', 'unknown')}) at {artifact.get('path', 'unknown')}\n"
-            
+
             # Include OCR data if available
             if artifact.get("ocr"):
                 ocr_data = artifact["ocr"]
                 user_message += f"  OCR text: {ocr_data.get('text', '')[:200]}...\n"
-                user_message += f"  OCR confidence: {ocr_data.get('confidence', 0):.1f}%\n"
-            
+                user_message += (
+                    f"  OCR confidence: {ocr_data.get('confidence', 0):.1f}%\n"
+                )
+
             # Include PDF data if available
             if artifact.get("pdf"):
                 pdf_data = artifact["pdf"]
                 user_message += f"  PDF summary: {pdf_data.get('summary', '')}\n"
                 if pdf_data.get("fields"):
                     user_message += f"  PDF fields: {pdf_data.get('fields')}\n"
-            
+
             # Include transcription if available
             if artifact.get("transcription"):
                 trans_data = artifact["transcription"]
-                user_message += f"  Transcription: {trans_data.get('text', '')[:200]}...\n"
-        
+                user_message += (
+                    f"  Transcription: {trans_data.get('text', '')[:200]}...\n"
+                )
+
         user_message += "\n"
-    
+
     user_message += "Generate the task JSON structure based on the user's intent."
-    
+
     try:
         response = client.chat.completions.create(
             model=MODEL,
@@ -136,11 +143,13 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
                 {"role": "user", "content": user_message},
             ],
             temperature=0.3,
-            response_format={"type": "json_object"} if MODEL.startswith("gpt-4") else None,
+            response_format={"type": "json_object"}
+            if MODEL.startswith("gpt-4")
+            else None,
         )
-        
+
         content = response.choices[0].message.content.strip()
-        
+
         # Parse JSON response
         # Try to extract JSON if wrapped in markdown
         if "```json" in content:
@@ -151,20 +160,25 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
             start = content.find("```") + 3
             end = content.find("```", start)
             content = content[start:end].strip()
-        
+
         task_dict = json.loads(content)
-        
+
         # Validate structure - allow both mac_task and email_task
         task_type = task_dict.get("type")
         if task_type not in ["mac_task", "email_task"]:
-            logger.warning(f"Task type is not 'mac_task' or 'email_task', got: {task_type}")
+            logger.warning(
+                f"Task type is not 'mac_task' or 'email_task', got: {task_type}"
+            )
             # Infer type from text
             text_lower = text.lower()
-            if any(keyword in text_lower for keyword in ["email", "send", "draft", "inbox", "message"]):
+            if any(
+                keyword in text_lower
+                for keyword in ["email", "send", "draft", "inbox", "message"]
+            ):
                 task_dict["type"] = "email_task"
             else:
                 task_dict["type"] = "mac_task"
-        
+
         # Ensure required fields
         if "steps" not in task_dict:
             task_dict["steps"] = []
@@ -172,10 +186,10 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
             task_dict["artifacts"] = artifacts
         if "metadata" not in task_dict:
             task_dict["metadata"] = {}
-        
+
         task_dict["metadata"]["user"] = user
         task_dict["metadata"]["instructions"] = text
-        
+
         # Replace artifact paths in steps if needed
         if artifacts and task_dict.get("steps"):
             artifact_paths = {a.get("name"): a.get("path") for a in artifacts}
@@ -192,15 +206,20 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
                         elif not os.path.exists(file_ref):
                             # If path doesn't exist, try to find by name
                             for artifact in artifacts:
-                                if artifact.get("name") == file_ref or artifact.get("path") == file_ref:
+                                if (
+                                    artifact.get("name") == file_ref
+                                    or artifact.get("path") == file_ref
+                                ):
                                     step["file_path"] = artifact.get("path")
                                     if "file" in step:
                                         del step["file"]
                                     break
-        
-        logger.info(f"Routed Slack message to task with {len(task_dict.get('steps', []))} steps")
+
+        logger.info(
+            f"Routed Slack message to task with {len(task_dict.get('steps', []))} steps"
+        )
         return task_dict
-        
+
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM JSON response: {e}")
         logger.error(f"Response was: {content[:500]}")
@@ -212,7 +231,7 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
             "metadata": {
                 "user": user,
                 "instructions": text,
-            }
+            },
         }
     except Exception as e:
         logger.error(f"Error routing Slack message: {e}", exc_info=True)
@@ -224,6 +243,5 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
             "metadata": {
                 "user": user,
                 "instructions": text,
-            }
+            },
         }
-

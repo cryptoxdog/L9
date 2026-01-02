@@ -35,7 +35,6 @@ from __future__ import annotations
 import hashlib
 import json
 import structlog
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -50,6 +49,7 @@ logger = structlog.get_logger(__name__)
 
 class SourceType(str, Enum):
     """Types of knowledge sources."""
+
     MEMORY_PACKET = "memory_packet"
     DOCUMENT = "document"
     API = "api"
@@ -64,6 +64,7 @@ class SourceType(str, Enum):
 @dataclass
 class IngestResult:
     """Result of knowledge ingestion."""
+
     ingest_id: UUID = field(default_factory=uuid4)
     source_type: SourceType = SourceType.SYSTEM
     success: bool = False
@@ -75,7 +76,7 @@ class IngestResult:
     heuristics_normalized: int = 0
     errors: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "ingest_id": str(self.ingest_id),
@@ -94,6 +95,7 @@ class IngestResult:
 @dataclass
 class ExtractedFact:
     """A fact extracted from source."""
+
     fact_id: UUID = field(default_factory=uuid4)
     fact_type: str = ""  # entity, relation, attribute
     subject: str = ""
@@ -107,6 +109,7 @@ class ExtractedFact:
 @dataclass
 class NormalizedPattern:
     """A normalized architectural pattern."""
+
     pattern_id: str
     name: str
     category: str
@@ -116,7 +119,7 @@ class NormalizedPattern:
     tradeoffs: dict[str, list[str]] = field(default_factory=dict)
     related_patterns: list[str] = field(default_factory=list)
     confidence: float = 1.0
-    
+
     def to_entity_dict(self) -> dict[str, Any]:
         """Convert to entity dict for world model."""
         return {
@@ -138,6 +141,7 @@ class NormalizedPattern:
 @dataclass
 class NormalizedHeuristic:
     """A normalized coding heuristic."""
+
     heuristic_id: str
     rule: str
     category: str
@@ -148,7 +152,7 @@ class NormalizedHeuristic:
     auto_fix_strategy: list[str] = field(default_factory=list)
     related_patterns: list[str] = field(default_factory=list)
     confidence: float = 1.0
-    
+
     def to_entity_dict(self) -> dict[str, Any]:
         """Convert to entity dict for world model."""
         return {
@@ -171,6 +175,7 @@ class NormalizedHeuristic:
 @dataclass
 class IngestorConfig:
     """Configuration for knowledge ingestor."""
+
     min_confidence: float = 0.5
     deduplicate: bool = True
     validate_entities: bool = True
@@ -184,7 +189,7 @@ class IngestorConfig:
 class KnowledgeIngestor:
     """
     Ingests knowledge into the world model.
-    
+
     Processes:
     - Memory packets (IR graphs, execution results)
     - Seed YAML files (patterns, heuristics)
@@ -192,32 +197,32 @@ class KnowledgeIngestor:
     - Documents (structured data)
     - API responses
     - User inputs
-    
+
     Extracts:
     - Entities with attributes
     - Relations between entities
     - Facts and assertions
-    
+
     Normalizes:
     - Architectural patterns to standard format
     - Coding heuristics to standard format
-    
+
     Usage:
         ingestor = KnowledgeIngestor(state)
-        
+
         # Ingest from YAML
         result = ingestor.ingest_seed_yaml(
             path="/path/to/patterns.yaml",
             seed_type="architectural_pattern_library"
         )
-        
+
         # Ingest from packet
         result = ingestor.ingest_packet(packet_envelope)
-        
+
         # Ingest simulation result
         result = ingestor.ingest_simulation_result(simulation_run)
     """
-    
+
     def __init__(
         self,
         state: Optional[WorldModelState] = None,
@@ -225,7 +230,7 @@ class KnowledgeIngestor:
     ):
         """
         Initialize the ingestor.
-        
+
         Args:
             state: World model state to update
             config: Ingestor configuration
@@ -234,21 +239,21 @@ class KnowledgeIngestor:
         self._config = config or IngestorConfig()
         self._ingest_history: list[IngestResult] = []
         self._seen_hashes: set[str] = set()  # For deduplication
-        
+
         # Normalization caches
         self._pattern_cache: dict[str, NormalizedPattern] = {}
         self._heuristic_cache: dict[str, NormalizedHeuristic] = {}
-        
+
         logger.info("KnowledgeIngestor initialized (v2.0.0)")
-    
+
     def set_state(self, state: WorldModelState) -> None:
         """Set the world model state."""
         self._state = state
-    
+
     # ==========================================================================
     # Seed YAML Ingestion
     # ==========================================================================
-    
+
     def ingest_seed_yaml(
         self,
         path: str | Path,
@@ -256,40 +261,40 @@ class KnowledgeIngestor:
     ) -> IngestResult:
         """
         Ingest knowledge from a seed YAML file.
-        
+
         Supported seed types:
         - architectural_pattern_library: Design patterns
         - coding_heuristics_library: Code quality rules
         - reflection_memory: Prior lessons learned
         - cross_task_graph: Cross-task insights
-        
+
         Args:
             path: Path to YAML file
             seed_type: Optional explicit seed type (auto-detected if not provided)
-            
+
         Returns:
             IngestResult with ingestion statistics
         """
         import yaml
-        
+
         result = IngestResult(source_type=SourceType.SEED_YAML)
         path = Path(path)
-        
+
         if not path.exists():
             result.errors.append(f"Seed file not found: {path}")
             return result
-        
+
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            
+
             if not data:
                 result.errors.append(f"Empty YAML file: {path}")
                 return result
-            
+
             # Auto-detect seed type if not provided
             detected_type = seed_type or data.get("type", "unknown")
-            
+
             if detected_type == "architectural_pattern_library":
                 self._ingest_pattern_library(data, result)
             elif detected_type == "coding_heuristics_library":
@@ -301,22 +306,22 @@ class KnowledgeIngestor:
             else:
                 # Generic YAML ingestion
                 self._ingest_generic_yaml(data, result)
-            
+
             result.success = len(result.errors) == 0
-            
+
         except Exception as e:
             logger.error(f"YAML ingestion failed: {e}")
             result.errors.append(str(e))
-        
+
         self._ingest_history.append(result)
-        
+
         logger.info(
             f"Seed YAML ingested: {path.name}, "
             f"entities={result.entities_added}, patterns={result.patterns_normalized}"
         )
-        
+
         return result
-    
+
     def _ingest_pattern_library(
         self,
         data: dict[str, Any],
@@ -324,26 +329,29 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest architectural pattern library."""
         patterns = data.get("patterns", [])
-        
+
         for pattern_data in patterns:
             # Normalize the pattern
             normalized = self.normalize_architectural_pattern(pattern_data)
-            
+
             # Add to world model
             entity_dict = normalized.to_entity_dict()
             self._add_entity(entity_dict, result)
-            
+
             result.patterns_normalized += 1
-            
+
             # Create relations to related patterns
             for related_id in normalized.related_patterns:
                 if self._config.auto_create_relations:
-                    self._add_relation({
-                        "type": "relates_to",
-                        "source": normalized.pattern_id,
-                        "target": related_id,
-                    }, result)
-    
+                    self._add_relation(
+                        {
+                            "type": "relates_to",
+                            "source": normalized.pattern_id,
+                            "target": related_id,
+                        },
+                        result,
+                    )
+
     def _ingest_heuristics_library(
         self,
         data: dict[str, Any],
@@ -351,26 +359,29 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest coding heuristics library."""
         heuristics = data.get("heuristics", [])
-        
+
         for heuristic_data in heuristics:
             # Normalize the heuristic
             normalized = self.normalize_coding_heuristic(heuristic_data)
-            
+
             # Add to world model
             entity_dict = normalized.to_entity_dict()
             self._add_entity(entity_dict, result)
-            
+
             result.heuristics_normalized += 1
-            
+
             # Create relations to related patterns
             for related_id in normalized.related_patterns:
                 if self._config.auto_create_relations:
-                    self._add_relation({
-                        "type": "applies_pattern",
-                        "source": normalized.heuristic_id,
-                        "target": related_id,
-                    }, result)
-    
+                    self._add_relation(
+                        {
+                            "type": "applies_pattern",
+                            "source": normalized.heuristic_id,
+                            "target": related_id,
+                        },
+                        result,
+                    )
+
     def _ingest_reflection_memory(
         self,
         data: dict[str, Any],
@@ -393,7 +404,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(entity)
             result.entities_added += 1
-        
+
         # Ingest patterns
         for pattern_data in data.get("patterns", []):
             entity = Entity(
@@ -409,7 +420,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(entity)
             result.entities_added += 1
-    
+
     def _ingest_cross_task_graph(
         self,
         data: dict[str, Any],
@@ -425,7 +436,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(entity)
             result.entities_added += 1
-        
+
         # Ingest edges (relationships)
         for edge_data in data.get("edges", []):
             relation = Relation(
@@ -437,7 +448,7 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-    
+
     def _ingest_generic_yaml(
         self,
         data: dict[str, Any],
@@ -448,71 +459,71 @@ class KnowledgeIngestor:
         if "entities" in data:
             for entity_data in data["entities"]:
                 self._add_entity(entity_data, result)
-        
+
         # Try to extract relations
         if "relations" in data:
             for relation_data in data["relations"]:
                 self._add_relation(relation_data, result)
-    
+
     # ==========================================================================
     # Pattern and Heuristic Normalization
     # ==========================================================================
-    
+
     def normalize_architectural_pattern(
         self,
         raw_pattern: dict[str, Any],
     ) -> NormalizedPattern:
         """
         Normalize an architectural pattern to standard format.
-        
+
         Ensures consistent structure for:
         - Pattern identification
         - Applicability conditions
         - Tradeoffs
         - Related patterns
-        
+
         Args:
             raw_pattern: Raw pattern data from YAML or other source
-            
+
         Returns:
             NormalizedPattern instance
         """
         pattern_id = raw_pattern.get("id", str(uuid4()))
-        
+
         # Check cache
         if pattern_id in self._pattern_cache:
             return self._pattern_cache[pattern_id]
-        
+
         # Extract and normalize fields
         name = raw_pattern.get("name", "Unknown Pattern")
         category = raw_pattern.get("category", "unknown")
         description = raw_pattern.get("description", "")
-        
+
         # Normalize applicability
         applicable_when = raw_pattern.get("applicable_when", [])
         if isinstance(applicable_when, str):
             applicable_when = [applicable_when]
-        
+
         anti_applicable_when = raw_pattern.get("anti_applicable_when", [])
         if isinstance(anti_applicable_when, str):
             anti_applicable_when = [anti_applicable_when]
-        
+
         # Normalize tradeoffs
         tradeoffs = raw_pattern.get("tradeoffs", {})
         if not isinstance(tradeoffs, dict):
             tradeoffs = {"pros": [], "cons": []}
-        
+
         # Ensure pros and cons are lists
         if "pros" not in tradeoffs:
             tradeoffs["pros"] = []
         if "cons" not in tradeoffs:
             tradeoffs["cons"] = []
-        
+
         # Related patterns
         related = raw_pattern.get("related_patterns", [])
         if isinstance(related, str):
             related = [related]
-        
+
         normalized = NormalizedPattern(
             pattern_id=pattern_id,
             name=name,
@@ -524,57 +535,57 @@ class KnowledgeIngestor:
             related_patterns=related,
             confidence=raw_pattern.get("confidence", 1.0),
         )
-        
+
         # Cache
         self._pattern_cache[pattern_id] = normalized
-        
+
         return normalized
-    
+
     def normalize_coding_heuristic(
         self,
         raw_heuristic: dict[str, Any],
     ) -> NormalizedHeuristic:
         """
         Normalize a coding heuristic to standard format.
-        
+
         Ensures consistent structure for:
         - Rule definition
         - Severity classification
         - Examples
         - Auto-fix strategies
-        
+
         Args:
             raw_heuristic: Raw heuristic data from YAML or other source
-            
+
         Returns:
             NormalizedHeuristic instance
         """
         heuristic_id = raw_heuristic.get("id", str(uuid4()))
-        
+
         # Check cache
         if heuristic_id in self._heuristic_cache:
             return self._heuristic_cache[heuristic_id]
-        
+
         # Extract and normalize fields
         rule = raw_heuristic.get("rule", "")
         category = raw_heuristic.get("category", "unknown")
-        
+
         # Normalize severity
         severity = raw_heuristic.get("severity", "medium")
         valid_severities = {"critical", "high", "medium", "low", "info"}
         if severity.lower() not in valid_severities:
             severity = "medium"
-        
+
         # Auto-fix strategies
         auto_fix = raw_heuristic.get("auto_fix_strategy", [])
         if isinstance(auto_fix, str):
             auto_fix = [auto_fix]
-        
+
         # Related patterns
         related = raw_heuristic.get("related_patterns", [])
         if isinstance(related, str):
             related = [related]
-        
+
         normalized = NormalizedHeuristic(
             heuristic_id=heuristic_id,
             rule=rule,
@@ -587,12 +598,12 @@ class KnowledgeIngestor:
             related_patterns=related,
             confidence=raw_heuristic.get("confidence", 1.0),
         )
-        
+
         # Cache
         self._heuristic_cache[heuristic_id] = normalized
-        
+
         return normalized
-    
+
     def _normalize_category(self, category: str) -> str:
         """Normalize category string."""
         # Standardize category names
@@ -614,31 +625,31 @@ class KnowledgeIngestor:
             "doc": "documentation",
             "documentation": "documentation",
         }
-        
+
         normalized = category.lower().strip()
         return category_map.get(normalized, normalized)
-    
+
     # ==========================================================================
     # Packet Ingestion
     # ==========================================================================
-    
+
     def ingest_packet(
         self,
         packet: dict[str, Any],
     ) -> IngestResult:
         """
         Ingest knowledge from a PacketEnvelope.
-        
+
         Alias for ingest() with MEMORY_PACKET source type.
-        
+
         Args:
             packet: PacketEnvelope dict with packet_type and payload
-            
+
         Returns:
             IngestResult
         """
         return self.ingest(packet, SourceType.MEMORY_PACKET)
-    
+
     def ingest(
         self,
         data: dict[str, Any],
@@ -647,17 +658,17 @@ class KnowledgeIngestor:
     ) -> IngestResult:
         """
         Ingest knowledge from data.
-        
+
         Args:
             data: Data to ingest
             source_type: Type of source
             source_id: Source identifier
-            
+
         Returns:
             IngestResult
         """
         result = IngestResult(source_type=source_type)
-        
+
         try:
             # Deduplication check
             if self._config.deduplicate:
@@ -666,7 +677,7 @@ class KnowledgeIngestor:
                     result.success = True
                     return result
                 self._seen_hashes.add(data_hash)
-            
+
             # Route to specific handler
             if source_type == SourceType.MEMORY_PACKET:
                 self._ingest_memory_packet(data, result)
@@ -680,61 +691,61 @@ class KnowledgeIngestor:
                 self._ingest_simulation_result_data(data, result)
             else:
                 self._ingest_generic(data, result)
-            
+
             result.success = len(result.errors) == 0
-            
+
         except Exception as e:
             logger.error(f"Ingestion failed: {e}")
             result.errors.append(str(e))
-        
+
         self._ingest_history.append(result)
-        
+
         return result
-    
+
     # ==========================================================================
     # Simulation Result Ingestion
     # ==========================================================================
-    
+
     def ingest_simulation_result(
         self,
         simulation_run: Any,  # SimulationRun type
     ) -> IngestResult:
         """
         Ingest a simulation result.
-        
+
         Extracts from SimulationRun:
         - Run metadata as entity
         - Step outcomes as entities
         - Failure modes as entities
         - Metrics as attributes
         - Causal links between steps
-        
+
         Args:
             simulation_run: SimulationRun instance
-            
+
         Returns:
             IngestResult
         """
         result = IngestResult(source_type=SourceType.SIMULATION_RESULT)
-        
+
         try:
             # Convert to dict if not already
-            if hasattr(simulation_run, 'to_dict'):
+            if hasattr(simulation_run, "to_dict"):
                 run_data = simulation_run.to_dict()
             else:
                 run_data = dict(simulation_run)
-            
+
             self._ingest_simulation_result_data(run_data, result)
             result.success = len(result.errors) == 0
-            
+
         except Exception as e:
             logger.error(f"Simulation result ingestion failed: {e}")
             result.errors.append(str(e))
-        
+
         self._ingest_history.append(result)
-        
+
         return result
-    
+
     def _ingest_simulation_result_data(
         self,
         run_data: dict[str, Any],
@@ -743,7 +754,7 @@ class KnowledgeIngestor:
         """Ingest simulation result data."""
         run_id = run_data.get("run_id", str(uuid4()))
         graph_id = run_data.get("graph_id", "")
-        
+
         # Create simulation run entity
         run_entity = Entity(
             entity_id=f"sim_run:{run_id}",
@@ -761,7 +772,7 @@ class KnowledgeIngestor:
         )
         self._state.add_entity(run_entity)
         result.entities_added += 1
-        
+
         # Link to graph if exists
         if graph_id:
             relation = Relation(
@@ -772,7 +783,7 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-        
+
         # Create entities for failure modes
         for idx, failure_mode in enumerate(run_data.get("failure_modes", [])):
             failure_entity = Entity(
@@ -786,7 +797,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(failure_entity)
             result.entities_added += 1
-            
+
             # Link to run
             relation = Relation(
                 relation_id=str(uuid4()),
@@ -796,16 +807,16 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-        
+
         # Extract metrics as facts
         metrics = run_data.get("metrics", {})
         for metric_name, metric_value in metrics.items():
             result.facts_extracted += 1
-    
+
     # ==========================================================================
     # Memory Packet Processing
     # ==========================================================================
-    
+
     def _ingest_memory_packet(
         self,
         data: dict[str, Any],
@@ -814,25 +825,25 @@ class KnowledgeIngestor:
         """Ingest from memory packet."""
         packet_type = data.get("packet_type", data.get("kind", ""))
         payload = data.get("payload", data)
-        
+
         # Extract entities from packet
         if "entities" in payload:
             for entity_data in payload["entities"]:
                 self._add_entity(entity_data, result)
-        
+
         # Extract from common packet types
         if packet_type == "ir_graph":
             self._ingest_ir_graph(payload, result)
-        
+
         elif packet_type == "execution_result":
             self._ingest_execution_result(payload, result)
-        
+
         elif packet_type == "insight":
             self._ingest_insight(payload, result)
-        
+
         elif packet_type == "simulation_result":
             self._ingest_simulation_result_data(payload, result)
-        
+
         elif packet_type.startswith("seed."):
             # Seed packet - route to appropriate handler
             seed_type = packet_type.replace("seed.", "")
@@ -844,11 +855,11 @@ class KnowledgeIngestor:
                 content = payload.get("content", payload)
                 if "heuristics" in content:
                     self._ingest_heuristics_library(content, result)
-        
+
         # Extract metadata as attributes
         if "metadata" in data:
             self._extract_metadata_facts(data["metadata"], result)
-    
+
     def _ingest_ir_graph(
         self,
         data: dict[str, Any],
@@ -856,7 +867,7 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest from IR graph."""
         graph_id = data.get("graph_id", str(uuid4()))
-        
+
         # Create graph entity
         graph_entity = Entity(
             entity_id=graph_id,
@@ -865,13 +876,15 @@ class KnowledgeIngestor:
                 "status": data.get("status", "unknown"),
                 "intent_count": len(data.get("intents", [])),
                 "action_count": len(data.get("actions", [])),
-                "constraint_count": len(data.get("constraints", data.get("active_constraints", []))),
+                "constraint_count": len(
+                    data.get("constraints", data.get("active_constraints", []))
+                ),
                 "summary": data.get("summary", ""),
             },
         )
         self._state.add_entity(graph_entity)
         result.entities_added += 1
-        
+
         # Extract intents as entities
         for intent in data.get("intents", []):
             intent_entity = Entity(
@@ -886,7 +899,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(intent_entity)
             result.entities_added += 1
-            
+
             # Relation to graph
             relation = Relation(
                 relation_id=str(uuid4()),
@@ -896,21 +909,23 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-        
+
         # Extract constraints as entities
         for constraint in data.get("constraints", data.get("active_constraints", [])):
             constraint_entity = Entity(
                 entity_id=constraint.get("id", str(uuid4())),
                 entity_type="constraint",
                 attributes={
-                    "constraint_type": constraint.get("type", constraint.get("constraint_type", "")),
+                    "constraint_type": constraint.get(
+                        "type", constraint.get("constraint_type", "")
+                    ),
                     "description": constraint.get("description", ""),
                     "status": constraint.get("status", "active"),
                 },
             )
             self._state.add_entity(constraint_entity)
             result.entities_added += 1
-            
+
             # Relation to graph
             relation = Relation(
                 relation_id=str(uuid4()),
@@ -920,7 +935,7 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-        
+
         # Extract actions as entities
         for action in data.get("actions", []):
             action_entity = Entity(
@@ -936,7 +951,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(action_entity)
             result.entities_added += 1
-    
+
     def _ingest_execution_result(
         self,
         data: dict[str, Any],
@@ -944,7 +959,7 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest from execution result."""
         execution_id = data.get("execution_id", str(uuid4()))
-        
+
         entity = Entity(
             entity_id=execution_id,
             entity_type="execution_result",
@@ -958,7 +973,7 @@ class KnowledgeIngestor:
         )
         self._state.add_entity(entity)
         result.entities_added += 1
-    
+
     def _ingest_insight(
         self,
         data: dict[str, Any],
@@ -966,7 +981,7 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest from insight."""
         insight_id = data.get("insight_id", str(uuid4()))
-        
+
         entity = Entity(
             entity_id=insight_id,
             entity_type="insight",
@@ -981,7 +996,7 @@ class KnowledgeIngestor:
         self._state.add_entity(entity)
         result.entities_added += 1
         result.facts_extracted += 1
-    
+
     def _ingest_document(
         self,
         data: dict[str, Any],
@@ -989,7 +1004,7 @@ class KnowledgeIngestor:
     ) -> None:
         """Ingest from document."""
         doc_id = data.get("document_id", str(uuid4()))
-        
+
         # Create document entity
         doc_entity = Entity(
             entity_id=doc_id,
@@ -1002,7 +1017,7 @@ class KnowledgeIngestor:
         )
         self._state.add_entity(doc_entity)
         result.entities_added += 1
-        
+
         # Extract sections
         for section in data.get("sections", []):
             section_entity = Entity(
@@ -1015,7 +1030,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(section_entity)
             result.entities_added += 1
-            
+
             # Relation to document
             relation = Relation(
                 relation_id=str(uuid4()),
@@ -1025,7 +1040,7 @@ class KnowledgeIngestor:
             )
             self._state.add_relation(relation)
             result.relations_added += 1
-    
+
     def _ingest_reflection(
         self,
         data: dict[str, Any],
@@ -1046,7 +1061,7 @@ class KnowledgeIngestor:
             self._state.add_entity(lesson_entity)
             result.entities_added += 1
             result.facts_extracted += 1
-        
+
         # Extract improvements
         for improvement in data.get("improvements", []):
             imp_entity = Entity(
@@ -1060,7 +1075,7 @@ class KnowledgeIngestor:
             )
             self._state.add_entity(imp_entity)
             result.entities_added += 1
-    
+
     def _ingest_generic(
         self,
         data: dict[str, Any],
@@ -1071,16 +1086,16 @@ class KnowledgeIngestor:
         if "entities" in data:
             for entity_data in data["entities"]:
                 self._add_entity(entity_data, result)
-        
+
         # Try to extract any relations
         if "relations" in data:
             for relation_data in data["relations"]:
                 self._add_relation(relation_data, result)
-    
+
     # ==========================================================================
     # Helper Methods
     # ==========================================================================
-    
+
     def _add_entity(
         self,
         data: dict[str, Any],
@@ -1092,7 +1107,7 @@ class KnowledgeIngestor:
             entity_type=data.get("type", "unknown"),
             attributes=data.get("attributes", {}),
         )
-        
+
         existing = self._state.get_entity(entity.entity_id)
         if existing:
             # Update existing
@@ -1103,7 +1118,7 @@ class KnowledgeIngestor:
             self._state.add_entity(entity)
             result.entities_added += 1
             return entity
-    
+
     def _add_relation(
         self,
         data: dict[str, Any],
@@ -1117,14 +1132,14 @@ class KnowledgeIngestor:
             target_id=data.get("target", ""),
             attributes=data.get("attributes", {}),
         )
-        
+
         if not relation.source_id or not relation.target_id:
             return None
-        
+
         self._state.add_relation(relation)
         result.relations_added += 1
         return relation
-    
+
     def _extract_metadata_facts(
         self,
         metadata: dict[str, Any],
@@ -1134,16 +1149,16 @@ class KnowledgeIngestor:
         for key, value in metadata.items():
             if isinstance(value, (str, int, float, bool)):
                 result.facts_extracted += 1
-    
+
     def _compute_hash(self, data: dict[str, Any]) -> str:
         """Compute hash for deduplication."""
         json_str = json.dumps(data, sort_keys=True, default=str)
         return hashlib.md5(json_str.encode()).hexdigest()
-    
+
     # ==========================================================================
     # Batch Operations
     # ==========================================================================
-    
+
     def ingest_batch(
         self,
         items: list[dict[str, Any]],
@@ -1151,34 +1166,36 @@ class KnowledgeIngestor:
     ) -> list[IngestResult]:
         """
         Ingest a batch of items.
-        
+
         Args:
             items: List of items to ingest
             source_type: Source type for all items
-            
+
         Returns:
             List of IngestResults
         """
         results = []
-        
+
         for i, item in enumerate(items):
             if i >= self._config.max_batch_size:
-                logger.warning(f"Batch size limit reached ({self._config.max_batch_size})")
+                logger.warning(
+                    f"Batch size limit reached ({self._config.max_batch_size})"
+                )
                 break
-            
+
             result = self.ingest(item, source_type)
             results.append(result)
-        
+
         return results
-    
+
     # ==========================================================================
     # Status
     # ==========================================================================
-    
+
     def get_history(self, limit: int = 100) -> list[IngestResult]:
         """Get ingestion history."""
         return self._ingest_history[-limit:]
-    
+
     def get_stats(self) -> dict[str, Any]:
         """Get ingestion statistics."""
         total_entities = sum(r.entities_added for r in self._ingest_history)
@@ -1186,7 +1203,7 @@ class KnowledgeIngestor:
         total_facts = sum(r.facts_extracted for r in self._ingest_history)
         total_patterns = sum(r.patterns_normalized for r in self._ingest_history)
         total_heuristics = sum(r.heuristics_normalized for r in self._ingest_history)
-        
+
         return {
             "total_ingestions": len(self._ingest_history),
             "total_entities_added": total_entities,
@@ -1198,32 +1215,32 @@ class KnowledgeIngestor:
             "cached_patterns": len(self._pattern_cache),
             "cached_heuristics": len(self._heuristic_cache),
         }
-    
+
     def clear_cache(self) -> None:
         """Clear normalization caches."""
         self._pattern_cache.clear()
         self._heuristic_cache.clear()
         logger.info("Normalization caches cleared")
-    
+
     # ==========================================================================
     # Helper Methods for Packet/IR Conversion
     # ==========================================================================
-    
+
     @staticmethod
     def build_update_from_packet(packet: dict[str, Any]) -> dict[str, Any]:
         """
         Build a structured world model update from a PacketEnvelope.
-        
+
         Transforms raw packet data into normalized update format
         suitable for WorldModelEngine.update_from_packet().
-        
+
         Args:
             packet: PacketEnvelope dict or raw packet payload with:
                 - packet_type: str (ir_graph, execution_plan, reflection, etc.)
                 - payload: dict
                 - metadata: dict (optional)
                 - provenance: dict (optional)
-                
+
         Returns:
             Normalized update dict with:
                 - update_type: str (entity_add, relation_add, attribute_update)
@@ -1236,7 +1253,7 @@ class KnowledgeIngestor:
         payload = packet.get("payload", packet)
         metadata = packet.get("metadata", {})
         provenance = packet.get("provenance", {})
-        
+
         update: dict[str, Any] = {
             "update_type": f"packet_{packet_type}",
             "entities": [],
@@ -1246,263 +1263,313 @@ class KnowledgeIngestor:
             "packet_type": packet_type,
             "timestamp": packet.get("timestamp"),
         }
-        
+
         # Route by packet type
         if packet_type == "ir_graph":
-            update["entities"], update["relations"] = KnowledgeIngestor._extract_from_ir_graph(payload)
+            update["entities"], update["relations"] = (
+                KnowledgeIngestor._extract_from_ir_graph(payload)
+            )
         elif packet_type == "execution_plan":
             update["entities"] = KnowledgeIngestor._extract_from_execution_plan(payload)
         elif packet_type == "reflection":
             update["entities"] = KnowledgeIngestor._extract_from_reflection(payload)
         elif packet_type == "insight":
-            update["entities"], update["facts"] = KnowledgeIngestor._extract_from_insight(payload)
+            update["entities"], update["facts"] = (
+                KnowledgeIngestor._extract_from_insight(payload)
+            )
         elif packet_type == "simulation_result":
-            update["entities"], update["relations"] = KnowledgeIngestor._extract_from_simulation_result(payload)
+            update["entities"], update["relations"] = (
+                KnowledgeIngestor._extract_from_simulation_result(payload)
+            )
         else:
             # Generic extraction
             update["entities"] = KnowledgeIngestor._extract_generic_entities(payload)
-        
+
         return update
-    
+
     @staticmethod
-    def _extract_from_ir_graph(payload: dict[str, Any]) -> tuple[list[dict], list[dict]]:
+    def _extract_from_ir_graph(
+        payload: dict[str, Any],
+    ) -> tuple[list[dict], list[dict]]:
         """Extract entities and relations from IR graph payload."""
         entities: list[dict] = []
         relations: list[dict] = []
-        
+
         graph_id = payload.get("graph_id", str(uuid4()))
-        
+
         # Graph entity
-        entities.append({
-            "id": graph_id,
-            "type": "ir_graph",
-            "attributes": {
-                "status": payload.get("status", "unknown"),
-                "intent_count": len(payload.get("intents", [])),
-                "constraint_count": len(payload.get("constraints", payload.get("active_constraints", []))),
-                "action_count": len(payload.get("actions", [])),
-                "summary": payload.get("summary", ""),
-            },
-        })
-        
+        entities.append(
+            {
+                "id": graph_id,
+                "type": "ir_graph",
+                "attributes": {
+                    "status": payload.get("status", "unknown"),
+                    "intent_count": len(payload.get("intents", [])),
+                    "constraint_count": len(
+                        payload.get(
+                            "constraints", payload.get("active_constraints", [])
+                        )
+                    ),
+                    "action_count": len(payload.get("actions", [])),
+                    "summary": payload.get("summary", ""),
+                },
+            }
+        )
+
         # Intent entities
         for intent in payload.get("intents", []):
             intent_id = intent.get("id", str(uuid4()))
-            entities.append({
-                "id": intent_id,
-                "type": "intent",
-                "attributes": {
-                    "intent_type": intent.get("type", ""),
-                    "description": intent.get("description", ""),
-                    "target": intent.get("target", ""),
-                },
-            })
-            relations.append({
-                "id": str(uuid4()),
-                "type": "belongs_to",
-                "source": intent_id,
-                "target": graph_id,
-            })
-        
+            entities.append(
+                {
+                    "id": intent_id,
+                    "type": "intent",
+                    "attributes": {
+                        "intent_type": intent.get("type", ""),
+                        "description": intent.get("description", ""),
+                        "target": intent.get("target", ""),
+                    },
+                }
+            )
+            relations.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "belongs_to",
+                    "source": intent_id,
+                    "target": graph_id,
+                }
+            )
+
         # Constraint entities (from active_constraints)
-        for constraint in payload.get("active_constraints", payload.get("constraints", [])):
+        for constraint in payload.get(
+            "active_constraints", payload.get("constraints", [])
+        ):
             constraint_id = constraint.get("id", str(uuid4()))
-            entities.append({
-                "id": constraint_id,
-                "type": "constraint",
-                "attributes": {
-                    "constraint_type": constraint.get("type", ""),
-                    "description": constraint.get("description", ""),
-                },
-            })
-            relations.append({
-                "id": str(uuid4()),
-                "type": "constrains",
-                "source": constraint_id,
-                "target": graph_id,
-            })
-        
+            entities.append(
+                {
+                    "id": constraint_id,
+                    "type": "constraint",
+                    "attributes": {
+                        "constraint_type": constraint.get("type", ""),
+                        "description": constraint.get("description", ""),
+                    },
+                }
+            )
+            relations.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "constrains",
+                    "source": constraint_id,
+                    "target": graph_id,
+                }
+            )
+
         return entities, relations
-    
+
     @staticmethod
     def _extract_from_execution_plan(payload: dict[str, Any]) -> list[dict]:
         """Extract entities from execution plan payload."""
         entities: list[dict] = []
-        
+
         plan_id = payload.get("plan_id", str(uuid4()))
-        
+
         # Plan entity
-        entities.append({
-            "id": plan_id,
-            "type": "execution_plan",
-            "attributes": {
-                "total_steps": payload.get("total_steps", 0),
-                "estimated_duration_ms": payload.get("estimated_duration_ms", 0),
-                "created_at": payload.get("created_at", ""),
-            },
-        })
-        
+        entities.append(
+            {
+                "id": plan_id,
+                "type": "execution_plan",
+                "attributes": {
+                    "total_steps": payload.get("total_steps", 0),
+                    "estimated_duration_ms": payload.get("estimated_duration_ms", 0),
+                    "created_at": payload.get("created_at", ""),
+                },
+            }
+        )
+
         # Step entities
         for step in payload.get("steps", []):
             step_id = step.get("action_id", str(uuid4()))
-            entities.append({
-                "id": step_id,
-                "type": "plan_step",
-                "attributes": {
-                    "step_number": step.get("step_number", 0),
-                    "action_type": step.get("action_type", ""),
-                    "description": step.get("description", ""),
-                    "target": step.get("target", ""),
-                    "risk_level": step.get("risk_level", "low"),
-                },
-            })
-        
+            entities.append(
+                {
+                    "id": step_id,
+                    "type": "plan_step",
+                    "attributes": {
+                        "step_number": step.get("step_number", 0),
+                        "action_type": step.get("action_type", ""),
+                        "description": step.get("description", ""),
+                        "target": step.get("target", ""),
+                        "risk_level": step.get("risk_level", "low"),
+                    },
+                }
+            )
+
         return entities
-    
+
     @staticmethod
     def _extract_from_reflection(payload: dict[str, Any]) -> list[dict]:
         """Extract entities from reflection payload."""
         entities: list[dict] = []
-        
+
         # Lessons
         for lesson in payload.get("lessons", []):
-            entities.append({
-                "id": str(uuid4()),
-                "type": "lesson_learned",
-                "attributes": {
-                    "lesson": lesson.get("lesson", ""),
-                    "context": lesson.get("context", ""),
-                    "confidence": lesson.get("confidence", 0.5),
-                },
-            })
-        
+            entities.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "lesson_learned",
+                    "attributes": {
+                        "lesson": lesson.get("lesson", ""),
+                        "context": lesson.get("context", ""),
+                        "confidence": lesson.get("confidence", 0.5),
+                    },
+                }
+            )
+
         # Improvements
         for improvement in payload.get("improvements", []):
-            entities.append({
-                "id": str(uuid4()),
-                "type": "improvement",
-                "attributes": {
-                    "area": improvement.get("area", ""),
-                    "action": improvement.get("action_required", ""),
-                    "priority": improvement.get("priority", "medium"),
-                },
-            })
-        
+            entities.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "improvement",
+                    "attributes": {
+                        "area": improvement.get("area", ""),
+                        "action": improvement.get("action_required", ""),
+                        "priority": improvement.get("priority", "medium"),
+                    },
+                }
+            )
+
         return entities
-    
+
     @staticmethod
     def _extract_from_insight(payload: dict[str, Any]) -> tuple[list[dict], list[dict]]:
         """Extract entities and facts from insight payload."""
         entities: list[dict] = []
         facts: list[dict] = []
-        
+
         insight_id = payload.get("insight_id", str(uuid4()))
-        
-        entities.append({
-            "id": insight_id,
-            "type": "insight",
-            "attributes": {
-                "insight_type": payload.get("type", payload.get("insight_type", "")),
-                "content": payload.get("content", ""),
-                "confidence": payload.get("confidence", 0.7),
-                "entities": payload.get("entities", []),
-            },
-        })
-        
+
+        entities.append(
+            {
+                "id": insight_id,
+                "type": "insight",
+                "attributes": {
+                    "insight_type": payload.get(
+                        "type", payload.get("insight_type", "")
+                    ),
+                    "content": payload.get("content", ""),
+                    "confidence": payload.get("confidence", 0.7),
+                    "entities": payload.get("entities", []),
+                },
+            }
+        )
+
         # Extract facts if present
         for fact_data in payload.get("facts", []):
-            facts.append({
-                "subject": fact_data.get("subject", ""),
-                "predicate": fact_data.get("predicate", ""),
-                "object": fact_data.get("object", ""),
-                "confidence": fact_data.get("confidence", 0.8),
-            })
-        
+            facts.append(
+                {
+                    "subject": fact_data.get("subject", ""),
+                    "predicate": fact_data.get("predicate", ""),
+                    "object": fact_data.get("object", ""),
+                    "confidence": fact_data.get("confidence", 0.8),
+                }
+            )
+
         return entities, facts
-    
+
     @staticmethod
-    def _extract_from_simulation_result(payload: dict[str, Any]) -> tuple[list[dict], list[dict]]:
+    def _extract_from_simulation_result(
+        payload: dict[str, Any],
+    ) -> tuple[list[dict], list[dict]]:
         """Extract entities and relations from simulation result payload."""
         entities: list[dict] = []
         relations: list[dict] = []
-        
+
         run_id = payload.get("run_id", str(uuid4()))
         graph_id = payload.get("graph_id", "")
-        
+
         # Simulation run entity
-        entities.append({
-            "id": f"sim_run:{run_id}",
-            "type": "simulation_run",
-            "attributes": {
-                "status": payload.get("status", "unknown"),
-                "score": payload.get("score", 0.0),
-                "total_steps": payload.get("total_steps", 0),
-                "successful_steps": payload.get("successful_steps", 0),
-                "failed_steps": payload.get("failed_steps", 0),
-                "duration_ms": payload.get("duration_ms", 0),
-            },
-        })
-        
+        entities.append(
+            {
+                "id": f"sim_run:{run_id}",
+                "type": "simulation_run",
+                "attributes": {
+                    "status": payload.get("status", "unknown"),
+                    "score": payload.get("score", 0.0),
+                    "total_steps": payload.get("total_steps", 0),
+                    "successful_steps": payload.get("successful_steps", 0),
+                    "failed_steps": payload.get("failed_steps", 0),
+                    "duration_ms": payload.get("duration_ms", 0),
+                },
+            }
+        )
+
         # Link to graph
         if graph_id:
-            relations.append({
-                "id": str(uuid4()),
-                "type": "simulates",
-                "source": f"sim_run:{run_id}",
-                "target": graph_id,
-            })
-        
+            relations.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "simulates",
+                    "source": f"sim_run:{run_id}",
+                    "target": graph_id,
+                }
+            )
+
         # Failure mode entities
         for idx, failure in enumerate(payload.get("failure_modes", [])):
             failure_id = f"failure:{run_id}:{idx}"
-            entities.append({
-                "id": failure_id,
-                "type": "simulation_failure",
-                "attributes": {
-                    "description": failure,
-                    "run_id": run_id,
-                },
-            })
-            relations.append({
-                "id": str(uuid4()),
-                "type": "failed_with",
-                "source": f"sim_run:{run_id}",
-                "target": failure_id,
-            })
-        
+            entities.append(
+                {
+                    "id": failure_id,
+                    "type": "simulation_failure",
+                    "attributes": {
+                        "description": failure,
+                        "run_id": run_id,
+                    },
+                }
+            )
+            relations.append(
+                {
+                    "id": str(uuid4()),
+                    "type": "failed_with",
+                    "source": f"sim_run:{run_id}",
+                    "target": failure_id,
+                }
+            )
+
         return entities, relations
-    
+
     @staticmethod
     def _extract_generic_entities(payload: dict[str, Any]) -> list[dict]:
         """Extract entities from generic payload."""
         entities: list[dict] = []
-        
+
         # If payload has explicit entities
         if "entities" in payload:
             for entity in payload["entities"]:
-                entities.append({
-                    "id": entity.get("id", str(uuid4())),
-                    "type": entity.get("type", "unknown"),
-                    "attributes": entity.get("attributes", {}),
-                })
-        
+                entities.append(
+                    {
+                        "id": entity.get("id", str(uuid4())),
+                        "type": entity.get("type", "unknown"),
+                        "attributes": entity.get("attributes", {}),
+                    }
+                )
+
         return entities
-    
+
     @staticmethod
     def extract_entities_from_ir(ir_payload: dict[str, Any]) -> dict[str, Any]:
         """
         Extract structured entities from IR graph/plan payload.
-        
+
         Designed for integration with IR Engine outputs:
         - ir_generator.to_packet_payload()
         - ir_generator.to_execution_plan()
-        
+
         Args:
             ir_payload: IR graph or execution plan dict with:
                 - graph_id or plan_id
                 - intents, constraints, actions (for graphs)
                 - steps, active_constraints (for plans)
-                
+
         Returns:
             Extracted data dict with:
                 - graph_id: str (if IR graph)
@@ -1522,69 +1589,85 @@ class KnowledgeIngestor:
             "steps": [],
             "relations": [],
         }
-        
+
         # Detect type by fields present
         is_graph = "intents" in ir_payload or "graph_id" in ir_payload
         is_plan = "steps" in ir_payload or "plan_id" in ir_payload
-        
+
         if is_graph:
             # Extract intents
             for intent in ir_payload.get("intents", []):
-                result["intents"].append({
-                    "id": intent.get("id", intent.get("node_id")),
-                    "type": intent.get("type", intent.get("intent_type")),
-                    "description": intent.get("description", ""),
-                    "target": intent.get("target", ""),
-                    "confidence": intent.get("confidence", 1.0),
-                })
-            
+                result["intents"].append(
+                    {
+                        "id": intent.get("id", intent.get("node_id")),
+                        "type": intent.get("type", intent.get("intent_type")),
+                        "description": intent.get("description", ""),
+                        "target": intent.get("target", ""),
+                        "confidence": intent.get("confidence", 1.0),
+                    }
+                )
+
             # Extract constraints
-            for constraint in ir_payload.get("constraints", ir_payload.get("active_constraints", [])):
-                result["constraints"].append({
-                    "id": constraint.get("id", constraint.get("node_id")),
-                    "type": constraint.get("type", constraint.get("constraint_type")),
-                    "description": constraint.get("description", ""),
-                    "status": constraint.get("status", "active"),
-                })
-            
+            for constraint in ir_payload.get(
+                "constraints", ir_payload.get("active_constraints", [])
+            ):
+                result["constraints"].append(
+                    {
+                        "id": constraint.get("id", constraint.get("node_id")),
+                        "type": constraint.get(
+                            "type", constraint.get("constraint_type")
+                        ),
+                        "description": constraint.get("description", ""),
+                        "status": constraint.get("status", "active"),
+                    }
+                )
+
             # Extract actions
             for action in ir_payload.get("actions", []):
-                result["actions"].append({
-                    "id": action.get("id", action.get("node_id")),
-                    "type": action.get("type", action.get("action_type")),
-                    "description": action.get("description", ""),
-                    "target": action.get("target", ""),
-                    "depends_on": action.get("depends_on", []),
-                })
-        
+                result["actions"].append(
+                    {
+                        "id": action.get("id", action.get("node_id")),
+                        "type": action.get("type", action.get("action_type")),
+                        "description": action.get("description", ""),
+                        "target": action.get("target", ""),
+                        "depends_on": action.get("depends_on", []),
+                    }
+                )
+
         if is_plan:
             # Extract steps
             for step in ir_payload.get("steps", []):
-                result["steps"].append({
-                    "step_number": step.get("step_number", 0),
-                    "action_id": step.get("action_id"),
-                    "action_type": step.get("action_type", ""),
-                    "description": step.get("description", ""),
-                    "target": step.get("target", ""),
-                    "dependencies": step.get("dependencies", []),
-                    "risk_level": step.get("risk_level", "low"),
-                })
-        
+                result["steps"].append(
+                    {
+                        "step_number": step.get("step_number", 0),
+                        "action_id": step.get("action_id"),
+                        "action_type": step.get("action_type", ""),
+                        "description": step.get("description", ""),
+                        "target": step.get("target", ""),
+                        "dependencies": step.get("dependencies", []),
+                        "risk_level": step.get("risk_level", "low"),
+                    }
+                )
+
         # Build relations
         graph_id = result["graph_id"]
         if graph_id:
             for intent in result["intents"]:
-                result["relations"].append({
-                    "type": "intent_of",
-                    "source": intent["id"],
-                    "target": graph_id,
-                })
-            
+                result["relations"].append(
+                    {
+                        "type": "intent_of",
+                        "source": intent["id"],
+                        "target": graph_id,
+                    }
+                )
+
             for constraint in result["constraints"]:
-                result["relations"].append({
-                    "type": "constrains",
-                    "source": constraint["id"],
-                    "target": graph_id,
-                })
-        
+                result["relations"].append(
+                    {
+                        "type": "constrains",
+                        "source": constraint["id"],
+                        "target": graph_id,
+                    }
+                )
+
         return result

@@ -31,6 +31,7 @@ DEFAULT_RETRIES = 3
 @dataclass
 class SlackWebhookClientConfig:
     """Client configuration."""
+
     base_url: str
     api_key: Optional[str] = None
     timeout: float = DEFAULT_TIMEOUT
@@ -124,5 +125,6 @@ class SlackWebhookClient:
 
     async def slack_chat_postMessage(self, data: dict) -> dict:
         """Call slack_chat_postMessage endpoint."""
-        return await self._request("POST", "https://slack.com/api/chat.postMessage", data)
-
+        return await self._request(
+            "POST", "https://slack.com/api/chat.postMessage", data
+        )

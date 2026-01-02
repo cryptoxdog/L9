@@ -11,7 +11,7 @@ Version: 1.0.0
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent.parent
@@ -28,6 +28,7 @@ except ImportError as e:
 # Test: Tool definition creation
 # =============================================================================
 
+
 def test_tool_definition_creation():
     """
     Contract: ToolDefinition can be created.
@@ -38,7 +39,7 @@ def test_tool_definition_creation():
         external_apis=["api1", "api2"],
         category="testing",
     )
-    
+
     assert tool_def.name == "test_tool"
     assert tool_def.description == "A test tool"
     assert len(tool_def.external_apis) == 2
@@ -50,6 +51,7 @@ def test_tool_definition_creation():
 # Test: Register tool mock
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_register_tool_mock():
     """
@@ -59,16 +61,18 @@ async def test_register_tool_mock():
         name="test_tool",
         description="Test tool",
     )
-    
+
     # Mock Neo4j client
-    with patch('core.tools.tool_graph.ToolGraph._get_neo4j') as mock_get_neo4j:
+    with patch("core.tools.tool_graph.ToolGraph._get_neo4j") as mock_get_neo4j:
         mock_neo4j = AsyncMock()
         mock_get_neo4j.return_value = mock_neo4j
-        
+
         # Mock run_query
         mock_neo4j.run_query = AsyncMock(return_value=[])
-        
+
         # Try to register tool
         # Note: ToolGraph methods are static, so we test the structure
         assert ToolGraph is not None
-        assert hasattr(ToolGraph, 'register_tool') or hasattr(ToolGraph, '_register_tool')
+        assert hasattr(ToolGraph, "register_tool") or hasattr(
+            ToolGraph, "_register_tool"
+        )

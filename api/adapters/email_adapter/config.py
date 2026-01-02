@@ -33,34 +33,44 @@ from typing import Optional
 @dataclass
 class EmailAdapterConfig:
     """Configuration for Email Adapter."""
-    
+
     # Required environment variables
-    email_adapter_signing_secret: str = field(default_factory=lambda: os.environ.get("EMAIL_ADAPTER_SIGNING_SECRET", ""))
-    gmail_api_key: str = field(default_factory=lambda: os.environ.get("GMAIL_API_KEY", ""))
-    
+    email_adapter_signing_secret: str = field(
+        default_factory=lambda: os.environ.get("EMAIL_ADAPTER_SIGNING_SECRET", "")
+    )
+    gmail_api_key: str = field(
+        default_factory=lambda: os.environ.get("GMAIL_API_KEY", "")
+    )
+
     # Optional environment variables (EMAIL_ENABLED matches env.example)
-    email_enabled: Optional[str] = field(default_factory=lambda: os.environ.get("EMAIL_ENABLED"))
-    email_adapter_log_level: Optional[str] = field(default_factory=lambda: os.environ.get("EMAIL_ADAPTER_LOG_LEVEL"))
-    
+    email_enabled: Optional[str] = field(
+        default_factory=lambda: os.environ.get("EMAIL_ENABLED")
+    )
+    email_adapter_log_level: Optional[str] = field(
+        default_factory=lambda: os.environ.get("EMAIL_ADAPTER_LOG_LEVEL")
+    )
+
     # Module settings
     module_id: str = "email.adapter"
     module_name: str = "Email Adapter"
     enabled: bool = True
-    
+
     # Timeouts
     default_timeout_seconds: int = 30
     aios_timeout_seconds: int = 60
-    
+
     # Idempotency
     dedupe_cache_ttl_seconds: int = 86400
-    
+
     def validate(self) -> list[str]:
         """Validate required configuration is present."""
         errors = []
-        if not self.email_adapter_signing_secret: errors.append("Missing required env: EMAIL_ADAPTER_SIGNING_SECRET")
-        if not self.gmail_api_key: errors.append("Missing required env: GMAIL_API_KEY")
+        if not self.email_adapter_signing_secret:
+            errors.append("Missing required env: EMAIL_ADAPTER_SIGNING_SECRET")
+        if not self.gmail_api_key:
+            errors.append("Missing required env: GMAIL_API_KEY")
         return errors
-    
+
     @classmethod
     def from_env(cls) -> "EmailAdapterConfig":
         """Create config from environment variables."""

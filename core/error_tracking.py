@@ -13,7 +13,7 @@ from __future__ import annotations
 import structlog
 import traceback
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 logger = structlog.get_logger(__name__)
@@ -27,19 +27,19 @@ async def log_error_to_graph(
 ) -> str:
     """
     Log an error to Neo4j with causality chain.
-    
+
     Creates an Error event node linked to its cause (if parent_error_id provided).
     This enables queries like "show all errors caused by X".
-    
+
     Args:
         error: The exception that occurred
         context: Additional context (endpoint, agent_id, etc.)
         parent_error_id: ID of the error that caused this one (for chaining)
         source: Source of the error (e.g., "api.chat", "tool.web_search")
-        
+
     Returns:
         Error ID for use as parent_error_id in downstream errors
-        
+
     Example:
         try:
             result = await call_openai()
@@ -52,14 +52,14 @@ async def log_error_to_graph(
     except ImportError:
         logger.debug("Neo4j client not available - skipping error logging")
         return ""
-    
+
     neo4j = await get_neo4j_client()
     if not neo4j:
         return ""  # Neo4j not available, skip silently
-    
+
     error_id = f"error:{uuid4()}"
     ctx = context or {}
-    
+
     try:
         await neo4j.create_event(
             event_id=error_id,
@@ -74,7 +74,7 @@ async def log_error_to_graph(
             },
             parent_event_id=parent_error_id,  # Creates TRIGGERED relationship
         )
-        
+
         # Create Error type entity for aggregation
         error_type = type(error).__name__
         await neo4j.create_entity(
@@ -89,10 +89,10 @@ async def log_error_to_graph(
             to_id=error_type,
             rel_type="IS_TYPE",
         )
-        
+
         logger.debug(f"Logged error to graph: {error_id} ({error_type})")
         return error_id
-        
+
     except Exception as e:
         logger.warning(f"Failed to log error to Neo4j: {e}")
         return ""
@@ -101,10 +101,10 @@ async def log_error_to_graph(
 async def get_error_chain(error_id: str) -> list[dict[str, Any]]:
     """
     Get the causality chain for an error (all errors that led to this one).
-    
+
     Args:
         error_id: The error ID to trace back from
-        
+
     Returns:
         List of error events in causality order (root cause first)
     """
@@ -112,23 +112,26 @@ async def get_error_chain(error_id: str) -> list[dict[str, Any]]:
         from memory.graph_client import get_neo4j_client
     except ImportError:
         return []
-    
+
     neo4j = await get_neo4j_client()
     if not neo4j:
         return []
-    
+
     try:
         # Traverse backwards through TRIGGERED relationships
-        result = await neo4j.run_query("""
+        result = await neo4j.run_query(
+            """
             MATCH path = (root:Event)-[:TRIGGERED*0..10]->(target:Event {id: $error_id})
             WHERE root.event_type = 'error'
             UNWIND nodes(path) as node
             RETURN DISTINCT node
             ORDER BY node.timestamp
-        """, {"error_id": error_id})
-        
+        """,
+            {"error_id": error_id},
+        )
+
         return result
-        
+
     except Exception as e:
         logger.warning(f"Failed to get error chain: {e}")
         return []
@@ -141,12 +144,12 @@ async def get_errors_by_type(
 ) -> list[dict[str, Any]]:
     """
     Get all errors of a specific type.
-    
+
     Args:
         error_type: Error class name (e.g., "TimeoutError", "ValueError")
         limit: Maximum errors to return
         since: ISO timestamp to filter from (optional)
-        
+
     Returns:
         List of error events
     """
@@ -154,14 +157,14 @@ async def get_errors_by_type(
         from memory.graph_client import get_neo4j_client
     except ImportError:
         return []
-    
+
     neo4j = await get_neo4j_client()
     if not neo4j:
         return []
-    
+
     try:
         params: dict[str, Any] = {"error_type": error_type, "limit": limit}
-        
+
         if since:
             query = """
                 MATCH (e:Event)-[:IS_TYPE]->(:ErrorType {id: $error_type})
@@ -178,10 +181,10 @@ async def get_errors_by_type(
                 ORDER BY e.timestamp DESC
                 LIMIT $limit
             """
-        
+
         result = await neo4j.run_query(query, params)
         return [dict(r["e"]) for r in result] if result else []
-        
+
     except Exception as e:
         logger.warning(f"Failed to get errors by type: {e}")
         return []
@@ -190,10 +193,10 @@ async def get_errors_by_type(
 async def get_error_stats(hours: int = 24) -> dict[str, int]:
     """
     Get error counts by type for the last N hours.
-    
+
     Args:
         hours: Number of hours to look back
-        
+
     Returns:
         Dict mapping error type to count
     """
@@ -201,23 +204,28 @@ async def get_error_stats(hours: int = 24) -> dict[str, int]:
         from memory.graph_client import get_neo4j_client
     except ImportError:
         return {}
-    
+
     neo4j = await get_neo4j_client()
     if not neo4j:
         return {}
-    
+
     try:
-        cutoff = (datetime.utcnow() - __import__("datetime").timedelta(hours=hours)).isoformat()
-        
-        result = await neo4j.run_query("""
+        cutoff = (
+            datetime.utcnow() - __import__("datetime").timedelta(hours=hours)
+        ).isoformat()
+
+        result = await neo4j.run_query(
+            """
             MATCH (e:Event {event_type: 'error'})
             WHERE e.timestamp >= $cutoff
             RETURN e.error_type as error_type, count(*) as count
             ORDER BY count DESC
-        """, {"cutoff": cutoff})
-        
+        """,
+            {"cutoff": cutoff},
+        )
+
         return {r["error_type"]: r["count"] for r in result} if result else {}
-        
+
     except Exception as e:
         logger.warning(f"Failed to get error stats: {e}")
         return {}
@@ -229,4 +237,3 @@ __all__ = [
     "get_errors_by_type",
     "get_error_stats",
 ]
-

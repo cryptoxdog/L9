@@ -1,0 +1,181 @@
+---
+description: "TypeScript + TSX language rules for AI OS UI and agent-facing frontends."
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "!**/*.test.ts"
+  - "!**/*.test.tsx"
+alwaysApply: false
+---
+
+# TypeScript/React Language Rules for L9 OS Frontend
+
+## Type Safety & Strictness
+
+### Explicit Types Required
+
+- **No any type**: Use unknown and narrow via type guards, or as const for literal types.
+- **Function signatures**: Always include parameter types and return type annotations.
+- **Object shapes**: Use interfaces or type aliases. No plain {} or object.
+- **Union types**: Explicit, not stringly typed. Use discriminated unions for clarity.
+
+### Generic Type Parameters
+
+- **Be explicit with generics**: Array<T> clarity > T[] shorthand.
+- **Constrain generics**: Use extends to enforce shape contracts.
+
+---
+
+## Module Boundaries & Imports
+
+### Frontend Layering
+
+- **api/**: HTTP client + WebSocket client. Data fetching only. No business logic.
+- **hooks/**: React hooks. State management, data fetching coordination. No direct DOM.
+- **components/**: React components. Presentation only. No async logic beyond hooks.
+- **stores/**: Zustand or Context global state. Single source of truth for app state.
+- **types/**: TypeScript interfaces and enums. Shared across all layers.
+
+### Circular Import Prevention
+
+- **Core rule**: Components cannot import from stores, stores cannot import from components.
+- **Dep direction**: Components → Hooks → API/Stores → Types. Never reverse.
+- **Index exports**: Use index.ts in folders to re-export public API, hide internals.
+
+---
+
+## React-Specific Rules
+
+### Functional Components & Hooks
+
+- **All components are functional**: No class components.
+- **Use hooks for state**: useState, useEffect, useContext, useReducer.
+- **Custom hooks for reuse**: Extract repeated logic into useXxx hook.
+- **Dependency arrays**: Accurate useEffect deps. Use ESLint exhaustive-deps rule.
+
+### Props & Composition
+
+- **Props are immutable**: No mutation. Use destructuring + spread for override patterns.
+- **Children prop**: Explicit React.ReactNode type, not implicit.
+
+### Error Boundaries & Error Handling
+
+- **Wrap feature sections**: Use error boundary components for isolated error recovery.
+- **Network errors**: Explicit error states (loading, success, error). Show UI feedback.
+- **No silent failures**: Log errors to console (dev) and optionally to Sentry (prod).
+
+---
+
+## WebSocket & Real-Time Rules
+
+### Bidirectional Communication
+
+- **Use WSClient class**: Persistent connection managed by context or hook.
+- **Message envelope**: All messages follow EventMessage schema (from runtime/wsprotocol).
+- **Heartbeat handling**: Client must respond to heartbeats. Server disconnects on silence >30s.
+- **Reconnection**: Auto-reconnect with exponential backoff. Max 5 retries, then bail to HTTP fallback.
+
+### Real-Time State Sync
+
+- **Optimistic updates**: Update local state immediately, revert on error.
+- **Sync on reconnect**: After reconnect, re-fetch full state. No merge on reconnect.
+
+---
+
+## Async & Data Fetching
+
+### HTTP Client Rules
+
+- **Use fetch or axios wrapper**: Typed, with retry + timeout logic.
+- **Timeouts**: All HTTP calls have 30s timeout. Agent calls have 60s timeout.
+- **Error handling**: Explicit error types (NetworkError, TimeoutError, AuthError, etc.).
+- **Request/response logging**: In dev, log requests/responses to console. In prod, only errors to Sentry.
+
+### State Management in Hooks
+
+- **Separate data fetching from state update**: Use isMounted checks.
+- **No race conditions**: Use cleanup functions and mounted checks.
+
+---
+
+## Logging & Debugging
+
+### Structured Logging
+
+- **Use console context**: Include agent_id, task_id, thread_id in log messages.
+- **Log levels**: debug (dev only), info (UI state changes), error (exceptions).
+- **Avoid logs in loops**: Debounce high-frequency logs.
+
+### Browser DevTools
+
+- **Source maps**: Always generate. No minified-only debugging in dev.
+- **React DevTools**: Install. Use Profiler to identify re-render issues.
+- **Network tab**: Inspect WebSocket frames + HTTP requests. Validate payload schema.
+
+---
+
+## Agent Control Surface Rules
+
+### L Chat Panel
+
+- **Message input**: Text area with Submit button. Disable during execution.
+- **Execution status**: Show running, success, error with icon/color.
+- **Tool calls display**: List tools called, with input/output. Expandable.
+- **Memory context**: Optional: show top-k memory facts retrieved by L.
+
+### Inspector Panel
+
+- **Agent state**: Display current agent_id, task_id, iteration count, timeout remaining.
+- **Kernel stack**: Show loaded kernels (Identity, Safety, Execution, Behavioral).
+- **Tool registry**: List available tools with capability gates (approved vs blocked).
+- **Approval queue**: Show pending high-risk tool calls awaiting Igor approval.
+
+### Console View
+
+- **Packet stream**: Real-time log of PacketEnvelope reasoning, tool_call, decision.
+- **Filter by kind**: View only reasoning, or tool_call, or decisions.
+- **Expand packet**: Show full JSON payload, metadata, confidence.
+- **Copy/export**: Export visible packets as JSON for debugging.
+
+---
+
+## Accessibility & UX
+
+### Keyboard Navigation
+
+- **Tab order**: Logical, left-to-right, top-to-bottom. Use tabIndex sparingly.
+- **Focus indicators**: Visible on all interactive elements. Use :focus-visible pseudo-class.
+- **Escape key**: Closes modals, cancels operations.
+
+### Color & Contrast
+
+- **WCAG AA minimum**: 4.5:1 contrast for text, 3:1 for large text.
+- **Status colors**: Do not rely on color alone. Use icon + text for success/error.
+
+### Mobile Responsiveness
+
+- **Meta viewport**: width=device-width, initial-scale=1.
+- **Responsive layout**: Breakpoints for mobile (<640px), tablet (640-1024px), desktop (>1024px).
+- **Touch targets**: Min 44x44px for interactive elements.
+
+---
+
+## Testing Rules
+
+### Unit Tests
+
+- **Hook tests**: Use @testing-library/react-hooks (or vitest + React Testing Library).
+- **Component snapshot**: Do not over-use. Prefer behavioral assertions.
+
+### Integration Tests
+
+- **Mock API**: Use msw (Mock Service Worker) for HTTP and WebSocket.
+- **User flow**: Simulate user actions (type, click, submit) and assert outcomes.
+
+---
+
+## Linting & Formatting
+
+- **ESLint config**: Extend eslint:recommended, plugin:react/recommended, plugin:@typescript-eslint/recommended.
+- **Prettier**: Format on save. Line length 100 chars.
+- **CI check**: Run linter + type check (tsc --noEmit) on PR. Block merge if errors.

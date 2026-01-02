@@ -49,4 +49,3 @@ def module_id():
 def spec_hash():
     """Spec hash for verification."""
     return "SPEC-slack-webhook"
-

@@ -12,6 +12,7 @@ Tier: 2
 import hmac
 import hashlib
 import time
+import os
 import structlog
 from fastapi import APIRouter, Request, HTTPException, Depends, Header
 from typing import Optional
@@ -21,6 +22,13 @@ from api.adapters.slack_adapter.adapters.slack_webhook_adapter import (
     SlackWebhookAdapter,
     SlackWebhookRequest,
 )
+
+# Import settings at module level for better testability
+try:
+    from config.settings import get_integration_settings
+except ImportError:
+    # Fallback for test environments where config might not be available
+    get_integration_settings = None
 
 logger = structlog.get_logger(__name__)
 
@@ -34,10 +42,11 @@ router = APIRouter(prefix="/slack", tags=["Slack Webhook Adapter"])
 
 class SlackWebhookRequestModel(BaseModel):
     """Request model for Slack Webhook Adapter endpoint."""
+
     event_id: Optional[str] = Field(None, description="Event identifier")
     source: Optional[str] = Field(None, description="Event source")
     payload: dict = Field(default_factory=dict, description="Event payload")
-    
+
     # Slack-specific fields
     type: Optional[str] = Field(None, description="Slack event type")
     challenge: Optional[str] = Field(None, description="URL verification challenge")
@@ -50,6 +59,7 @@ class SlackWebhookRequestModel(BaseModel):
 
 class SlackWebhookResponseModel(BaseModel):
     """Response model for Slack Webhook Adapter endpoint."""
+
     ok: bool
     packet_id: Optional[str] = None
     dedupe: bool = False
@@ -61,17 +71,23 @@ class SlackWebhookResponseModel(BaseModel):
 # SIGNATURE VERIFICATION
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Default signing secret for development (should be overridden in production)
-SLACK_SIGNING_SECRET = "test_secret"
-
 
 def verify_slack_signature(
     body: bytes,
     timestamp: str,
     signature: str,
-    signing_secret: str = SLACK_SIGNING_SECRET,
+    signing_secret: Optional[str] = None,
 ) -> bool:
     """Verify Slack request signature using HMAC-SHA256."""
+    # Get signing secret from env if not provided
+    if not signing_secret:
+        signing_secret = os.getenv("SLACK_SIGNING_SECRET")
+        if not signing_secret:
+            logger.error(
+                "SLACK_SIGNING_SECRET not configured for signature verification"
+            )
+            return False
+
     # Check timestamp freshness (5 minutes tolerance)
     try:
         request_timestamp = int(timestamp)
@@ -80,15 +96,16 @@ def verify_slack_signature(
             return False
     except (ValueError, TypeError):
         return False
-    
+
     # Compute expected signature
     sig_basestring = f"v0:{timestamp}:{body.decode('utf-8')}"
-    expected_sig = "v0=" + hmac.new(
-        signing_secret.encode(),
-        sig_basestring.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    
+    expected_sig = (
+        "v0="
+        + hmac.new(
+            signing_secret.encode(), sig_basestring.encode(), hashlib.sha256
+        ).hexdigest()
+    )
+
     return hmac.compare_digest(expected_sig, signature)
 
 
@@ -117,7 +134,9 @@ async def handle_slack_webhook(
     request: Request,
     adapter: SlackWebhookAdapter = Depends(get_adapter),
     x_slack_signature: Optional[str] = Header(None, alias="X-Slack-Signature"),
-    x_slack_request_timestamp: Optional[str] = Header(None, alias="X-Slack-Request-Timestamp"),
+    x_slack_request_timestamp: Optional[str] = Header(
+        None, alias="X-Slack-Request-Timestamp"
+    ),
 ) -> SlackWebhookResponseModel:
     """
     Validates Slack events, normalizes to L9 packets, and routes to AIOS reasoning.
@@ -127,26 +146,47 @@ async def handle_slack_webhook(
     """
     # Get raw body for signature verification
     body = await request.body()
-    
+
     # Signature verification
     if not x_slack_signature or not x_slack_request_timestamp:
         raise HTTPException(status_code=401, detail="Missing Slack signature headers")
-    
-    if not verify_slack_signature(body, x_slack_request_timestamp, x_slack_signature):
+
+    # Get signing secret from config or env
+    signing_secret = None
+    if get_integration_settings:
+        try:
+            integration_settings = get_integration_settings()
+            signing_secret = integration_settings.slack_signing_secret
+        except Exception:
+            pass
+
+    if not signing_secret:
+        signing_secret = os.getenv("SLACK_SIGNING_SECRET")
+
+    if not signing_secret:
+        logger.error("SLACK_SIGNING_SECRET not configured")
+        raise HTTPException(
+            status_code=500, detail="Slack signing secret not configured"
+        )
+
+    if not verify_slack_signature(
+        body, x_slack_request_timestamp, x_slack_signature, signing_secret
+    ):
         raise HTTPException(status_code=401, detail="Invalid Slack signature")
-    
+
     # Parse body
     import json
+
     try:
         body_json = json.loads(body)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
-    
+
     # Handle URL verification challenge
     if body_json.get("type") == "url_verification":
         challenge = body_json.get("challenge")
         return SlackWebhookResponseModel(ok=True, challenge=challenge)
-    
+
     # Convert to Pydantic model
     request_model = SlackWebhookRequestModel(**body_json)
 
@@ -172,4 +212,3 @@ async def handle_slack_webhook(
 async def health_check() -> dict:
     """Health check endpoint."""
     return {"status": "healthy", "module": "slack.webhook"}
-

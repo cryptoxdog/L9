@@ -35,8 +35,7 @@ qdrant/collections/
 neo4j/data/
 
 # --- Editor / Agent tooling ---
-.cursor/
-.cursor-commands/
+# .cursor/ and .cursor-commands/ are tracked in git
 
 # --- Archives (local only) ---
 _Archive_Perplexity/
@@ -88,3 +87,6 @@ Repo-Files/
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml
 .Trash/
+
+# CodeGen extractions (generated output)
+codegen/extractions/

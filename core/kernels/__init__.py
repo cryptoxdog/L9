@@ -44,12 +44,18 @@ from runtime.kernel_loader import (
     KERNEL_EXTENSIONS,
 )
 
+
 # Emit deprecation warning when accessing via this module
 def __getattr__(name: str):
     if name in (
-        "load_kernel_file", "load_all_private_kernels", "load_layered_kernels",
-        "get_kernel_by_name", "get_enabled_rules", "get_rules_by_type",
-        "validate_kernel_structure", "validate_all_kernels",
+        "load_kernel_file",
+        "load_all_private_kernels",
+        "load_layered_kernels",
+        "get_kernel_by_name",
+        "get_enabled_rules",
+        "get_rules_by_type",
+        "validate_kernel_structure",
+        "validate_all_kernels",
     ):
         warnings.warn(
             f"core.kernels.{name} is deprecated. Use runtime.kernel_loader.{name} instead.",
@@ -57,6 +63,7 @@ def __getattr__(name: str):
             stacklevel=2,
         )
     raise AttributeError(f"module 'core.kernels' has no attribute '{name}'")
+
 
 __all__ = [
     # Integrity
@@ -82,4 +89,3 @@ __all__ = [
     "DEFAULT_KERNEL_PATH",
     "KERNEL_EXTENSIONS",
 ]
-

@@ -31,7 +31,7 @@ class SmokeTestResults:
     def __init__(self):
         self.passed = []
         self.failed = []
-    
+
     def record(self, name: str, success: bool, error: str = ""):
         if success:
             self.passed.append(name)
@@ -39,7 +39,7 @@ class SmokeTestResults:
         else:
             self.failed.append((name, error))
             logger.error(f"FAIL: {name} - {error}")
-    
+
     def summary(self) -> bool:
         logger.info("=" * 60)
         logger.info(f"PASSED: {len(self.passed)}")
@@ -54,13 +54,24 @@ class SmokeTestResults:
 def test_compileall() -> tuple[bool, str]:
     """Test that all Python files compile (excluding venv/node_modules)."""
     import subprocess
+
     result = subprocess.run(
-        [sys.executable, "-m", "compileall", "-q", "-x", "venv|node_modules|__pycache__|.git", str(REPO_ROOT)],
+        [
+            sys.executable,
+            "-m",
+            "compileall",
+            "-q",
+            "-x",
+            "venv|node_modules|__pycache__|.git",
+            str(REPO_ROOT),
+        ],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
-        return False, result.stderr[:200] if result.stderr else "Compilation errors (see output)"
+        return False, result.stderr[
+            :200
+        ] if result.stderr else "Compilation errors (see output)"
     return True, ""
 
 
@@ -70,7 +81,7 @@ def test_core_imports() -> tuple[bool, str]:
         # Orchestrators (no DB required)
         from orchestrators import MetaOrchestrator, WorldModelOrchestrator
         from world_model.runtime import WorldModelRuntime
-        
+
         # Memory imports may need DB drivers - skip gracefully
         try:
             from memory.substrate_models import PacketEnvelope, PacketEnvelopeIn
@@ -81,7 +92,7 @@ def test_core_imports() -> tuple[bool, str]:
                 pass  # DB drivers not installed, OK for smoke test
             else:
                 raise
-        
+
         return True, ""
     except ImportError as e:
         return False, str(e)
@@ -93,11 +104,13 @@ def test_langgraph_not_shadowed() -> tuple[bool, str]:
     """Test that langgraph library is not shadowed by local package."""
     try:
         from langgraph.graph import StateGraph, END
+
         # Verify it's the actual library, not our local shim
         import langgraph
+
         # langgraph is a namespace package, so __file__ may be None
         # Instead, check that we can access the graph module
-        if hasattr(langgraph, '__path__'):
+        if hasattr(langgraph, "__path__"):
             for p in langgraph.__path__:
                 if "l9" in p.lower() and "venv" not in p.lower():
                     return False, f"langgraph is local package: {p}"
@@ -111,8 +124,7 @@ def test_server_module_imports() -> tuple[bool, str]:
     """Test that server module can be imported (without DB connection)."""
     try:
         # Core schemas (no DB required)
-        from core.schemas.event_stream import AgentHandshake
-        
+
         # API modules may need DB drivers
         try:
             from api.memory.router import router as memory_router
@@ -122,7 +134,7 @@ def test_server_module_imports() -> tuple[bool, str]:
                 pass  # DB drivers not installed, OK for smoke test
             else:
                 raise
-        
+
         return True, ""
     except Exception as e:
         return False, str(e)
@@ -133,11 +145,11 @@ def test_migrations_exist() -> tuple[bool, str]:
     migrations_dir = REPO_ROOT / "migrations"
     if not migrations_dir.exists():
         return False, "migrations/ directory not found"
-    
+
     sql_files = list(migrations_dir.glob("*.sql"))
     if len(sql_files) == 0:
         return False, "No .sql files in migrations/"
-    
+
     return True, f"{len(sql_files)} migration files found"
 
 
@@ -145,31 +157,48 @@ def test_core_modules_exist() -> tuple[bool, str]:
     """Test that core module directories exist."""
     required_dirs = ["memory", "orchestrators", "world_model", "api", "email_agent"]
     missing = [d for d in required_dirs if not (REPO_ROOT / d).exists()]
-    
+
     if missing:
         return False, f"Missing directories: {missing}"
-    
+
     # Check for __init__.py in each
-    missing_init = [d for d in required_dirs if not (REPO_ROOT / d / "__init__.py").exists()]
+    missing_init = [
+        d for d in required_dirs if not (REPO_ROOT / d / "__init__.py").exists()
+    ]
     if missing_init:
         return False, f"Missing __init__.py in: {missing_init}"
-    
+
     return True, ""
 
 
 def test_no_nested_repos() -> tuple[bool, str]:
     """Test that there are no nested .git directories within project."""
     import subprocess
+
     result = subprocess.run(
-        ["find", str(REPO_ROOT), "-type", "d", "-name", ".git", "-not", "-path", str(REPO_ROOT / ".git")],
+        [
+            "find",
+            str(REPO_ROOT),
+            "-type",
+            "d",
+            "-name",
+            ".git",
+            "-not",
+            "-path",
+            str(REPO_ROOT / ".git"),
+        ],
         capture_output=True,
         text=True,
     )
-    nested_dirs = [d for d in result.stdout.strip().split("\n") if d and d.startswith(str(REPO_ROOT))]
-    
+    nested_dirs = [
+        d
+        for d in result.stdout.strip().split("\n")
+        if d and d.startswith(str(REPO_ROOT))
+    ]
+
     if nested_dirs:
         return False, f"Nested repos found: {nested_dirs}"
-    
+
     return True, ""
 
 
@@ -178,18 +207,23 @@ def test_entrypoints_exist() -> tuple[bool, str]:
     entrypoints_file = REPO_ROOT / "entrypoints.txt"
     if not entrypoints_file.exists():
         return False, "entrypoints.txt not found"
-    
+
     missing = []
     for line in entrypoints_file.read_text().strip().split("\n"):
         # Only check lines that are actual file paths (not indented, end with .py, not comments)
-        if line and not line.startswith("#") and not line.startswith(" ") and line.endswith(".py"):
+        if (
+            line
+            and not line.startswith("#")
+            and not line.startswith(" ")
+            and line.endswith(".py")
+        ):
             path = REPO_ROOT / line
             if not path.exists():
                 missing.append(line)
-    
+
     if missing:
         return False, f"Missing entrypoints: {missing}"
-    
+
     return True, ""
 
 
@@ -198,14 +232,14 @@ async def test_memory_pipeline_dry_run() -> tuple[bool, str]:
     try:
         from uuid import uuid4
         from memory.substrate_models import PacketEnvelope, PacketEnvelopeIn
-        
+
         # Create a test packet
         packet = PacketEnvelopeIn(
             packet_type="smoke_test",
             payload={"test": True, "source": "audit_smoke_test"},
             metadata={"agent": "smoke_tester"},
         )
-        
+
         # Create envelope with proper UUID
         envelope = PacketEnvelope(
             packet_id=uuid4(),
@@ -213,16 +247,17 @@ async def test_memory_pipeline_dry_run() -> tuple[bool, str]:
             payload=packet.payload,
             metadata=packet.metadata,
         )
-        
+
         # Try to import SubstrateDAG if langgraph is available
         try:
             from memory.substrate_graph import SubstrateDAG
+
             # Create DAG without services (dry run)
             dag = SubstrateDAG(repository=None, semantic_service=None)
         except ImportError:
             # langgraph not installed, skip DAG instantiation
             pass
-        
+
         return True, ""
     except Exception as e:
         return False, str(e)
@@ -232,10 +267,10 @@ async def test_world_model_instantiation() -> tuple[bool, str]:
     """Test that world model can be instantiated."""
     try:
         from world_model.runtime import WorldModelRuntime
-        
+
         # Create without DB connection
         runtime = WorldModelRuntime()
-        
+
         return True, ""
     except Exception as e:
         return False, str(e)
@@ -243,49 +278,49 @@ async def test_world_model_instantiation() -> tuple[bool, str]:
 
 def main():
     results = SmokeTestResults()
-    
+
     logger.info("=" * 60)
     logger.info("L9 AUDIT SMOKE TEST")
     logger.info("=" * 60)
-    
+
     # Sync tests
     result, err = test_compileall()
     results.record("compileall", result, err)
-    
+
     result, err = test_no_nested_repos()
     results.record("no_nested_repos", result, err)
-    
+
     result, err = test_entrypoints_exist()
     results.record("entrypoints_exist", result, err)
-    
+
     result, err = test_migrations_exist()
     results.record("migrations_exist", result, err)
-    
+
     result, err = test_core_modules_exist()
     results.record("core_modules_exist", result, err)
-    
+
     result, err = test_langgraph_not_shadowed()
     results.record("langgraph_not_shadowed", result, err)
-    
+
     result, err = test_core_imports()
     results.record("core_imports", result, err)
-    
+
     result, err = test_server_module_imports()
     results.record("server_module_imports", result, err)
-    
+
     # Async tests
     async def run_async_tests():
         result, err = await test_memory_pipeline_dry_run()
         results.record("memory_pipeline_dry_run", result, err)
-        
+
         result, err = await test_world_model_instantiation()
         results.record("world_model_instantiation", result, err)
-    
+
     asyncio.run(run_async_tests())
-    
+
     # Summary
     success = results.summary()
-    
+
     if success:
         logger.info("\n" + "=" * 60)
         logger.info("ALL SMOKE TESTS PASSED")
@@ -300,4 +335,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

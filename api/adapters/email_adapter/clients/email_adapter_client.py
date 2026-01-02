@@ -36,6 +36,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class EmailAdapterClientConfig:
     """Client configuration."""
+
     base_url: str
     api_key: Optional[str] = None
     timeout: float = 30.0
@@ -95,7 +96,9 @@ class EmailAdapterClient:
                 return response.json()
             except httpx.HTTPStatusError as e:
                 last_error = e
-                self.logger.warning("request_failed", attempt=attempt + 1, status=e.response.status_code)
+                self.logger.warning(
+                    "request_failed", attempt=attempt + 1, status=e.response.status_code
+                )
                 if e.response.status_code < 500:
                     raise
             except httpx.RequestError as e:
@@ -111,7 +114,7 @@ class EmailAdapterClient:
     async def aios_runtime_call(self, data: dict) -> dict:
         """
         Call aios_runtime_call endpoint.
-        
+
         Endpoint: /chat
         Method: POST
         Timeout: 30s
@@ -122,7 +125,7 @@ class EmailAdapterClient:
     async def memory_service_call(self, data: dict) -> dict:
         """
         Call memory_service_call endpoint.
-        
+
         Endpoint: /memory/ingest
         Method: POST
         Timeout: 30s
@@ -133,22 +136,25 @@ class EmailAdapterClient:
     async def gmail_users_messages_get(self, data: dict) -> dict:
         """
         Call gmail_users_messages_get endpoint.
-        
+
         Endpoint: https://api.gmail.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.gmail.com/...", data, timeout=10)
+        return await self._request(
+            "POST", "https://api.gmail.com/...", data, timeout=10
+        )
 
     async def gmail_users_messages_send(self, data: dict) -> dict:
         """
         Call gmail_users_messages_send endpoint.
-        
+
         Endpoint: https://api.gmail.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.gmail.com/...", data, timeout=10)
-
+        return await self._request(
+            "POST", "https://api.gmail.com/...", data, timeout=10
+        )

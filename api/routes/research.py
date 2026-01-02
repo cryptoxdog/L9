@@ -13,7 +13,6 @@ import structlog
 
 from orchestrators.research_swarm.interface import (
     ResearchSwarmRequest,
-    ResearchSwarmResponse,
 )
 from orchestrators.research_swarm.orchestrator import ResearchSwarmOrchestrator
 
@@ -33,7 +32,7 @@ def get_research_swarm_orchestrator(request: Request) -> ResearchSwarmOrchestrat
     if orchestrator is None:
         raise HTTPException(
             status_code=503,
-            detail="ResearchSwarmOrchestrator not initialized. Check server logs."
+            detail="ResearchSwarmOrchestrator not initialized. Check server logs.",
         )
     return orchestrator
 
@@ -45,20 +44,30 @@ def get_research_swarm_orchestrator(request: Request) -> ResearchSwarmOrchestrat
 
 class ResearchExecuteRequest(BaseModel):
     """Request model for research swarm execution."""
+
     query: str = Field(..., description="Research query to investigate")
-    agent_count: int = Field(default=3, ge=1, le=10, description="Number of parallel research agents")
+    agent_count: int = Field(
+        default=3, ge=1, le=10, description="Number of parallel research agents"
+    )
     convergence_threshold: float = Field(
-        default=0.8, ge=0.0, le=1.0,
-        description="Agreement threshold for consensus (0.0-1.0)"
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Agreement threshold for consensus (0.0-1.0)",
     )
 
 
 class ResearchExecuteResponse(BaseModel):
     """Response model for research swarm execution."""
+
     success: bool = Field(..., description="Whether operation succeeded")
     message: str = Field(default="", description="Result message")
-    results: List[Dict[str, Any]] = Field(default_factory=list, description="Individual agent results")
-    consensus: Optional[str] = Field(default=None, description="Converged consensus if reached")
+    results: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Individual agent results"
+    )
+    consensus: Optional[str] = Field(
+        default=None, description="Converged consensus if reached"
+    )
 
 
 # ============================================================================
@@ -99,12 +108,12 @@ async def execute_research(
 ):
     """
     Execute research swarm via ResearchSwarmOrchestrator.
-    
+
     Runs concurrent research agents that:
     1. Independently investigate the query
     2. Generate individual results
     3. Converge toward consensus based on threshold
-    
+
     Note: Current implementation returns stub response.
     Full implementation with analyst pass, dreamers, and convergence in progress.
     """
@@ -115,24 +124,24 @@ async def execute_research(
             agent_count=request.agent_count,
             convergence_threshold=request.convergence_threshold,
         )
-        
+
         # Build orchestrator request
         research_request = ResearchSwarmRequest(
             query=request.query,
             agent_count=request.agent_count,
             convergence_threshold=request.convergence_threshold,
         )
-        
+
         # Execute via orchestrator
         result = await orchestrator.execute(research_request)
-        
+
         logger.info(
             "Research swarm execution complete",
             success=result.success,
             results_count=len(result.results),
             has_consensus=result.consensus is not None,
         )
-        
+
         return ResearchExecuteResponse(
             success=result.success,
             message=result.message,
@@ -141,7 +150,9 @@ async def execute_research(
         )
     except Exception as e:
         logger.error(f"Research swarm execution failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Research execution failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Research execution failed: {str(e)}"
+        )
 
 
 

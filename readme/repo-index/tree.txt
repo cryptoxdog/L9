@@ -8,8 +8,8 @@ L9/
 ├── README.gold-standard.md
 ├── README.md
 ├── __init__.py
-├── agent_catalog.txt
-├── ... (12 more files)
+├── conftest.py
+├── ... (6 more files)
 ├── agents/
 │   ├── __init__.py
 │   ├── architect_agent_a.py
@@ -20,6 +20,19 @@ L9/
 │   ├── l_cto.py
 │   ├── qa_agent.py
 │   ├── reflection_agent.py
+│   └── codegenagent/
+│       ├── Chat Transcript - CodeGenAgentv1.0.md
+│       ├── README.md
+│       ├── extract_yaml_specs.py
+│       ├── patches/
+│       └── specs/
+├── aios/
+│   ├── __init__.py
+│   ├── bootstrap.py
+│   ├── controller.py
+│   ├── local_api.py
+│   ├── router.py
+│   ├── runtime.py
 ├── api/
 │   ├── __init__.py
 │   ├── agent_routes.py
@@ -49,6 +62,11 @@ L9/
 │   └── tools/
 │       ├── __init__.py
 │       ├── router.py
+├── archive/
+│   └── deprecated/
+│       ├── l-cto-legacy/
+│       ├── l-cto-memory/
+│       └── l-cto-memory-supabase/
 ├── ci/
 │   ├── STRICT_MODE.md
 │   ├── __init__.py
@@ -103,6 +121,7 @@ L9/
 │   │   ├── engine.py
 │   │   ├── loader.py
 │   │   ├── schemas.py
+│   │   ├── validation.py
 │   ├── kernel_wiring/
 │   │   ├── __init__.py
 │   │   ├── behavioral_wiring.py
@@ -153,17 +172,17 @@ L9/
 │       ├── __init__.py
 │       ├── global_state_audit.py
 ├── docs/
+│   ├── AGENT_EXECUTOR_WIRING_VERIFICATION.md
+│   ├── API_GAP_ANALYSIS.md
+│   ├── E2E_TESTS_COMPLETE.md
+│   ├── IMPORT_ISSUES_EXPLAINED.md
 │   ├── MEMO.md
 │   ├── MRI-ULTRA.md
+│   ├── ORCHESTRATOR_WIRING_STATUS.md
 │   ├── ROADMAP.md
 │   ├── RUNTIME_SPINE_MAP.md
-│   ├── Reasoning-Blocks-GPT.md
-│   ├── VPS-DEPLOYMENT.md
-│   ├── Website Factory.md
-│   ├── cursorrules
-│   ├── lchat-migration-report.md
-│   ├── plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
-│   ├── ... (1 more files)
+│   ├── TEST_EXECUTION_FINAL.md
+│   ├── ... (7 more files)
 │   ├── 12-23-25/
 │   │   ├── Stage 1 - Define Tools & Load Pattern/
 │   │   ├── Stage 2 - Wire Up Memory & Tools/
@@ -172,51 +191,69 @@ L9/
 │   │   ├── CA Coding (Agent)/
 │   │   └── L-CTO (Agent)/
 │   ├── CodeGen/
+│   │   ├── research_factory_schema.yaml
 │   │   ├── AI-OS & AI-Factory Implemenation Strategy/
-│   │   ├── Chat-GPT/
 │   │   ├── Factory Deployment Strategy (YAML->Code)/
+│   │   ├── L9 Learning & Adaptation Layer/
 │   │   ├── Readme-CodeGen/
 │   │   ├── _Module Canonical Trio/
 │   │   ├── meta-yaml-pack/
 │   │   └── sample_schemas/
+│   ├── Docs-L Key Files/
+│   │   ├── 5 meta prompts L needs.md
+│   │   ├── Agent Template.md
+│   │   ├── Assistant Spec.md
+│   │   ├── CTO Execution Directive.md
+│   │   ├── Cursor-L9-Development-Directive.md
+│   │   ├── INITIALIZATION_KERNEL_UNIFIED.yaml
+│   │   ├── L Agent Spec v1.1.md
+│   │   ├── L9_memory_substrate_readme_v1.0.0.md
+│   │   ├── L9xCIP_PROTOCOL.md
+│   │   ├── architechtural-heirarchy.md
+│   │   ├── ... (2 more files)
 │   ├── Perplexity/
 │   │   ├── cursorrules.md
 │   │   ├── cursorrules2.md
 │   │   ├── cursorrules3.md
 │   ├── Quantum Research Factory/
-│   │   └── Perplexity/
+│   │   └── PERPLEXITY-Module-Spec-v2.5/
 │   ├── _GMP Execute + Audit/
 │   │   ├── Cursor-Directive.md
 │   │   ├── Dora-Block.md
 │   │   ├── GMP-Action-Prompt-Canonical-v1.0.md
 │   │   ├── GMP-Action-Prompt-Generator-v1.0.md
+│   │   ├── GMP-Action-Prompt-Generator-v1.1.md
 │   │   ├── GMP-Audit-Prompt-Canonical-v1.0.md
 │   │   ├── GMP-Audit-Prompt-Guide-v1.0.md
 │   │   ├── GMP-System-Prompt-v1.0.md
 │   │   ├── L9_Cursor Integration Protocol.md
 │   ├── _GMP-Active/
 │   │   ├── GMP-Action-Prompt-Critical-Path-Tests-v1.0.md
-│   │   ├── GMP-Action-Prompt-Implement-Orchestrators-v1.0.md
-│   │   ├── GMP-Action-Prompt-Integration-Tests-v1.0.md
-│   │   ├── GMP-Action-Prompt-Roadmap-MASTER.md
-│   │   ├── GMP-Action-Prompt-Test-Coverage-v1.0.md
-│   │   ├── GMP-Action-Prompt-Unit-Test-Quality-v1.0.md
-│   │   ├── GMP-Action-Prompt-Wire-L-CTO-Phase-3a.md
-│   │   ├── GMP-Action-Prompt-Wire-L-CTO-Phase-3b-GMP.md
-│   │   ├── GMP-Action-Prompt-Wire-L‑CTO-Phase-1.md
-│   │   ├── GMP-Action-Prompt-Wire-L‑CTO-Phase-2.md
-│   │   ├── ... (1 more files)
-│   │   └── GAPS-EXECUTION-CHECKLIST/
+│   │   ├── GMP-Action-Prompt-GMP-L.attach-tools-and-memory-to-L.md
+│   │   ├── GMP-Action-Prompt-GMP-L.closed-loop-learning-from-approvals.md
+│   │   ├── GMP-Action-Prompt-GMP-L.compliance-audit-trail-and-reporting.md
+│   │   ├── GMP-Action-Prompt-GMP-L.cost-optimization-and-budgeting.md
+│   │   ├── GMP-Action-Prompt-GMP-L.federated-memory-for-multi-instance-learning.md
+│   │   ├── GMP-Action-Prompt-GMP-L.igor-command-interface-with-intent-extraction.md
+│   │   ├── GMP-Action-Prompt-GMP-L.kernel-evolution-via-gmp-meta-loop.md
+│   │   ├── GMP-Action-Prompt-GMP-L.multi-agent-orchestration-with-consensus.md
+│   │   ├── GMP-Action-Prompt-GMP-L.multi-modal-unified-routing.md
+│   │   ├── ... (15 more files)
+│   │   ├── 12 MOST IMPACTFUL UNLOCKS/
+│   │   ├── GAPS-EXECUTION-CHECKLIST/
+│   │   └── mcp-memory/
+│   ├── _archive/
+│   │   └── mcp-memory-deprecated/
 │   └── roadmap/
 │       ├── Roadmap-IB.md
-│       ├── strategic-planning-manus-GMP.md
-│       ├── strategic-planning-manus.md
 │       ├── AI Negotiation Agents/
 │       ├── CA Coding Agent/
 │       ├── Core Bayesian layer/
 │       ├── MortgageOS/
 │       ├── Perplexity Deep Research workflows/
-│       └── emma_agent_ready/
+│       ├── Tokenizer Engine/
+│       ├── emma_agent_ready/
+│       └── strategy_memory/
 ├── email_agent/
 │   ├── __init__.py
 │   ├── client.py
@@ -231,6 +268,10 @@ L9/
 ├── generated/
 │   └── specs/
 │       ├── config_loader.yaml
+├── graph_adapter/
+│   ├── STATUS.md
+│   ├── __init__.py
+│   ├── packet_node_adapter.py
 ├── ir_engine/
 │   ├── __init__.py
 │   ├── constraint_challenger.py
@@ -241,25 +282,93 @@ L9/
 │   ├── ir_validator.py
 │   ├── semantic_compiler.py
 │   ├── simulation_router.py
-├── l9_langgraph/
+├── l-cto/
+│   ├── __init__.py
+│   ├── body.json
+│   ├── event_hooks_state_patch.py
+│   ├── l_identity.json
+│   ├── slack.scope.md
+│   ├── startup_memory.py
+│   ├── Prompts & Docs/
+│   │   ├── CHAT_INSIGHTS_L_Design_Deploy.md
+│   │   ├── Chat Transcript - L Design & Deploy.md
+│   │   ├── Modular Workflow Component Pack.md
+│   │   ├── P-Sandbox-Use-Directive.md
+│   │   ├── chat_loader_L_CTO.md
+│   │   ├── identity_pack.md
+│   │   ├── sandbox-use-prompt.md
+│   │   ├── thinking framework.md
+│   │   ├── workflow_todo_kernel.yaml
+│   │   ├── Stage 1 - Define Tools & Load Pattern/
+│   │   ├── Stage 2 - Wire Up Memory & Tools/
+│   │   └── Stage 2 - deep code analysis/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── memory_test_endpoints.py
+│   ├── briefs-cursor/
+│   │   ├── L_CTO_DEPLOYMENT_READINESS.md
+│   │   ├── L_CTO_DIRECTORY_RENAME.md
+│   │   ├── L_CTO_E2E_TEST_PLAN.md
+│   │   ├── L_CTO_INITIALIZATION_COMPLETE.md
+│   │   ├── L_CTO_INITIALIZATION_GAP_ANALYSIS.md
+│   │   ├── L_CTO_MIGRATION_COMPLETE.md
+│   │   ├── L_CTO_NAMING_CONVENTION.md
+│   ├── l-cto-Reasoning-Core/
+│   │   ├── 01_L9_REASONING_CORE.md
+│   │   ├── 02_L9_MISTAKE_PREVENTION.md
+│   │   ├── 03_L9_TECHNICAL_OPERATIONS.md
+│   │   ├── 04_L9_PATTERN_DETECTION.md
+│   │   ├── 05_L9_ERROR_CORRECTION.md
+│   │   ├── INTEGRATION_GUIDE.md
+│   ├── l-cto-Setup/
+│   │   ├── AGENT_PLANNER_PROTOCOL.md
+│   │   ├── AGENT_VERIFIER_PROTOCOL.md
+│   │   ├── Chat - Brainstorm.md
+│   │   ├── Chat - CTO -> L (11-25-2025).md
+│   │   ├── L-CTO Execution Directive.md
+│   │   ├── L-CTO Executive Operational Mode.md
+│   │   ├── L9xCIP_PROTOCOL.md
+│   │   ├── chat_loader_L_CTO.md
+│   └── l-cto-yaml-files/
+│       ├── INITIALIZATION_KERNEL_UNIFIED.yaml
+│       ├── L-CTO.yaml
+│       ├── L9 AGENT MANIFEST — L-CTO v1.0.yaml
+│       ├── Loader_Kernels.md
+│       ├── personality_kernel.yaml
+├── l-cto-phase-2/
+│   ├── L9_AGENT_DELIVERY_SUMMARY.md
+│   ├── extraction_progress.md
+│   ├── l9_agent_tree.txt
+│   ├── module_analysis.md
+│   ├── module_placement_map.md
+│   ├── config/
+│   │   ├── core_values.yaml
+│   │   ├── desire_profile.yaml
+│   │   ├── trust_config.yaml
+│   └── l9_agent/
+│       ├── INTEGRATION_GUIDE.md
+│       ├── QUICKSTART.md
+│       ├── README.md
+│       ├── __init__.py
+│       ├── desire_engine.py
+│       ├── desire_tests.py
+│       ├── goal_commitment.py
+│       ├── persistence_engine.py
+│       ├── trust_engine.py
+│       ├── trust_hooks.py
+│       ├── ... (6 more files)
+│       ├── belief_calibration/
+│       ├── conflict_resolution/
+│       ├── hybrid_graph/
+│       ├── judgment_core/
+│       ├── multi_agent_core/
+│       ├── negotiation/
+│       ├── partner_intent_model/
+│       ├── sandbox/
+│       └── theory_of_mind/
+├── langgraph/
 │   ├── STATUS.md
 │   ├── __init__.py
-│   ├── packet_node_adapter.py
-├── l9_os/
-│   ├── __init__.py
-│   ├── bootstrap.py
-│   ├── controller.py
-│   ├── local_api.py
-│   ├── router.py
-│   ├── runtime.py
-├── l9_private/
-│   ├── __init__.py
-│   ├── kernels/
-│   │   ├── 00_system/
-│   │   └── bootstrap/
-│   └── security/
-│       ├── __init__.py
-│       ├── l9_security_kernel.yaml
 ├── layers/
 ├── local_dashboard/
 │   ├── app.py
@@ -278,6 +387,33 @@ L9/
 │   └── helpers/
 │       ├── __init__.py
 │       ├── logging.py
+├── mcp_memory/
+│   ├── .gitignore
+│   ├── README.md
+│   ├── bootstrap.sh
+│   ├── requirements.txt
+│   ├── deploy/
+│   │   ├── L9-MCP-IMPL.md
+│   │   ├── scripts/
+│   │   └── systemd/
+│   ├── schema/
+│   │   ├── init.sql
+│   │   └── migrations/
+│   ├── src/
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── db.py
+│   │   ├── embeddings.py
+│   │   ├── main.py
+│   │   ├── mcp_server.py
+│   │   ├── models.py
+│   │   └── routes/
+│   └── tests/
+│       ├── __init__.py
+│       ├── test_connection.py
+│       ├── test_embeddings.py
+│       ├── test_memory.py
+│       ├── test_search.py
 ├── memory/
 │   ├── README.md
 │   ├── WIRING.md
@@ -362,6 +498,14 @@ L9/
 │       ├── interface.py
 │       ├── orchestrator.py
 │       ├── scheduler.py
+├── private/
+│   ├── __init__.py
+│   ├── kernels/
+│   │   ├── 00_system/
+│   │   └── bootstrap/
+│   └── security/
+│       ├── __init__.py
+│       ├── l9_security_kernel.yaml
 ├── prompts/
 │   ├── cursor-extraction-forge.md
 │   ├── cursor-extraction-planner.md
@@ -369,7 +513,17 @@ L9/
 │   ├── memory_substrate_extractor_prompt_v1.0.0.md
 ├── readme/
 │   └── repo-index/
-│       ├── wiring_map.txt
+│       ├── agent_catalog.txt
+│       ├── api_surfaces.txt
+│       ├── architecture.txt
+│       ├── class_definitions.txt
+│       ├── config_files.txt
+│       ├── dependencies.txt
+│       ├── entrypoints.txt
+│       ├── env_refs.txt
+│       ├── event_types.txt
+│       ├── function_signatures.txt
+│       ├── ... (7 more files)
 ├── reports/
 │   ├── GMP_Audit_Combined_Orchestrators_v1.0.md
 │   ├── GMP_Report_Implement_Orchestrators_v1.0.md
@@ -405,7 +559,7 @@ L9/
 │   ├── modules_example.txt
 │   ├── precommit_docker_smoke.sh
 │   ├── pull_to_vps.sh
-│   ├── ... (5 more files)
+│   ├── ... (6 more files)
 ├── services/
 │   ├── __init__.py
 │   ├── mac_tasks.py
@@ -459,6 +613,7 @@ L9/
 │   │   ├── __init__.py
 │   │   ├── test_architect_agents.py
 │   │   ├── test_base_agent.py
+│   │   ├── test_l_cto_memory_emission.py
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── test_auth.py
@@ -490,11 +645,12 @@ L9/
 │   │   ├── test_kernel_agent_activation_integration.py
 │   │   ├── test_kernel_router_orchestrator_end_to_end.py
 │   │   ├── test_l_bootstrap.py
+│   │   ├── test_l_cto_end_to_end.py
+│   │   ├── test_l_cto_memory_governance_integration.py
 │   │   ├── test_orchestrator_memory_integration.py
 │   │   ├── test_research_tool_integration.py
 │   │   ├── test_slack_dispatch_integration.py
-│   │   ├── test_world_model_repository_integration.py
-│   │   ├── test_ws_task_routing_integration.py
+│   │   ├── ... (2 more files)
 │   ├── ir_engine/
 │   │   ├── __init__.py
 │   │   ├── conftest.py

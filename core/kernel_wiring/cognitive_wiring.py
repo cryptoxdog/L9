@@ -12,6 +12,7 @@ def _get_kernels():
     global _KERNELS
     if _KERNELS is None:
         from runtime.kernel_loader import load_kernel_stack
+
         _KERNELS = load_kernel_stack()
     return _KERNELS
 

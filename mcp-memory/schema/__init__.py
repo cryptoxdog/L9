@@ -1,4 +1,0 @@
-"""
-Database schema module.
-"""
-

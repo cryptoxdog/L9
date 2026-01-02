@@ -34,4 +34,3 @@ __all__ = [
     "reset_integration_settings",
     "settings",
 ]
-

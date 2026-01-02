@@ -87,10 +87,10 @@ Analyze this input:
 class SemanticCompiler:
     """
     Compiles natural language into IR graphs.
-    
+
     Uses LLM for semantic understanding and structured extraction.
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -99,7 +99,7 @@ class SemanticCompiler:
     ):
         """
         Initialize the semantic compiler.
-        
+
         Args:
             api_key: OpenAI API key (uses env if not provided)
             model: LLM model to use
@@ -109,19 +109,19 @@ class SemanticCompiler:
         self._api_key = api_key
         self._model = model
         self._temperature = temperature
-        
+
         logger.info(f"SemanticCompiler initialized with model={model}")
-    
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._api_key)
         return self._client
-    
+
     # ==========================================================================
     # Main Compilation
     # ==========================================================================
-    
+
     async def compile(
         self,
         text: str,
@@ -131,18 +131,18 @@ class SemanticCompiler:
     ) -> IRGraph:
         """
         Compile natural language text into an IR graph.
-        
+
         Args:
             text: User input text
             context: Optional context for compilation
             session_id: Optional session identifier
             user_id: Optional user identifier
-            
+
         Returns:
             Compiled IRGraph
         """
         logger.info(f"Compiling text: {text[:100]}...")
-        
+
         # Create graph with metadata
         graph = IRGraph(
             metadata=IRMetadata(
@@ -152,37 +152,37 @@ class SemanticCompiler:
                 context=context or {},
             )
         )
-        
+
         # Extract structured data via LLM
         extraction = await self._extract_semantic_structure(text, context)
-        
+
         # Build intents
         intent_map: dict[str, UUID] = {}
         for intent_data in extraction.get("intents", []):
             intent = self._build_intent(intent_data, text)
             intent_map[intent_data.get("description", "")] = intent.node_id
             graph.add_intent(intent)
-        
+
         # Build constraints
         for constraint_data in extraction.get("constraints", []):
             constraint = self._build_constraint(constraint_data, intent_map)
             graph.add_constraint(constraint)
-        
+
         # Build suggested actions
         for action_data in extraction.get("suggested_actions", []):
             action = self._build_action(action_data, intent_map)
             graph.add_action(action)
-        
+
         # Mark as compiled
         graph.set_status(IRStatus.COMPILED)
-        
+
         logger.info(
             f"Compilation complete: {len(graph.intents)} intents, "
             f"{len(graph.constraints)} constraints, {len(graph.actions)} actions"
         )
-        
+
         return graph
-    
+
     async def _extract_semantic_structure(
         self,
         text: str,
@@ -190,55 +190,60 @@ class SemanticCompiler:
     ) -> dict[str, Any]:
         """
         Extract semantic structure from text using LLM.
-        
+
         Args:
             text: Input text
             context: Optional context
-            
+
         Returns:
             Extracted structure dict
         """
         client = self._ensure_client()
-        
+
         # Build prompt
         prompt = INTENT_EXTRACTION_PROMPT + text
         if context:
             prompt += f"\n\nAdditional context:\n{json.dumps(context, indent=2)}"
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": "You are an intent extraction system. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are an intent extraction system. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=self._temperature,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"LLM extraction failed: {e}")
             # Return basic structure on failure
             return {
-                "intents": [{
-                    "type": "execute",
-                    "description": text,
-                    "target": "unknown",
-                    "parameters": {},
-                    "priority": "medium",
-                    "confidence": 0.5,
-                }],
+                "intents": [
+                    {
+                        "type": "execute",
+                        "description": text,
+                        "target": "unknown",
+                        "parameters": {},
+                        "priority": "medium",
+                        "confidence": 0.5,
+                    }
+                ],
                 "constraints": [],
                 "suggested_actions": [],
             }
-    
+
     # ==========================================================================
     # Node Builders
     # ==========================================================================
-    
+
     def _build_intent(
         self,
         data: dict[str, Any],
@@ -247,7 +252,7 @@ class SemanticCompiler:
         """Build an IntentNode from extracted data."""
         intent_type = self._parse_intent_type(data.get("type", "execute"))
         priority = self._parse_priority(data.get("priority", "medium"))
-        
+
         return IntentNode(
             intent_type=intent_type,
             description=data.get("description", ""),
@@ -257,7 +262,7 @@ class SemanticCompiler:
             confidence=float(data.get("confidence", 0.8)),
             source_text=source_text,
         )
-    
+
     def _build_constraint(
         self,
         data: dict[str, Any],
@@ -266,13 +271,13 @@ class SemanticCompiler:
         """Build a ConstraintNode from extracted data."""
         constraint_type = self._parse_constraint_type(data.get("type", "explicit"))
         priority = self._parse_priority(data.get("priority", "medium"))
-        
+
         # Map applies_to descriptions to intent IDs
         applies_to: list[UUID] = []
         for desc in data.get("applies_to", []):
             if desc in intent_map:
                 applies_to.append(intent_map[desc])
-        
+
         return ConstraintNode(
             constraint_type=constraint_type,
             description=data.get("description", ""),
@@ -280,7 +285,7 @@ class SemanticCompiler:
             priority=priority,
             confidence=float(data.get("confidence", 0.8)),
         )
-    
+
     def _build_action(
         self,
         data: dict[str, Any],
@@ -289,13 +294,13 @@ class SemanticCompiler:
         """Build an ActionNode from extracted data."""
         action_type = self._parse_action_type(data.get("type", "code_write"))
         priority = self._parse_priority(data.get("priority", "medium"))
-        
+
         # Find derived_from intent
         derived_from: Optional[UUID] = None
         derived_desc = data.get("derived_from", "")
         if derived_desc in intent_map:
             derived_from = intent_map[derived_desc]
-        
+
         return ActionNode(
             action_type=action_type,
             description=data.get("description", ""),
@@ -304,11 +309,11 @@ class SemanticCompiler:
             priority=priority,
             derived_from_intent=derived_from,
         )
-    
+
     # ==========================================================================
     # Type Parsers
     # ==========================================================================
-    
+
     def _parse_intent_type(self, value: str) -> IntentType:
         """Parse intent type string to enum."""
         mapping = {
@@ -322,7 +327,7 @@ class SemanticCompiler:
             "execute": IntentType.EXECUTE,
         }
         return mapping.get(value.lower(), IntentType.EXECUTE)
-    
+
     def _parse_constraint_type(self, value: str) -> ConstraintType:
         """Parse constraint type string to enum."""
         mapping = {
@@ -333,7 +338,7 @@ class SemanticCompiler:
             "system": ConstraintType.SYSTEM,
         }
         return mapping.get(value.lower(), ConstraintType.EXPLICIT)
-    
+
     def _parse_action_type(self, value: str) -> ActionType:
         """Parse action type string to enum."""
         mapping = {
@@ -348,7 +353,7 @@ class SemanticCompiler:
             "simulation": ActionType.SIMULATION,
         }
         return mapping.get(value.lower(), ActionType.CODE_WRITE)
-    
+
     def _parse_priority(self, value: str) -> NodePriority:
         """Parse priority string to enum."""
         mapping = {
@@ -358,11 +363,11 @@ class SemanticCompiler:
             "low": NodePriority.LOW,
         }
         return mapping.get(value.lower(), NodePriority.MEDIUM)
-    
+
     # ==========================================================================
     # Incremental Compilation
     # ==========================================================================
-    
+
     async def compile_incremental(
         self,
         graph: IRGraph,
@@ -370,37 +375,36 @@ class SemanticCompiler:
     ) -> IRGraph:
         """
         Incrementally add to an existing IR graph.
-        
+
         Args:
             graph: Existing IR graph
             additional_text: New text to compile
-            
+
         Returns:
             Updated IRGraph
         """
         logger.info(f"Incremental compilation: {additional_text[:50]}...")
-        
+
         # Extract from new text
         context = {"existing_intents": [i.description for i in graph.intents.values()]}
         extraction = await self._extract_semantic_structure(additional_text, context)
-        
+
         # Add new nodes
         intent_map: dict[str, UUID] = {}
         for intent in graph.intents.values():
             intent_map[intent.description] = intent.node_id
-        
+
         for intent_data in extraction.get("intents", []):
             intent = self._build_intent(intent_data, additional_text)
             intent_map[intent_data.get("description", "")] = intent.node_id
             graph.add_intent(intent)
-        
+
         for constraint_data in extraction.get("constraints", []):
             constraint = self._build_constraint(constraint_data, intent_map)
             graph.add_constraint(constraint)
-        
+
         for action_data in extraction.get("suggested_actions", []):
             action = self._build_action(action_data, intent_map)
             graph.add_action(action)
-        
-        return graph
 
+        return graph

@@ -9,7 +9,7 @@ import httpx
 # Load from environment (required for server mode, optional for client imports)
 EXECUTOR_KEY = os.getenv("L9_EXECUTOR_API_KEY", "")
 
-MEMORY_HEALTH_URL = "http://127.0.0.1:8000/memory/stats"
+MEMORY_HEALTH_URL = "http://127.0.0.1:8000/api/v1/memory/stats"
 
 # RESTRICTED command whitelist (READ-ONLY operations)
 ALLOWED_SHELL_PREFIXES = [
@@ -28,27 +28,34 @@ ALLOWED_SHELL_PREFIXES = [
 
 app = FastAPI(title="L9 CTO Agent", version="1.0")
 
+
 class ShellTask(BaseModel):
     type: Literal["shell"]
     command: str
     working_dir: Optional[str] = "/opt/l9"
 
+
 class MemoryHealthTask(BaseModel):
     type: Literal["memory_health"]
+
 
 class CompositeTask(BaseModel):
     type: str
     command: Optional[str] = None
     working_dir: Optional[str] = "/opt/l9"
 
+
 def check_auth(authorization: str = Header(...)) -> None:
     if not EXECUTOR_KEY:
-        raise HTTPException(status_code=500, detail="L9_EXECUTOR_API_KEY not configured on server")
+        raise HTTPException(
+            status_code=500, detail="L9_EXECUTOR_API_KEY not configured on server"
+        )
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid auth header")
     token = authorization.split(" ", 1)[1].strip()
     if token != EXECUTOR_KEY:
         raise HTTPException(status_code=403, detail="Invalid executor key")
+
 
 def is_allowed_command(cmd: str) -> bool:
     stripped = cmd.strip()
@@ -56,13 +63,14 @@ def is_allowed_command(cmd: str) -> bool:
         return False
     return any(stripped.startswith(prefix) for prefix in ALLOWED_SHELL_PREFIXES)
 
+
 def run_shell(command: str, cwd: str = "/opt/l9") -> dict:
     if not is_allowed_command(command):
         raise HTTPException(
             status_code=400,
             detail=f"Command not allowed. Must start with: {', '.join(ALLOWED_SHELL_PREFIXES)}",
         )
-    
+
     try:
         completed = subprocess.run(
             command,
@@ -79,13 +87,14 @@ def run_shell(command: str, cwd: str = "/opt/l9") -> dict:
             "stdout": "",
             "stderr": "Command timed out after 30s",
         }
-    
+
     return {
         "ok": completed.returncode == 0,
         "exit_code": completed.returncode,
         "stdout": completed.stdout[-2000:],
         "stderr": completed.stderr[-2000:],
     }
+
 
 def memory_health() -> dict:
     try:
@@ -96,52 +105,56 @@ def memory_health() -> dict:
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Memory health call failed: {e}")
-    
+
     return {
         "status_code": resp.status_code,
         "body": resp.text,
     }
 
+
 @app.get("/agent/health")
 def agent_health():
     return {"status": "ok", "role": "cto_agent", "mode": "read_only"}
 
+
 @app.post("/agent/exec")
 def agent_exec(task: CompositeTask, authorization: str = Header(...)):
     check_auth(authorization)
-    
+
     if task.type == "shell":
         if not task.command:
             raise HTTPException(status_code=400, detail="Missing command")
         result = run_shell(task.command, task.working_dir or "/opt/l9")
         return {"mode": "shell", "command": task.command, "result": result}
-    
+
     if task.type == "memory_health":
         result = memory_health()
         return {"mode": "memory_health", "result": result}
-    
+
     raise HTTPException(status_code=400, detail=f"Unsupported task type: {task.type}")
+
 
 # =============================================================================
 # Client Function (called by runtime/l_tools.py)
 # =============================================================================
 
+
 async def send_mac_task(command: str, timeout: int = 30) -> dict:
     """
     Send a task to the VPS executor service.
-    
+
     This is called by L's mac_agent_exec_task tool.
-    
+
     Args:
         command: Shell command to execute
         timeout: Timeout in seconds
-        
+
     Returns:
         Dict with success, output, exit_code, error
     """
     executor_url = os.getenv("VPS_EXECUTOR_URL", "http://127.0.0.1:8100")
     executor_key = os.getenv("L9_EXECUTOR_API_KEY", "")
-    
+
     if not executor_key:
         return {
             "success": False,
@@ -149,7 +162,7 @@ async def send_mac_task(command: str, timeout: int = 30) -> dict:
             "exit_code": None,
             "error": "L9_EXECUTOR_API_KEY not configured",
         }
-    
+
     try:
         async with httpx.AsyncClient(timeout=timeout + 5) as client:
             response = await client.post(
@@ -164,7 +177,7 @@ async def send_mac_task(command: str, timeout: int = 30) -> dict:
                     "working_dir": "/opt/l9",
                 },
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 result = data.get("result", {})
@@ -181,7 +194,7 @@ async def send_mac_task(command: str, timeout: int = 30) -> dict:
                     "exit_code": None,
                     "error": f"HTTP {response.status_code}: {response.text}",
                 }
-                
+
     except Exception as e:
         return {
             "success": False,

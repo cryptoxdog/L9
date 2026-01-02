@@ -1,0 +1,175 @@
+---
+description: "Critical lessons learned from repeated mistakes. These rules prevent known failure patterns."
+alwaysApply: true
+---
+
+# Learned Lessons — Critical Prevention Rules
+
+These are **hard-won lessons** from repeated mistakes. Violating these wastes hours.
+
+> **Source of Truth:** `.cursor-commands/learning/failures/repeated-mistakes.md`
+> This file is the condensed always-applied enforcement layer.
+
+---
+
+## 🚨 ULTRA-CRITICAL: Path Rules
+
+### GlobalCommands Location — DROPBOX NOT LIBRARY
+
+```bash
+# ❌❌❌ WRONG — NEVER USE ❌❌❌
+/Users/ib-mac/Library/Application Support/Cursor/GlobalCommands
+
+# ✅✅✅ CORRECT — ALWAYS USE ✅✅✅
+$HOME/Dropbox/Cursor Governance/GlobalCommands
+```
+
+**Rule:** The governance folder is in Dropbox, NOT Library. Period. No exceptions.
+
+### Use $HOME, Never Hardcoded Paths
+
+- **NEVER** use `/Users/ib-mac/` in scripts, configs, or LaunchAgents
+- **ALWAYS** use `$HOME` for user-specific paths
+- For Python: `Path.home()` or `os.path.expanduser("~")`
+- For bash: `$HOME`
+
+### Docker Compose — ROOT File Only
+
+```bash
+# ❌ WRONG
+docker-compose -f docs/docker-compose.yaml up -d  # Broken relative paths!
+
+# ✅ CORRECT
+cd /Users/ib-mac/Projects/L9 && docker-compose up -d  # Uses ROOT docker-compose.yml
+```
+
+**Rule:** Always use ROOT `docker-compose.yml` (gitignored but present). The docs version is reference only.
+
+---
+
+## 🔴 CRITICAL: Execution Rules
+
+### Surgical Edits Only
+
+When modifying existing files:
+
+1. **NEVER rewrite/recreate entire files** — use search_replace for targeted edits
+2. **Add imports surgically** at file tops with minimal context
+3. **Add routes/registrations** with minimal surrounding context
+4. **Preserve existing formatting** and style
+
+If a file needs more than ~10 surgical edits, ask before proceeding.
+
+**Exception:** New files that don't exist yet can be created with write tool.
+
+### Run Commands, Don't Show Them
+
+- **ALWAYS** run commands proactively and display actual results
+- **NEVER** just show the command to run unless explicitly asked
+- Be proactive, not reactive. Display data, not commands.
+- File contents → read and display, don't say "run cat file.txt"
+- Script outputs → run the script, show results
+- **ASK** "Would you like me to run this?" only for destructive operations
+
+### Ask Strategic Questions First
+
+- **NEVER** build first, ask questions later
+- **ALWAYS** ask clarifying questions BEFORE building
+- 5-10 minutes of strategic questioning saves 4-8 hours of rework
+
+**Critical Pre-Build Questions:**
+- Q1: "What does success look like when this is done?"
+- Q5: "Are placeholders acceptable or prohibited?"
+- Q7: "What data do we have access to?"
+- Q14: "Should this have confidence scores? If yes, how calculated?"
+
+**User Wisdom:** "The user always asks your opinion and expects you to suggest things they haven't thought of yet. ASK MORE EXCELLENT QUESTIONS."
+
+---
+
+## 🔴 CRITICAL: Verification Rules
+
+### Never Claim Fixed Without Proof
+
+- **ALWAYS** provide evidence before claiming success
+- Show command outputs or file contents as proof
+- Run tests and show results
+- Never say "fixed" without demonstrating it works
+- **ALWAYS make filenames clickable links** — format as `path/to/file.py` so user can click to open directly
+- Never make user hunt through folder tree to find the file
+
+### Search Before Creating
+
+- **ALWAYS** search existing solutions first
+- Adapt existing work rather than recreate
+- Check if similar code/scripts already exist
+
+---
+
+## 🔴 CRITICAL: Data Integrity
+
+### Never Fabricate Data
+
+- **NEVER** make up phone numbers, emails, addresses, or any data
+- Leave fields blank if no real data exists
+- Confirm what data you actually have access to
+- Fabrication breaks user trust
+
+---
+
+## 🔴 CRITICAL: Intent Understanding
+
+### "Display" Means Symlink, Not Documentation
+
+When user says "display X in sidebar/left margin":
+- ❌ DON'T create documentation about X
+- ✅ DO create a symlink to make folder visible in IDE
+
+**Rule:** Listen to INTENT — when user wants to SEE/BROWSE files, they want folder access, not docs.
+
+### MCP Tool Selection
+
+Before using ANY MCP tool:
+1. List all tools in that MCP server
+2. Understand what each does
+3. Choose the BEST tool for the specific task, not just the first one that works
+
+**Example:** `firecrawl_extract` (structured JSON) is often better than `firecrawl_scrape` (markdown).
+
+---
+
+## 🔴 CRITICAL: Communication
+
+### Good Communication = Efficiency
+
+- Asking questions upfront is FASTER than fixing mistakes later
+- Build wrong thing correctly = wastes more time than building right thing slowly
+- Quality questions prevent rework cycles
+
+**Benefits:**
+- ✅ User feels heard and appreciated
+- ✅ Gets to production faster (less rework)
+- ✅ Creates better solutions (uncovers hidden requirements)
+- ✅ Builds trust and credibility
+
+---
+
+## Pre-Execution Checklist
+
+Before ANY execution task:
+
+1. ✅ Paths use `$HOME` not hardcoded usernames
+2. ✅ Docker commands use ROOT `docker-compose.yml`
+3. ✅ File edits are surgical (search_replace, not rewrite)
+4. ✅ Existing solutions searched first
+5. ✅ Evidence ready before claiming success
+6. ✅ No data fabrication
+7. ✅ Intent understood (display = symlink, not docs)
+8. ✅ Strategic questions asked before complex builds
+
+---
+
+## Reference
+
+- **Full lesson database:** `.cursor-commands/learning/failures/repeated-mistakes.md`
+- **Meta-insights:** `.cursor-commands/learning/failures/reasoning_insights.md`

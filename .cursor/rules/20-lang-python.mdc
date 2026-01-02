@@ -1,0 +1,184 @@
+---
+description: "Python rules for AI OS runtime, agents, orchestration, and backend services."
+globs:
+  - "**/*.py"
+  - "!**/migrations/*.py"
+  - "!**/tests/**/*.py"
+alwaysApply: false
+---
+
+# Python Language Rules for L9 OS Core Runtime
+
+## Type Hints & Static Analysis
+
+### Type Annotations Required
+
+- **All function signatures**: Include parameter types and return type. Use -> syntax.
+- **Module-level variables**: Type-hint collections and mutable objects.
+- **Return type for generators**: Use Generator[YieldType, SendType, ReturnType].
+- **Optional types**: Use Optional[T] or T | None (Python 3.10+). Never untyped None.
+
+### Type Checking
+
+- **Use pyright or mypy**: Run in CI. mypy --strict is target.
+- **No Any type**: If forced, use # type: ignore with comment explaining why.
+- **Protocol for duck typing**: Use typing.Protocol instead of untyped duck typing.
+
+---
+
+## Async / Await Patterns
+
+### Async-First Design
+
+- **All I/O is async**: HTTP, database, Redis, file I/O. Use async def and await.
+- **No blocking calls in async**: Never call requests.get() (use httpx, aiohttp), time.sleep() (use asyncio.sleep()).
+- **Gather for concurrent tasks**: Use asyncio.gather(*tasks, return_exceptions=True) for parallel work.
+- **Timeouts**: Wrap all awaits with timeout context using asyncio.wait_for().
+
+### Context Managers for Resource Cleanup
+
+- **All resource acquisition uses async with**: HTTP clients, database connections, file I/O.
+- **Database connections**: Use async with db.pool.acquire() or session context.
+- **File I/O**: Use async with aiofiles.open(...) for file operations.
+
+---
+
+## Error Handling & Resilience
+
+### Explicit Error Types
+
+- **Define custom exceptions**: Do not use bare Exception. Create domain-specific ones.
+- **Catch specific exceptions**: Never bare except: or except Exception:. Catch known types.
+
+### Recovery & Logging
+
+- **Every error → PacketEnvelope**: Emit error packet to memory with root cause + recovery action.
+- **Structured logging**: Always include context (agent_id, task_id, thread_id).
+
+---
+
+## Core Agent Patterns
+
+### Agent Instantiation & Execution
+
+- **Immutable config**: Load AgentConfig once, never modify in-place.
+- **Kernel loading**: Use KernelLoader to assemble system prompt once per agent.
+- **AIOSRuntime call**: Pass task input + loaded context to runtime.
+
+### Tool Dispatch & Approval Gates
+
+- **Check capability + approval before dispatch**: Query agent_config.capabilities before tool.execute().
+- **Tool result logging**: Log input, output, and latency.
+
+---
+
+## Memory Substrate Patterns
+
+### Packet Ingestion
+
+- **PacketEnvelope structure**: source_id, agent_id, thread_id, kind, payload, metadata, confidence.
+- **Async ingest, do not block executor**: Use asyncio.create_task() for fire-and-forget ingestion.
+- **Idempotent writes**: Use dedup_key (content hash or uuid).
+
+### Memory Queries
+
+- **Search semantic memory**: Use SemanticService.search() with query, agent_id, top_k, min_score.
+- **Graph queries** (Neo4j): Use read-only access. Never mutate graph directly.
+
+---
+
+## Orchestration & Task Graph Patterns
+
+### TaskRouter Usage
+
+- **Route task by complexity + risk**: Use TaskRouter.route() to determine execution target.
+
+### Plan Executor
+
+- **Deterministic execution**: Plans are DAGs with explicit dependencies.
+- **Step failure handling**: Fail-fast by default. Use continue_on_error flag for robustness.
+
+---
+
+## Redis & Task Queue Patterns
+
+### Task Enqueueing
+
+- **Use TaskQueue.enqueue()** for background jobs with task_id, kind, payload, queue.
+- **Rate limiting**: All external API calls use RateLimiter.
+
+---
+
+## Testing Patterns
+
+### Unit Tests
+
+- **Use pytest + pytest-asyncio** for async test functions.
+- **Mock external dependencies**: Use unittest.mock.AsyncMock for async methods.
+- **Fixture scope**: Use function scope by default. session only for expensive setup.
+
+### Integration Tests
+
+- **Use test database + Redis**: Spin up via Docker or testcontainers.
+- **End-to-end flow**: Create task, route, execute, check memory state.
+
+### Mutation Testing
+
+- **For critical paths** (approval gates, memory writes), consider mutation tests to ensure error handling is real.
+
+---
+
+## Code Style
+
+### PEP 8 + Black
+
+- **Format with Black**: Line length 100.
+- **Docstrings**: Use Google style for clarity.
+- **Import order**: stdlib, third-party, local. Use isort.
+- **Blank lines**: Two between top-level definitions, one between methods.
+
+### Naming Conventions
+
+- **Variables**: snake_case (agent_id, task_queue).
+- **Classes**: PascalCase (AgentTask, ExecutorService).
+- **Constants**: UPPERCASE (MAX_RETRIES, DEFAULT_TIMEOUT).
+- **Private**: _leading_underscore (internal methods/vars).
+- **Async functions**: async_funcname optional but prefix with async_ if returning coroutine directly.
+
+---
+
+## Performance & Scalability
+
+### Connection Pooling
+
+- **Database**: Always use connection pool. Never create per-request.
+- **Redis**: Use redis-py with async/await.
+- **HTTP**: Use httpx.AsyncClient in a singleton or context.
+
+### Caching
+
+- **Kernel stack**: Cache loaded kernels in memory (keyed by agent_id).
+- **Tool registry**: Lazy-load tools, cache in AgentConfig.
+- **Memory facts**: Cache retrieved facts in task context, do not re-query within single execution.
+
+### Observability
+
+- **Structured logging**: Use logging.getLogger(__name__) + extra context dict.
+- **Tracing**: Optionally integrate OpenTelemetry for distributed tracing.
+- **Metrics**: Track task execution time, tool call counts, memory query latency.
+
+---
+
+## Security
+
+### Input Validation
+
+- **All user input validated**: Pydantic models for request parsing.
+- **SQL injection prevention**: Use parameterized queries (asyncpg, SQLAlchemy ORM).
+- **Approval scopes**: Validate approval token scope matches tool + agent.
+
+### API Security
+
+- **Bearer token auth**: Check L9_EXECUTOR_API_KEY for internal endpoints.
+- **CORS**: Restrict to known origins.
+- **Rate limiting**: Per-IP rate limiting for public endpoints.

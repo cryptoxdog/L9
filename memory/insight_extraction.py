@@ -13,13 +13,13 @@ All operations are async-safe with proper logging.
 
 # bound to memory-yaml2.0 extraction pipeline (entrypoint: insight_extraction.py, outputs: entities, topics, decisions, facts)
 """
+
 from __future__ import annotations
 
 import structlog
 import re
-from datetime import datetime
 from typing import Any, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from memory.substrate_models import (
     PacketEnvelope,
@@ -62,18 +62,18 @@ FACT_PATTERNS = [
 class InsightExtractionPipeline:
     """
     Heuristic insight extraction from packet content.
-    
+
     Extracts:
     - Conclusions and inferences
     - Entities and relationships
     - Numeric facts and measurements
     - Patterns and anomalies
     """
-    
+
     def __init__(self, repository=None):
         """
         Initialize insight extraction pipeline.
-        
+
         Args:
             repository: SubstrateRepository instance for storing insights
         """
@@ -84,16 +84,16 @@ class InsightExtractionPipeline:
             "facts_extracted": 0,
         }
         logger.info("InsightExtractionPipeline initialized")
-    
+
     def set_repository(self, repository) -> None:
         """Set or update the repository reference."""
         self._repository = repository
-    
+
     @property
     def stats(self) -> dict[str, int]:
         """Return extraction statistics."""
         return self._stats.copy()
-    
+
     async def extract_from_packet(
         self,
         envelope: PacketEnvelope,
@@ -101,26 +101,26 @@ class InsightExtractionPipeline:
     ) -> dict[str, Any]:
         """
         Extract insights and facts from a packet.
-        
+
         Args:
             envelope: PacketEnvelope to process
             store_results: Whether to persist extracted items
-            
+
         Returns:
             Dict with extracted insights and facts
         """
         logger.debug(f"Extracting insights from packet {envelope.packet_id}")
-        
+
         self._stats["packets_processed"] += 1
-        
+
         insights = []
         facts = []
-        
+
         # Extract from payload
         payload_insights, payload_facts = self._extract_from_payload(envelope)
         insights.extend(payload_insights)
         facts.extend(payload_facts)
-        
+
         # Extract from reasoning block
         if envelope.reasoning_block:
             reasoning_insights, reasoning_facts = self._extract_from_reasoning(
@@ -129,21 +129,21 @@ class InsightExtractionPipeline:
             )
             insights.extend(reasoning_insights)
             facts.extend(reasoning_facts)
-        
+
         # Store results if requested
         if store_results and self._repository:
             await self._store_insights(insights, envelope.packet_id)
             await self._store_facts(facts)
-        
+
         self._stats["insights_extracted"] += len(insights)
         self._stats["facts_extracted"] += len(facts)
-        
+
         return {
             "packet_id": str(envelope.packet_id),
             "insights": [i.model_dump(mode="json") for i in insights],
             "facts": [f.model_dump(mode="json") for f in facts],
         }
-    
+
     def _extract_from_payload(
         self,
         envelope: PacketEnvelope,
@@ -153,78 +153,91 @@ class InsightExtractionPipeline:
         facts = []
         payload = envelope.payload
         packet_id = envelope.packet_id
-        
+
         # Extract text content
         text_content = (
-            payload.get("text") or
-            payload.get("content") or
-            payload.get("description") or
-            payload.get("message") or
-            ""
+            payload.get("text")
+            or payload.get("content")
+            or payload.get("description")
+            or payload.get("message")
+            or ""
         )
-        
+
         if isinstance(text_content, str) and len(text_content) > 20:
             # Extract conclusions
             for pattern in CONCLUSION_PATTERNS:
                 matches = re.findall(pattern, text_content, re.IGNORECASE)
                 for match in matches:
-                    insights.append(ExtractedInsight(
-                        insight_type="conclusion",
-                        content=match.strip()[:500],
-                        entities=self._extract_entities(match),
-                        confidence=0.7,
-                        source_packet=packet_id,
-                        trigger_world_model=True,
-                    ))
-            
+                    insights.append(
+                        ExtractedInsight(
+                            insight_type="conclusion",
+                            content=match.strip()[:500],
+                            entities=self._extract_entities(match),
+                            confidence=0.7,
+                            source_packet=packet_id,
+                            trigger_world_model=True,
+                        )
+                    )
+
             # Extract entities
             entities = self._extract_entities(text_content)
             if entities:
-                insights.append(ExtractedInsight(
-                    insight_type="pattern",
-                    content=f"Detected entities: {', '.join(entities[:10])}",
-                    entities=entities[:10],
-                    confidence=0.6,
-                    source_packet=packet_id,
-                    trigger_world_model=False,
-                ))
-        
+                insights.append(
+                    ExtractedInsight(
+                        insight_type="pattern",
+                        content=f"Detected entities: {', '.join(entities[:10])}",
+                        entities=entities[:10],
+                        confidence=0.6,
+                        source_packet=packet_id,
+                        trigger_world_model=False,
+                    )
+                )
+
         # Extract structured facts from payload keys
         for key, value in payload.items():
             if key in ("id", "timestamp", "created_at", "updated_at"):
                 continue
-            
+
             # Skip complex objects
             if isinstance(value, (dict, list)) and len(str(value)) > 200:
                 continue
-            
+
             # Create fact from key-value pair
-            subject = payload.get("entity") or payload.get("name") or payload.get("subject") or envelope.packet_type
-            
-            facts.append(KnowledgeFact(
-                subject=str(subject),
-                predicate=key,
-                object=value,
-                confidence=0.8,
-                source_packet=packet_id,
-            ))
-        
+            subject = (
+                payload.get("entity")
+                or payload.get("name")
+                or payload.get("subject")
+                or envelope.packet_type
+            )
+
+            facts.append(
+                KnowledgeFact(
+                    subject=str(subject),
+                    predicate=key,
+                    object=value,
+                    confidence=0.8,
+                    source_packet=packet_id,
+                )
+            )
+
         # Extract numeric facts from text
         if isinstance(text_content, str):
             for pattern in FACT_PATTERNS:
                 matches = re.findall(pattern, text_content, re.IGNORECASE)
                 for match in matches:
                     if len(match) == 2:
-                        facts.append(KnowledgeFact(
-                            subject=match[0],
-                            predicate="value",
-                            object=match[1],
-                            confidence=0.7,
-                            source_packet=packet_id,
-                        ))
-        
+                        facts.append(
+                            KnowledgeFact(
+                                subject=match[0],
+                                predicate="value",
+                                object=match[1],
+                                confidence=0.7,
+                                source_packet=packet_id,
+                            )
+                        )
+
         return insights, facts
-    
+
     def _extract_from_reasoning(
         self,
         reasoning_block: dict[str, Any],
@@ -233,65 +246,74 @@ class InsightExtractionPipeline:
         """Extract insights from reasoning block."""
         insights = []
         facts = []
-        
+
         # Extract from decision tokens
         decision_tokens = reasoning_block.get("decision_tokens", [])
         confidence_scores = reasoning_block.get("confidence_scores", {})
-        
+
         for token in decision_tokens:
             if ":" in token:
                 key, value = token.split(":", 1)
                 key = key.strip()
                 value = value.strip()
-                
+
                 # High-confidence decisions become insights
-                confidence = confidence_scores.get(key, confidence_scores.get("routing", 0.7))
-                
+                confidence = confidence_scores.get(
+                    key, confidence_scores.get("routing", 0.7)
+                )
+
                 if confidence >= 0.7:
-                    insights.append(ExtractedInsight(
-                        insight_type="conclusion",
-                        content=f"Decision: {key} = {value}",
-                        entities=[],
-                        confidence=confidence,
-                        source_packet=packet_id,
-                        trigger_world_model=key in ("action", "route_to", "update_model"),
-                    ))
-        
+                    insights.append(
+                        ExtractedInsight(
+                            insight_type="conclusion",
+                            content=f"Decision: {key} = {value}",
+                            entities=[],
+                            confidence=confidence,
+                            source_packet=packet_id,
+                            trigger_world_model=key
+                            in ("action", "route_to", "update_model"),
+                        )
+                    )
+
         # Extract from inference steps
         inference_steps = reasoning_block.get("inference_steps", [])
-        
+
         for step in inference_steps:
             if isinstance(step, dict):
                 action = step.get("action", "")
                 result = step.get("result", "")
-                
+
                 if action and result:
-                    facts.append(KnowledgeFact(
-                        subject="reasoning",
-                        predicate=action,
-                        object=result,
-                        confidence=0.8,
-                        source_packet=packet_id,
-                    ))
-        
+                    facts.append(
+                        KnowledgeFact(
+                            subject="reasoning",
+                            predicate=action,
+                            object=result,
+                            confidence=0.8,
+                            source_packet=packet_id,
+                        )
+                    )
+
         # Extract from extracted features
         features = reasoning_block.get("extracted_features", {})
-        
+
         for key, value in features.items():
-            facts.append(KnowledgeFact(
-                subject="packet",
-                predicate=key,
-                object=value,
-                confidence=0.9,
-                source_packet=packet_id,
-            ))
-        
+            facts.append(
+                KnowledgeFact(
+                    subject="packet",
+                    predicate=key,
+                    object=value,
+                    confidence=0.9,
+                    source_packet=packet_id,
+                )
+            )
+
         return insights, facts
-    
+
     def _extract_entities(self, text: str) -> list[str]:
         """Extract entity mentions from text."""
         entities = set()
-        
+
         for pattern in ENTITY_PATTERNS:
             matches = re.findall(pattern, text)
             for match in matches:
@@ -299,9 +321,9 @@ class InsightExtractionPipeline:
                     # Filter out common words
                     if match.lower() not in ("the", "this", "that", "these", "those"):
                         entities.add(match)
-        
+
         return list(entities)[:20]
-    
+
     async def _store_insights(
         self,
         insights: list[ExtractedInsight],
@@ -310,11 +332,11 @@ class InsightExtractionPipeline:
         """Store extracted insights as insight packets."""
         if not insights or not self._repository:
             return
-        
+
         for insight in insights:
             # Store insight as a packet
             from memory.substrate_models import PacketEnvelope, PacketMetadata
-            
+
             insight_packet = PacketEnvelope(
                 packet_type="insight",
                 payload={
@@ -332,17 +354,17 @@ class InsightExtractionPipeline:
                 ),
                 lineage=None,
             )
-            
+
             try:
                 await self._repository.insert_packet(insight_packet)
             except Exception as e:
                 logger.error(f"Failed to store insight: {e}")
-    
+
     async def _store_facts(self, facts: list[KnowledgeFact]) -> None:
         """Store extracted facts to knowledge_facts table."""
         if not facts or not self._repository:
             return
-        
+
         for fact in facts:
             try:
                 await self._repository.insert_knowledge_fact(
@@ -355,7 +377,7 @@ class InsightExtractionPipeline:
                 )
             except Exception as e:
                 logger.error(f"Failed to store fact: {e}")
-    
+
     async def detect_anomalies(
         self,
         packet: PacketEnvelope,
@@ -363,24 +385,24 @@ class InsightExtractionPipeline:
     ) -> list[ExtractedInsight]:
         """
         Detect anomalies by comparing packet to recent history.
-        
+
         Simple heuristics:
         - Unusual packet types
         - High deviation from average confidence
         - Unusually large payloads
-        
+
         Args:
             packet: Current packet to analyze
             historical_window: Number of recent packets to compare
-            
+
         Returns:
             List of anomaly insights
         """
         anomalies = []
-        
+
         if not self._repository:
             return anomalies
-        
+
         # Get recent packet stats
         async with self._repository.acquire() as conn:
             # Get packet type distribution
@@ -393,34 +415,38 @@ class InsightExtractionPipeline:
                 """,
                 historical_window,
             )
-            
+
             type_dist = {r["packet_type"]: r["count"] for r in type_counts}
             total = sum(type_dist.values())
-            
+
             # Check if current packet type is rare
             current_type_count = type_dist.get(packet.packet_type, 0)
             if total > 10 and current_type_count < total * 0.05:
-                anomalies.append(ExtractedInsight(
-                    insight_type="anomaly",
-                    content=f"Rare packet type detected: {packet.packet_type}",
-                    entities=[packet.packet_type],
-                    confidence=0.8,
-                    source_packet=packet.packet_id,
-                    trigger_world_model=True,
-                ))
-        
+                anomalies.append(
+                    ExtractedInsight(
+                        insight_type="anomaly",
+                        content=f"Rare packet type detected: {packet.packet_type}",
+                        entities=[packet.packet_type],
+                        confidence=0.8,
+                        source_packet=packet.packet_id,
+                        trigger_world_model=True,
+                    )
+                )
+
         # Check payload size
         payload_size = len(str(packet.payload))
         if payload_size > 10000:
-            anomalies.append(ExtractedInsight(
-                insight_type="anomaly",
-                content=f"Large payload detected: {payload_size} bytes",
-                entities=[],
-                confidence=0.6,
-                source_packet=packet.packet_id,
-                trigger_world_model=False,
-            ))
-        
+            anomalies.append(
+                ExtractedInsight(
+                    insight_type="anomaly",
+                    content=f"Large payload detected: {payload_size} bytes",
+                    entities=[],
+                    confidence=0.6,
+                    source_packet=packet.packet_id,
+                    trigger_world_model=False,
+                )
+            )
+
         return anomalies
 
 
@@ -444,4 +470,3 @@ def init_insight_pipeline(repository) -> InsightExtractionPipeline:
     pipeline = get_insight_pipeline()
     pipeline.set_repository(repository)
     return pipeline
-

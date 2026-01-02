@@ -41,4 +41,3 @@ __all__ = [
     # Constants
     "BOUNDARY_FILE",
 ]
-

@@ -6,23 +6,45 @@ Memory substrate API endpoints using MemorySubstrateService.
 All packets are automatically ingested via canonical ingest_packet().
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 from api.auth import verify_api_key
 from typing import Optional, List
+from uuid import UUID
 import structlog
 
 from memory.substrate_service import get_service
 from memory.substrate_models import PacketEnvelopeIn, SemanticSearchRequest
 from memory.ingestion import ingest_packet
+from memory.retrieval import get_retrieval_pipeline
+from memory.housekeeping import get_housekeeping_engine
+from orchestrators.memory.interface import MemoryRequest, MemoryOperation
+from orchestrators.memory.orchestrator import MemoryOrchestrator
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
 
+# ============================================================================
+# Dependency: Get MemoryOrchestrator from app.state
+# ============================================================================
+
+
+def get_memory_orchestrator(request: Request) -> MemoryOrchestrator:
+    """Get MemoryOrchestrator from app.state."""
+    orchestrator = getattr(request.app.state, "memory_orchestrator", None)
+    if orchestrator is None:
+        raise HTTPException(
+            status_code=503,
+            detail="MemoryOrchestrator not initialized. Check server logs.",
+        )
+    return orchestrator
+
+
 class PacketRequest(BaseModel):
     """Request model for packet ingestion."""
+
     packet_type: str
     payload: dict
     metadata: Optional[dict] = None
@@ -32,6 +54,7 @@ class PacketRequest(BaseModel):
 
 class PacketResponse(BaseModel):
     """Response model for packet ingestion."""
+
     packet_id: str
     status: str
     written_tables: List[str]
@@ -55,7 +78,7 @@ async def create_packet(
 ):
     """
     Ingest a packet into memory substrate.
-    
+
     This is the canonical entrypoint for all packet ingestion.
     All packets pass through ingest_packet() which runs the full DAG pipeline.
     """
@@ -68,10 +91,10 @@ async def create_packet(
             provenance=request.provenance,
             confidence=request.confidence,
         )
-        
+
         # Canonical ingestion entrypoint
         result = await ingest_packet(packet_in)
-        
+
         return PacketResponse(
             packet_id=str(result.packet_id),
             status=result.status,
@@ -83,11 +106,13 @@ async def create_packet(
         logger.error(f"Memory system not initialized: {e}")
         raise HTTPException(
             status_code=503,
-            detail="Memory system not available. Check server logs for initialization errors."
+            detail="Memory system not available. Check server logs for initialization errors.",
         )
     except Exception as e:
         logger.error(f"Packet ingestion failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Packet ingestion failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Packet ingestion failed: {str(e)}"
+        )
 
 
 @router.post("/semantic/search")
@@ -103,10 +128,7 @@ async def semantic_search(
         return result.model_dump(mode="json")
     except RuntimeError as e:
         logger.error(f"Memory system not initialized: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="Memory system not available."
-        )
+        raise HTTPException(status_code=503, detail="Memory system not available.")
     except Exception as e:
         logger.error(f"Semantic search failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -121,16 +143,17 @@ async def get_stats(
     try:
         service = await get_service()
         health = await service.health_check()
-        
+
         # Get packet count
-        from memory.substrate_repository import SubstrateRepository
         repo = service._repository
-        
+
         async with repo.acquire() as conn:
             packet_count = await conn.fetchval("SELECT COUNT(*) FROM packet_store")
-            embedding_count = await conn.fetchval("SELECT COUNT(*) FROM semantic_memory")
+            embedding_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM semantic_memory"
+            )
             fact_count = await conn.fetchval("SELECT COUNT(*) FROM knowledge_facts")
-        
+
         return {
             "status": "operational",
             "packets": packet_count,
@@ -147,3 +170,357 @@ async def get_stats(
     except Exception as e:
         logger.error(f"Stats retrieval failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Stats failed: {str(e)}")
+
+
+@router.get("/packet/{packet_id}")
+async def get_packet(
+    packet_id: str,
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Get packet by ID."""
+    try:
+        service = await get_service()
+        packet = await service.get_packet(packet_id)
+        if packet is None:
+            raise HTTPException(status_code=404, detail=f"Packet {packet_id} not found")
+        return packet
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get packet failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get packet failed: {str(e)}")
+
+
+@router.get("/thread/{thread_id}")
+async def get_thread(
+    thread_id: str,
+    limit: int = Query(100, ge=1, le=1000),
+    order: str = Query("asc", regex="^(asc|desc)$"),
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Get all packets in a conversation thread."""
+    try:
+        pipeline = get_retrieval_pipeline()
+        service = await get_service()
+        pipeline.set_repository(service._repository)
+        pipeline.set_semantic_service(service._semantic_service)
+
+        thread_uuid = UUID(thread_id)
+        packets = await pipeline.fetch_thread(thread_uuid, limit=limit, order=order)
+        return {"thread_id": thread_id, "packets": packets, "count": len(packets)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid thread_id: {str(e)}")
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get thread failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get thread failed: {str(e)}")
+
+
+@router.get("/lineage/{packet_id}")
+async def get_lineage(
+    packet_id: str,
+    direction: str = Query("ancestors", regex="^(ancestors|descendants)$"),
+    max_depth: int = Query(10, ge=1, le=50),
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Get packet lineage graph."""
+    try:
+        pipeline = get_retrieval_pipeline()
+        service = await get_service()
+        pipeline.set_repository(service._repository)
+        pipeline.set_semantic_service(service._semantic_service)
+
+        packet_uuid = UUID(packet_id)
+        lineage = await pipeline.fetch_lineage(
+            packet_uuid, direction=direction, max_depth=max_depth
+        )
+        return lineage
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid packet_id: {str(e)}")
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get lineage failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get lineage failed: {str(e)}")
+
+
+@router.post("/hybrid/search")
+async def hybrid_search(
+    request: Request,
+    query: str = Query(..., min_length=1),
+    top_k: int = Query(10, ge=1, le=100),
+    min_score: float = Query(0.5, ge=0.0, le=1.0),
+    agent_id: Optional[str] = Query(None),
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """
+    Perform hybrid search (semantic + structured filters).
+
+    Client sends query params (query, top_k, agent_id, min_score) AND JSON body for filters.
+    """
+    try:
+        # Read filters from request body (client sends filters as JSON body)
+        filters = {}
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                filters = body
+        except:
+            # No body or invalid JSON - use empty filters
+            pass
+
+        pipeline = get_retrieval_pipeline()
+        service = await get_service()
+        pipeline.set_repository(service._repository)
+        pipeline.set_semantic_service(service._semantic_service)
+
+        result = await pipeline.hybrid_search(
+            query=query,
+            top_k=top_k,
+            filters=filters,
+            agent_id=agent_id,
+            min_score=min_score,
+        )
+        return result
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Hybrid search failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Hybrid search failed: {str(e)}")
+
+
+@router.get("/facts")
+async def get_facts(
+    subject: Optional[str] = Query(None),
+    predicate: Optional[str] = Query(None),
+    source_packet: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Query knowledge facts."""
+    try:
+        service = await get_service()
+        facts = await service.get_facts_by_subject(
+            subject=subject or "",
+            predicate=predicate,
+            limit=limit,
+        )
+        # If source_packet provided, filter by it
+        if source_packet:
+            try:
+                packet_uuid = UUID(source_packet)
+                repo = service._repository
+                facts_by_packet = await repo.get_facts_by_packet(packet_uuid, limit)
+                facts = [f.model_dump(mode="json") for f in facts_by_packet]
+            except ValueError:
+                facts = []
+
+        return {"facts": facts, "count": len(facts)}
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get facts failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get facts failed: {str(e)}")
+
+
+@router.get("/insights")
+async def get_insights(
+    packet_id: Optional[str] = Query(None),
+    insight_type: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=1000),
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Query extracted insights."""
+    try:
+        pipeline = get_retrieval_pipeline()
+        service = await get_service()
+        pipeline.set_repository(service._repository)
+        pipeline.set_semantic_service(service._semantic_service)
+
+        packet_uuid = UUID(packet_id) if packet_id else None
+        insights = await pipeline.fetch_insights(
+            packet_id=packet_uuid,
+            insight_type=insight_type,
+            limit=limit,
+        )
+        return {"insights": insights, "count": len(insights)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid packet_id: {str(e)}")
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get insights failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get insights failed: {str(e)}")
+
+
+@router.post("/gc/run")
+async def run_gc(
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Run garbage collection cycle."""
+    try:
+        service = await get_service()
+        engine = get_housekeeping_engine()
+        engine.set_repository(service._repository)
+
+        result = await engine.run_full_gc()
+        return result
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"GC run failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"GC run failed: {str(e)}")
+
+
+@router.get("/gc/stats")
+async def get_gc_stats(
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Get garbage collection statistics."""
+    try:
+        service = await get_service()
+        engine = get_housekeeping_engine()
+        engine.set_repository(service._repository)
+
+        stats = await engine.get_gc_stats()
+        return stats
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Memory system not available.")
+    except Exception as e:
+        logger.error(f"Get GC stats failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Get GC stats failed: {str(e)}")
+
+
+@router.get("/health")
+async def health_check(
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+):
+    """Health check for memory subsystem."""
+    try:
+        service = await get_service()
+        health = await service.health_check()
+        return health
+    except RuntimeError as e:
+        logger.error(f"Memory system not initialized: {e}")
+        return {
+            "status": "unavailable",
+            "error": "Memory system not initialized",
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}", exc_info=True)
+        return {
+            "status": "degraded",
+            "error": str(e),
+        }
+
+
+# ============================================================================
+# Orchestrator-based Endpoints (Wire-Orchestrators-v1.0)
+# ============================================================================
+
+
+class BatchRequest(BaseModel):
+    """Request model for batch packet ingestion."""
+
+    packets: List[dict]
+    batch_size: int = 100
+
+
+class BatchResponse(BaseModel):
+    """Response model for batch operations."""
+
+    success: bool
+    processed_count: int
+    errors: List[str] = []
+
+
+class CompactResponse(BaseModel):
+    """Response model for compact operation."""
+
+    success: bool
+    message: str
+
+
+@router.post("/batch", response_model=BatchResponse)
+async def batch_write(
+    request: BatchRequest,
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+    orchestrator: MemoryOrchestrator = Depends(get_memory_orchestrator),
+):
+    """
+    Batch write multiple packets via MemoryOrchestrator.
+
+    This endpoint processes packets in batches for efficient bulk ingestion.
+    """
+    try:
+        logger.info(
+            "Batch write request",
+            packet_count=len(request.packets),
+            batch_size=request.batch_size,
+        )
+
+        mem_request = MemoryRequest(
+            operation=MemoryOperation.BATCH_WRITE,
+            packets=request.packets,
+        )
+
+        result = await orchestrator.execute(mem_request)
+
+        return BatchResponse(
+            success=result.success,
+            processed_count=result.processed_count,
+            errors=result.errors,
+        )
+    except Exception as e:
+        logger.error(f"Batch write failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Batch write failed: {str(e)}")
+
+
+@router.post("/compact", response_model=CompactResponse)
+async def compact_storage(
+    authorization: str = Header(None),
+    _: bool = Depends(verify_api_key),
+    orchestrator: MemoryOrchestrator = Depends(get_memory_orchestrator),
+):
+    """
+    Compact/optimize memory storage via MemoryOrchestrator.
+
+    This endpoint triggers storage optimization (vacuum, reindex, etc.).
+    """
+    try:
+        logger.info("Compact storage request")
+
+        mem_request = MemoryRequest(
+            operation=MemoryOperation.COMPACT,
+        )
+
+        result = await orchestrator.execute(mem_request)
+
+        return CompactResponse(
+            success=result.success,
+            message=result.message,
+        )
+    except Exception as e:
+        logger.error(f"Compact failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Compact failed: {str(e)}")

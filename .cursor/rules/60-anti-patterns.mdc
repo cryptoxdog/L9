@@ -1,0 +1,324 @@
+---
+description: "Common anti-patterns and mistakes across TypeScript, Python, React, FastAPI, security, and testing, with side-by-side corrections."
+alwaysApply: true
+---
+
+# Cross-stack anti-patterns
+
+## TypeScript anti-patterns
+
+### Escaping the type system with `any`
+
+❌ **DON'T:**
+```
+// Everything is any, nothing is safe
+function parseResponse(res: any): any {
+  return res.data;
+}
+```
+
+✅ **DO:**
+```
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+}
+
+function parseResponse<T>(res: ApiResponse<T>): T {
+  if (res.status !== 200) {
+    throw new Error(`Unexpected status ${res.status}`);
+  }
+  return res.data;
+}
+```
+
+### Silent promise errors
+
+❌ **DON'T:**
+```
+fetch('/api/user')
+  .then(r => r.json())
+  .then(setUser);
+// If anything throws, error disappears
+```
+
+✅ **DO:**
+```
+async function loadUser(): Promise<void> {
+  try {
+    const res = await fetch('/api/user');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: User = await res.json();
+    setUser(data);
+  } catch (error) {
+    logger.error('load_user_failed', { error });
+    setError('Failed to load user');
+  }
+}
+```
+
+---
+
+## Python anti-patterns
+
+### Bare `except` and swallowed errors
+
+❌ **DON'T:**
+```
+try:
+    result = risky_operation()
+except:
+    # Ignore everything
+    return None
+```
+
+✅ **DO:**
+```
+from logging import getLogger
+
+logger = getLogger(__name__)
+
+try:
+    result = risky_operation()
+except ValueError as exc:
+    logger.error("Invalid value in risky_operation", exc_info=True)
+    raise DomainValidationError("Invalid value") from exc
+except TimeoutError as exc:
+    logger.warning("risky_operation timed out", exc_info=True)
+    raise
+```
+
+### Business logic in FastAPI route body
+
+❌ **DON'T:**
+```
+@app.post("/users")
+async def create_user(email: str, password: str):
+    # Hash, validate, and insert directly here
+    if "@" not in email:
+        raise HTTPException(status_code=400)
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    await db.execute("INSERT ...", values={"email": email, "password": hashed})
+    return {"email": email}
+```
+
+✅ **DO:**
+```
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: constr(min_length=8)
+
+@app.post("/users", response_model=UserResponse, status_code=201)
+async def create_user(request: UserCreate) -> UserResponse:
+    user = await user_service.create_user(request)
+    return user
+```
+
+---
+
+## React anti-patterns
+
+### State stored outside React / bypassing hooks
+
+❌ **DON'T:**
+```
+// Global mutable object
+let currentUser: User | null = null;
+
+export function Header() {
+  return <div>{currentUser ? currentUser.name : 'Guest'}</div>;
+}
+```
+
+✅ **DO:**
+```
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+};
+
+export function Header() {
+  const { user } = useAuth();
+  return <div>{user ? user.name : 'Guest'}</div>;
+}
+```
+
+### Missing effect cleanup / memory leaks
+
+❌ **DON'T:**
+```
+useEffect(() => {
+  const id = setInterval(() => {
+    setCount(c => c + 1);
+  }, 1000);
+}, []); // No cleanup
+```
+
+✅ **DO:**
+```
+useEffect(() => {
+  const id = setInterval(() => {
+    setCount(c => c + 1);
+  }, 1000);
+  return () => clearInterval(id);
+}, []);
+```
+
+---
+
+## FastAPI anti-patterns
+
+### Sync I/O in async routes
+
+❌ **DON'T:**
+```
+@app.get("/report")
+async def get_report():
+    time.sleep(5)  # Blocks event loop
+    return {"ok": True}
+```
+
+✅ **DO:**
+```
+@app.get("/report")
+async def get_report():
+    await asyncio.sleep(5)
+    return {"ok": True}
+```
+
+### Returning unvalidated dicts
+
+❌ **DON'T:**
+```
+@app.get("/users/{user_id}")
+async def get_user(user_id: int):
+    user = await db.fetch_one("SELECT * FROM users WHERE id = :id", {"id": user_id})
+    if not user:
+      raise HTTPException(status_code=404)
+    return dict(user)  # Raw DB row
+```
+
+✅ **DO:**
+```
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime
+
+@app.get("/users/{user_id}", response_model=UserOut)
+async def get_user(user_id: int) -> UserOut:
+    user = await user_repo.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+```
+
+---
+
+## Security anti-patterns
+
+### Hardcoded secrets
+
+❌ **DON'T:**
+```
+export const STRIPE_KEY = 'sk_live_123456';
+```
+
+✅ **DO:**
+```
+export const STRIPE_KEY = process.env.STRIPE_KEY!;
+if (!STRIPE_KEY) {
+  throw new Error('Missing STRIPE_KEY env var');
+}
+```
+
+### Missing input validation on API boundary
+
+❌ **DON'T:**
+```
+// Express/FastAPI equivalent
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body; // blindly trust
+  // ...
+});
+```
+
+✅ **DO:**
+```
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+router.post('/login', async (req, res) => {
+  const parsed = LoginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
+  // use parsed.data
+});
+```
+
+---
+
+## Testing anti-patterns
+
+### Non-deterministic tests
+
+❌ **DON'T:**
+```
+test('loads data eventually', async () => {
+  render(<Data />);
+  await new Promise(r => setTimeout(r, 1000)); // arbitrary
+  expect(screen.getByText('Done')).toBeInTheDocument();
+});
+```
+
+✅ **DO:**
+```
+test('loads data eventually', async () => {
+  render(<Data />);
+  expect(await screen.findByText('Done')).toBeInTheDocument();
+});
+```
+
+### Tests coupled to implementation details
+
+❌ **DON'T:**
+```
+expect(component.state('open')).toBe(true);
+```
+
+✅ **DO:**
+```
+expect(screen.getByRole('dialog')).toBeVisible();
+```
+
+---
+
+## Operational anti-patterns
+
+### Huge, unscoped edits
+
+❌ **DON'T:**
+> "Refactor the whole codebase to improve performance."
+
+✅ **DO:**
+> "Refactor `src/api/client.ts` to add a 30s timeout and structured logging, plus tests in `src/api/client.test.ts`. Do not change other files."
+
+### Skipping validation gates
+
+❌ **DON'T:**
+```
+# In a hurry
+git commit -am "quick fix"
+```
+
+✅ **DO:**
+```
+npm run lint && npm run type-check && npm run test
+git commit
+```

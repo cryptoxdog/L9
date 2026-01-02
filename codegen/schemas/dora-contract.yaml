@@ -1,0 +1,525 @@
+---
+# .l9-codegen-dora-contract.yaml
+# SOURCE OF TRUTH for DORA enforcement (header metadata + footer trace)
+# This is the enforceable contract that governs all codegen output
+
+# ============================================================================
+# 🔒 LOCKED TERMINOLOGY: THREE DISTINCT BLOCKS
+# ============================================================================
+# 1. HEADER META - TOP of file - module identity, governance (points to footer)
+# 2. FOOTER META - BOTTOM of file - extended metadata (header references this)
+# 3. DORA BLOCK - VERY END (after footer meta) - L9_TRACE_TEMPLATE, auto-updates
+#
+# DORA Block = L9_TRACE_TEMPLATE ONLY — NOT header meta, NOT footer meta
+# See: Dora-Block.md for DORA Block specification
+# ============================================================================
+
+dora_block_contract:
+  version: 1.1.0
+  status: mandatory
+  enforcement_level: critical
+  created: "2026-01-02T02:04:00Z"
+  updated: "2026-01-02T03:00:00Z"
+  applies_to_all_generated_files: true
+
+# ============================================================================
+# HEADER META (TOP OF FILE)
+# ============================================================================
+# Static module identity and governance metadata
+# Must include pointer: "See footer meta for extended metadata"
+
+# ============================================================================
+# MANDATORY FIELDS (All must be present and non-empty)
+# ============================================================================
+
+mandatory_fields:
+  component_id:
+    description: "Unique identifier for this component"
+    format: "{LAYER}-{ABBREV}-{NUM}"
+    examples:
+      - "SYM-CORE-001"
+      - "API-RT-002"
+      - "MEM-STORE-003"
+    validation: "Must match pattern [A-Z]{3}-[A-Z]{3,4}-\\d{3}"
+    required: true
+
+  component_name:
+    description: "Human-readable name of the component"
+    format: "Title Case, 2-5 words"
+    examples:
+      - "SymPy Expression Evaluator"
+      - "API Route Handler"
+      - "Memory Cache Manager"
+    validation: "Non-empty, no special characters except spaces and hyphens"
+    required: true
+
+  module_version:
+    description: "Semantic version of the module"
+    format: "MAJOR.MINOR.PATCH"
+    examples:
+      - "1.0.0"
+      - "2.1.3"
+    validation: "Must match semver pattern \\d+\\.\\d+\\.\\d+"
+    required: true
+
+  created_at:
+    description: "ISO8601 timestamp when file was generated"
+    format: "YYYY-MM-DDTHH:MM:SSZ"
+    examples:
+      - "2026-01-02T02:04:00Z"
+    validation: "Must be valid ISO8601 format"
+    required: true
+
+  created_by:
+    description: "System or user that created this file"
+    examples:
+      - "L9_Codegen_Engine"
+      - "L9_Codegen_v1.2.3"
+      - "Igor_Governance_System"
+    validation: "Non-empty string"
+    required: true
+
+  layer:
+    description: "Architectural layer this component belongs to"
+    allowed_values:
+      - "foundation"
+      - "intelligence"
+      - "operations"
+      - "learning"
+      - "security"
+    validation: "Must be one of allowed_values"
+    required: true
+
+  domain:
+    description: "Domain or subsystem this component serves"
+    examples:
+      - "symbolic_computation"
+      - "governance"
+      - "memory_substrate"
+      - "agent_execution"
+      - "tool_registry"
+    validation: "Non-empty string, snake_case"
+    required: true
+
+  type:
+    description: "Type of component"
+    allowed_values:
+      - "service"
+      - "collector"
+      - "tracker"
+      - "engine"
+      - "utility"
+      - "adapter"
+      - "schema"
+      - "config"
+    validation: "Must be one of allowed_values"
+    required: true
+
+  status:
+    description: "Current status of the component"
+    allowed_values:
+      - "active"
+      - "deprecated"
+      - "experimental"
+      - "maintenance"
+    validation: "Must be one of allowed_values"
+    required: true
+    default: "active"
+
+  governance_level:
+    description: "Governance strictness level"
+    allowed_values:
+      - "critical"
+      - "high"
+      - "medium"
+      - "low"
+    validation: "Must be one of allowed_values"
+    required: true
+
+  compliance_required:
+    description: "Whether compliance auditing is required for this component"
+    type: boolean
+    default: true
+    required: true
+
+  audit_trail:
+    description: "Whether all operations must be logged to audit trail"
+    type: boolean
+    default: true
+    required: true
+
+  purpose:
+    description: "One-sentence business purpose of this component"
+    format: "Single sentence, 10-100 characters"
+    examples:
+      - "Evaluate symbolic mathematics expressions with safety enforcement"
+      - "Route API requests to appropriate handlers"
+      - "Cache and retrieve episodic memory events"
+    validation: "Non-empty string, no line breaks"
+    required: true
+
+  dependencies:
+    description: "List of dependencies (imports, services, etc.)"
+    type: array
+    examples:
+      - ["l9.core.memory", "l9.core.governance", "sympy"]
+    validation: "List of non-empty strings"
+    required: true
+
+# ============================================================================
+# OPTIONAL BUT RECOMMENDED FIELDS
+# ============================================================================
+
+optional_fields:
+  security_classification:
+    description: "Data security classification"
+    allowed_values: ["internal", "confidential", "restricted", "public"]
+    default: "internal"
+
+  execution_mode:
+    description: "How this component executes"
+    allowed_values: ["realtime", "scheduled", "on-demand", "streaming"]
+
+  timeout_seconds:
+    description: "Timeout in seconds for operations"
+    type: integer
+    default: 30
+
+  performance_tier:
+    description: "Performance characteristics"
+    allowed_values: ["realtime", "batch", "background"]
+
+# ============================================================================
+# VALIDATION RULES (Applied by CI/codegen)
+# ============================================================================
+
+validation_rules:
+
+  rule_1_presence:
+    name: "DORA block must be present in file"
+    enforcement: "CRITICAL"
+    check: |
+      File must contain marker "DORA PROTOCOL METADATA" or "dora_block:"
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "Generated file missing DORA block"
+
+  rule_2_field_coverage:
+    name: "All mandatory fields must be present"
+    enforcement: "CRITICAL"
+    check: |
+      Count all mandatory fields in DORA block.
+      Must have 14 mandatory fields.
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "DORA block missing field: {FIELD_NAME}"
+
+  rule_3_no_placeholder_values:
+    name: "No field can have empty or template value"
+    enforcement: "CRITICAL"
+    check: |
+      Scan all DORA fields for:
+      - Empty strings ("")
+      - null values
+      - Template placeholders ({PLACEHOLDER})
+      - TODO comments
+      - FILL_IN strings
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "DORA field '{FIELD}' has invalid value: {VALUE}"
+
+  rule_4_unique_component_id:
+    name: "component_id must be globally unique"
+    enforcement: "CRITICAL"
+    check: |
+      Compare component_id against:
+      - .l9-dora-registry.json (all existing files)
+      - All files in repo
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "component_id '{ID}' already exists in {FILE}"
+
+  rule_5_valid_enum_values:
+    name: "Enum fields must use allowed values"
+    enforcement: "CRITICAL"
+    check: |
+      For fields with allowed_values:
+      - layer: must be in [foundation, intelligence, operations, learning, security]
+      - type: must be in [service, collector, tracker, engine, utility, adapter, schema, config]
+      - status: must be in [active, deprecated, experimental, maintenance]
+      - governance_level: must be in [critical, high, medium, low]
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "Field '{FIELD}' has invalid value '{VALUE}'. Allowed: {ALLOWED}"
+
+  rule_6_governance_enforcement:
+    name: "Critical modules must have high governance_level"
+    enforcement: "CRITICAL"
+    check: |
+      If domain in [governance, memory, agents, kernel, kernel_loader]:
+        governance_level must be "critical" or "high"
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: |
+      Module '{DOMAIN}' is critical but governance_level='{LEVEL}'.
+      Must be 'critical' or 'high'
+
+  rule_7_valid_format:
+    name: "Field values must match specified formats"
+    enforcement: "CRITICAL"
+    checks:
+      - component_id: "matches [A-Z]{3}-[A-Z]{3,4}-\\d{3}"
+      - created_at: "valid ISO8601 timestamp"
+      - module_version: "matches semver \\d+\\.\\d+\\.\\d+"
+    failure_action: "REJECT_FILE_GENERATION"
+    error_message: "Field '{FIELD}' value '{VALUE}' does not match format '{FORMAT}'"
+
+  rule_8_idempotent_generation:
+    name: "Regenerating file must preserve original component_id"
+    enforcement: "WARNING"
+    check: |
+      If file already exists:
+      - Extract component_id from existing DORA block
+      - Check that new DORA block uses same component_id
+    failure_action: "WARN_AND_PRESERVE_ORIGINAL"
+    error_message: |
+      Regeneration would change component_id from '{OLD_ID}' to '{NEW_ID}'.
+      Preserving original component_id.
+
+# ============================================================================
+# CODEGEN REQUIREMENTS
+# ============================================================================
+
+codegen_requirements:
+
+  requirement_1_validation_before_generation:
+    when: "Before any file generation"
+    must_do:
+      - "Call validate_schema() with all DORA fields"
+      - "If validation fails, STOP generation"
+      - "Log failure to audit trail"
+
+  requirement_2_dora_injection:
+    when: "During file generation"
+    must_do:
+      - "Build DORA block from schema"
+      - "Inject into file at correct position (after encoding/shebang)"
+      - "Use correct format for file type (.py, .yaml, .md, .json)"
+      - "Ensure no template placeholders remain"
+
+  requirement_3_validation_after_generation:
+    when: "After file is written"
+    must_do:
+      - "Read file from disk"
+      - "Re-parse DORA block"
+      - "Validate all fields"
+      - "If validation fails, DELETE file and log error"
+
+  requirement_4_registry_update:
+    when: "After successful generation"
+    must_do:
+      - "Add entry to .l9-dora-registry.json"
+      - "Record: component_id, file_path, governance_level, timestamp"
+      - "Mark as: GENERATED_BY_CODEGEN"
+
+  requirement_5_audit_logging:
+    when: "After every generation (success or failure)"
+    must_do:
+      - "Log to logs/codegen-dora-audit.log"
+      - "Include: timestamp, file_path, component_id, result (PASS|FAIL), reason"
+
+# ============================================================================
+# CI/CD VALIDATION GATES
+# ============================================================================
+
+ci_gates:
+
+  gate_1_pre_merge:
+    name: "DORA Block Validation"
+    stage: "before_merge"
+    trigger: "on_push_and_pull_request"
+    checks:
+      - "All files have DORA blocks"
+      - "All mandatory fields populated"
+      - "No placeholder values"
+      - "component_id is unique"
+      - "Enum values are valid"
+    failure_action: "BLOCK_MERGE"
+    report_location: "ci-reports/dora-validation.html"
+
+  gate_2_registry_consistency:
+    name: "DORA Registry Check"
+    stage: "before_merge"
+    trigger: "on_push_and_pull_request"
+    checks:
+      - ".l9-dora-registry.json is up-to-date"
+      - "All files in registry exist"
+      - "No orphaned entries"
+    failure_action: "BLOCK_MERGE"
+    report_location: "ci-reports/registry-validation.html"
+
+  gate_3_governance_compliance:
+    name: "Governance Compliance Check"
+    stage: "before_merge"
+    trigger: "on_push_and_pull_request"
+    checks:
+      - "All critical components have high/critical governance_level"
+      - "All memory/governance modules are auditable"
+    failure_action: "BLOCK_MERGE"
+    report_location: "ci-reports/governance-compliance.html"
+
+# ============================================================================
+# REMEDIATION
+# ============================================================================
+
+remediation:
+  if_dora_block_missing:
+    step_1: "CI detects missing DORA block"
+    step_2: "CI creates GitHub issue: '[DORA-MISSING] {filename}'"
+    step_3: "Run auto-remediation: python scripts/auto_add_dora_blocks.py --fix"
+    step_4: "Commit with: 'fix(dora): add DORA block to {filename}'"
+
+  if_dora_validation_fails:
+    step_1: "CI detects DORA validation failure"
+    step_2: "CI creates GitHub issue: '[DORA-FAIL] {filename} - {reason}'"
+    step_3: "Option A: Auto-fix if possible (remediation script)"
+    step_4: "Option B: Require manual review (blocking merge)"
+
+# ============================================================================
+# AUDIT & REPORTING
+# ============================================================================
+
+audit_requirements:
+  registry_file:
+    name: ".l9-dora-registry.json"
+    updated: "After every codegen run"
+    contents:
+      - List of all components
+      - component_id, file_path, governance_level
+      - compliance_status, last_generated_at
+    purpose: "CI can query DORA compliance status"
+
+  audit_log:
+    name: "logs/codegen-dora-audit.log"
+    entries:
+      - timestamp, file_path, component_id, validation_result
+      - reason_if_fail, generated_by, generation_time_ms
+    rotation: "Daily, keep 30 days"
+    purpose: "Compliance and troubleshooting"
+
+  compliance_dashboard:
+    metrics:
+      - "compliance_rate: % of files with valid DORA blocks (target: 100%)"
+      - "generation_failures: # of codegen failures due to DORA (target: 0)"
+      - "governance_distribution: breakdown by governance_level"
+      - "remediation_success: % of failures auto-fixed (target: 100%)"
+    refresh: "Hourly"
+    alert_if:
+      - "compliance_rate < 95%"
+      - "generation_failures > 0"
+      - "remediation_success < 95%"
+
+# ============================================================================
+# STATUS
+# ============================================================================
+
+# ============================================================================
+# FOOTER META (BOTTOM OF FILE, BEFORE DORA BLOCK)
+# ============================================================================
+# Extended metadata that header references
+# Static, set on generation
+
+footer_meta_contract:
+  name: "Footer Meta"
+  location: "BOTTOM of file, before DORA Block"
+  updates: "On generation only"
+  human_editable: false
+  purpose: "Extended metadata that header points to"
+
+# ============================================================================
+# DORA BLOCK (VERY END OF FILE) - __l9_trace__
+# ============================================================================
+# The ONLY thing called "DORA Block" - L9_TRACE_TEMPLATE
+# Auto-updated runtime trace - 100% machine-managed
+# See: Dora-Block.md for full specification
+
+dora_block_contract:
+  name: "L9 Trace Block"
+  variable_name:
+    python: "__l9_trace__"
+    yaml: "l9_trace"
+    json: "_l9_trace"
+  location: "VERY BOTTOM of file - after ALL code"
+  updates: "100% machine-managed - auto-updates on EVERY execution"
+  human_editable: false
+  
+  # IMPLEMENTATION (2026-01-02)
+  implementation:
+    decorator: "runtime.dora.l9_traced"
+    data_model: "runtime.dora.DoraTraceBlock"
+    file_updater: "runtime.dora.update_dora_block_in_file"
+    executor_hook: "runtime.dora.emit_executor_trace"
+    templates:
+      - "codegen/templates/python-dora-template.py"
+      - "codegen/templates/python-l9-module-template.py"
+
+  required_fields:
+    trace_id:
+      description: "Unique execution trace ID"
+      type: string
+      auto_generated: true
+
+    task:
+      description: "What task/operation was performed"
+      type: string
+      auto_generated: true
+
+    timestamp:
+      description: "ISO8601 timestamp of last execution"
+      type: string
+      format: "YYYY-MM-DDTHH:MM:SSZ"
+      auto_generated: true
+
+    patterns_used:
+      description: "List of patterns/strategies invoked"
+      type: array
+      auto_generated: true
+
+    graph:
+      description: "Execution graph state"
+      type: object
+      properties:
+        nodes: array
+        edges: array
+      auto_generated: true
+
+    inputs:
+      description: "Runtime inputs to this execution"
+      type: object
+      auto_generated: true
+
+    outputs:
+      description: "Runtime outputs from this execution"
+      type: object
+      auto_generated: true
+
+    metrics:
+      description: "Execution quality metrics"
+      type: object
+      properties:
+        confidence: string
+        errors_detected: array
+        stability_score: string
+      auto_generated: true
+
+  enforcement:
+    presence_required: true
+    location_validated: "Must be at EOF"
+    machine_only: true
+    ci_validates: true
+
+# ============================================================================
+# STATUS
+# ============================================================================
+
+status: ACTIVE
+enforcement_start_date: "2026-01-02T00:00:00Z"
+no_exceptions: true
+
+# This contract is non-negotiable:
+# - All generated files MUST have valid HEADER METADATA at TOP
+# - All generated files MUST have valid FOOTER TRACE at VERY BOTTOM

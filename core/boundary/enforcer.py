@@ -19,10 +19,10 @@ Future Implementation (Phase 2):
 
 Usage:
     from core.boundary.enforcer import enforce_boundary, BoundaryEnforcer
-    
+
     # Simple function
     safe_prompt = enforce_boundary(raw_prompt)
-    
+
     # Class-based for configuration
     enforcer = BoundaryEnforcer()
     safe_prompt = enforcer.enforce(raw_prompt)
@@ -49,7 +49,10 @@ BOUNDARY_FILE = Path("PRIVATE_BOUNDARY.md")
 # Default redaction patterns (Phase 2 will parse from PRIVATE_BOUNDARY.md)
 DEFAULT_REDACTION_PATTERNS = [
     # API keys and secrets
-    (r'(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?', r'\1=[REDACTED]'),
+    (
+        r'(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*["\']?[\w-]+["\']?',
+        r"\1=[REDACTED]",
+    ),
     # Email addresses (optional, conservative)
     # (r'[\w.+-]+@[\w-]+\.[\w.-]+', '[EMAIL]'),
 ]
@@ -59,14 +62,15 @@ DEFAULT_REDACTION_PATTERNS = [
 # Boundary Specification
 # =============================================================================
 
+
 class BoundarySpec:
     """
     Parsed PRIVATE_BOUNDARY specification.
-    
+
     Contains rules for what information should be protected
     at the orchestrator boundary.
     """
-    
+
     def __init__(
         self,
         raw_content: str = "",
@@ -77,16 +81,14 @@ class BoundarySpec:
         self.redaction_patterns = redaction_patterns or []
         self.protected_fields = protected_fields or []
         self._compiled_patterns: List[tuple] = []
-        
+
         # Compile patterns
         for pattern, replacement in self.redaction_patterns:
             try:
-                self._compiled_patterns.append(
-                    (re.compile(pattern), replacement)
-                )
+                self._compiled_patterns.append((re.compile(pattern), replacement))
             except re.error as e:
                 logger.warning(f"Invalid redaction pattern '{pattern}': {e}")
-    
+
     def apply_redactions(self, text: str) -> str:
         """Apply all redaction patterns to text."""
         result = text
@@ -98,19 +100,19 @@ class BoundarySpec:
 def load_boundary_spec(boundary_file: Optional[Path] = None) -> str:
     """
     Load the PRIVATE_BOUNDARY.md specification file.
-    
+
     Args:
         boundary_file: Path to boundary file (defaults to PRIVATE_BOUNDARY.md)
-        
+
     Returns:
         Raw content of boundary file, empty string if not found
     """
     boundary_file = boundary_file or BOUNDARY_FILE
-    
+
     if not boundary_file.exists():
         logger.debug(f"No boundary file found at {boundary_file}")
         return ""
-    
+
     try:
         return boundary_file.read_text()
     except (IOError, OSError) as e:
@@ -121,19 +123,19 @@ def load_boundary_spec(boundary_file: Optional[Path] = None) -> str:
 def parse_boundary_spec(content: str) -> BoundarySpec:
     """
     Parse PRIVATE_BOUNDARY.md content into a BoundarySpec.
-    
+
     Phase 1: Returns basic spec with default patterns
     Phase 2: Will parse markdown for rules and patterns
-    
+
     Args:
         content: Raw boundary file content
-        
+
     Returns:
         Parsed BoundarySpec
     """
     # Phase 1: Simple stub implementation
     # Phase 2 will parse the markdown for structured rules
-    
+
     return BoundarySpec(
         raw_content=content,
         redaction_patterns=DEFAULT_REDACTION_PATTERNS.copy(),
@@ -145,41 +147,42 @@ def parse_boundary_spec(content: str) -> BoundarySpec:
 # Enforcement Functions
 # =============================================================================
 
+
 def enforce_boundary(
     prompt: str,
     context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Apply PRIVATE_BOUNDARY enforcement to a prompt.
-    
+
     Phase 1: Pass-through stub with logging
     Phase 2: Full enforcement with redaction
-    
+
     Args:
         prompt: Raw prompt text
         context: Optional context for enforcement decisions
-        
+
     Returns:
         Enforced/redacted prompt (same as input in Phase 1)
     """
     context = context or {}
-    
+
     # Load spec if available
     spec_content = load_boundary_spec()
-    
+
     if not spec_content:
         # No boundary file, pass through
         logger.debug("No PRIVATE_BOUNDARY spec, passing through")
         return prompt
-    
+
     # Phase 1: Stub - just log and pass through
     # Phase 2: Parse spec and apply redactions
     logger.debug(f"Boundary enforcement called (stub) on {len(prompt)} chars")
-    
+
     # Optional: Apply default patterns even in Phase 1
     # spec = parse_boundary_spec(spec_content)
     # return spec.apply_redactions(prompt)
-    
+
     return prompt
 
 
@@ -189,13 +192,13 @@ def enforce_response_boundary(
 ) -> str:
     """
     Apply PRIVATE_BOUNDARY enforcement to a response.
-    
+
     Ensures private information doesn't leak in responses.
-    
+
     Args:
         response: Raw response text
         context: Optional context for enforcement decisions
-        
+
     Returns:
         Enforced/redacted response
     """
@@ -209,27 +212,27 @@ def enforce_payload_boundary(
 ) -> Dict[str, Any]:
     """
     Apply PRIVATE_BOUNDARY enforcement to a payload dict.
-    
+
     Redacts or removes protected fields from payload.
-    
+
     Args:
         payload: Raw payload dict
         protected_fields: List of field names to protect
-        
+
     Returns:
         Enforced payload with protected fields redacted
     """
     protected_fields = protected_fields or []
-    
+
     if not protected_fields:
         return payload
-    
+
     result = payload.copy()
-    
+
     for field in protected_fields:
         if field in result:
             result[field] = "[REDACTED]"
-    
+
     return result
 
 
@@ -237,18 +240,19 @@ def enforce_payload_boundary(
 # Enforcer Class
 # =============================================================================
 
+
 class BoundaryEnforcer:
     """
     Stateful boundary enforcer with caching and configuration.
-    
+
     Use this class for repeated enforcement with the same configuration.
-    
+
     Attributes:
         spec: Loaded boundary specification
         enabled: Whether enforcement is active
         log_enforcement: Whether to log enforcement actions
     """
-    
+
     def __init__(
         self,
         boundary_file: Optional[Path] = None,
@@ -257,7 +261,7 @@ class BoundaryEnforcer:
     ):
         """
         Initialize the enforcer.
-        
+
         Args:
             boundary_file: Path to boundary spec file
             enabled: Whether enforcement is active
@@ -266,11 +270,11 @@ class BoundaryEnforcer:
         self.boundary_file = boundary_file or BOUNDARY_FILE
         self.enabled = enabled
         self.log_enforcement = log_enforcement
-        
+
         # Load spec on init
         self._spec: Optional[BoundarySpec] = None
         self._load_spec()
-    
+
     def _load_spec(self) -> None:
         """Load the boundary specification."""
         content = load_boundary_spec(self.boundary_file)
@@ -280,11 +284,11 @@ class BoundaryEnforcer:
                 logger.info(f"Loaded boundary spec from {self.boundary_file}")
         else:
             self._spec = None
-    
+
     def reload_spec(self) -> None:
         """Reload the boundary specification from disk."""
         self._load_spec()
-    
+
     def enforce(
         self,
         text: str,
@@ -292,25 +296,25 @@ class BoundaryEnforcer:
     ) -> str:
         """
         Apply boundary enforcement to text.
-        
+
         Args:
             text: Text to enforce
             context: Optional context
-            
+
         Returns:
             Enforced text
         """
         if not self.enabled:
             return text
-        
+
         if self.log_enforcement:
             logger.debug(f"Enforcing boundary on {len(text)} chars")
-        
+
         if self._spec:
             return self._spec.apply_redactions(text)
-        
+
         return text
-    
+
     def enforce_dict(
         self,
         data: Dict[str, Any],
@@ -318,19 +322,19 @@ class BoundaryEnforcer:
     ) -> Dict[str, Any]:
         """
         Apply boundary enforcement to string fields in a dict.
-        
+
         Args:
             data: Dict to process
             string_fields: List of field names to enforce (None = all strings)
-            
+
         Returns:
             Dict with enforced string fields
         """
         if not self.enabled:
             return data
-        
+
         result = {}
-        
+
         for key, value in data.items():
             if isinstance(value, str):
                 if string_fields is None or key in string_fields:
@@ -346,9 +350,9 @@ class BoundaryEnforcer:
                 ]
             else:
                 result[key] = value
-        
+
         return result
-    
+
     @property
     def has_spec(self) -> bool:
         """Check if a boundary spec is loaded."""
@@ -388,4 +392,3 @@ __all__ = [
     # Constants
     "BOUNDARY_FILE",
 ]
-

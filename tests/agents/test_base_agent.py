@@ -27,6 +27,7 @@ except ImportError as e:
 # Test: Base agent instantiation
 # =============================================================================
 
+
 def test_base_agent_instantiation():
     """
     Contract: BaseAgent cannot be instantiated directly (abstract class).
@@ -40,6 +41,7 @@ def test_base_agent_instantiation():
 # Test: Base agent has required methods
 # =============================================================================
 
+
 def test_base_agent_has_required_methods():
     """
     Contract: BaseAgent defines required abstract methods.
@@ -47,9 +49,10 @@ def test_base_agent_has_required_methods():
     # Check that BaseAgent has abstract methods
     assert hasattr(BaseAgent, "get_system_prompt")
     assert hasattr(BaseAgent, "run")
-    
+
     # Check that they are abstract
     import inspect
+
     assert inspect.isabstract(BaseAgent.get_system_prompt)
     assert inspect.isabstract(BaseAgent.run)
 
@@ -58,12 +61,13 @@ def test_base_agent_has_required_methods():
 # Test: AgentConfig creation
 # =============================================================================
 
+
 def test_agent_config_creation():
     """
     Contract: AgentConfig can be created with defaults.
     """
     config = AgentConfig()
-    
+
     assert config.model == "gpt-4o"
     assert config.temperature == 0.3
     assert config.max_tokens == 4000
@@ -75,6 +79,7 @@ def test_agent_config_creation():
 # Test: AgentConfig with custom values
 # =============================================================================
 
+
 def test_agent_config_custom_values():
     """
     Contract: AgentConfig accepts custom values.
@@ -84,7 +89,7 @@ def test_agent_config_custom_values():
         temperature=0.7,
         max_tokens=2000,
     )
-    
+
     assert config.model == "gpt-3.5-turbo"
     assert config.temperature == 0.7
     assert config.max_tokens == 2000

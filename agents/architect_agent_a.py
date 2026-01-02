@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -46,10 +46,10 @@ class ArchitectAgentA(BaseAgent):
     """
     Primary architect agent for system design.
     """
-    
+
     agent_role = AgentRole.ARCHITECT_PRIMARY
     agent_name = "architect_a"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -57,11 +57,11 @@ class ArchitectAgentA(BaseAgent):
     ):
         """Initialize Architect Agent A."""
         super().__init__(agent_id, config)
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -69,18 +69,18 @@ class ArchitectAgentA(BaseAgent):
     ) -> AgentResponse:
         """
         Execute architecture design task.
-        
+
         Args:
             task: Task with 'requirements' and optional 'constraints'
             context: Optional context
-            
+
         Returns:
             AgentResponse with architecture design
         """
         requirements = task.get("requirements", "")
         constraints = task.get("constraints", [])
         existing_systems = task.get("existing_systems", [])
-        
+
         prompt = f"""Design a system architecture for the following requirements:
 
 Requirements:
@@ -127,20 +127,20 @@ Provide your design as JSON with this structure:
     "reasoning": "..."
 }}
 """
-        
+
         if context:
             prompt += f"\n\nAdditional context:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         # Add to conversation history
         self.add_message(messages[0])
         if response.success:
             self.add_message(self.format_assistant_message(response.content))
-        
+
         return response
-    
+
     async def design_component(
         self,
         component_name: str,
@@ -149,12 +149,12 @@ Provide your design as JSON with this structure:
     ) -> dict[str, Any]:
         """
         Design a specific component.
-        
+
         Args:
             component_name: Name of the component
             requirements: Component requirements
             interfaces: Required interfaces
-            
+
         Returns:
             Component design
         """
@@ -193,9 +193,9 @@ Provide detailed component design as JSON:
     "reasoning": "..."
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def review_design(
         self,
         design: dict[str, Any],
@@ -203,11 +203,11 @@ Provide detailed component design as JSON:
     ) -> dict[str, Any]:
         """
         Review an existing design.
-        
+
         Args:
             design: Design to review
             requirements: Original requirements
-            
+
         Returns:
             Review findings
         """
@@ -236,9 +236,9 @@ Evaluate and provide:
     "risk_assessment": "..."
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def propose_alternatives(
         self,
         current_design: dict[str, Any],
@@ -246,11 +246,11 @@ Evaluate and provide:
     ) -> list[dict[str, Any]]:
         """
         Propose alternative approaches.
-        
+
         Args:
             current_design: Current design
             issue: Issue to address
-            
+
         Returns:
             List of alternative approaches
         """
@@ -279,7 +279,6 @@ Propose 2-3 alternative approaches:
     "reasoning": "..."
 }}
 """
-        
+
         result = await self.call_llm_json(prompt)
         return result.get("alternatives", [])
-

@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -46,10 +46,10 @@ class ReflectionAgent(BaseAgent):
     """
     Meta-reasoning agent for self-improvement.
     """
-    
+
     agent_role = AgentRole.REFLECTION
     agent_name = "reflection_agent"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -58,11 +58,11 @@ class ReflectionAgent(BaseAgent):
         """Initialize Reflection Agent."""
         super().__init__(agent_id, config)
         self._lessons_learned: list[dict[str, Any]] = []
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -70,18 +70,18 @@ class ReflectionAgent(BaseAgent):
     ) -> AgentResponse:
         """
         Execute reflection task.
-        
+
         Args:
             task: Task with 'history' and optional 'focus'
             context: Optional context
-            
+
         Returns:
             AgentResponse with insights
         """
         history = task.get("history", [])
         focus = task.get("focus", "general")
         goals = task.get("goals", [])
-        
+
         prompt = f"""Reflect on this execution history:
 
 History:
@@ -125,24 +125,24 @@ Provide deep reflection:
     "summary": "..."
 }}
 """
-        
+
         if context:
             prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         # Store lessons learned
         if response.success and response.structured_output:
             for lesson in response.structured_output.get("lessons_learned", []):
                 self._lessons_learned.append(lesson)
-        
+
         self.add_message(messages[0])
         if response.success:
             self.add_message(self.format_assistant_message(response.content))
-        
+
         return response
-    
+
     async def analyze_failure(
         self,
         failure_context: dict[str, Any],
@@ -151,12 +151,12 @@ Provide deep reflection:
     ) -> dict[str, Any]:
         """
         Analyze a specific failure.
-        
+
         Args:
             failure_context: Context of failure
             error: Error message
             stack_trace: Optional stack trace
-            
+
         Returns:
             Failure analysis
         """
@@ -188,9 +188,9 @@ Provide:
     "lessons": ["key takeaways"]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def compare_approaches(
         self,
         approach_a: dict[str, Any],
@@ -199,12 +199,12 @@ Provide:
     ) -> dict[str, Any]:
         """
         Compare two approaches.
-        
+
         Args:
             approach_a: First approach
             approach_b: Second approach
             criteria: Comparison criteria
-            
+
         Returns:
             Comparison analysis
         """
@@ -240,19 +240,19 @@ Provide:
     "reasoning": "..."
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def extract_patterns(
         self,
         examples: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """
         Extract patterns from examples.
-        
+
         Args:
             examples: List of examples to analyze
-            
+
         Returns:
             Extracted patterns
         """
@@ -282,9 +282,9 @@ Identify:
     "confidence": 0.0 to 1.0
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def generate_improvements(
         self,
         current_performance: dict[str, Any],
@@ -292,11 +292,11 @@ Identify:
     ) -> dict[str, Any]:
         """
         Generate improvement suggestions.
-        
+
         Args:
             current_performance: Current metrics
             goals: Improvement goals
-            
+
         Returns:
             Improvement plan
         """
@@ -332,14 +332,13 @@ Provide:
     "measurement_plan": "how to track progress"
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     def get_lessons_learned(self) -> list[dict[str, Any]]:
         """Get accumulated lessons learned."""
         return self._lessons_learned.copy()
-    
+
     def clear_lessons(self) -> None:
         """Clear lessons learned."""
         self._lessons_learned.clear()
-

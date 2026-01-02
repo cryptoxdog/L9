@@ -10,6 +10,11 @@ agents/coder_agent_b.py::CoderAgentB - Secondary coder agent for parallel work a
 agents/l_cto.py::LCTOAgent - L - The CTO Agent for Igor.
 agents/qa_agent.py::QAAgent - Quality assurance agent.
 agents/reflection_agent.py::ReflectionAgent - Meta-reasoning agent for self-improvement.
+aios/bootstrap.py::Bootstrap - Bootstrap manager for L9 OS kernel.
+aios/controller.py::Controller - Main controller for L9 OS kernel.
+aios/local_api.py::LocalAPI - Safe local API for shell commands and file operations.
+aios/router.py::Router - Message router for L9 OS kernel.
+aios/runtime.py::Runtime - L9 OS runtime loop.
 api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterAdapter - Calendar Adapter Adapter
 api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterContext - Execution context.
 api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterRequest - Inbound request schema.
@@ -131,6 +136,39 @@ api/world_model_api.py::SnapshotResponse - Snapshot response.
 api/world_model_api.py::StateVersionResponse - State version response.
 api/world_model_api.py::UpdateRecord - Single update record.
 api/world_model_api.py::UpdatesListResponse - List of updates response.
+archive/deprecated/l-cto-legacy/engine.py::LEngine - L (CTO Agent) Reasoning and Execution Engine
+archive/deprecated/l-cto-legacy/l_cto_core/identity.py::LIdentity - L (CTO Agent) Identity Definition
+archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::RuntimeClient - HTTP client for L (CTO) to communicate with L9 Runtime.
+archive/deprecated/l-cto-legacy/mission.py::LMission - L (CTO Agent) Mission Handler
+archive/deprecated/l-cto-legacy/startup.py::LStartup - l-cto Agent Startup Sequence
+archive/deprecated/l-cto-memory-supabase/memory/l1/diagnostics.py::MemoryDiagnostics - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::AutonomyModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::DecisionModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::DirectiveModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::DriftModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::EvaluationModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::ReasoningPatternModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_models.py::TraceModel - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::L1Query - Advanced query layer for L1 memory tables.
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::L1Reader - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_router.py::L1Router - Router for L1 memory layer operations.
+archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::L1Writer - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/retention_processor.py::RetentionProcessor - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/mac/mac_router.py::MACRouter - Router for MAC (Multi-Agent Coordination) memory layer.
+archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::MemoryRouterV3 - Multi-tier memory router:
+archive/deprecated/l-cto-memory-supabase/memory/memory_router_v4.py::MemoryRouterV4 - DEPRECATED: Use MemorySubstrateService directly.
+archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::METARouter - Router for META (System Governance) memory layer.
+archive/deprecated/l-cto-memory-supabase/memory/meta/meta_versioning.py::MemoryVersioning - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/concurrency_manager.py::ConcurrencyManager - Manages locks for concurrent memory operations.
+archive/deprecated/l-cto-memory-supabase/memory/shared/connection_validator.py::SupabaseConnectionValidator - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/governance_filter.py::GovernanceFilter - Validates payloads before writing to memory.
+archive/deprecated/l-cto-memory-supabase/memory/shared/kg_sync.py::KGSync - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/logging_hooks.py::LoggingHooks - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/rate_limiter.py::MemoryRateLimiter - Simple per-process rate limiter to avoid Supabase overload.
+archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::FakeSupabaseClient - No docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::FakeSupabaseTable - No docstring
+archive/deprecated/l-cto-memory/kg_client.py::KGClient - Neo4j knowledge graph client for L (CTO).
+archive/deprecated/l-cto-memory/memory_client.py::MemoryClient - Supabase memory client for L (CTO).
 ci/check_syntax.py::SyntaxIssue - Represents a syntax error in a file.
 ci/lint_forbidden_imports.py::LintResult - Result of linting a file.
 ci/validate_codegen.py::CodeValidationResult - Accumulates code validation errors.
@@ -220,7 +258,7 @@ core/schemas/l_tools.py::MemoryWriteInput - Input schema for memory write tool.
 core/schemas/l_tools.py::WorldModelQueryInput - Input schema for world model query.
 core/schemas/packet_envelope.py::PacketConfidence - Confidence score and rationale for a packet.
 core/schemas/packet_envelope.py::PacketEnvelope - Canonical event container used by the Memory Substrate.
-core/schemas/packet_envelope.py::PacketEnvelopeIn - Input structure used for writes. 
+core/schemas/packet_envelope.py::PacketEnvelopeIn - Input structure used for writes.
 core/schemas/packet_envelope.py::PacketKind - Kind of packet for routing/classification.
 core/schemas/packet_envelope.py::PacketMetadata - Metadata attached to a packet envelope.
 core/schemas/packet_envelope.py::PacketProvenance - Provenance information for packet traceability.
@@ -281,14 +319,23 @@ core/tools/registry_adapter.py::ToolExecutor - Protocol for tool executors.
 core/tools/tool_graph.py::ToolDefinition - Definition of a tool for graph registration.
 core/tools/tool_graph.py::ToolGraph - Tool dependency graph backed by Neo4j.
 dev/tools/global_state_audit.py::GlobalStateVisitor - No docstring
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::CodeGenerator - Generates production-ready code from synthesis
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::PerplexityLabsClient - Client for Perplexity Labs API with retry logic
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::PromptVariation - Represents a single prompt variation
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::READMEGenerator - Generates comprehensive README from synthesis
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::ResearchResponse - Structured response from Perplexity Labs
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::ResponseProcessor - Extracts structured insights from Perplexity responses
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::SynthesisEngine - Aggregates multi-prompt research findings
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py::SynthesisReport - Aggregated research synthesis
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::CodeGenerator - Generates production-ready code from synthesis
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::PerplexityLabsClient - Client for Perplexity Labs API with retry logic
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::PromptVariation - Represents a single prompt variation
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::READMEGenerator - Generates comprehensive README from synthesis
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::ResearchResponse - Structured response from Perplexity Labs
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::ResponseProcessor - Extracts structured insights from Perplexity responses
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::SynthesisEngine - Aggregates multi-prompt research findings
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py::SynthesisReport - Aggregated research synthesis
+docs/_archive/mcp-memory-deprecated/config.py::Config - No docstring
+docs/_archive/mcp-memory-deprecated/config.py::Settings - No docstring
+docs/_archive/mcp-memory-deprecated/mcpserver.py::MCPTool - No docstring
+docs/_archive/mcp-memory-deprecated/mcpserver.py::MCPToolCall - No docstring
+docs/_archive/mcp-memory-deprecated/models.py::MemoryResponse - No docstring
+docs/_archive/mcp-memory-deprecated/models.py::MemoryStatsResponse - No docstring
+docs/_archive/mcp-memory-deprecated/models.py::SaveMemoryRequest - No docstring
+docs/_archive/mcp-memory-deprecated/models.py::SearchMemoryRequest - No docstring
+docs/_archive/mcp-memory-deprecated/models.py::SearchMemoryResponse - No docstring
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::SubjectiveLogicAdapter - Adapter between Bayesian probabilities and Subjective Logic 
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::BayesianUncertainty - Complete Bayesian uncertainty quantification.
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::DeepEnsemble - Deep ensemble for implicit Bayesian inference.
@@ -307,6 +354,16 @@ docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::FeedbackType - Types of user feedback
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::CalibrationDashboard - Monitoring and visualization for probabilistic governance.
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::CalibrationMetrics - Calibration quality metrics
+docs/roadmap/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::BayesianKernel - Bayesian Reasoning Kernel for L9.
+docs/roadmap/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::BeliefState - Represents current belief about a variable.
+docs/roadmap/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::EvidenceStrength - Classification of evidence strength.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::BayesianNode - Bayesian belief state tracking node.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::Evidence - Evidence item with strength assessment.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::HypergraphNode - Base node in L9 hypergraph (directed acyclic graph).
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::NodeStatus - Node execution status.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::NodeTemplate - Template for creating nodes of specific types.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::NodeType - Node type enumeration.
+docs/roadmap/Core Bayesian layer/Bayesian layer/hypergraph.py::ReasoningNode - Reasoning step node in task graph.
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterAdapter - Calendar Adapter Adapter
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterContext - Execution context.
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py::CalendarAdapterRequest - Inbound request schema.
@@ -404,6 +461,7 @@ email_agent/router.py::GetRequest - Request model for getting email.
 email_agent/router.py::QueryRequest - Request model for email query.
 email_agent/router.py::ReplyRequest - Request model for replying to email.
 email_agent/router.py::SendRequest - Request model for sending email.
+graph_adapter/packet_node_adapter.py::PacketNodeAdapter - Wraps a node function, ensuring its input/output are logged 
 ir_engine/constraint_challenger.py::ChallengeResult - Result of constraint challenge analysis.
 ir_engine/constraint_challenger.py::ConstraintChallenger - Challenges constraints to identify false, hidden, and improv
 ir_engine/deliberation_cell.py::DeliberationCell - 2-agent deliberation cell for IR refinement.
@@ -433,18 +491,29 @@ ir_engine/simulation_router.py::RankedCandidate - A ranked IR candidate after si
 ir_engine/simulation_router.py::SimulationRequest - Request to simulate an IR graph.
 ir_engine/simulation_router.py::SimulationResult - Result from simulation engine.
 ir_engine/simulation_router.py::SimulationRouter - Routes IR graphs to simulation engine and manages results.
-l9_langgraph/packet_node_adapter.py::PacketNodeAdapter - Wraps a node function, ensuring its input/output are logged 
-l9_os/bootstrap.py::Bootstrap - Bootstrap manager for L9 OS kernel.
-l9_os/controller.py::Controller - Main controller for L9 OS kernel.
-l9_os/local_api.py::LocalAPI - Safe local API for shell commands and file operations.
-l9_os/router.py::Router - Message router for L9 OS kernel.
-l9_os/runtime.py::Runtime - L9 OS runtime loop.
+l-cto-phase-2/l9_agent/desire_engine.py::DesireEngine - No docstring
+l-cto-phase-2/l9_agent/goal_commitment.py::GoalCommitmentTracker - No docstring
+l-cto-phase-2/l9_agent/persistence_engine.py::PersistenceEngine - No docstring
+l-cto-phase-2/l9_agent/trust_engine.py::TrustEngine - No docstring
+l-cto-phase-2/l9_agent/trust_model.py::TrustModel - No docstring
+l-cto-phase-2/l9_agent/value_alignment.py::ValueAlignmentEngine - No docstring
+l-cto-phase-2/l9_agent/will_engine.py::WillEngine - No docstring
 mac_agent/config.py::MacAgentConfig - Configuration for Mac Agent V2.
 mac_agent/executor.py::AutomationExecutor - Executes automation steps using Playwright (primary) or pyau
 mac_agent/websocket_client.py::AgentConfig - Configuration for the Mac Agent WebSocket client.
 mac_agent/websocket_client.py::EventType - Event type constants matching server EventType enum.
 mac_agent/websocket_client.py::MacAgentClient - Persistent WebSocket client for L9 Mac Agent.
 mac_agent/websocket_client.py::TaskExecutor - Task executor for Mac Agent.
+mcp_memory/src/config.py::Config - No docstring
+mcp_memory/src/config.py::Settings - No docstring
+mcp_memory/src/mcp_server.py::MCPTool - No docstring
+mcp_memory/src/mcp_server.py::MCPToolCall - No docstring
+mcp_memory/src/models.py::CompoundResult - No docstring
+mcp_memory/src/models.py::MemoryResponse - No docstring
+mcp_memory/src/models.py::MemoryStatsResponse - No docstring
+mcp_memory/src/models.py::SaveMemoryRequest - No docstring
+mcp_memory/src/models.py::SearchMemoryRequest - No docstring
+mcp_memory/src/models.py::SearchMemoryResponse - No docstring
 memory/checkpoint_manager.py::CheckpointManager - Simple manager for saving/loading checkpoints per agent.
 memory/extractor/agent_config_extractor.py::AgentConfigExtractor - Extracts agent configuration (preferences, SOPs, roles).
 memory/extractor/base_extractor.py::BaseExtractor - Base class for all extractors.
@@ -688,6 +757,7 @@ simulation/simulation_engine.py::SimulationMetrics - Metrics collected during si
 simulation/simulation_engine.py::SimulationMode - Simulation modes.
 simulation/simulation_engine.py::SimulationRun - Complete simulation run.
 simulation/simulation_engine.py::SimulationStep - A single step in simulation.
+tests/agents/test_l_cto_memory_emission.py::TestLCTOMemoryEmission - Test L-CTO agent memory emission.
 tests/api/test_auth.py::TestAuthValidation - Tests for API key authentication validation.
 tests/api/test_server_health.py::TestServerHealth - Tests for server health check endpoints.
 tests/conftest.py::AsyncMockCursor - No docstring
@@ -698,6 +768,11 @@ tests/core/agents/test_executor.py::MockAIOSRuntime - Contract-grade mock AIOS r
 tests/core/agents/test_executor.py::MockAgentRegistry - Mock agent registry for testing.
 tests/core/agents/test_executor.py::MockSubstrateService - Contract-grade mock substrate service.
 tests/core/agents/test_executor.py::MockToolRegistry - Contract-grade mock tool registry.
+tests/core/agents/test_executor_governance.py::TestExecutorGovernanceValidation - Test governance validation in executor.
+tests/core/governance/test_validation.py::TestAuditLog - Test audit logging.
+tests/core/governance/test_validation.py::TestDetectDrift - Test drift detection.
+tests/core/governance/test_validation.py::TestValidateAuthority - Test authority validation.
+tests/core/governance/test_validation.py::TestValidateSafety - Test safety validation.
 tests/docker/test_env_validation.py::TestDockerNetworkConfig - Validate Docker-specific networking configuration.
 tests/docker/test_env_validation.py::TestEnvironmentVariables - Validate environment configuration.
 tests/docker/test_env_validation.py::TestRequiredVariables - Ensure required variables are present.
@@ -715,6 +790,11 @@ tests/integration/test_api_agent_integration.py::TestAPIAgentIntegration - Test 
 tests/integration/test_api_memory_integration.py::TestAPIMemoryIntegration - Test API to Memory Substrate integration.
 tests/integration/test_kernel_agent_activation_integration.py::TestKernelAgentActivationIntegration - Test kernel loading to agent activation integration.
 tests/integration/test_kernel_router_orchestrator_end_to_end.py::MockWS - No docstring
+tests/integration/test_l_cto_end_to_end.py::TestLCTOEndToEnd - End-to-end tests for L-CTO agent execution.
+tests/integration/test_l_cto_end_to_end.py::TestLCTOKernelIntegration - Test L-CTO kernel integration end-to-end.
+tests/integration/test_l_cto_end_to_end.py::TestLCTOMemoryIntegration - Test L-CTO memory integration end-to-end.
+tests/integration/test_l_cto_memory_governance_integration.py::TestLCTOMemoryPacketStructure - Test L-CTO memory packet structure matches spec.
+tests/integration/test_l_cto_memory_governance_integration.py::TestMemoryGovernanceIntegration - Test memory and governance integration.
 tests/integration/test_orchestrator_memory_integration.py::MockSubstrateService - Mock substrate for integration testing.
 tests/integration/test_orchestrator_memory_integration.py::TestOrchestratorMemoryIntegration - Test orchestrator to memory integration.
 tests/integration/test_research_tool_integration.py::TestResearchToolIntegration - Test research graph to tool execution integration.

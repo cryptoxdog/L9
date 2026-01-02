@@ -1,0 +1,407 @@
+================================================================================
+                    L9 MEMORY SUBSTRATE - SCHEMA DIAGRAM
+                              Version 2.1.0
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           MULTI-TENANT IDENTITY                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │  tenant_id  │→ │   org_id    │→ │   user_id   │  │   correlation_id    │ │
+│  │   (UUID)    │  │   (UUID)    │  │   (UUID)    │  │ session_id/trace_id │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                                             │
+│  RLS Policies:  tenant_isolation → org_isolation → user_visibility         │
+│                 + admin_override (platform_admin, tenant_admin)             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                              CORE MEMORY LAYER
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            packet_store (Central Event Log)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  packet_id (PK)     │ UUID          │ Unique packet identifier              │
+│  packet_type        │ TEXT          │ event/memory_write/reasoning_trace    │
+│  envelope           │ JSONB         │ Full PacketEnvelope payload           │
+│  timestamp          │ TIMESTAMPTZ   │ Event time                            │
+│  routing            │ JSONB         │ Agent routing metadata                │
+│  provenance         │ JSONB         │ Source/derivation info                │
+├─ v1.1.0 ────────────┼───────────────┼───────────────────────────────────────┤
+│  thread_id          │ UUID          │ Conversation/session thread           │
+│  parent_ids         │ UUID[]        │ Multi-parent lineage (DAG)            │
+│  tags               │ TEXT[]        │ Flexible labels                       │
+│  ttl                │ TIMESTAMP     │ Expiration time                       │
+├─ v2.0.0 (10X) ──────┼───────────────┼───────────────────────────────────────┤
+│  scope              │ TEXT          │ shared/cursor/l-private               │
+│  importance_score   │ FLOAT         │ Learned importance (0.0-1.0)          │
+│  access_count       │ INT           │ Retrieval counter                     │
+│  last_accessed      │ TIMESTAMPTZ   │ Last access time                      │
+│  contradiction_count│ INT           │ Times contradicted                    │
+│  content_hash       │ TEXT          │ Deduplication hash                    │
+│  chunk_count        │ INT           │ Number of chunks                      │
+│  is_chunked         │ BOOLEAN       │ Was content chunked?                  │
+├─ Multi-tenant ──────┼───────────────┼───────────────────────────────────────┤
+│  tenant_id          │ UUID          │ Tenant isolation                      │
+│  org_id             │ UUID          │ Organization isolation                │
+│  user_id            │ UUID          │ User isolation                        │
+│  correlation_id     │ UUID          │ Request correlation                   │
+│  session_id         │ TEXT          │ Session tracing                       │
+│  trace_id           │ TEXT          │ Distributed tracing                   │
+└─────────────────────┴───────────────┴───────────────────────────────────────┘
+                                    │
+                                    │ FK: packet_id
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+┌───────────────────────┐ ┌───────────────────┐ ┌───────────────────────────┐
+│  agent_memory_events  │ │  reasoning_traces │ │      knowledge_facts      │
+├───────────────────────┤ ├───────────────────┤ ├───────────────────────────┤
+│ event_id (PK)         │ │ trace_id (PK)     │ │ fact_id (PK)              │
+│ agent_id              │ │ agent_id          │ │ subject                   │
+│ timestamp             │ │ packet_id (FK)    │ │ predicate                 │
+│ packet_id (FK)        │ │ steps             │ │ object (JSONB)            │
+│ event_type            │ │ extracted_features│ │ confidence                │
+│ content (JSONB)       │ │ inference_steps   │ │ source_packet (FK)        │
+│ + multi-tenant cols   │ │ reasoning_tokens  │ │ subject_normalized        │
+└───────────────────────┘ │ decision_tokens   │ │ object_normalized         │
+                          │ confidence_scores │ │ supporting_packet_count   │
+                          │ + multi-tenant    │ │ contradiction_count       │
+                          └───────────────────┘ │ access_count              │
+                                                │ + multi-tenant cols       │
+                                                └───────────────────────────┘
+
+
+================================================================================
+                             SEMANTIC LAYER
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   semantic_memory (Legacy Vector Store)                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  embedding_id (PK)  │ UUID           │ Unique embedding ID                  │
+│  agent_id           │ TEXT           │ Owning agent                         │
+│  vector             │ VECTOR(1536)   │ Embedding (OpenAI dimension)         │
+│  payload            │ JSONB          │ Source content metadata              │
+│  importance_score   │ FLOAT          │ Learned importance                   │
+│  access_count       │ INT            │ Retrieval counter                    │
+│  embedding_type     │ TEXT           │ content/context/entity/summary       │
+│  scope              │ TEXT           │ Memory isolation scope               │
+│  + multi-tenant cols                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+    ┌───────────────────────────────┼───────────────────────────────┐
+    │  HNSW Index                   │                               │
+    │  (vector_cosine_ops)          │                               │
+    ▼                               ▼                               ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                   memory_embeddings (Multi-Space Vectors)                 │
+├───────────────────────────────────────────────────────────────────────────┤
+│  embedding_id (PK)  │ UUID           │ Unique embedding ID                │
+│  packet_id (FK)     │ UUID           │ Source packet                      │
+│  embedding_type     │ TEXT           │ content/context/entity/summary/    │
+│                     │                │ reasoning                          │
+│  vector             │ VECTOR(1536)   │ Embedding                          │
+│  chunk_index        │ INT            │ 0=full, 1+=chunk number            │
+│  chunk_text         │ TEXT           │ Stored chunk for debugging         │
+│  metadata           │ JSONB          │ Additional metadata                │
+│  + multi-tenant cols                                                      │
+├───────────────────────────────────────────────────────────────────────────┤
+│  Partial HNSW Indexes (per embedding_type):                               │
+│    idx_embeddings_vector_content  WHERE embedding_type = 'content'        │
+│    idx_embeddings_vector_entity   WHERE embedding_type = 'entity'         │
+│    idx_embeddings_vector_summary  WHERE embedding_type = 'summary'        │
+└───────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          KNOWLEDGE GRAPH LAYER
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     entity_relationships (Graph Edges)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  relationship_id (PK)  │ UUID         │ Unique relationship ID              │
+│  source_entity         │ TEXT         │ Source entity name                  │
+│  relationship_type     │ TEXT         │ Relationship type (verb)            │
+│  target_entity         │ TEXT         │ Target entity name                  │
+│  confidence            │ FLOAT        │ Confidence (0.0-1.0)                │
+│  source_packet (FK)    │ UUID         │ Originating packet                  │
+│  mention_count         │ INT          │ Times relationship observed         │
+│  first_seen            │ TIMESTAMPTZ  │ First observation                   │
+│  last_seen             │ TIMESTAMPTZ  │ Most recent observation             │
+│  + multi-tenant cols                                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  UNIQUE INDEX: (tenant_id, source_entity, relationship_type, target_entity) │
+│  → Enables UPSERT for relationship reinforcement                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌────────────────────────────────────┐
+                    │        ENTITY GRAPH EXAMPLE        │
+                    └────────────────────────────────────┘
+
+              [L9]──────────────────┐
+                │                   │
+         uses   │            develops
+                ▼                   ▼
+           [Neo4j]              [Python]
+                │                   │
+         stores │            requires
+                ▼                   ▼
+         [graph_data]          [FastAPI]
+                                    │
+                             implements
+                                    ▼
+                             [REST_API]
+
+
+================================================================================
+                           WORLD MODEL LAYER
+================================================================================
+
+┌───────────────────────────┐     ┌───────────────────────────┐
+│  world_model_entities     │     │   world_model_updates     │
+├───────────────────────────┤     ├───────────────────────────┤
+│  entity_id (PK)   TEXT    │     │  update_id (PK)    UUID   │
+│  entity_type      TEXT    │◄────│  insight_id        UUID   │
+│  attributes       JSONB   │     │  insight_type      TEXT   │
+│  confidence       FLOAT   │     │  entities          JSONB  │
+│  version          INT     │     │  content           JSONB  │
+│  created_at       TS      │     │  confidence        FLOAT  │
+│  updated_at       TS      │     │  applied_at        TS     │
+└───────────────────────────┘     │  state_version_before INT │
+            │                     │  state_version_after  INT │
+            │                     └───────────────────────────┘
+            │ snapshot
+            ▼
+┌───────────────────────────┐
+│  world_model_snapshots    │
+├───────────────────────────┤
+│  snapshot_id (PK)  UUID   │
+│  snapshot          JSONB  │  ← Full world model state
+│  state_version     INT    │
+│  entity_count      INT    │
+│  relation_count    INT    │
+│  description       TEXT   │
+│  created_by        TEXT   │
+│  created_at        TS     │
+└───────────────────────────┘
+
+
+================================================================================
+                          REFLECTION LAYER
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     reflection_store (Lessons Learned)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  reflection_id (PK)    │ UUID          │ Unique reflection ID               │
+│  task_id               │ TEXT          │ Associated task                    │
+│  reflection_type       │ TEXT          │ lesson/pattern/failure/success/    │
+│                        │               │ insight/improvement/false_constraint│
+│  content               │ TEXT          │ Reflection content                 │
+│  context               │ TEXT          │ When/where learned                 │
+│  entities              │ TEXT[]        │ Related entities                   │
+│  tags                  │ TEXT[]        │ Categorization tags                │
+│  confidence            │ FLOAT         │ Confidence in lesson               │
+│  priority              │ TEXT          │ critical/high/medium/low           │
+│  source_agent          │ TEXT          │ Agent that learned                 │
+│  source_packet (FK)    │ UUID          │ Originating packet                 │
+│  access_count          │ INT           │ Times accessed                     │
+│  vector                │ VECTOR(1536)  │ Semantic search embedding          │
+│  expires_at            │ TIMESTAMPTZ   │ Optional expiration                │
+│  + multi-tenant cols                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ task_id
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     task_reflections (Per-Task Learning)                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  id (PK)               │ UUID          │ Primary key                        │
+│  task_id (UNIQUE)      │ TEXT          │ Task identifier                    │
+│  task_description      │ TEXT          │ What the task was                  │
+│  outcome               │ TEXT          │ success/partial/failure/unknown    │
+│  what_worked           │ TEXT[]        │ Successful approaches              │
+│  what_failed           │ TEXT[]        │ Failed approaches                  │
+│  false_constraints     │ TEXT[]        │ Unnecessary constraints found      │
+│  helpful_patterns      │ TEXT[]        │ Patterns that helped               │
+│  lessons               │ TEXT[]        │ Lessons learned                    │
+│  recommendations       │ TEXT[]        │ Future recommendations             │
+│  related_decisions     │ UUID[]        │ Links to decision packets          │
+│  execution_time_ms     │ FLOAT         │ How long it took                   │
+│  metrics_improved      │ JSONB         │ Metrics that got better            │
+│  metrics_degraded      │ JSONB         │ Metrics that got worse             │
+│  + multi-tenant cols                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          INTELLIGENCE LAYER
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    memory_summaries (Consolidated Memories)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  summary_id (PK)       │ UUID          │ Unique summary ID                  │
+│  scope_type            │ TEXT          │ thread/agent/topic/time_period/    │
+│                        │               │ project/task                       │
+│  scope_value           │ TEXT          │ ID or name of scope                │
+│  summary_text          │ TEXT          │ Natural language summary           │
+│  key_facts             │ JSONB         │ Important facts array              │
+│  key_entities          │ TEXT[]        │ Mentioned entities                 │
+│  key_decisions         │ TEXT[]        │ Decision points                    │
+│  source_packet_ids     │ UUID[]        │ Summarized packets                 │
+│  packet_count          │ INT           │ How many packets summarized        │
+│  vector                │ VECTOR(1536)  │ Summary embedding                  │
+│  confidence            │ FLOAT         │ Summary confidence                 │
+│  coverage_start        │ TIMESTAMPTZ   │ Start of time range                │
+│  coverage_end          │ TIMESTAMPTZ   │ End of time range                  │
+│  valid_until           │ TIMESTAMPTZ   │ When to regenerate                 │
+│  + multi-tenant cols                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          OPERATIONS LAYER
+================================================================================
+
+┌───────────────────────────┐     ┌───────────────────────────────────────────┐
+│         tasks             │     │          memory_access_log                │
+├───────────────────────────┤     ├───────────────────────────────────────────┤
+│  id (PK)      SERIAL      │     │  access_id (PK)    UUID                   │
+│  type         TEXT        │     │  target_type       TEXT (packet/embedding/│
+│  status       TEXT        │     │                         fact/reflection)  │
+│  payload      JSONB       │     │  target_id         UUID                   │
+│  result       JSONB       │     │  agent_id          TEXT                   │
+│  error        TEXT        │     │  access_context    TEXT                   │
+│  created_at   TS          │     │  query_text        TEXT                   │
+│  completed_at TS          │     │  relevance_score   FLOAT                  │
+└───────────────────────────┘     │  was_useful        BOOLEAN                │
+                                  │  feedback_reason   TEXT                   │
+                                  │  accessed_at       TIMESTAMPTZ            │
+                                  │  + multi-tenant cols                      │
+                                  └───────────────────────────────────────────┘
+
+
+================================================================================
+                         MATERIALIZED VIEWS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        mv_agent_recent_important                            │
+│  → Recent high-importance memories per agent (last 30 days)                 │
+│  → Columns: agent_id, packet_id, packet_type, timestamp, importance_score,  │
+│             access_count, tags, scope, combined_score                       │
+│  → Refresh: Daily via CALL refresh_memory_views()                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                           mv_entity_graph                                   │
+│  → Aggregated entity relationships                                          │
+│  → Columns: source_entity, relationship_type, target_entity, total_mentions,│
+│             max_confidence, avg_confidence, last_seen, relationship_count   │
+│  → Refresh: Daily                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                       mv_high_confidence_facts                              │
+│  → High-confidence facts (≥0.6) with low contradictions (<3)                │
+│  → Columns: fact_id, subject, subject_normalized, predicate, object,        │
+│             confidence, supporting_packet_count, access_count, combined_score│
+│  → Refresh: Daily                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                       mv_reflection_patterns                                │
+│  → Reflection statistics by type                                            │
+│  → Columns: reflection_type, count, avg_confidence, all_tags, latest        │
+│  → Refresh: Daily                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                            DATA FLOW DIAGRAM
+================================================================================
+
+                              ┌──────────────┐
+                              │   Agent      │
+                              │   Action     │
+                              └──────┬───────┘
+                                     │
+                                     ▼
+                           ┌─────────────────────┐
+                           │   PacketEnvelope    │
+                           │   (packet_store)    │
+                           └─────────┬───────────┘
+                                     │
+            ┌────────────────────────┼────────────────────────┐
+            │                        │                        │
+            ▼                        ▼                        ▼
+   ┌─────────────────┐    ┌─────────────────┐     ┌─────────────────┐
+   │ Semantic Embed  │    │ Fact Extraction │     │ Reasoning Trace │
+   │ (memory_embeds) │    │ (knowledge_facts│     │ (reasoning_     │
+   └────────┬────────┘    │  entity_rels)   │     │  traces)        │
+            │             └────────┬────────┘     └────────┬────────┘
+            │                      │                       │
+            │                      ▼                       │
+            │             ┌─────────────────┐              │
+            │             │  World Model    │              │
+            │             │  (entities/     │              │
+            │             │   updates/      │              │
+            │             │   snapshots)    │              │
+            │             └────────┬────────┘              │
+            │                      │                       │
+            └──────────────────────┼───────────────────────┘
+                                   │
+                                   ▼
+                          ┌─────────────────┐
+                          │   Retrieval     │
+                          │   Pipeline      │
+                          └────────┬────────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+                    ▼              ▼              ▼
+           ┌──────────────┐ ┌───────────┐ ┌─────────────┐
+           │   Semantic   │ │  Hybrid   │ │   Graph     │
+           │   Search     │ │  Search   │ │  Traversal  │
+           └──────────────┘ └───────────┘ └─────────────┘
+                    │              │              │
+                    └──────────────┼──────────────┘
+                                   │
+                                   ▼
+                          ┌─────────────────┐
+                          │  Access Log     │
+                          │  (importance    │
+                          │   learning)     │
+                          └────────┬────────┘
+                                   │
+                                   ▼
+                          ┌─────────────────┐
+                          │  Reflection     │
+                          │  (lessons,      │
+                          │   patterns)     │
+                          └─────────────────┘
+
+
+================================================================================
+                                 LEGEND
+================================================================================
+
+  (PK)    Primary Key
+  (FK)    Foreign Key
+  UUID    Universally Unique Identifier
+  TEXT    Variable-length string
+  INT     Integer
+  FLOAT   Floating-point number
+  JSONB   Binary JSON (indexed)
+  TEXT[]  Array of strings
+  UUID[]  Array of UUIDs
+  VECTOR  pgvector type (1536 dimensions)
+  TS      TIMESTAMP WITHOUT TIME ZONE
+  TIMESTAMPTZ  TIMESTAMP WITH TIME ZONE
+  
+  ─────►  Foreign key relationship
+  ─ ─ ─►  Logical relationship
+  │       Data flow direction
+  ▼       Direction arrow
+
+================================================================================
+                              END OF DIAGRAM
+================================================================================
+

@@ -33,31 +33,64 @@ from typing import Optional
 @dataclass
 class SlackWebhookConfig:
     """Configuration for Slack Webhook Adapter."""
-    
+
     # Required environment variables (using existing env.example naming)
-    slack_signing_secret: str = field(default_factory=lambda: os.environ.get("SLACK_SIGNING_SECRET", ""))
-    slack_bot_token: str = field(default_factory=lambda: os.environ.get("SLACK_BOT_TOKEN", ""))
-    
+    # Loads from IntegrationSettings first, falls back to env vars
+    slack_signing_secret: str = field(
+        default_factory=lambda: _get_slack_signing_secret()
+    )
+    slack_bot_token: str = field(default_factory=lambda: _get_slack_bot_token())
+
     # Optional environment variables
-    slack_app_enabled: Optional[str] = field(default_factory=lambda: os.environ.get("SLACK_APP_ENABLED"))
-    slack_webhook_log_level: Optional[str] = field(default_factory=lambda: os.environ.get("SLACK_WEBHOOK_LOG_LEVEL"))
-    
+    slack_app_enabled: Optional[str] = field(
+        default_factory=lambda: os.environ.get("SLACK_APP_ENABLED")
+    )
+    slack_webhook_log_level: Optional[str] = field(
+        default_factory=lambda: os.environ.get("SLACK_WEBHOOK_LOG_LEVEL")
+    )
+
+
+def _get_slack_signing_secret() -> str:
+    """Get Slack signing secret from IntegrationSettings or env var."""
+    try:
+        from config.settings import get_integration_settings
+
+        settings = get_integration_settings()
+        if settings.slack_signing_secret:
+            return settings.slack_signing_secret
+    except Exception:
+        pass
+    return os.environ.get("SLACK_SIGNING_SECRET", "")
+
+
+def _get_slack_bot_token() -> str:
+    """Get Slack bot token from IntegrationSettings or env var."""
+    try:
+        from config.settings import get_integration_settings
+
+        settings = get_integration_settings()
+        if settings.slack_bot_token:
+            return settings.slack_bot_token
+    except Exception:
+        pass
+    return os.environ.get("SLACK_BOT_TOKEN", "")
+
     # Module settings
     module_id: str = "slack.webhook"
     module_name: str = "Slack Webhook Adapter"
     enabled: bool = True
-    
+
     # Timeouts
     default_timeout_seconds: int = 30
     aios_timeout_seconds: int = 60
     slack_post_timeout_seconds: int = 10
-    
+
     # Idempotency
     dedupe_cache_ttl_seconds: int = 86400
-    
+
     # Timestamp validation (Slack recommends 5 minutes)
     timestamp_tolerance_seconds: int = 300
-    
+
     def validate(self) -> list[str]:
         """Validate required configuration is present."""
         errors = []
@@ -66,7 +99,7 @@ class SlackWebhookConfig:
         if not self.slack_bot_token:
             errors.append("Missing required env: SLACK_BOT_TOKEN")
         return errors
-    
+
     @classmethod
     def from_env(cls) -> "SlackWebhookConfig":
         """Create config from environment variables."""
@@ -83,4 +116,3 @@ def get_config() -> SlackWebhookConfig:
     if _config is None:
         _config = SlackWebhookConfig.from_env()
     return _config
-

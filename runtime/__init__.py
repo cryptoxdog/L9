@@ -59,6 +59,17 @@ from runtime.websocket_orchestrator import (
     ws_orchestrator,
 )
 
+# DORA Block Runtime (L9_TRACE_TEMPLATE auto-update)
+from runtime.dora import (
+    l9_traced,
+    DoraTraceBlock,
+    DoraMetrics,
+    DoraGraph,
+    update_dora_block_in_file,
+    emit_executor_trace,
+    get_empty_dora_block_python,
+)
+
 __all__ = [
     # Task Queue
     "TaskQueue",
@@ -96,5 +107,12 @@ __all__ = [
     # WebSocket Orchestrator
     "WebSocketOrchestrator",
     "ws_orchestrator",
+    # DORA Block Runtime
+    "l9_traced",
+    "DoraTraceBlock",
+    "DoraMetrics",
+    "DoraGraph",
+    "update_dora_block_in_file",
+    "emit_executor_trace",
+    "get_empty_dora_block_python",
 ]
-

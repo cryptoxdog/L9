@@ -1,0 +1,11 @@
+# config/trust_config.yaml
+# Trust modeling configuration
+
+initial_trust: 0.5
+decay_rate: 0.01
+
+reinforce_step_positive: 0.1
+reinforce_step_negative: 0.15
+
+global_trust_mean: 0.5
+global_trust_variance: 0.1

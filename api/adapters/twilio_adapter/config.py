@@ -33,37 +33,52 @@ from typing import Optional
 @dataclass
 class TwilioAdapterConfig:
     """Configuration for Twilio Adapter."""
-    
+
     # Required environment variables (matching env.example)
-    twilio_account_sid: str = field(default_factory=lambda: os.environ.get("TWILIO_ACCOUNT_SID", ""))
-    twilio_auth_token: str = field(default_factory=lambda: os.environ.get("TWILIO_AUTH_TOKEN", ""))
-    twilio_sms_number: str = field(default_factory=lambda: os.environ.get("TWILIO_SMS_NUMBER", ""))
-    
+    twilio_account_sid: str = field(
+        default_factory=lambda: os.environ.get("TWILIO_ACCOUNT_SID", "")
+    )
+    twilio_auth_token: str = field(
+        default_factory=lambda: os.environ.get("TWILIO_AUTH_TOKEN", "")
+    )
+    twilio_sms_number: str = field(
+        default_factory=lambda: os.environ.get("TWILIO_SMS_NUMBER", "")
+    )
+
     # Optional environment variables (matching env.example)
-    twilio_enabled: Optional[str] = field(default_factory=lambda: os.environ.get("TWILIO_ENABLED"))
-    twilio_whatsapp_number: Optional[str] = field(default_factory=lambda: os.environ.get("TWILIO_WHATSAPP_NUMBER"))
-    twilio_adapter_log_level: Optional[str] = field(default_factory=lambda: os.environ.get("TWILIO_ADAPTER_LOG_LEVEL"))
-    
+    twilio_enabled: Optional[str] = field(
+        default_factory=lambda: os.environ.get("TWILIO_ENABLED")
+    )
+    twilio_whatsapp_number: Optional[str] = field(
+        default_factory=lambda: os.environ.get("TWILIO_WHATSAPP_NUMBER")
+    )
+    twilio_adapter_log_level: Optional[str] = field(
+        default_factory=lambda: os.environ.get("TWILIO_ADAPTER_LOG_LEVEL")
+    )
+
     # Module settings
     module_id: str = "twilio.adapter"
     module_name: str = "Twilio Adapter"
     enabled: bool = True
-    
+
     # Timeouts
     default_timeout_seconds: int = 30
     aios_timeout_seconds: int = 60
-    
+
     # Idempotency
     dedupe_cache_ttl_seconds: int = 86400
-    
+
     def validate(self) -> list[str]:
         """Validate required configuration is present."""
         errors = []
-        if not self.twilio_account_sid: errors.append("Missing required env: TWILIO_ACCOUNT_SID")
-        if not self.twilio_auth_token: errors.append("Missing required env: TWILIO_AUTH_TOKEN")
-        if not self.twilio_sms_number: errors.append("Missing required env: TWILIO_SMS_NUMBER")
+        if not self.twilio_account_sid:
+            errors.append("Missing required env: TWILIO_ACCOUNT_SID")
+        if not self.twilio_auth_token:
+            errors.append("Missing required env: TWILIO_AUTH_TOKEN")
+        if not self.twilio_sms_number:
+            errors.append("Missing required env: TWILIO_SMS_NUMBER")
         return errors
-    
+
     @classmethod
     def from_env(cls) -> "TwilioAdapterConfig":
         """Create config from environment variables."""

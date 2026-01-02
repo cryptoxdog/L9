@@ -2,6 +2,7 @@ import os
 from typing import Dict, Any
 from twilio.rest import Client
 
+
 def load_twilio_client():
     cfg_path = "/opt/l9/twilio_config.env"
     if os.path.exists(cfg_path):
@@ -21,6 +22,7 @@ def load_twilio_client():
         raise RuntimeError("Missing Twilio credentials")
 
     return Client(account_sid, auth_token)
+
 
 def send_whatsapp_message(body: str, to: str | None = None) -> Dict[str, Any]:
     client = load_twilio_client()

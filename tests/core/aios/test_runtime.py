@@ -29,11 +29,12 @@ except ImportError as e:
 # Test: Runtime initialization
 # =============================================================================
 
+
 def test_runtime_initialization():
     """
     Contract: AIOSRuntime can be instantiated.
     """
-    with patch('core.aios.runtime.AsyncOpenAI') as mock_openai:
+    with patch("core.aios.runtime.AsyncOpenAI") as mock_openai:
         runtime = AIOSRuntime(
             api_key="test-key",
             model="gpt-4o",
@@ -46,33 +47,34 @@ def test_runtime_initialization():
 # Test: Execute reasoning mock
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_execute_reasoning_mock():
     """
     Contract: AIOSRuntime can execute reasoning with mocked LLM.
     """
-    with patch('core.aios.runtime.AsyncOpenAI') as mock_openai_class:
+    with patch("core.aios.runtime.AsyncOpenAI") as mock_openai_class:
         mock_client = AsyncMock()
         mock_openai_class.return_value = mock_client
-        
+
         # Mock chat completion response
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "Test response"
         mock_response.choices[0].message.tool_calls = None
         mock_response.usage.total_tokens = 100
-        
+
         mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-        
+
         runtime = AIOSRuntime(api_key="test-key", model="gpt-4o")
-        
+
         context = {
             "messages": [{"role": "user", "content": "Hello"}],
             "tools": [],
         }
-        
+
         result = await runtime.execute_reasoning(context)
-        
+
         assert isinstance(result, AIOSResult)
         assert result.result_type == "response"
         assert result.content == "Test response"

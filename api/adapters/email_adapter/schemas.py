@@ -33,22 +33,26 @@ from datetime import datetime
 
 class EmailAdapterRequest(BaseModel):
     """Inbound request schema for Email Adapter."""
-    
-    event_id: Optional[str] = Field(None, description="Unique event identifier for idempotency")
+
+    event_id: Optional[str] = Field(
+        None, description="Unique event identifier for idempotency"
+    )
     source: Optional[str] = Field(None, description="Event source identifier")
     timestamp: Optional[datetime] = Field(None, description="Event timestamp")
     payload: dict[str, Any] = Field(default_factory=dict, description="Event payload")
-    
+
     # Attachment support
-    attachments: list[dict[str, Any]] = Field(default_factory=list, description="File attachments")
-    
+    attachments: list[dict[str, Any]] = Field(
+        default_factory=list, description="File attachments"
+    )
+
     class Config:
         extra = "allow"
 
 
 class EmailAdapterResponse(BaseModel):
     """Response schema for Email Adapter."""
-    
+
     ok: bool = Field(..., description="Whether the request succeeded")
     packet_id: Optional[str] = Field(None, description="ID of the emitted packet")
     dedupe: bool = Field(False, description="Whether this was a duplicate request")
@@ -58,19 +62,19 @@ class EmailAdapterResponse(BaseModel):
 
 class EmailAdapterContext(BaseModel):
     """Execution context for Email Adapter."""
-    
+
     thread_uuid: UUID = Field(..., description="Deterministic thread UUID")
     source: str = Field("email.adapter", description="Source module ID")
     task_id: Optional[str] = Field(None, description="Task identifier")
     tool_id: Optional[str] = Field(None, description="Tool identifier")
-    
+
     class Config:
         frozen = True
 
 
 class PacketPayload(BaseModel):
     """Standard packet payload structure."""
-    
+
     request: Optional[dict[str, Any]] = None
     response: Optional[dict[str, Any]] = None
     error: Optional[dict[str, str]] = None

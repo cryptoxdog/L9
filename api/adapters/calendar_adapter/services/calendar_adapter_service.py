@@ -28,7 +28,10 @@ Auto-generated from Module-Spec v2.6.0
 import structlog
 from typing import Optional
 
-from ..adapters.calendar_adapter_adapter import CalendarAdapterAdapter, CalendarAdapterRequest
+from ..adapters.calendar_adapter_adapter import (
+    CalendarAdapterAdapter,
+    CalendarAdapterRequest,
+)
 from ..config import get_config
 
 logger = structlog.get_logger(__name__)
@@ -37,7 +40,7 @@ logger = structlog.get_logger(__name__)
 class CalendarAdapterService:
     """
     Service layer for Calendar Adapter.
-    
+
     Provides high-level business operations using the adapter.
     """
 
@@ -58,7 +61,7 @@ class CalendarAdapterService:
     ) -> dict:
         """
         Process an incoming event.
-        
+
         Returns dict with ok, packet_id, dedupe, error fields.
         """
         request = CalendarAdapterRequest(
@@ -67,9 +70,9 @@ class CalendarAdapterService:
             payload=payload,
             attachments=attachments or [],
         )
-        
+
         response = await self.adapter.handle(request)
-        
+
         return {
             "ok": response.ok,
             "packet_id": str(response.packet_id) if response.packet_id else None,

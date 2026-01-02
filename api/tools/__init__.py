@@ -8,4 +8,3 @@ Tool execution endpoints using ActionToolOrchestrator.
 from api.tools.router import router
 
 __all__ = ["router"]
-

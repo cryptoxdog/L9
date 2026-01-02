@@ -46,8 +46,10 @@ logger = structlog.get_logger(__name__)
 # Enums
 # =============================================================================
 
+
 class ExecutionStatus(str, Enum):
     """Status of plan execution."""
+
     PENDING = "pending"
     RUNNING = "running"
     PAUSED = "paused"
@@ -59,6 +61,7 @@ class ExecutionStatus(str, Enum):
 
 class StepStatus(str, Enum):
     """Status of a single step."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -70,9 +73,11 @@ class StepStatus(str, Enum):
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class StepResult:
     """Result of executing a single step."""
+
     step_id: UUID
     status: StepStatus
     action_type: str = ""
@@ -100,6 +105,7 @@ class StepResult:
 @dataclass
 class ExecutionResult:
     """Result of plan execution."""
+
     execution_id: UUID = field(default_factory=uuid4)
     plan_id: UUID = field(default_factory=uuid4)
     status: ExecutionStatus = ExecutionStatus.PENDING
@@ -112,7 +118,7 @@ class ExecutionResult:
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     packets_emitted: int = 0
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "execution_id": str(self.execution_id),
@@ -125,7 +131,7 @@ class ExecutionResult:
             "duration_ms": self.duration_ms,
             "packets_emitted": self.packets_emitted,
         }
-    
+
     @property
     def duration_ms(self) -> int:
         if self.started_at and self.completed_at:
@@ -136,6 +142,7 @@ class ExecutionResult:
 @dataclass
 class ExecutorConfig:
     """Configuration for plan executor."""
+
     max_parallel_steps: int = 4
     step_timeout_ms: int = 60000
     max_retries: int = 3
@@ -146,17 +153,20 @@ class ExecutorConfig:
     packet_source: str = "plan_executor"
     # Handler options
     real_execution: bool = False  # When True, actually modify files
-    allowed_write_roots: list[str] = field(default_factory=lambda: ["/Users/ib-mac/Projects"])
+    allowed_write_roots: list[str] = field(
+        default_factory=lambda: ["/Users/ib-mac/Projects"]
+    )
 
 
 # =============================================================================
 # Plan Executor
 # =============================================================================
 
+
 class PlanExecutor:
     """
     Executes finalized IR plans with memory integration.
-    
+
     Features:
     - Dependency-aware parallel execution
     - Retry logic with exponential backoff
@@ -164,22 +174,22 @@ class PlanExecutor:
     - Memory packet emission for audit trail
     - Dry-run mode for testing
     - Real execution mode for production
-    
+
     Usage:
         executor = PlanExecutor(config)
         executor.set_memory_client(memory_service)
-        
+
         result = await executor.execute(plan, context)
-        
+
         # With progress callback
         logger.info(f"{done}/{total}")
         result = await executor.execute(plan)
     """
-    
+
     def __init__(self, config: Optional[ExecutorConfig] = None):
         """
         Initialize the executor.
-        
+
         Args:
             config: Executor configuration
         """
@@ -187,18 +197,18 @@ class PlanExecutor:
         self._handlers: dict[str, Callable] = {}
         self._active_executions: dict[UUID, ExecutionResult] = {}
         self._progress_callbacks: list[Callable[[UUID, int, int], None]] = []
-        
+
         # Memory client
         self._memory_client: Optional[Any] = None
-        
+
         # World model hook
         self._world_model: Optional[Any] = None
-        
+
         # Register default handlers
         self._register_default_handlers()
-        
+
         logger.info("PlanExecutor initialized")
-    
+
     def _register_default_handlers(self) -> None:
         """Register default step handlers."""
         self._handlers["code_write"] = self._handle_code_write
@@ -210,11 +220,11 @@ class PlanExecutor:
         self._handlers["reasoning"] = self._handle_reasoning
         self._handlers["validation"] = self._handle_validation
         self._handlers["simulation"] = self._handle_simulation
-    
+
     def set_memory_client(self, client: Any) -> None:
         """
         Set the memory substrate client.
-        
+
         Args:
             client: MemorySubstrateService instance
         """
@@ -224,7 +234,7 @@ class PlanExecutor:
     def set_world_model(self, world_model: Any) -> None:
         """
         Set the world model for updates.
-        
+
         Args:
             world_model: WorldModelService or WorldModelOrchestrator instance
         """
@@ -234,7 +244,7 @@ class PlanExecutor:
     # =========================================================================
     # Handler Registration
     # =========================================================================
-    
+
     def register_handler(
         self,
         action_type: str,
@@ -242,30 +252,30 @@ class PlanExecutor:
     ) -> None:
         """
         Register a step handler.
-        
+
         Args:
             action_type: Type of action this handler processes
             handler: Handler function (step, context) → result dict
         """
         self._handlers[action_type] = handler
         logger.debug(f"Registered handler for: {action_type}")
-    
+
     def on_progress(
         self,
         callback: Callable[[UUID, int, int], None],
     ) -> None:
         """
         Register progress callback.
-        
+
         Args:
             callback: Function(execution_id, completed, total)
         """
         self._progress_callbacks.append(callback)
-    
+
     # =========================================================================
     # Main Execution
     # =========================================================================
-    
+
     async def execute(
         self,
         plan: Any,  # ExecutionPlan
@@ -273,11 +283,11 @@ class PlanExecutor:
     ) -> ExecutionResult:
         """
         Execute a plan.
-        
+
         Args:
             plan: ExecutionPlan from IRToPlanAdapter
             context: Execution context (workspace, credentials, etc.)
-            
+
         Returns:
             ExecutionResult with step outcomes and artifacts
         """
@@ -286,21 +296,21 @@ class PlanExecutor:
             status=ExecutionStatus.RUNNING,
             started_at=datetime.utcnow(),
         )
-        
+
         self._active_executions[result.execution_id] = result
         context = context or {}
-        
+
         logger.info(f"Executing plan {plan.plan_id} with {len(plan.steps)} steps")
-        
+
         # Emit start packet
         await self._emit_execution_start_packet(result, plan)
-        
+
         try:
             if self._config.dry_run:
                 await self._dry_run(plan, result)
             else:
                 await self._execute_steps(plan, result, context)
-            
+
             # Determine final status
             if result.failed_steps == 0:
                 result.status = ExecutionStatus.COMPLETED
@@ -308,32 +318,32 @@ class PlanExecutor:
                 result.status = ExecutionStatus.PARTIAL
             else:
                 result.status = ExecutionStatus.FAILED
-            
+
         except Exception as e:
             logger.error(f"Execution failed: {e}")
             result.status = ExecutionStatus.FAILED
             result.errors.append(str(e))
-        
+
         result.completed_at = datetime.utcnow()
-        
+
         # Emit completion packet
         await self._emit_execution_complete_packet(result)
-        
+
         # Update world model
         await self._update_world_model(result, context)
-        
+
         # Remove from active
         if result.execution_id in self._active_executions:
             del self._active_executions[result.execution_id]
-        
+
         logger.info(
             f"Execution {result.execution_id} complete: "
             f"{result.completed_steps}/{len(plan.steps)} steps, "
             f"status={result.status.value}, packets={result.packets_emitted}"
         )
-        
+
         return result
-    
+
     async def _execute_steps(
         self,
         plan: Any,
@@ -343,15 +353,16 @@ class PlanExecutor:
         """Execute steps with dependency awareness."""
         completed_ids: set[UUID] = set()
         step_map = {s.step_id: s for s in plan.steps}
-        
+
         while len(completed_ids) < len(plan.steps):
             # Find executable steps (dependencies satisfied)
             executable = [
-                s for s in plan.steps
+                s
+                for s in plan.steps
                 if s.step_id not in completed_ids
                 and all(d in completed_ids for d in s.dependencies)
             ]
-            
+
             if not executable:
                 # Check for deadlock
                 remaining = len(plan.steps) - len(completed_ids)
@@ -359,17 +370,14 @@ class PlanExecutor:
                     result.errors.append(f"Deadlock: {remaining} steps cannot execute")
                     result.skipped_steps = remaining
                 break
-            
+
             # Execute in parallel up to limit
-            batch = executable[:self._config.max_parallel_steps]
-            
-            tasks = [
-                self._execute_step(step, context, result)
-                for step in batch
-            ]
-            
+            batch = executable[: self._config.max_parallel_steps]
+
+            tasks = [self._execute_step(step, context, result) for step in batch]
+
             step_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Process results
             for step, step_result in zip(batch, step_results):
                 if isinstance(step_result, Exception):
@@ -380,31 +388,33 @@ class PlanExecutor:
                         target=step.target,
                         error=str(step_result),
                     )
-                
+
                 result.step_results.append(step_result)
-                
+
                 # Emit step packet
                 await self._emit_step_packet(step_result, result)
-                
+
                 if step_result.status == StepStatus.COMPLETED:
                     completed_ids.add(step.step_id)
                     result.completed_steps += 1
-                    
+
                     # Store output as artifact
                     if step_result.output:
                         result.artifacts[str(step.step_id)] = step_result.output
                 else:
                     result.failed_steps += 1
-                    
+
                     if not self._config.continue_on_failure:
                         result.errors.append(
                             f"Step {step.step_id} failed: {step_result.error}"
                         )
                         return
-            
+
             # Report progress
-            self._report_progress(result.execution_id, len(completed_ids), len(plan.steps))
-    
+            self._report_progress(
+                result.execution_id, len(completed_ids), len(plan.steps)
+            )
+
     async def _execute_step(
         self,
         step: Any,  # ExecutionStep
@@ -414,11 +424,11 @@ class PlanExecutor:
         """Execute a single step with retries."""
         start_time = datetime.utcnow()
         retries = 0
-        
+
         while retries <= self._config.max_retries:
             try:
                 handler = self._handlers.get(step.action_type)
-                
+
                 if handler:
                     output = await self._call_handler(handler, step, context)
                 else:
@@ -427,7 +437,7 @@ class PlanExecutor:
                         "action_type": step.action_type,
                         "message": f"No handler registered for {step.action_type}",
                     }
-                
+
                 return StepResult(
                     step_id=step.step_id,
                     status=StepStatus.COMPLETED,
@@ -439,11 +449,11 @@ class PlanExecutor:
                     started_at=start_time,
                     completed_at=datetime.utcnow(),
                 )
-                
+
             except Exception as e:
                 retries += 1
                 logger.warning(f"Step {step.step_id} failed (attempt {retries}): {e}")
-                
+
                 if retries <= self._config.max_retries:
                     # Exponential backoff
                     delay = self._config.retry_delay_ms * (2 ** (retries - 1)) / 1000
@@ -460,7 +470,7 @@ class PlanExecutor:
                         started_at=start_time,
                         completed_at=datetime.utcnow(),
                     )
-        
+
         # Should not reach here
         return StepResult(
             step_id=step.step_id,
@@ -468,7 +478,7 @@ class PlanExecutor:
             action_type=step.action_type,
             error="Unknown error",
         )
-    
+
     async def _call_handler(
         self,
         handler: Callable,
@@ -477,10 +487,10 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Call a handler, supporting both sync and async."""
         result = handler(step, context)
-        if hasattr(result, '__await__'):
+        if hasattr(result, "__await__"):
             result = await result
         return result
-    
+
     async def _dry_run(
         self,
         plan: Any,
@@ -488,7 +498,7 @@ class PlanExecutor:
     ) -> None:
         """Perform a dry run (no actual execution)."""
         logger.info("Performing dry run")
-        
+
         for step in plan.steps:
             step_result = StepResult(
                 step_id=step.step_id,
@@ -504,17 +514,15 @@ class PlanExecutor:
             )
             result.step_results.append(step_result)
             result.completed_steps += 1
-            
+
             self._report_progress(
-                result.execution_id,
-                result.completed_steps,
-                len(plan.steps)
+                result.execution_id, result.completed_steps, len(plan.steps)
             )
-    
+
     # =========================================================================
     # Default Handlers
     # =========================================================================
-    
+
     async def _handle_code_write(
         self,
         step: Any,
@@ -522,15 +530,15 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """
         Handle code write action.
-        
+
         When real_execution is True, writes content to the target file.
         Creates backup of existing file before overwriting.
         """
         from pathlib import Path
-        
+
         target_path = step.target
         logger.info(f"Writing code to: {target_path}")
-        
+
         if not self._config.real_execution:
             return {
                 "action": "code_write",
@@ -538,7 +546,7 @@ class PlanExecutor:
                 "status": "simulated",
                 "parameters": step.parameters,
             }
-        
+
         # Get content from step parameters
         content = step.parameters.get("content", "")
         if not content:
@@ -548,16 +556,15 @@ class PlanExecutor:
                 "status": "error",
                 "error": "No content provided in parameters",
             }
-        
+
         # Validate path is within allowed directories
         allowed_roots = self._config.allowed_write_roots or ["/Users/ib-mac/Projects"]
         path = Path(target_path).resolve()
-        
+
         is_allowed = any(
-            str(path).startswith(str(Path(root).resolve()))
-            for root in allowed_roots
+            str(path).startswith(str(Path(root).resolve())) for root in allowed_roots
         )
-        
+
         if not is_allowed:
             logger.error(f"Path not in allowed roots: {path}")
             return {
@@ -566,22 +573,24 @@ class PlanExecutor:
                 "status": "error",
                 "error": f"Path {path} not in allowed write roots",
             }
-        
+
         try:
             # Create parent directories if needed
             path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Backup existing file if it exists
             backup_path = None
             if path.exists():
-                backup_path = path.with_suffix(path.suffix + f".bak.{int(datetime.utcnow().timestamp())}")
+                backup_path = path.with_suffix(
+                    path.suffix + f".bak.{int(datetime.utcnow().timestamp())}"
+                )
                 path.rename(backup_path)
                 logger.info(f"Backed up existing file to: {backup_path}")
-            
+
             # Write new content
             path.write_text(content, encoding="utf-8")
             logger.info(f"Successfully wrote {len(content)} bytes to: {path}")
-            
+
             return {
                 "action": "code_write",
                 "target": str(path),
@@ -589,7 +598,7 @@ class PlanExecutor:
                 "bytes_written": len(content),
                 "backup_path": str(backup_path) if backup_path else None,
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to write file: {e}")
             return {
@@ -598,7 +607,7 @@ class PlanExecutor:
                 "status": "error",
                 "error": str(e),
             }
-    
+
     async def _handle_code_read(
         self,
         step: Any,
@@ -606,13 +615,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle code read action."""
         logger.info(f"Reading code from: {step.target}")
-        
+
         return {
             "action": "code_read",
             "target": step.target,
             "status": "simulated" if not self._config.real_execution else "executed",
         }
-    
+
     async def _handle_code_modify(
         self,
         step: Any,
@@ -620,14 +629,14 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle code modify action."""
         logger.info(f"Modifying code in: {step.target}")
-        
+
         return {
             "action": "code_modify",
             "target": step.target,
             "status": "simulated" if not self._config.real_execution else "executed",
             "parameters": step.parameters,
         }
-    
+
     async def _handle_file_create(
         self,
         step: Any,
@@ -635,13 +644,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle file create action."""
         logger.info(f"Creating file: {step.target}")
-        
+
         return {
             "action": "file_create",
             "target": step.target,
             "status": "simulated" if not self._config.real_execution else "executed",
         }
-    
+
     async def _handle_file_delete(
         self,
         step: Any,
@@ -649,13 +658,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle file delete action."""
         logger.info(f"Deleting file: {step.target}")
-        
+
         return {
             "action": "file_delete",
             "target": step.target,
             "status": "simulated" if not self._config.real_execution else "executed",
         }
-    
+
     async def _handle_api_call(
         self,
         step: Any,
@@ -663,13 +672,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle API call action."""
         logger.info(f"Calling API: {step.target}")
-        
+
         return {
             "action": "api_call",
             "target": step.target,
             "status": "simulated" if not self._config.real_execution else "executed",
         }
-    
+
     async def _handle_reasoning(
         self,
         step: Any,
@@ -677,13 +686,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle reasoning action."""
         logger.info(f"Reasoning: {step.description}")
-        
+
         return {
             "action": "reasoning",
             "description": step.description,
             "status": "simulated",
         }
-    
+
     async def _handle_validation(
         self,
         step: Any,
@@ -691,13 +700,13 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle validation action."""
         logger.info(f"Validating: {step.target}")
-        
+
         return {
             "action": "validation",
             "target": step.target,
             "status": "simulated",
         }
-    
+
     async def _handle_simulation(
         self,
         step: Any,
@@ -705,7 +714,7 @@ class PlanExecutor:
     ) -> dict[str, Any]:
         """Handle simulation action."""
         logger.info(f"Simulating: {step.description}")
-        
+
         return {
             "action": "simulation",
             "description": step.description,
@@ -724,10 +733,10 @@ class PlanExecutor:
         """Emit packet at execution start."""
         if not self._config.emit_packets or not self._memory_client:
             return
-        
+
         try:
             from memory.substrate_models import PacketEnvelopeIn
-            
+
             packet = PacketEnvelopeIn(
                 source=self._config.packet_source,
                 kind="execution_start",
@@ -739,11 +748,11 @@ class PlanExecutor:
                     "dry_run": self._config.dry_run,
                 },
             )
-            
+
             write_result = await self._memory_client.write_packet(packet)
             if write_result.success:
                 result.packets_emitted += 1
-                
+
         except Exception as e:
             logger.warning(f"Failed to emit execution start packet: {e}")
 
@@ -755,10 +764,10 @@ class PlanExecutor:
         """Emit packet for each step completion."""
         if not self._config.emit_packets or not self._memory_client:
             return
-        
+
         try:
             from memory.substrate_models import PacketEnvelopeIn
-            
+
             packet = PacketEnvelopeIn(
                 source=self._config.packet_source,
                 kind="step_complete",
@@ -773,11 +782,11 @@ class PlanExecutor:
                     "has_error": step_result.error is not None,
                 },
             )
-            
+
             write_result = await self._memory_client.write_packet(packet)
             if write_result.success:
                 execution_result.packets_emitted += 1
-                
+
         except Exception as e:
             logger.warning(f"Failed to emit step packet: {e}")
 
@@ -788,10 +797,10 @@ class PlanExecutor:
         """Emit packet at execution completion."""
         if not self._config.emit_packets or not self._memory_client:
             return
-        
+
         try:
             from memory.substrate_models import PacketEnvelopeIn
-            
+
             packet = PacketEnvelopeIn(
                 source=self._config.packet_source,
                 kind="execution_complete",
@@ -806,11 +815,11 @@ class PlanExecutor:
                     "error_count": len(result.errors),
                 },
             )
-            
+
             write_result = await self._memory_client.write_packet(packet)
             if write_result.success:
                 result.packets_emitted += 1
-                
+
         except Exception as e:
             logger.warning(f"Failed to emit execution complete packet: {e}")
 
@@ -826,33 +835,43 @@ class PlanExecutor:
         """Update world model with execution results."""
         if not self._world_model:
             return
-        
+
         try:
             # Build insights from execution
             insights = []
-            
+
             if result.status == ExecutionStatus.COMPLETED:
-                insights.append({
-                    "insight_id": str(uuid4()),
-                    "insight_type": "execution_success",
-                    "entities": list(result.artifacts.keys())[:5],  # Top 5 artifacts
-                    "content": f"Execution {result.execution_id} completed successfully",
-                    "confidence": 0.9,
-                    "trigger_world_model": True,
-                })
+                insights.append(
+                    {
+                        "insight_id": str(uuid4()),
+                        "insight_type": "execution_success",
+                        "entities": list(result.artifacts.keys())[
+                            :5
+                        ],  # Top 5 artifacts
+                        "content": f"Execution {result.execution_id} completed successfully",
+                        "confidence": 0.9,
+                        "trigger_world_model": True,
+                    }
+                )
             elif result.failed_steps > 0:
-                insights.append({
-                    "insight_id": str(uuid4()),
-                    "insight_type": "execution_failure",
-                    "entities": [str(s.step_id) for s in result.step_results if s.status == StepStatus.FAILED],
-                    "content": f"Execution {result.execution_id} had {result.failed_steps} failures",
-                    "confidence": 0.8,
-                    "trigger_world_model": True,
-                })
-            
+                insights.append(
+                    {
+                        "insight_id": str(uuid4()),
+                        "insight_type": "execution_failure",
+                        "entities": [
+                            str(s.step_id)
+                            for s in result.step_results
+                            if s.status == StepStatus.FAILED
+                        ],
+                        "content": f"Execution {result.execution_id} had {result.failed_steps} failures",
+                        "confidence": 0.8,
+                        "trigger_world_model": True,
+                    }
+                )
+
             if insights:
                 await self._world_model.update_from_insights(insights)
-                
+
         except Exception as e:
             logger.warning(f"Failed to update world model: {e}")
 
@@ -876,7 +895,7 @@ class PlanExecutor:
     # =========================================================================
     # Execution Control
     # =========================================================================
-    
+
     def cancel_execution(self, execution_id: UUID) -> bool:
         """Cancel an active execution."""
         if execution_id in self._active_executions:
@@ -896,7 +915,7 @@ class PlanExecutor:
                 logger.info(f"Paused execution {execution_id}")
             return True
         return False
-    
+
     def get_active_executions(self) -> list[ExecutionResult]:
         """Get all active executions."""
         return list(self._active_executions.values())

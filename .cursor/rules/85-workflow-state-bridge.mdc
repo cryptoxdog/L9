@@ -1,0 +1,121 @@
+---
+description: "Bridge Cursor runs to workflow_state.md: enforce state sync, phases, and next-step alignment for the L9 repo."
+alwaysApply: true
+---
+
+# workflow_state.md bridge (L9)
+
+## State sync required before edits
+
+- Before making ANY code changes, always:
+  - Open and read `workflow_state.md`.
+  - Extract: current PHASE, context summary, recent changes, decision log, open questions, next steps.
+- For every task, first produce a **STATE_SYNC summary** in the chat before touching any file.
+
+### STATE_SYNC prompt pattern
+
+When starting a run, use:
+
+> 1. Read `workflow_state.md`.  
+> 2. Summarize in bullets:  
+>    - PHASE  
+>    - Context summary  
+>    - Last 3 recent changes  
+>    - Any open questions  
+>    - Current next steps  
+> 3. Propose an updated Next steps list for THIS run only.  
+> 4. Wait for my confirmation before editing code.
+
+Do not modify repository files until STATE_SYNC is complete and confirmed.
+
+---
+
+## Phase and GMP alignment
+
+- Map the PHASE in `workflow_state.md` to GMP v1.7 phases (0–6) used in the L9 rules and prompts.
+- For each run, explicitly state:
+  - `PHASE: <0–6>`
+  - Why this phase is correct given the current state.
+- Do not silently advance phases:
+  - Only move from one phase to the next after its closure conditions are satisfied (plan locked, baseline verified, tests passing, audit done, etc.).
+
+---
+
+## Recording outcomes back to workflow_state.md
+
+- After a change set is implemented and validated:
+  - Append a new entry to **Recent changes** summarizing:
+    - Files touched.
+    - Behavior changed.
+    - Tests run (unit, integration, critical-path, etc.).
+    - Phase(s) completed.
+  - Update **Decision log** and **Next steps** to reflect the completed work and what remains.
+- Keep `workflow_state.md` concise:
+  - Prune or compress old entries when it becomes too long to read in one screen.
+
+---
+
+## Hand-off and resume discipline
+
+- When ending a session:
+  - Ensure `Next steps` contains 2–5 concrete items suitable for the next Phase 0/1 run.
+- When resuming:
+  - Always perform STATE_SYNC first and restate:
+    - What was last done.
+    - What the next smallest safe change is.
+- Treat `workflow_state.md` as the single source of truth for:
+  - Phase tracking.
+  - Active TODOs.
+  - Known risks and open questions.
+
+---
+
+## Recent Sessions (7-day window) format
+
+The "Recent Sessions (7-day window)" section at the bottom provides quick context.
+
+### Adding entries
+
+- Add new session at TOP (newest first)
+- Format: `- YYYY-MM-DD: Brief description`
+- Include: GMPs completed, key files, test counts
+
+### Marking complete
+
+- When session work is done, add `✅` prefix
+- Example: `- ✅ 2026-01-01: Forge Mode – 4 HIGH GMPs`
+
+### Pruning
+
+- Keep only last 7 days
+- Remove entries older than 7 days during updates
+- Never delete entries from current day
+
+### Example format
+
+```
+**Recent Sessions (7-day window):**
+- 2026-01-02: Current work...
+- ✅ 2026-01-01: Forge Mode – 4 HIGH GMPs (16, 18, 19, 21)
+- ✅ 2026-01-01: Emma Substrate 10X, Migration 0009
+```
+
+---
+
+## Anti-patterns
+
+❌ **DON'T** overwrite or delete previous session entries
+✅ **DO** mark previous entries with `✅` and add new entry at top
+
+❌ **DON'T** use verbose checkbox lists for completed work
+✅ **DO** use concise Recent Sessions entries instead
+
+---
+
+## Session end checklist
+
+Before closing a session, verify:
+- [ ] Next Steps has 2-5 concrete actionable items
+- [ ] Recent Sessions reflects what was accomplished
+- [ ] Open Questions captures any unresolved blockers
+- [ ] Test Status is current if tests were run

@@ -53,4 +53,3 @@ class PacketValidator:
     @staticmethod
     def allowed_types() -> Iterable[str]:
         return sorted(ALLOWED_PACKET_TYPES)
-

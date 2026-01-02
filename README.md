@@ -1,94 +1,177 @@
-# L9 — Agentic Intelligence Platform
+# L9 Secure AI OS
 
-> **Version:** 1.1.0  
-> **Status:** Deployment Ready
+> **Version:** 2.1.0  
+> **Status:** Production Ready (VPS Deployed)  
+> **Updated:** 2026-01-01
+
+---
 
 ## Overview
 
-L9 is a modular agentic AI platform combining:
-- **Memory Substrate** — Postgres + pgvector for semantic & episodic memory
-- **Reasoning Engine** — LangGraph-powered DAG orchestration with CoT/ToT/FoT strategies
-- **World Model** — Insight-driven updates with scheduling and propagation
-- **Orchestrators** — Modular agent coordination patterns
+**L9 Secure AI OS** is a governed, production-grade autonomous agent runtime with:
+
+- **10-Kernel Identity Stack** — Master, Identity, Cognitive, Behavioral, Memory, WorldModel, Execution, Safety, Developer, and Packet Protocol kernels
+- **Memory Substrate** — PostgreSQL + pgvector for semantic & episodic memory with audit trails
+- **Agent Executor** — LangGraph-powered DAG orchestration with tool dispatch and approval gates
+- **World Model** — Insight-driven entity/relationship tracking with scheduled updates
+- **7 Orchestrators** — Reasoning, Memory, ActionTool, WorldModel, Evolution, Meta, and ResearchSwarm
+- **Governance Engine** — Closed-loop learning from Igor approvals, compliance audit trails
+
+**Primary Goals:**
+- Secure, governed runtime for autonomous AI agents
+- Multi-layer memory (short-term, long-term, semantic, audit) with retrieval
+- Tool execution with sandboxing, approval gates, and rollback
+- Full observability: structured logging, packet trails, compliance reporting
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         L9 API Server (FastAPI)                         │
+│  ┌──────────┐ ┌───────────┐ ┌─────────┐ ┌──────────┐ ┌───────────────┐  │
+│  │OS Routes │ │Agent      │ │Memory   │ │WebSocket │ │Slack/Research │  │
+│  │          │ │Routes     │ │Routes   │ │/wsagent  │ │/compliance    │  │
+│  └────┬─────┘ └─────┬─────┘ └────┬────┘ └────┬─────┘ └───────┬───────┘  │
+└───────┼─────────────┼────────────┼───────────┼───────────────┼──────────┘
+        │             │            │           │               │
+        ▼             ▼            ▼           ▼               ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                       Core Agent Execution Layer                          │
+│  AgentExecutorService → KernelAwareAgentRegistry → AIOSRuntime            │
+│  (10-kernel stack)    (agent configs + tools)    (reasoning loop)         │
+└───────────────────────────────────┬───────────────────────────────────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        ▼                           ▼                           ▼
+┌───────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐
+│  Memory Substrate │   │     Orchestrators     │   │   Governance Engine   │
+│  ├─ PacketStore   │   │  ├─ ReasoningOrch     │   │  ├─ ApprovalManager   │
+│  ├─ SemanticMemory│   │  ├─ MemoryOrch        │   │  ├─ GovernancePatterns│
+│  ├─ KnowledgeFacts│   │  ├─ ActionToolOrch    │   │  ├─ AdaptivePrompting │
+│  └─ InsightGraph  │   │  ├─ WorldModelOrch    │   │  └─ ComplianceAudit   │
+└─────────┬─────────┘   │  ├─ EvolutionOrch     │   └───────────────────────┘
+          │             │  ├─ MetaOrch          │
+          ▼             │  └─ ResearchSwarmOrch │
+┌───────────────────┐   └───────────────────────┘
+│ PostgreSQL+pgvector│
+│ (l9_memory DB)     │
+└────────────────────┘
+```
+
+---
 
 ## Directory Structure
 
 ```
 L9/
-├── api/                  # FastAPI endpoints
-│   ├── server.py         # Main API server
-│   ├── os_routes.py      # OS health & status routes
-│   ├── agent_routes.py   # Agent task management routes
-│   └── memory/           # Memory API router
-├── core/                 # Core schemas & interfaces
-│   ├── schemas/          # Pydantic models, YAML specs
-│   └── retrievers/       # Retrieval patterns
-├── memory/               # Memory substrate implementation
-│   ├── substrate_graph.py    # LangGraph DAG with insight extraction
-│   ├── substrate_models.py   # PacketEnvelope, KnowledgeFact models
-│   ├── substrate_repository.py # Database operations
-│   ├── substrate_service.py  # Service orchestration
-│   └── substrate_semantic.py # Embedding providers
-├── orchestrators/        # Agent orchestration patterns
-│   ├── reasoning/        # CoT/ToT/FoT reasoning engine
-│   ├── world_model/      # World model lifecycle & scheduling
-│   ├── memory/           # Memory housekeeping
-│   ├── action_tool/      # Tool execution
-│   ├── evolution/        # Self-improvement
-│   ├── meta/             # Meta-reasoning
-│   └── research_swarm/   # Multi-agent research
-├── world_model/          # World model implementation
-├── services/             # Business logic services
-├── config/               # Configuration & settings
-├── deploy/               # Docker, compose files
-├── docs/                 # Documentation
-├── migrations/           # SQL migrations (0001-0004)
-└── tests/                # Test suites
+├── api/                      # FastAPI server & routes
+│   ├── server.py             # Main app, lifespan, WebSocket
+│   ├── routes/               # Modular routers (commands, compliance, worldmodel)
+│   ├── memory/               # Memory API router
+│   ├── adapters/             # External adapters (Slack, Email, Calendar, Twilio)
+│   └── webhook_slack.py      # Slack event handling
+├── core/                     # Core schemas, agents, governance
+│   ├── agents/               # AgentExecutorService, KernelRegistry, schemas
+│   ├── commands/             # Igor command parser, intent extraction
+│   ├── compliance/           # Audit logging, compliance reporting
+│   ├── governance/           # Approval engine, patterns, validation
+│   ├── kernel_wiring/        # 10 kernel wirings (master→packet_protocol)
+│   ├── schemas/              # Pydantic models, capabilities, tasks
+│   ├── testing/              # Test generation, execution, agent
+│   ├── tools/                # Tool graph, registry adapter
+│   └── worldmodel/           # World model service, insight emitter
+├── memory/                   # Memory substrate implementation
+│   ├── substrate_*.py        # Graph, models, repository, service, semantic
+│   ├── governance_patterns.py # Closed-loop learning patterns
+│   └── retrieval.py          # Context retrieval, pattern lookup
+├── orchestrators/            # 7 orchestration patterns
+│   ├── reasoning/            # CoT/ToT/FoT reasoning engine
+│   ├── memory/               # Memory housekeeping
+│   ├── action_tool/          # Tool execution with validation
+│   ├── world_model/          # Insight-driven updates + scheduler
+│   ├── evolution/            # Self-improvement engine
+│   ├── meta/                 # Meta-reasoning
+│   └── research_swarm/       # Multi-agent research
+├── runtime/                  # Runtime infrastructure
+│   ├── kernel_loader.py      # YAML kernel loading
+│   ├── task_queue.py         # Redis-backed task queue
+│   ├── websocket_orchestrator.py # Real-time agent comms
+│   ├── l_tools.py            # L-CTO tool definitions
+│   └── mcp_client.py         # MCP memory client
+├── services/                 # Business services
+│   ├── research/             # Perplexity-powered research agents
+│   ├── research_factory/     # Code generation validation
+│   └── symbolic_computation/ # SymPy computation service
+├── private/                  # Protected kernel files
+│   └── kernels/00_system/    # 10 production kernels (01-10)
+├── migrations/               # SQL migrations (0001-0009)
+├── tests/                    # 119 test files
+│   ├── integration/          # 17 integration tests
+│   ├── unit/                 # Component tests by module
+│   └── smoke_*.py            # Pre-deploy smoke tests
+├── docs/                     # Documentation
+│   ├── cursor-briefs/        # Cursor-generated analysis (52 files)
+│   ├── _GMP-Active/          # Active GMP prompts (14 files)
+│   └── _GMP-Complete/        # Executed GMPs (16 files)
+├── reports/                  # GMP execution reports (25 files)
+├── config/                   # Settings, agent configs, policies
+├── .cursor/                  # Cursor rules & protocols
+└── workflow_state.md         # Active session state
 ```
 
+---
+
 ## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- PostgreSQL 16 with pgvector extension
+- Redis (optional, for task queue)
+- OpenAI API key (or use stub provider)
 
 ### Local Development
 
 ```bash
-# 1. Set environment variables
-export DATABASE_URL="postgresql://l9_user:YOUR_PASSWORD@localhost:5432/l9_memory"
-export OPENAI_API_KEY="sk-..."  # Optional, uses stub provider if not set
+# 1. Clone and setup
+cd /path/to/L9
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
 # 2. Start PostgreSQL with pgvector
 docker run -d --name l9-postgres \
-  -e POSTGRES_USER=l9_user \
+  -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=YOUR_PASSWORD \
   -e POSTGRES_DB=l9_memory \
   -p 5432:5432 \
   pgvector/pgvector:pg16
 
-# 3. Apply migrations
-psql $DATABASE_URL -f migrations/0001_init_memory_substrate.sql
-psql $DATABASE_URL -f migrations/0002_enhance_packet_store.sql
-psql $DATABASE_URL -f migrations/0004_init_knowledge_facts.sql
+# 3. Set environment variables
+export DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/l9_memory"
+export OPENAI_API_KEY="sk-..."  # Optional
 
-# 4. Install dependencies
-pip install -r requirements.txt
+# 4. Apply migrations
+for f in migrations/000*.sql; do psql $DATABASE_URL -f $f; done
 
 # 5. Start API server
 uvicorn api.server:app --reload --port 8000
 ```
 
-### Docker Compose (Recommended)
+### Docker Compose
 
 ```bash
-# Start all services
 docker compose up -d
-
-# With Redis (optional)
-docker compose --profile redis up -d
-
-# View logs
 docker compose logs -f l9-api
 ```
 
+---
+
 ## API Endpoints
+
+### Core Routes
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -96,102 +179,188 @@ docker compose logs -f l9-api
 | `/health` | GET | Health check |
 | `/os/health` | GET | OS layer health |
 | `/os/status` | GET | System status |
+
+### Agent Routes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
 | `/agent/health` | GET | Agent layer health |
 | `/agent/task` | POST | Submit agent task |
-| `/memory/test` | POST | Memory endpoint test |
-| `/memory/embeddings` | POST/GET | Embedding operations |
+| `/lchat` | POST | L-CTO chat endpoint |
+| `/wsagent` | WebSocket | Real-time agent communication |
+
+### Memory Routes (`/api/v1/memory`)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/packet/{id}` | GET | Get packet by ID |
+| `/thread/{id}` | GET | Get thread packets |
+| `/ingest` | POST | Ingest packet |
+| `/hybrid/search` | POST | Semantic + filter search |
+| `/facts` | GET | Query knowledge facts |
+| `/insights` | GET | Query insights |
+
+### Governance & Compliance
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/commands/execute` | POST | Execute @L command |
+| `/commands/governance/feedback` | POST | Approval feedback |
+| `/compliance/report` | GET | Compliance summary |
+| `/compliance/audit-log` | GET | Audit trail |
+
+### World Model
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/worldmodel/agents` | GET | Agent capabilities |
+| `/worldmodel/infra` | GET | Infrastructure status |
+| `/worldmodel/approvals` | GET | Approval history |
+| `/worldmodel/context` | POST | Contextual search |
+
+---
 
 ## Key Modules
 
-| Module | Purpose |
-|--------|---------|
-| `memory/` | PacketEnvelope, semantic search, insight extraction, knowledge facts |
-| `orchestrators/reasoning/` | Chain/Tree/Forest-of-thought reasoning |
-| `orchestrators/world_model/` | Insight-driven world model updates |
-| `core/schemas/` | Pydantic models, validation |
+| Module | Purpose | Status |
+|--------|---------|--------|
+| `core/agents/` | Agent execution, kernel loading, task management | ✅ Production |
+| `core/governance/` | Approval gates, pattern learning, validation | ✅ Production |
+| `core/commands/` | Igor @L command parsing, intent extraction | ✅ Production |
+| `core/compliance/` | Audit logging, compliance reporting | ✅ Production |
+| `core/testing/` | Test generation, recursive self-testing | ✅ Production |
+| `core/worldmodel/` | World model service, insight emission | ✅ Production |
+| `memory/` | PacketEnvelope, semantic search, insight extraction | ✅ Production |
+| `orchestrators/` | 7 orchestration patterns | ✅ Production |
+| `runtime/` | Kernel loader, task queue, WebSocket | ✅ Production |
+| `services/research/` | Perplexity research agents | ✅ Production |
+
+---
+
+## Migrations
+
+Apply in order (0001-0009):
+
+```bash
+# Core memory substrate
+psql $DATABASE_URL -f migrations/0001_init_memory_substrate.sql
+psql $DATABASE_URL -f migrations/0002_enhance_packet_store.sql
+psql $DATABASE_URL -f migrations/0003_init_tasks.sql
+
+# World model
+psql $DATABASE_URL -f migrations/0004_init_world_model_entities.sql
+psql $DATABASE_URL -f migrations/0005_init_knowledge_facts.sql
+psql $DATABASE_URL -f migrations/0006_init_world_model_updates.sql
+psql $DATABASE_URL -f migrations/0007_init_world_model_snapshots.sql
+
+# 10X upgrade + effectiveness tracking
+psql $DATABASE_URL -f migrations/0008_memory_substrate_10x.sql
+psql $DATABASE_URL -f migrations/0009_feedback_and_effectiveness.sql
+```
+
+---
 
 ## Configuration
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | - | Postgres connection string |
-| `OPENAI_API_KEY` | No | - | For OpenAI embeddings |
-| `EMBEDDING_MODEL` | No | text-embedding-3-large | Embedding model |
-| `EMBEDDING_PROVIDER` | No | stub | `openai` or `stub` |
-| `L9_API_KEY` | No | - | API authentication key |
-| `LOG_LEVEL` | No | INFO | Logging level |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
+| `OPENAI_API_KEY` | No | — | For OpenAI embeddings/LLM |
+| `EMBEDDING_PROVIDER` | No | `stub` | `openai` or `stub` |
+| `EMBEDDING_MODEL` | No | `text-embedding-3-large` | Embedding model |
+| `L9_API_KEY` | No | — | API authentication key |
+| `LOG_LEVEL` | No | `INFO` | Logging level |
+| `SLACK_APP_ENABLED` | No | `false` | Enable Slack integration |
+| `L9_ENABLE_LEGACY_SLACK_ROUTER` | No | `true` | Use legacy Slack routing |
 
-## Migrations
+---
 
-Apply in order:
-1. `0001_init_memory_substrate.sql` - Core tables
-2. `0002_enhance_packet_store.sql` - Thread/lineage/tags/TTL
-3. `0004_init_knowledge_facts.sql` - Knowledge facts for insights
+## Testing
 
-## Architecture
+```bash
+# Run all tests
+pytest tests/ -v
 
-```
-┌─────────────┐     ┌─────────────────────────────────────────────┐
-│   Client    │────▶│              L9 API Server                  │
-└─────────────┘     │  ┌─────────┐  ┌──────────┐  ┌───────────┐  │
-                    │  │OS Routes│  │Agent     │  │Memory     │  │
-                    │  └────┬────┘  │Routes    │  │Routes     │  │
-                    │       │       └────┬─────┘  └─────┬─────┘  │
-                    └───────┼────────────┼──────────────┼────────┘
-                            │            │              │
-                    ┌───────▼────────────▼──────────────▼────────┐
-                    │            Memory Substrate DAG             │
-                    │  intake → reasoning → memory_write →        │
-                    │  semantic_embed → extract_insights →        │
-                    │  store_insights → world_model_trigger →     │
-                    │  checkpoint                                 │
-                    └────────────────────┬───────────────────────┘
-                                         │
-                    ┌────────────────────▼───────────────────────┐
-                    │         PostgreSQL + pgvector               │
-                    │  packet_store | semantic_memory |           │
-                    │  reasoning_traces | knowledge_facts         │
-                    └─────────────────────────────────────────────┘
+# Smoke tests (pre-deploy)
+python tests/smoke_test_root.py
+python tests/smoke_email.py
+
+# Integration tests
+pytest tests/integration/ -v
+
+# Specific module
+pytest tests/core/agents/ -v
 ```
 
-## VPS Deploy
+**Test Coverage (as of 2026-01-01):**
+- 54 integration tests passing
+- 119 test files total
+- Key test suites: closed_loop_learning (7), world_model (19), recursive_self_testing (20), compliance_audit (15)
+
+---
+
+## VPS Deployment
+
+See [docs/Go-Live.md](docs/Go-Live.md) for complete deployment guide.
 
 ```bash
 # 1. Local pre-flight
-venv/bin/python tests/smoke_test_root.py && venv/bin/python tests/smoke_email.py
+venv/bin/python tests/smoke_test_root.py
 
 # 2. Push to main
 git push origin main
 
-# 3. SSH to VPS
-ssh your-vps-alias
-
-# 4. Run release gate
+# 3. SSH to VPS and run release gate
+ssh l9
 cd /opt/l9 && sudo bash ops/vps_release_gate.sh
 
-# 5. Verify
+# 4. Verify
 curl -sS http://127.0.0.1:8000/health | jq .
-
-# 6. Reboot test (optional)
-sudo reboot  # then reconnect and verify services auto-start
 ```
 
-See [Go-Live.md](Go-Live.md) for full deployment documentation.
+**VPS Details:**
+- IP: 157.180.73.53
+- Domain: l9.quantumaipartners.com (Cloudflare proxied)
+- Ports: 8000 (l9-api), 9001 (mcp-memory)
+
+---
+
+## Recent GMPs Completed
+
+| GMP | Description | Date |
+|-----|-------------|------|
+| GMP-16 | Closed-loop learning from approvals | 2026-01-01 |
+| GMP-18 | World model population and reasoning | 2026-01-01 |
+| GMP-19 | Recursive self-testing and validation | 2026-01-01 |
+| GMP-21 | Compliance audit trail and reporting | 2026-01-01 |
+| GMP-11 | Igor command interface with intent extraction | 2026-01-01 |
+
+See [reports/](reports/) for detailed execution reports.
+
+---
 
 ## Documentation
 
-- [Memory Substrate Guide](docs/memory_substrate_readme_v1.0.0.md)
-- [PacketEnvelope Reference](docs/memory/PacketEnvelope.md)
-- [Memory Integration](DOCS-IB/MEMORY_SUBSTRATE_INTEGRATION.md)
+| Document | Location | Purpose |
+|----------|----------|---------|
+| Go-Live Checklist | [docs/Go-Live.md](docs/Go-Live.md) | VPS deployment guide |
+| Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) | Development roadmap |
+| Memory Substrate | [memory/README.md](memory/README.md) | Memory system docs |
+| Kernel Loading | [private/kernels/00_system/Loading Instructions.md](private/kernels/00_system/Loading%20Instructions.md) | Kernel config |
+| GMP Reports | [reports/](reports/) | Execution reports (25 files) |
+| Cursor Briefs | [docs/cursor-briefs/](docs/cursor-briefs/) | Analysis briefs (52 files) |
+
+---
 
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.0 | 2026-01-01 | 4 HIGH GMPs (16,18,19,21), Emma Substrate 10X, Igor commands, 54 tests |
+| 2.0.0 | 2025-12-31 | Research Factory, SymPy integration, CodeGenAgent specs |
 | 1.1.0 | 2025-12-08 | Insight extraction, knowledge facts, world model integration |
 | 1.0.0 | 2025-12-01 | Initial memory substrate release |
 
 ---
 
-*L9 Platform — Internal Use*
-
+*L9 Secure AI OS — Internal Use*

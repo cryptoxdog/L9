@@ -47,31 +47,32 @@ __spec_hash__ = "SPEC-slack-webhook"
 
 _logger = structlog.get_logger(__name__)
 
+
 def _validate_startup() -> None:
     """Validate required configuration at module load time."""
     # Only enforce if explicitly enabled
     if os.getenv("SLACK_APP_ENABLED", "").lower() != "true":
         _logger.debug("Slack Webhook Adapter not enabled (SLACK_APP_ENABLED != true)")
         return
-    
+
     config = SlackWebhookConfig.from_env()
     errors = config.validate()
-    
+
     if errors:
         # Warn but don't crash - allows module to load without credentials
         _logger.warning(
             "Slack Webhook Adapter enabled but missing credentials: %s. "
             "Webhook calls will fail until configured.",
-            "; ".join(errors)
+            "; ".join(errors),
         )
         return
-    
+
     _logger.info(
         "Slack Webhook Adapter startup validated: module_id=%s, spec_hash=%s",
         config.module_id,
         __spec_hash__,
     )
 
+
 # Run validation on import
 _validate_startup()
-

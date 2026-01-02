@@ -1,5 +1,11 @@
 # Entry Points
 
+agents/codegenagent/extract_yaml_specs.py
+  Type: Script
+  Has __main__ block: Yes
+aios/runtime.py
+  Type: Script
+  Has __main__ block: Yes
 api/server.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
@@ -13,7 +19,7 @@ api/server.py
     - WEBSOCKET /lws
     - ROUTER /os/*
     - ROUTER /agent/*
-    - ROUTER /memory/*
+    - ROUTER /api/v1/memory/*
 api/server_memory.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
@@ -53,16 +59,25 @@ docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/s
 docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script_2.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/HOW_TO_USE_SUPER_PROMPT.py
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/SUPER_PROMPT_TEMPLATE.py
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/SUPER_PROMPT_TEMPLATE.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/autonomous-research-agent.py
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/Perplexity/Perplexity Super-Prompt-Instructions/production-config.py
+docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/production-config.py
+  Type: Script
+  Has __main__ block: Yes
+docs/_archive/mcp-memory-deprecated/main.py
+  Type: FastAPI
+  Title: L9 MCP Memory Server
+  Routes (2):
+    - GET /mcp/tools
+    - POST /mcp/call
+docs/_archive/mcp-memory-deprecated/scripts/migrate_db.py
   Type: Script
   Has __main__ block: Yes
 docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py
@@ -92,9 +107,6 @@ docs/roadmap/MortgageOS/Tensor-Git-einsum-n-dimension-main/einsum_scratch.py
 email_agent/oauth_server.py
   Type: Script
   Has __main__ block: Yes
-l9_os/runtime.py
-  Type: Script
-  Has __main__ block: Yes
 local_dashboard/app.py
   Type: FastAPI
   Title: L9 Local Dashboard
@@ -108,6 +120,15 @@ mac_agent/runner.py
 mac_agent/websocket_client.py
   Type: Script
   Has __main__ block: Yes
+mcp_memory/src/main.py
+  Type: FastAPI
+  Title: L9 MCP Memory Server
+  Routes (5):
+    - GET /
+    - GET /health
+    - GET /mcp/tools
+    - POST /mcp/call
+    - ROUTER /memory/*
 scripts/batch_generate_specs.py
   Type: Script
   Has __main__ block: Yes
@@ -118,6 +139,9 @@ scripts/extract_perplexity_pack.py
   Type: Script
   Has __main__ block: Yes
 scripts/factory_extract.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/rename_l_to_l_cto.py
   Type: Script
   Has __main__ block: Yes
 scripts/send_perplexity_spec_request.py

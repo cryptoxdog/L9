@@ -5,7 +5,11 @@ from openai import OpenAI
 
 # Import kernel-based prompt builder
 try:
-    from core.kernels.prompt_builder import build_system_prompt_from_kernels, get_fallback_prompt
+    from core.kernels.prompt_builder import (
+        build_system_prompt_from_kernels,
+        get_fallback_prompt,
+    )
+
     KERNELS_AVAILABLE = True
 except ImportError:
     KERNELS_AVAILABLE = False
@@ -26,7 +30,7 @@ def get_client() -> OpenAI:
 def get_system_prompt() -> str:
     """
     Get the system prompt, either from kernels or fallback.
-    
+
     Controlled by L9_USE_KERNELS env var (default: true)
     """
     if USE_KERNELS and KERNELS_AVAILABLE:
@@ -36,7 +40,7 @@ def get_system_prompt() -> str:
             return prompt
         except Exception as e:
             logger.warning(f"Kernel loading failed, using fallback: {e}")
-    
+
     # Fallback prompt
     return """You are L, the CTO and executive operator for Igor's computing stack.
 
@@ -116,17 +120,18 @@ def chat_with_l9(user_message: str) -> Dict[str, Any]:
     text = resp.choices[0].message.content.strip()
 
     # Split natural reply and optional JSON block
-    import json, re
+    import json
+    import re
 
     action = "none"
     payload: Dict[str, Any] = {}
     reply = text
 
     # Look for a JSON object on its own line
-    match = re.search(r'\{.*\}', text, re.DOTALL)
+    match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         json_str = match.group(0)
-        reply = text[:match.start()].strip()
+        reply = text[: match.start()].strip()
         try:
             obj = json.loads(json_str)
             action = obj.get("action", "none")

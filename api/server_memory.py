@@ -6,7 +6,6 @@ from pydantic import BaseModel
 import api.db as db
 
 # Local dev mode flag
-import os
 LOCAL_DEV = os.getenv("LOCAL_DEV", "false").lower() == "true"
 from api.auth import verify_api_key
 from api.memory.router import router as memory_router
@@ -30,16 +29,20 @@ if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY not configured")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
 class ChatRequest(BaseModel):
     message: str
     system_prompt: str | None = None
 
+
 class ChatResponse(BaseModel):
     reply: str
+
 
 @app.get("/")
 def root():
     return {"status": "L9 Phase 2 AI OS", "version": "0.3.0"}
+
 
 @app.get("/health")
 def health():
@@ -50,6 +53,7 @@ def health():
         "database": "connected",
         "memory_system": "operational",
     }
+
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
@@ -63,20 +67,22 @@ async def chat(
     """
     from memory.ingestion import ingest_packet
     from memory.substrate_models import PacketEnvelopeIn
-    
+
     try:
         messages = []
         if payload.system_prompt:
             messages.append({"role": "system", "content": payload.system_prompt})
         else:
-            messages.append({
-                "role": "system",
-                "content": (
-                    "You are L, an infrastructure-focused assistant connected to an L9 "
-                    "backend and memory system. Be concise, precise, and avoid destructive "
-                    "actions. When appropriate, suggest using tools like the CTO agent."
-                ),
-            })
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "You are L, an infrastructure-focused assistant connected to an L9 "
+                        "backend and memory system. Be concise, precise, and avoid destructive "
+                        "actions. When appropriate, suggest using tools like the CTO agent."
+                    ),
+                }
+            )
         messages.append({"role": "user", "content": payload.message})
 
         completion = client.chat.completions.create(
@@ -84,7 +90,7 @@ async def chat(
             messages=messages,
         )
         reply = completion.choices[0].message.content
-        
+
         # Ingest chat interaction to memory (audit trail)
         try:
             packet_in = PacketEnvelopeIn(
@@ -101,10 +107,11 @@ async def chat(
         except Exception as mem_err:
             # Log but don't fail the request if memory ingestion fails
             logger.warning(f"Failed to ingest chat to memory: {mem_err}")
-        
+
         return ChatResponse(reply=reply)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat backend error: {e}")
+
 
 # Mount memory router with prefix
 app.include_router(memory_router, prefix="/memory")
@@ -113,16 +120,32 @@ app.include_router(memory_router, prefix="/memory")
 
 # Slack Events API
 if settings.slack_app_enabled:
-    try:
-        from api.webhook_slack import router as slack_router
-        app.include_router(slack_router)
-    except Exception as e:
-        logger.error(f"WARNING: Failed to load Slack router: {e}")
+    # Validate required tokens before mounting routes
+    slack_bot_token = settings.slack_bot_token or os.getenv("SLACK_BOT_TOKEN")
+    slack_signing_secret = settings.slack_signing_secret or os.getenv(
+        "SLACK_SIGNING_SECRET"
+    )
+
+    if not slack_bot_token or not slack_signing_secret:
+        logger.error(
+            "Slack enabled but missing required tokens. "
+            "Set SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET. "
+            "Slack routes will NOT be mounted."
+        )
+    else:
+        try:
+            from api.webhook_slack import router as slack_router
+
+            app.include_router(slack_router)
+            logger.info("Slack router mounted successfully")
+        except Exception as e:
+            logger.error(f"WARNING: Failed to load Slack router: {e}")
 
 # Mac Agent API
 if settings.mac_agent_enabled:
     try:
         from api.webhook_mac_agent import router as mac_agent_router
+
         app.include_router(mac_agent_router)
     except Exception as e:
         logger.error(f"WARNING: Failed to load Mac Agent router: {e}")
@@ -131,6 +154,7 @@ if settings.mac_agent_enabled:
 if settings.twilio_enabled:
     try:
         from api.webhook_twilio import router as twilio_router
+
         app.include_router(twilio_router)
     except Exception as e:
         logger.error(f"WARNING: Failed to load Twilio router: {e}")
@@ -139,6 +163,7 @@ if settings.twilio_enabled:
 if settings.waba_enabled:
     try:
         from api.webhook_waba import router as waba_router
+
         app.include_router(waba_router)
     except Exception as e:
         logger.error(f"WARNING: Failed to load WABA router: {e}")
@@ -147,26 +172,31 @@ if settings.waba_enabled:
 if settings.email_enabled:
     try:
         from api.webhook_email import router as email_router
+
         app.include_router(email_router)
     except Exception as e:
         logger.error(f"WARNING: Failed to load Email router: {e}")
-    
+
     # Email Agent API
     try:
         from email_agent.router import router as email_agent_router
+
         app.include_router(email_agent_router)
     except Exception as e:
         logger.error(f"WARNING: Failed to load Email Agent router: {e}")
 
 # === Debug: Print integration toggles at startup ===
-logger.info("L9 Integration Toggles", {
-    "Slack": settings.slack_app_enabled,
-    "Mac Agent": settings.mac_agent_enabled,
-    "Email": settings.email_enabled,
-    "Inbox Parser": settings.inbox_parser_enabled,
-    "Twilio": settings.twilio_enabled,
-    "WABA": settings.waba_enabled,
-})
+logger.info(
+    "L9 Integration Toggles",
+    {
+        "Slack": settings.slack_app_enabled,
+        "Mac Agent": settings.mac_agent_enabled,
+        "Email": settings.email_enabled,
+        "Inbox Parser": settings.inbox_parser_enabled,
+        "Twilio": settings.twilio_enabled,
+        "WABA": settings.waba_enabled,
+    },
+)
 
 # === DEBUG: Print all mounted routes at startup ===
 for route in app.routes:

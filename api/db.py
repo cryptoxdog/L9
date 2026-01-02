@@ -1,17 +1,14 @@
 import os
 import psycopg
-from psycopg.rows import dict_row
 
 # Get DSN from environment - NEVER hardcode localhost in Docker!
-# Inside containers, use service DNS (e.g., postgres:5432)
+# Inside containers, use service DNS (l9-postgres:5432)
 # Outside containers, use host networking or published ports
 MEMORY_DSN = os.getenv(
     "MEMORY_DSN",
-    os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@postgres:5432/l9_memory"
-    )
+    os.getenv("DATABASE_URL", "postgresql://postgres:postgres@l9-postgres:5432/l9_memory"),
 )
+
 
 def init_db():
     with psycopg.connect(MEMORY_DSN, autocommit=True) as conn:
@@ -26,10 +23,14 @@ def init_db():
                 );
             """)
 
+
 def insert_embedding(source, content, vector=None):
     with psycopg.connect(MEMORY_DSN, autocommit=True) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO memory.embeddings (source, content, vector)
                 VALUES (%s, %s, %s);
-            """, (source, content, vector))
+            """,
+                (source, content, vector),
+            )

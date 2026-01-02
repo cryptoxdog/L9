@@ -25,9 +25,7 @@ import structlog
 import os
 import sys
 import time
-import json
 from pathlib import Path
-from datetime import datetime
 import argparse
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -35,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Load .env file
 try:
     from dotenv import load_dotenv
+
     load_dotenv(Path(__file__).parent.parent / ".env")
 except ImportError:
     pass  # dotenv not installed, rely on environment
@@ -56,13 +55,15 @@ MODEL = "sonar-deep-research"
 RATE_LIMIT_DELAY = 20  # 5 req/min = 12s, use 20s for extra safety
 TIMEOUT = 300  # 5 minutes - Deep Research takes time!
 
-PAYLOADS_DIR = Path(__file__).parent.parent / "docs" / "Perplexity" / "payloads" / "deep_research"
+PAYLOADS_DIR = (
+    Path(__file__).parent.parent / "docs" / "Perplexity" / "payloads" / "deep_research"
+)
 OUTPUT_DIR = Path(__file__).parent.parent / "generated" / "specs"
 
 # First 5 modules
 MODULES = [
     "01_config_loader",
-    "02_structlog_setup", 
+    "02_structlog_setup",
     "03_packet_protocol",
     "04_slack_webhook_adapter",
     "05_health_routes",
@@ -73,10 +74,11 @@ MODULES = [
 # Payload Extraction
 # ============================================================================
 
+
 def extract_prompt_from_payload(payload_path: Path) -> str:
     """Extract the prompt section from a payload markdown file."""
     content = payload_path.read_text()
-    
+
     # Find the prompt section (after the last "---")
     parts = content.split("---")
     if len(parts) >= 3:
@@ -85,11 +87,11 @@ def extract_prompt_from_payload(payload_path: Path) -> str:
         if "END OF PAYLOAD" in prompt:
             prompt = prompt.split("END OF PAYLOAD")[0].strip()
         return prompt
-    
+
     # Fallback: return everything after "## PROMPT"
     if "## PROMPT" in content:
         return content.split("## PROMPT")[1].split("# END")[0].strip()
-    
+
     raise ValueError(f"Could not extract prompt from {payload_path}")
 
 
@@ -97,9 +99,10 @@ def extract_prompt_from_payload(payload_path: Path) -> str:
 # API Client
 # ============================================================================
 
+
 async def call_deep_research(prompt: str, api_key: str) -> dict:
     """Call Perplexity Sonar Deep Research API."""
-    
+
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         response = await client.post(
             PERPLEXITY_API_URL,
@@ -112,12 +115,12 @@ async def call_deep_research(prompt: str, api_key: str) -> dict:
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-            }
+            },
         )
-        
+
         if response.status_code == 429:
             return {"error": "rate_limited", "status": 429}
-        
+
         response.raise_for_status()
         return response.json()
 
@@ -125,7 +128,7 @@ async def call_deep_research(prompt: str, api_key: str) -> dict:
 def extract_yaml_from_response(response: dict) -> str:
     """Extract YAML spec from API response."""
     content = response["choices"][0]["message"]["content"]
-    
+
     # Try to extract YAML block
     if "```yaml" in content:
         start = content.find("```yaml") + 7
@@ -135,7 +138,7 @@ def extract_yaml_from_response(response: dict) -> str:
         start = content.find("```") + 3
         end = content.find("```", start)
         return content[start:end].strip()
-    
+
     # Return full content if no code block
     return content
 
@@ -144,56 +147,55 @@ def extract_yaml_from_response(response: dict) -> str:
 # Orchestration
 # ============================================================================
 
-async def process_module(
-    module_name: str, 
-    api_key: str,
-    dry_run: bool = False
-) -> dict:
+
+async def process_module(module_name: str, api_key: str, dry_run: bool = False) -> dict:
     """Process a single module."""
-    
+
     payload_path = PAYLOADS_DIR / f"{module_name}.md"
-    
+
     if not payload_path.exists():
         return {"module": module_name, "error": f"Payload not found: {payload_path}"}
-    
+
     try:
         prompt = extract_prompt_from_payload(payload_path)
     except ValueError as e:
         return {"module": module_name, "error": str(e)}
-    
+
     if dry_run:
         logger.info(f"\n📋 {module_name}")
         logger.info(f"   Payload: {payload_path}")
         logger.info(f"   Prompt length: {len(prompt)} chars")
         return {"module": module_name, "dry_run": True}
-    
+
     logger.info(f"\n🔬 Delegating {module_name} to Sonar Deep Research...")
-    logger.info(f"   ⏳ This may take 2-5 minutes...")
-    
+    logger.info("   ⏳ This may take 2-5 minutes...")
+
     start_time = time.time()
-    
+
     try:
         response = await call_deep_research(prompt, api_key)
-        
+
         if "error" in response:
             logger.error(f"   ❌ Error: {response['error']}")
             return {"module": module_name, "error": response["error"]}
-        
+
         elapsed = time.time() - start_time
         yaml_content = extract_yaml_from_response(response)
-        
+
         # Save output
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        output_name = module_name.split("_", 1)[1] if "_" in module_name else module_name
+        output_name = (
+            module_name.split("_", 1)[1] if "_" in module_name else module_name
+        )
         output_path = OUTPUT_DIR / f"{output_name}.yaml"
         output_path.write_text(yaml_content)
-        
+
         tokens = response.get("usage", {})
-        
+
         logger.info(f"   ✅ Complete in {elapsed:.1f}s")
         logger.info(f"   📁 Saved to: {output_path}")
         logger.info(f"   📊 Tokens: {tokens.get('total_tokens', 'N/A')}")
-        
+
         return {
             "module": module_name,
             "success": True,
@@ -201,67 +203,77 @@ async def process_module(
             "output_path": str(output_path),
             "tokens": tokens,
         }
-    
+
     except httpx.TimeoutException:
         logger.info(f"   ❌ Timeout after {TIMEOUT}s")
         return {"module": module_name, "error": "timeout"}
-    
+
     except Exception as e:
         logger.error(f"   ❌ Error: {e}")
         return {"module": module_name, "error": str(e)}
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Delegate module specs to Perplexity Deep Research")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be sent")
-    parser.add_argument("--module", type=str, help="Process single module (e.g., 01_config_loader)")
+    parser = argparse.ArgumentParser(
+        description="Delegate module specs to Perplexity Deep Research"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be sent"
+    )
+    parser.add_argument(
+        "--module", type=str, help="Process single module (e.g., 01_config_loader)"
+    )
     args = parser.parse_args()
-    
+
     # Check API key
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key and not args.dry_run:
         logger.info("❌ PERPLEXITY_API_KEY not set")
         logger.info("   Add to .env: PERPLEXITY_API_KEY=pplx-...")
         sys.exit(1)
-    
+
     # Determine modules to process
     modules = [args.module] if args.module else MODULES
-    
+
     logger.info("=" * 60)
     logger.info("  L9 DEEP RESEARCH DELEGATION")
     logger.info("=" * 60)
     logger.info(f"\n🔬 Model: {MODEL}")
     logger.info(f"📋 Modules: {len(modules)}")
     logger.info(f"⏱️  Rate limit delay: {RATE_LIMIT_DELAY}s between calls")
-    logger.info(f"💰 Estimated cost: ${len(modules) * 1.00:.2f} - ${len(modules) * 2.00:.2f}")
-    
+    logger.info(
+        f"💰 Estimated cost: ${len(modules) * 1.00:.2f} - ${len(modules) * 2.00:.2f}"
+    )
+
     if args.dry_run:
-        logger.info(f"\n🔍 DRY RUN MODE")
-    
+        logger.info("\n🔍 DRY RUN MODE")
+
     logger.info("\n" + "-" * 60)
-    
+
     results = []
-    
+
     for i, module in enumerate(modules):
         result = await process_module(module, api_key, args.dry_run)
         results.append(result)
-        
+
         # Rate limit delay (except for last module)
         if not args.dry_run and i < len(modules) - 1:
-            logger.info(f"\n⏳ Rate limit: waiting {RATE_LIMIT_DELAY}s before next call...")
+            logger.info(
+                f"\n⏳ Rate limit: waiting {RATE_LIMIT_DELAY}s before next call..."
+            )
             await asyncio.sleep(RATE_LIMIT_DELAY)
-    
+
     # Summary
     logger.info("\n" + "=" * 60)
     logger.info("  DELEGATION COMPLETE")
     logger.info("=" * 60)
-    
+
     successful = sum(1 for r in results if r.get("success"))
     failed = sum(1 for r in results if r.get("error"))
-    
+
     logger.info(f"\n✅ Successful: {successful}/{len(modules)}")
     logger.error(f"❌ Failed: {failed}/{len(modules)}")
-    
+
     if successful > 0:
         logger.info(f"\n📁 Specs saved to: {OUTPUT_DIR}/")
         logger.info("\n📝 Next steps:")
@@ -272,4 +284,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -19,13 +19,12 @@ from pathlib import Path
 from typing import List, Tuple
 
 
-
 logger = structlog.get_logger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def iter_python_files() -> List[Path]:
-    ignored = {"tests", ".venv", "venv", "migrations", "l9_private"}
+    ignored = {"tests", ".venv", "venv", "migrations", "private"}
     files: List[Path] = []
 
     for path in ROOT.rglob("*.py"):
@@ -105,9 +104,10 @@ def main():
                 logger.info(f"  line {lineno:4d}: {name}")
             total_hits += len(visitor.suspicious)
 
-    logger.info(f"\n[L9 STATE AUDIT] Suspicious global state declarations: {total_hits}")
+    logger.info(
+        f"\n[L9 STATE AUDIT] Suspicious global state declarations: {total_hits}"
+    )
 
 
 if __name__ == "__main__":
     main()
-

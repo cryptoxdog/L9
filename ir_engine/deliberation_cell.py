@@ -41,6 +41,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class DeliberationRound:
     """Record of a single deliberation round."""
+
     round_number: int
     producer_output: dict[str, Any]
     critique: dict[str, Any]
@@ -52,6 +53,7 @@ class DeliberationRound:
 @dataclass
 class DeliberationResult:
     """Result of deliberation process."""
+
     session_id: UUID
     final_graph: IRGraph
     rounds: list[DeliberationRound]
@@ -60,7 +62,7 @@ class DeliberationResult:
     improvements_made: list[str]
     final_score: float
     duration_ms: int
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "session_id": str(self.session_id),
@@ -136,13 +138,13 @@ Return JSON:
 class DeliberationCell:
     """
     2-agent deliberation cell for IR refinement.
-    
+
     Uses a Producer-Critic pattern:
     - Producer creates/revises IR
     - Critic evaluates and suggests improvements
     - Iterate until consensus or max rounds
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -152,7 +154,7 @@ class DeliberationCell:
     ):
         """
         Initialize the deliberation cell.
-        
+
         Args:
             api_key: OpenAI API key
             model: LLM model to use
@@ -164,25 +166,25 @@ class DeliberationCell:
         self._model = model
         self._max_rounds = max_rounds
         self._consensus_threshold = consensus_threshold
-        
+
         self._compiler = SemanticCompiler(api_key=api_key, model=model)
         self._validator = IRValidator()
-        
+
         logger.info(
             f"DeliberationCell initialized "
             f"(max_rounds={max_rounds}, threshold={consensus_threshold})"
         )
-    
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._api_key)
         return self._client
-    
+
     # ==========================================================================
     # Main Deliberation
     # ==========================================================================
-    
+
     async def deliberate(
         self,
         task: str,
@@ -191,73 +193,82 @@ class DeliberationCell:
     ) -> DeliberationResult:
         """
         Run deliberation process on a task.
-        
+
         Args:
             task: Task description
             initial_graph: Optional starting IR graph
             context: Additional context
-            
+
         Returns:
             DeliberationResult with final graph
         """
         session_id = uuid4()
         start_time = datetime.utcnow()
-        
+
         logger.info(f"Starting deliberation session {session_id}")
-        
+
         # Initialize graph
         if initial_graph:
             current_graph = initial_graph
         else:
             current_graph = await self._compiler.compile(task, context)
-        
+
         rounds: list[DeliberationRound] = []
         improvements: list[str] = []
         consensus_reached = False
         last_score = 0.0
-        
+
         for round_num in range(1, self._max_rounds + 1):
             logger.info(f"Deliberation round {round_num}/{self._max_rounds}")
-            
+
             # Get critique from Critic agent
             critique = await self._run_critic(current_graph, task)
             last_score = critique.get("score", 0.0)
-            
+
             # Check for consensus
-            if critique.get("consensus", False) or last_score >= self._consensus_threshold:
+            if (
+                critique.get("consensus", False)
+                or last_score >= self._consensus_threshold
+            ):
                 consensus_reached = True
-                rounds.append(DeliberationRound(
-                    round_number=round_num,
-                    producer_output={},
-                    critique=critique,
-                    revisions_made=[],
-                    consensus_reached=True,
-                ))
-                logger.info(f"Consensus reached at round {round_num} (score={last_score:.2f})")
+                rounds.append(
+                    DeliberationRound(
+                        round_number=round_num,
+                        producer_output={},
+                        critique=critique,
+                        revisions_made=[],
+                        consensus_reached=True,
+                    )
+                )
+                logger.info(
+                    f"Consensus reached at round {round_num} (score={last_score:.2f})"
+                )
                 break
-            
+
             # Get revisions from Producer agent
             producer_output = await self._run_producer(current_graph, task, critique)
-            
+
             # Apply revisions
             revisions = self._apply_revisions(current_graph, producer_output)
             improvements.extend(revisions)
-            
-            rounds.append(DeliberationRound(
-                round_number=round_num,
-                producer_output=producer_output,
-                critique=critique,
-                revisions_made=revisions,
-                consensus_reached=False,
-            ))
-        
+
+            rounds.append(
+                DeliberationRound(
+                    round_number=round_num,
+                    producer_output=producer_output,
+                    critique=critique,
+                    revisions_made=revisions,
+                    consensus_reached=False,
+                )
+            )
+
         # Validate final graph
         validation = self._validator.validate(current_graph)
         if validation.valid:
             current_graph.set_status(IRStatus.VALIDATED)
-        
+
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
         result = DeliberationResult(
             session_id=session_id,
             final_graph=current_graph,
@@ -268,14 +279,14 @@ class DeliberationCell:
             final_score=last_score,
             duration_ms=duration_ms,
         )
-        
+
         logger.info(
             f"Deliberation complete: {len(rounds)} rounds, "
             f"consensus={consensus_reached}, score={last_score:.2f}"
         )
-        
+
         return result
-    
+
     async def _run_producer(
         self,
         graph: IRGraph,
@@ -284,36 +295,45 @@ class DeliberationCell:
     ) -> dict[str, Any]:
         """Run the Producer agent to create/revise IR."""
         client = self._ensure_client()
-        
+
         # Format current IR
         from ir_engine.ir_generator import IRGenerator
+
         generator = IRGenerator(include_metadata=False)
         current_ir = generator.to_json(graph)
-        
+
         prompt = PRODUCER_PROMPT.format(
             current_ir=current_ir,
             critique=json.dumps(critique, indent=2),
             task=task,
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": "You are IR Producer Agent. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are IR Producer Agent. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.4,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Producer agent failed: {e}")
-            return {"intents": [], "constraints": [], "actions": [], "reasoning": str(e)}
-    
+            return {
+                "intents": [],
+                "constraints": [],
+                "actions": [],
+                "reasoning": str(e),
+            }
+
     async def _run_critic(
         self,
         graph: IRGraph,
@@ -321,35 +341,39 @@ class DeliberationCell:
     ) -> dict[str, Any]:
         """Run the Critic agent to evaluate IR."""
         client = self._ensure_client()
-        
+
         # Format current IR
         from ir_engine.ir_generator import IRGenerator
+
         generator = IRGenerator(include_metadata=False)
         current_ir = generator.to_json(graph)
-        
+
         prompt = CRITIC_PROMPT.format(
             current_ir=current_ir,
             task=task,
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": "You are IR Critic Agent. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are IR Critic Agent. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Critic agent failed: {e}")
             return {"score": 0.5, "issues": [], "consensus": False, "reasoning": str(e)}
-    
+
     def _apply_revisions(
         self,
         graph: IRGraph,
@@ -357,28 +381,31 @@ class DeliberationCell:
     ) -> list[str]:
         """Apply producer revisions to the graph."""
         revisions: list[str] = []
-        
+
         # Add new intents
         for intent_data in producer_output.get("intents", []):
             # Check if similar intent exists
             desc = intent_data.get("description", "")
             existing = any(
-                i.description.lower() == desc.lower()
-                for i in graph.intents.values()
+                i.description.lower() == desc.lower() for i in graph.intents.values()
             )
-            
+
             if not existing and desc:
                 intent = IntentNode(
-                    intent_type=self._parse_intent_type(intent_data.get("type", "execute")),
+                    intent_type=self._parse_intent_type(
+                        intent_data.get("type", "execute")
+                    ),
                     description=desc,
                     target=intent_data.get("target", "unknown"),
                     parameters=intent_data.get("parameters", {}),
-                    priority=self._parse_priority(intent_data.get("priority", "medium")),
+                    priority=self._parse_priority(
+                        intent_data.get("priority", "medium")
+                    ),
                     confidence=float(intent_data.get("confidence", 0.8)),
                 )
                 graph.add_intent(intent)
                 revisions.append(f"Added intent: {desc[:50]}")
-        
+
         # Add new constraints
         for constraint_data in producer_output.get("constraints", []):
             desc = constraint_data.get("description", "")
@@ -386,41 +413,48 @@ class DeliberationCell:
                 c.description.lower() == desc.lower()
                 for c in graph.constraints.values()
             )
-            
+
             if not existing and desc:
                 constraint = ConstraintNode(
-                    constraint_type=self._parse_constraint_type(constraint_data.get("type", "explicit")),
+                    constraint_type=self._parse_constraint_type(
+                        constraint_data.get("type", "explicit")
+                    ),
                     description=desc,
-                    priority=self._parse_priority(constraint_data.get("priority", "medium")),
+                    priority=self._parse_priority(
+                        constraint_data.get("priority", "medium")
+                    ),
                 )
                 graph.add_constraint(constraint)
                 revisions.append(f"Added constraint: {desc[:50]}")
-        
+
         # Add new actions
         for action_data in producer_output.get("actions", []):
             desc = action_data.get("description", "")
             existing = any(
-                a.description.lower() == desc.lower()
-                for a in graph.actions.values()
+                a.description.lower() == desc.lower() for a in graph.actions.values()
             )
-            
+
             if not existing and desc:
                 action = ActionNode(
-                    action_type=self._parse_action_type(action_data.get("type", "code_write")),
+                    action_type=self._parse_action_type(
+                        action_data.get("type", "code_write")
+                    ),
                     description=desc,
                     target=action_data.get("target", "unknown"),
                     parameters=action_data.get("parameters", {}),
-                    priority=self._parse_priority(action_data.get("priority", "medium")),
+                    priority=self._parse_priority(
+                        action_data.get("priority", "medium")
+                    ),
                 )
                 graph.add_action(action)
                 revisions.append(f"Added action: {desc[:50]}")
-        
+
         return revisions
-    
+
     # ==========================================================================
     # Type Parsers
     # ==========================================================================
-    
+
     def _parse_intent_type(self, value: str) -> IntentType:
         mapping = {
             "create": IntentType.CREATE,
@@ -433,7 +467,7 @@ class DeliberationCell:
             "execute": IntentType.EXECUTE,
         }
         return mapping.get(value.lower(), IntentType.EXECUTE)
-    
+
     def _parse_constraint_type(self, value: str) -> ConstraintType:
         mapping = {
             "explicit": ConstraintType.EXPLICIT,
@@ -443,7 +477,7 @@ class DeliberationCell:
             "system": ConstraintType.SYSTEM,
         }
         return mapping.get(value.lower(), ConstraintType.EXPLICIT)
-    
+
     def _parse_action_type(self, value: str) -> ActionType:
         mapping = {
             "code_write": ActionType.CODE_WRITE,
@@ -457,7 +491,7 @@ class DeliberationCell:
             "simulation": ActionType.SIMULATION,
         }
         return mapping.get(value.lower(), ActionType.CODE_WRITE)
-    
+
     def _parse_priority(self, value: str) -> NodePriority:
         mapping = {
             "critical": NodePriority.CRITICAL,
@@ -466,11 +500,11 @@ class DeliberationCell:
             "low": NodePriority.LOW,
         }
         return mapping.get(value.lower(), NodePriority.MEDIUM)
-    
+
     # ==========================================================================
     # Utility Methods
     # ==========================================================================
-    
+
     async def quick_refine(
         self,
         graph: IRGraph,
@@ -478,20 +512,19 @@ class DeliberationCell:
     ) -> IRGraph:
         """
         Quick single-round refinement.
-        
+
         Args:
             graph: Graph to refine
             focus: Focus area (completeness, constraints, actions)
-            
+
         Returns:
             Refined graph
         """
         critique = await self._run_critic(graph, f"Focus on {focus}")
-        
+
         if critique.get("score", 0) < self._consensus_threshold:
             task = f"Improve IR focusing on {focus}"
             producer_output = await self._run_producer(graph, task, critique)
             self._apply_revisions(graph, producer_output)
-        
-        return graph
 
+        return graph

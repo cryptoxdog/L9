@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -52,10 +52,10 @@ class CoderAgentA(BaseAgent):
     """
     Primary coder agent for implementation.
     """
-    
+
     agent_role = AgentRole.CODER_PRIMARY
     agent_name = "coder_a"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -63,11 +63,11 @@ class CoderAgentA(BaseAgent):
     ):
         """Initialize Coder Agent A."""
         super().__init__(agent_id, config)
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -75,11 +75,11 @@ class CoderAgentA(BaseAgent):
     ) -> AgentResponse:
         """
         Execute implementation task.
-        
+
         Args:
             task: Task with 'specification' and 'language'
             context: Optional context
-            
+
         Returns:
             AgentResponse with implementation
         """
@@ -87,7 +87,7 @@ class CoderAgentA(BaseAgent):
         language = task.get("language", "python")
         framework = task.get("framework")
         existing_code = task.get("existing_code", {})
-        
+
         prompt = f"""Implement the following specification:
 
 Specification:
@@ -116,19 +116,19 @@ Provide implementation as JSON:
     "reasoning": "explanation of implementation decisions"
 }}
 """
-        
+
         if context:
             prompt += f"\n\nAdditional context:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         self.add_message(messages[0])
         if response.success:
             self.add_message(self.format_assistant_message(response.content))
-        
+
         return response
-    
+
     async def implement_function(
         self,
         name: str,
@@ -138,13 +138,13 @@ Provide implementation as JSON:
     ) -> dict[str, Any]:
         """
         Implement a specific function.
-        
+
         Args:
             name: Function name
             signature: Function signature
             description: What it should do
             examples: Usage examples
-            
+
         Returns:
             Implementation
         """
@@ -166,9 +166,9 @@ Provide:
     "notes": ["..."]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def implement_class(
         self,
         name: str,
@@ -177,12 +177,12 @@ Provide:
     ) -> dict[str, Any]:
         """
         Implement a class.
-        
+
         Args:
             name: Class name
             purpose: Class purpose
             interface: Required interface
-            
+
         Returns:
             Class implementation
         """
@@ -202,9 +202,9 @@ Provide:
     "notes": ["implementation notes"]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def refactor(
         self,
         code: str,
@@ -212,11 +212,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Refactor existing code.
-        
+
         Args:
             code: Code to refactor
             goals: Refactoring goals
-            
+
         Returns:
             Refactored code
         """
@@ -239,9 +239,9 @@ Provide:
     "before_after_comparison": "summary of differences"
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def fix_bug(
         self,
         code: str,
@@ -250,12 +250,12 @@ Provide:
     ) -> dict[str, Any]:
         """
         Fix a bug in code.
-        
+
         Args:
             code: Buggy code
             bug_description: What's wrong
             error_message: Optional error
-            
+
         Returns:
             Fixed code
         """
@@ -278,9 +278,9 @@ Provide:
     "prevention_suggestion": "how to prevent similar bugs"
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def add_feature(
         self,
         existing_code: str,
@@ -288,11 +288,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Add a feature to existing code.
-        
+
         Args:
             existing_code: Current code
             feature_description: Feature to add
-            
+
         Returns:
             Updated code
         """
@@ -316,6 +316,5 @@ Provide:
     "notes": ["important considerations"]
 }}
 """
-        
-        return await self.call_llm_json(prompt)
 
+        return await self.call_llm_json(prompt)

@@ -2,6 +2,7 @@
 Mac Task Queue Service
 File-based task queue for Mac Agent execution.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
@@ -15,9 +16,11 @@ from uuid import uuid4
 
 logger = structlog.get_logger(__name__)
 
+
 @dataclass
 class MacTask:
     """Mac task dataclass."""
+
     id: int
     source: str
     channel: str
@@ -30,6 +33,7 @@ class MacTask:
     screenshot_path: Optional[str] = None
     logs: Optional[List[str]] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 # File-based storage directories
 TASKS_DIR = Path(os.path.expanduser("~/.l9/mac_tasks"))
@@ -46,18 +50,19 @@ _tasks: Dict[int, MacTask] = {}
 _next_id: int = 1
 _lock = threading.Lock()
 
+
 def enqueue_mac_task(
     source: str,
     channel: str,
     user: str,
     command: Optional[str] = None,
     steps: Optional[List[Dict[str, Any]]] = None,
-    attachments: Optional[List[Dict[str, Any]]] = None
+    attachments: Optional[List[Dict[str, Any]]] = None,
 ) -> int:
     """
     Enqueue a new Mac task.
     Also ingests to memory for audit trail.
-    
+
     Args:
         source: Source of the task (e.g., "slack")
         channel: Channel identifier (e.g., Slack channel ID)
@@ -65,7 +70,7 @@ def enqueue_mac_task(
         command: Shell command to execute (legacy)
         steps: Automation steps for V2 (list of action dicts)
         attachments: File attachments from Slack (list of file artifact dicts)
-    
+
     Returns:
         Task ID
     """
@@ -81,16 +86,16 @@ def enqueue_mac_task(
             command=command,
             steps=steps,
             attachments=attachments,
-            status="queued"
+            status="queued",
         )
         _tasks[task_id] = task
-    
+
     # Ingest task to memory (fire-and-forget)
     try:
         import asyncio
         from memory.ingestion import ingest_packet
         from memory.substrate_models import PacketEnvelopeIn
-        
+
         packet_in = PacketEnvelopeIn(
             packet_type="mac_task_enqueued",
             payload={
@@ -111,13 +116,14 @@ def enqueue_mac_task(
             pass  # No running loop - skip in sync context
     except Exception as mem_err:
         logger.warning(f"Failed to ingest mac task to memory: {mem_err}")
-    
+
     return task_id
+
 
 def get_next_task() -> Optional[MacTask]:
     """
     Get the next queued task and mark it as running.
-    
+
     Returns:
         MacTask if available, None otherwise
     """
@@ -128,23 +134,24 @@ def get_next_task() -> Optional[MacTask]:
                 return task
     return None
 
+
 def complete_task(
     task_id: int,
     result: str,
     status: str = "done",
     screenshot_path: Optional[str] = None,
-    logs: Optional[List[str]] = None
+    logs: Optional[List[str]] = None,
 ) -> Optional[MacTask]:
     """
     Complete a task with result and status.
-    
+
     Args:
         task_id: Task ID
         result: Result string
         status: Status ("done" or "failed")
         screenshot_path: Path to screenshot (V2)
         logs: Execution logs (V2)
-    
+
     Returns:
         Updated MacTask if found, None otherwise
     """
@@ -160,43 +167,46 @@ def complete_task(
             return task
     return None
 
+
 def enqueue_task(task_dict: Dict[str, Any]) -> str:
     """
     Enqueue a task from task router (file-based storage).
     Also ingests to memory for audit trail.
-    
+
     Args:
         task_dict: Task dictionary from route_slack_message
-    
+
     Returns:
         Task ID (UUID string)
     """
     task_id = str(uuid4())
     task_file = TASKS_DIR / f"{task_id}.json"
-    
+
     # Add task_id to dict
     task_dict["task_id"] = task_id
     task_dict["status"] = "queued"
     task_dict["created_at"] = datetime.now(timezone.utc).isoformat()
-    
+
     try:
         with open(task_file, "w") as f:
             json.dump(task_dict, f, indent=2)
         logger.info(f"Enqueued task {task_id} to {task_file}")
-        
+
         # Ingest task to memory (fire-and-forget, don't block on failure)
         try:
             import asyncio
             from memory.ingestion import ingest_packet
             from memory.substrate_models import PacketEnvelopeIn
-            
+
             packet_in = PacketEnvelopeIn(
                 packet_type="task_enqueued",
                 payload={
                     "task_id": task_id,
                     "task_type": task_dict.get("type", "unknown"),
                     "user": task_dict.get("metadata", {}).get("user"),
-                    "instructions": task_dict.get("metadata", {}).get("instructions", "")[:500],
+                    "instructions": task_dict.get("metadata", {}).get(
+                        "instructions", ""
+                    )[:500],
                     "step_count": len(task_dict.get("steps", [])),
                     "has_artifacts": bool(task_dict.get("artifacts")),
                 },
@@ -211,7 +221,7 @@ def enqueue_task(task_dict: Dict[str, Any]) -> str:
                 pass
         except Exception as mem_err:
             logger.warning(f"Failed to ingest task to memory: {mem_err}")
-        
+
         return task_id
     except Exception as e:
         logger.error(f"Failed to enqueue task: {e}", exc_info=True)
@@ -221,35 +231,32 @@ def enqueue_task(task_dict: Dict[str, Any]) -> str:
 def get_next_task() -> Optional[Dict[str, Any]]:
     """
     Get the oldest unpublished task file.
-    
+
     Once returned, move file to in_progress/ directory.
-    
+
     Returns:
         Task dictionary if available, None otherwise
     """
     try:
         # Find oldest task file
-        task_files = sorted(
-            TASKS_DIR.glob("*.json"),
-            key=lambda p: p.stat().st_mtime
-        )
-        
+        task_files = sorted(TASKS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime)
+
         if not task_files:
             return None
-        
+
         task_file = task_files[0]
-        
+
         # Read task
         with open(task_file, "r") as f:
             task_dict = json.load(f)
-        
+
         # Move to in_progress
         in_progress_file = IN_PROGRESS_DIR / task_file.name
         shutil.move(str(task_file), str(in_progress_file))
-        
+
         logger.info(f"Retrieved task {task_dict.get('task_id')} from {task_file.name}")
         return task_dict
-        
+
     except Exception as e:
         logger.error(f"Error getting next task: {e}", exc_info=True)
         return None
@@ -258,7 +265,7 @@ def get_next_task() -> Optional[Dict[str, Any]]:
 def mark_task_completed(task_id: str):
     """
     Mark a task as completed by moving it to completed/ directory.
-    
+
     Args:
         task_id: Task ID
     """
@@ -277,7 +284,7 @@ def mark_task_completed(task_id: str):
 def list_tasks() -> List[Dict]:
     """
     List all tasks as dictionaries.
-    
+
     Returns:
         List of task dictionaries
     """
@@ -295,7 +302,7 @@ def list_tasks() -> List[Dict]:
                 "result": task.result,
                 "screenshot_path": task.screenshot_path,
                 "logs": task.logs,
-                "created_at": task.created_at.isoformat()
+                "created_at": task.created_at.isoformat(),
             }
             for task in sorted(_tasks.values(), key=lambda t: t.id, reverse=True)
         ]

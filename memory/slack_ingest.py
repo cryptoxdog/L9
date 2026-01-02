@@ -25,12 +25,9 @@ Error handling:
   - Memory persistence fails: Log error, still return 200 to Slack
 """
 
-import json
 import httpx
-from typing import Any, Dict, Optional
-from datetime import datetime
+from typing import Any, Dict
 import structlog
-from uuid import UUID
 
 from api.slack_adapter import SlackRequestNormalizer
 from api.slack_client import SlackAPIClient, SlackClientError
@@ -49,20 +46,20 @@ async def handle_slack_events(
 ) -> Dict[str, Any]:
     """
     Handle Slack event callback.
-    
+
     Args:
         request_body: Raw request body (for audit trail)
         payload: Parsed JSON payload from Slack
         substrate_service: Memory substrate for packet persistence
         slack_client: Slack API client for posting replies
         aios_base_url: Base URL for AIOS service (e.g., http://localhost:8000)
-    
+
     Returns:
         HTTP response dict (always 200 if we make it this far)
     """
     # Parse and normalize event
     normalized = SlackRequestNormalizer.parse_event_callback(payload)
-    
+
     event_id = normalized.get("event_id")
     team_id = normalized.get("team_id")
     channel_id = normalized.get("channel_id")
@@ -72,7 +69,7 @@ async def handle_slack_events(
     user_id = normalized.get("user_id")
     text = normalized.get("text", "")
     event_type = normalized.get("event_type")
-    
+
     logger.info(
         "slack_event_received",
         event_id=event_id,
@@ -83,7 +80,7 @@ async def handle_slack_events(
         thread_uuid=thread_uuid,
         user_id=user_id,
     )
-    
+
     # Dedupe check: look for event_id in recent packets
     try:
         dedupe_result = await _check_duplicate(
@@ -95,7 +92,7 @@ async def handle_slack_events(
             ts=normalized.get("ts"),
             user_id=user_id,
         )
-        
+
         if dedupe_result.get("is_duplicate"):
             logger.info(
                 "slack_event_deduplicated",
@@ -106,11 +103,11 @@ async def handle_slack_events(
     except Exception as e:
         logger.error("slack_dedupe_check_error", error=str(e), event_id=event_id)
         # Continue processing; dedupe is opportunistic
-    
+
     # Retrieve memory context
     thread_context = {}
     semantic_hits = {}
-    
+
     try:
         thread_context = await _retrieve_thread_context(
             substrate_service=substrate_service,
@@ -119,8 +116,12 @@ async def handle_slack_events(
         )
         logger.debug("slack_thread_context_retrieved", context_size=len(thread_context))
     except Exception as e:
-        logger.warning("slack_thread_context_retrieval_error", error=str(e), thread_uuid=thread_uuid)
-    
+        logger.warning(
+            "slack_thread_context_retrieval_error",
+            error=str(e),
+            thread_uuid=thread_uuid,
+        )
+
     try:
         semantic_hits = await _retrieve_semantic_hits(
             substrate_service=substrate_service,
@@ -131,11 +132,189 @@ async def handle_slack_events(
         logger.debug("slack_semantic_hits_retrieved", hit_count=len(semantic_hits))
     except Exception as e:
         logger.warning("slack_semantic_hits_retrieval_error", error=str(e))
-    
+
+    # =========================================================================
+    # @L Command Detection (GMP-11: Igor Command Interface)
+    # =========================================================================
+    # Check if message is an @L command and route through command interface
+    is_l_command = False
+    command_response = None
+
+    try:
+        from core.commands.parser import parse_command, is_l_command as check_l_command
+        from core.commands.schemas import Command, NLPPrompt
+
+        if check_l_command(text):
+            is_l_command = True
+            logger.info("slack_l_command_detected", text=text[:50], user_id=user_id)
+
+            parsed = parse_command(text)
+
+            if isinstance(parsed, Command):
+                # Structured command - execute via command interface
+                from core.commands.executor import CommandExecutor
+                from core.compliance.audit_log import AuditLogger
+
+                audit_logger = AuditLogger(substrate_service)
+                executor = CommandExecutor(
+                    agent_executor=None,  # Will be injected from app state if needed
+                    approval_manager=None,
+                    substrate_service=substrate_service,
+                    audit_logger=audit_logger,
+                )
+
+                # Igor is the only authorized user for approvals
+                command_user = "Igor" if user_id == "Igor" else user_id
+
+                result = await executor.execute_command(
+                    command=parsed,
+                    user_id=command_user,
+                    context={
+                        "channel": channel_id,
+                        "thread_ts": thread_ts,
+                        "slack_user_id": user_id,
+                    },
+                )
+
+                command_response = result.message
+                logger.info(
+                    "slack_l_command_executed",
+                    command_type=parsed.type.value,
+                    success=result.success,
+                )
+
+            elif isinstance(parsed, NLPPrompt):
+                # NLP prompt - extract intent
+                from core.commands.intent_extractor import extract_intent
+
+                intent = await extract_intent(parsed)
+
+                if intent.is_ambiguous:
+                    command_response = (
+                        f"I'm not sure I understood that correctly (confidence: {intent.confidence:.0%}). "
+                        f"Could you please clarify?\n\n"
+                        f"Detected intent: `{intent.intent_type.value}`"
+                    )
+                    if intent.ambiguities:
+                        command_response += f"\nAmbiguities: {', '.join(intent.ambiguities)}"
+                else:
+                    # Forward to regular AIOS flow with intent context
+                    # (intent will be used for context enrichment)
+                    is_l_command = False  # Let it fall through to regular flow
+                    logger.debug(
+                        "slack_l_command_nlp_passthrough",
+                        intent_type=intent.intent_type.value,
+                        confidence=intent.confidence,
+                    )
+
+    except ImportError as e:
+        logger.debug("slack_l_command_module_not_available", error=str(e))
+    except Exception as e:
+        logger.warning("slack_l_command_error", error=str(e))
+        command_response = f"Command processing error: {str(e)}"
+
+    # If @L command was handled, use command response instead of AIOS
+    if is_l_command and command_response:
+        reply_text = command_response
+
+        # Store inbound packet (with command metadata)
+        try:
+            inbound_packet_in = PacketEnvelopeIn(
+                packet_type="slack.command",
+                payload={
+                    "event_id": event_id,
+                    "thread_uuid": thread_uuid,
+                    "thread_string": thread_string,
+                    "team_id": team_id,
+                    "channel_id": channel_id,
+                    "user_id": user_id,
+                    "text": text,
+                    "ts": normalized.get("ts"),
+                    "thread_ts": thread_ts,
+                    "is_l_command": True,
+                },
+                metadata=PacketMetadata(
+                    schema_version="1.0.1",
+                    agent="igor_command_interface",
+                ),
+                provenance=PacketProvenance(
+                    source="slack",
+                ),
+            )
+
+            result = await substrate_service.write_packet(inbound_packet_in)
+            logger.debug(
+                "slack_command_packet_stored", event_id=event_id, packet_id=result.packet_id
+            )
+        except Exception as e:
+            logger.error(
+                "slack_command_packet_storage_error", error=str(e), event_id=event_id
+            )
+
+        # Post command response to Slack
+        slack_ts = None
+        slack_error = None
+
+        try:
+            slack_response_obj = await slack_client.post_message(
+                channel=channel_id,
+                text=reply_text,
+                thread_ts=thread_ts,
+                reply_broadcast=False,
+            )
+            slack_ts = slack_response_obj.get("ts")
+            logger.info("slack_command_reply_posted", event_id=event_id, slack_ts=slack_ts)
+        except SlackClientError as e:
+            slack_error = str(e)
+            logger.error("slack_command_post_error", event_id=event_id, error=slack_error)
+        except Exception as e:
+            slack_error = str(e)
+            logger.error("slack_command_post_exception", event_id=event_id, error=slack_error)
+
+        # Store outbound packet
+        try:
+            outbound_packet_in = PacketEnvelopeIn(
+                packet_type="slack.command.out",
+                payload={
+                    "event_id": event_id,
+                    "thread_uuid": thread_uuid,
+                    "thread_string": thread_string,
+                    "team_id": team_id,
+                    "channel_id": channel_id,
+                    "user_id": user_id,
+                    "reply_text": reply_text,
+                    "slack_ts": slack_ts,
+                    "slack_error": slack_error,
+                    "is_l_command": True,
+                },
+                metadata=PacketMetadata(
+                    schema_version="1.0.1",
+                    agent="igor_command_interface",
+                ),
+                provenance=PacketProvenance(
+                    source="l9",
+                ),
+            )
+
+            result = await substrate_service.write_packet(outbound_packet_in)
+            logger.debug(
+                "slack_command_outbound_stored", event_id=event_id, packet_id=result.packet_id
+            )
+        except Exception as e:
+            logger.error(
+                "slack_command_outbound_storage_error", error=str(e), event_id=event_id
+            )
+
+        return {"ok": True, "l_command": True}
+
+    # =========================================================================
+    # Regular AIOS Flow (non-command messages)
+    # =========================================================================
+
     # Call AIOS /chat endpoint
     aios_response = None
     aios_error = None
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             system_prompt = _build_system_prompt(
@@ -144,19 +323,19 @@ async def handle_slack_events(
                 user_id=user_id,
                 channel_id=channel_id,
             )
-            
+
             aios_payload = {
                 "message": text,
                 "system_prompt": system_prompt,
             }
-            
+
             aios_response_obj = await client.post(
                 f"{aios_base_url}/chat",
                 json=aios_payload,
             )
             aios_response_obj.raise_for_status()
             aios_response = aios_response_obj.json()
-            
+
             logger.info(
                 "aios_chat_success",
                 event_id=event_id,
@@ -167,11 +346,13 @@ async def handle_slack_events(
         logger.error("aios_chat_timeout", event_id=event_id)
     except httpx.HTTPStatusError as e:
         aios_error = f"AIOS HTTP {e.response.status_code}"
-        logger.error("aios_chat_http_error", event_id=event_id, status=e.response.status_code)
+        logger.error(
+            "aios_chat_http_error", event_id=event_id, status=e.response.status_code
+        )
     except Exception as e:
         aios_error = str(e)
         logger.error("aios_chat_error", event_id=event_id, error=aios_error)
-    
+
     # Store inbound packet
     try:
         inbound_packet_in = PacketEnvelopeIn(
@@ -195,25 +376,29 @@ async def handle_slack_events(
                 source="slack",
             ),
         )
-        
+
         result = await substrate_service.write_packet(inbound_packet_in)
-        logger.debug("slack_inbound_packet_stored", event_id=event_id, packet_id=result.packet_id)
+        logger.debug(
+            "slack_inbound_packet_stored", event_id=event_id, packet_id=result.packet_id
+        )
     except Exception as e:
-        logger.error("slack_inbound_packet_storage_error", error=str(e), event_id=event_id)
-    
+        logger.error(
+            "slack_inbound_packet_storage_error", error=str(e), event_id=event_id
+        )
+
     # Prepare outbound response
     reply_text = aios_response.get("reply") if aios_response else None
-    
+
     if not reply_text and aios_error:
         reply_text = "Sorry, I encountered a temporary error. Please try again."
-    
+
     if not reply_text:
         reply_text = "No response generated."
-    
+
     # Post reply to Slack
     slack_ts = None
     slack_error = None
-    
+
     try:
         slack_response = await slack_client.post_message(
             channel=channel_id,
@@ -229,7 +414,7 @@ async def handle_slack_events(
     except Exception as e:
         slack_error = str(e)
         logger.error("slack_post_exception", event_id=event_id, error=slack_error)
-    
+
     # Store outbound packet
     try:
         outbound_packet_in = PacketEnvelopeIn(
@@ -254,12 +439,18 @@ async def handle_slack_events(
                 source="aios",
             ),
         )
-        
+
         result = await substrate_service.write_packet(outbound_packet_in)
-        logger.debug("slack_outbound_packet_stored", event_id=event_id, packet_id=result.packet_id)
+        logger.debug(
+            "slack_outbound_packet_stored",
+            event_id=event_id,
+            packet_id=result.packet_id,
+        )
     except Exception as e:
-        logger.error("slack_outbound_packet_storage_error", error=str(e), event_id=event_id)
-    
+        logger.error(
+            "slack_outbound_packet_storage_error", error=str(e), event_id=event_id
+        )
+
     return {"ok": True}
 
 
@@ -271,20 +462,20 @@ async def handle_slack_commands(
 ) -> Dict[str, Any]:
     """
     Handle Slack slash command (asynchronous follow-up).
-    
+
     Called after returning 200 ACK to Slack.
-    
+
     Args:
         payload: Form-encoded command payload from Slack
         substrate_service: Memory substrate for packet persistence
         slack_client: Slack API client for async reply
         aios_base_url: Base URL for AIOS service
-    
+
     Returns:
         Response (for logging, not sent to Slack)
     """
     normalized = SlackRequestNormalizer.parse_command(payload)
-    
+
     command = normalized.get("command", "")
     text = normalized.get("text", "")
     user_id = normalized.get("user_id", "")
@@ -292,7 +483,7 @@ async def handle_slack_commands(
     team_id = normalized.get("team_id", "")
     response_url = normalized.get("response_url", "")
     thread_uuid = normalized.get("thread_uuid", "")
-    
+
     logger.info(
         "slack_command_received",
         command=command,
@@ -300,7 +491,7 @@ async def handle_slack_commands(
         channel_id=channel_id,
         text=text[:50],
     )
-    
+
     # Parse command text
     # Format: /l9 do <task> | /l9 email <instruction> | /l9 extract <artifact>
     parts = text.split(None, 1)
@@ -309,14 +500,14 @@ async def handle_slack_commands(
             "response_type": "ephemeral",
             "text": "Usage: /l9 do <task> | /l9 email <instruction> | /l9 extract <artifact>",
         }
-    
+
     subcommand = parts[0].lower()
     full_text = parts[1] if len(parts) > 1 else ""
-    
+
     # Route to AIOS /chat
     aios_response = None
     aios_error = None
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             system_prompt = f"User issued command: /{command} {subcommand}"
@@ -324,7 +515,7 @@ async def handle_slack_commands(
                 "message": full_text,
                 "system_prompt": system_prompt,
             }
-            
+
             aios_response_obj = await client.post(
                 f"{aios_base_url}/chat",
                 json=aios_payload,
@@ -335,19 +526,19 @@ async def handle_slack_commands(
     except Exception as e:
         aios_error = str(e)
         logger.error("aios_command_error", command=command, error=aios_error)
-    
+
     # Build response
     reply_text = aios_response.get("reply") if aios_response else None
-    
+
     if not reply_text and aios_error:
         reply_text = "Sorry, I encountered an error processing your command."
-    
+
     if not reply_text:
         reply_text = "No response generated."
-    
+
     # Post to response_url or Slack API
     slack_error = None
-    
+
     if response_url:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -362,7 +553,7 @@ async def handle_slack_commands(
         except Exception as e:
             slack_error = str(e)
             logger.error("slack_command_response_url_error", error=slack_error)
-    
+
     # Store command packet
     try:
         command_packet_in = PacketEnvelopeIn(
@@ -386,18 +577,19 @@ async def handle_slack_commands(
                 source="slack",
             ),
         )
-        
+
         result = await substrate_service.write_packet(command_packet_in)
         logger.debug("slack_command_packet_stored", packet_id=result.packet_id)
     except Exception as e:
         logger.error("slack_command_packet_storage_error", error=str(e))
-    
+
     return {"ok": True}
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 async def _check_duplicate(
     substrate_service: MemorySubstrateService,
@@ -410,9 +602,9 @@ async def _check_duplicate(
 ) -> Dict[str, Any]:
     """
     Check if event already processed.
-    
+
     Returns dedupe result with is_duplicate, reason.
-    
+
     TODO: In production, this would query packet_store with:
           WHERE payload->>'event_id' = ? OR
                 (metadata->>'team_id' = ? AND channel_id = ? AND ts = ? AND user_id = ?)
@@ -433,7 +625,7 @@ async def _retrieve_thread_context(
 ) -> Dict[str, Any]:
     """
     Retrieve recent packets in thread (thread context).
-    
+
     Queries packet_store for packets matching the thread_uuid.
     """
     try:
@@ -443,16 +635,21 @@ async def _retrieve_thread_context(
         )
         return {"packets": packets}
     except Exception as e:
-        logger.error("thread_context_retrieval_error", error=str(e), thread_uuid=thread_uuid)
+        logger.error(
+            "thread_context_retrieval_error", error=str(e), thread_uuid=thread_uuid
+        )
         # Log to error telemetry (non-blocking)
         try:
             from core.error_tracking import log_error_to_graph
             import asyncio
-            asyncio.create_task(log_error_to_graph(
-                error=e,
-                context={"thread_uuid": thread_uuid, "limit": limit},
-                source="memory.slack_ingest.thread_context",
-            ))
+
+            asyncio.create_task(
+                log_error_to_graph(
+                    error=e,
+                    context={"thread_uuid": thread_uuid, "limit": limit},
+                    source="memory.slack_ingest.thread_context",
+                )
+            )
         except ImportError:
             pass
         return {"packets": [], "error": str(e)}
@@ -466,11 +663,11 @@ async def _retrieve_semantic_hits(
 ) -> Dict[str, Any]:
     """
     Retrieve semantically similar packets.
-    
+
     Calls substrate_service.semantic_search for vector similarity search.
     """
     from memory.substrate_models import SemanticSearchRequest
-    
+
     try:
         request = SemanticSearchRequest(
             query=query,
@@ -489,16 +686,21 @@ async def _retrieve_semantic_hits(
             ]
         }
     except Exception as e:
-        logger.error("semantic_search_error", error=str(e), query=query[:100], team_id=team_id)
+        logger.error(
+            "semantic_search_error", error=str(e), query=query[:100], team_id=team_id
+        )
         # Log to error telemetry (non-blocking)
         try:
             from core.error_tracking import log_error_to_graph
             import asyncio
-            asyncio.create_task(log_error_to_graph(
-                error=e,
-                context={"query": query[:100], "team_id": team_id, "limit": limit},
-                source="memory.slack_ingest.semantic_search",
-            ))
+
+            asyncio.create_task(
+                log_error_to_graph(
+                    error=e,
+                    context={"query": query[:100], "team_id": team_id, "limit": limit},
+                    source="memory.slack_ingest.semantic_search",
+                )
+            )
         except ImportError:
             pass
         return {"results": [], "error": str(e)}
@@ -512,7 +714,7 @@ def _build_system_prompt(
 ) -> str:
     """
     Build system prompt that includes thread context and semantic hits.
-    
+
     This gives the AIOS model context about the conversation thread and
     any related prior knowledge from the memory substrate.
     """
@@ -521,20 +723,19 @@ def _build_system_prompt(
         f"User ID: {user_id}",
         f"Channel: {channel_id}",
     ]
-    
+
     if thread_context and thread_context.get("packets"):
         parts.append("\nRecent thread context:")
         for item in thread_context.get("packets", [])[:5]:
             content = item.get("payload", {}).get("text", "")[:200]
             if content:
                 parts.append(f"  - {content}")
-    
+
     if semantic_hits and semantic_hits.get("results"):
         parts.append("\nRelated knowledge:")
         for item in semantic_hits.get("results", [])[:3]:
             content = item.get("payload", {}).get("text", "")[:200]
             if content:
                 parts.append(f"  - {content}")
-    
-    return "\n".join(parts)
 
+    return "\n".join(parts)

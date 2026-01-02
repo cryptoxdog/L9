@@ -48,7 +48,9 @@ class SubstrateRetriever(BaseRetriever):
         for hit in result.hits:
             payload: dict[str, Any] = hit.payload
             text = payload.get("text") or payload.get("content") or str(payload)
-            metadata = {k: v for k, v in payload.items() if k not in ("text", "content")}
+            metadata = {
+                k: v for k, v in payload.items() if k not in ("text", "content")
+            }
             metadata.update(
                 {
                     "embedding_id": str(hit.embedding_id),
@@ -69,4 +71,3 @@ class SubstrateRetriever(BaseRetriever):
         import asyncio
 
         return asyncio.run(self._aget_relevant_documents(query))
-

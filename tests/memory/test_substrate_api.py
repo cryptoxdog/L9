@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 pytest.skip("Legacy memory substrate system — skipping.", allow_module_level=True)
 
 """
@@ -53,4 +54,3 @@ async def test_get_packet_roundtrip(service):
     envelope = await service.get_packet(result.packet_id)
     assert envelope is not None
     assert envelope.payload["hello"] == "world"
-

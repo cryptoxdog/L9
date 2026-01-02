@@ -2,21 +2,26 @@
 
 ## Overview
 
-L9 has **three Slack integration implementations** that coexist for backward compatibility and gradual migration:
+L9 has **two Slack integration implementations** that coexist:
 
-1. **Slack Webhook Adapter (v2.6)** - Newest, module-based adapter (`api/adapters/slack_adapter/`)
-2. **Slack Routes (v2.0+)** - FastAPI routes with validation (`api/routes/slack.py`)
-3. **Legacy Webhook Handler** - Original implementation (`api/webhook_slack.py`)
+1. **Slack Routes (v2.0+)** - Primary working implementation (`api/routes/slack.py`)
+2. **Legacy Webhook Handler** - Original implementation (`api/webhook_slack.py`)
 
 ## Current Status
 
 ### What's Enabled
 
-All three implementations are **conditionally registered** in `api/server.py`:
+Both implementations are **conditionally registered** based on `SLACK_APP_ENABLED`:
 
-- **Slack Webhook Adapter (v2.6)**: Registered if `api/adapters/slack_adapter` imports successfully
-- **Slack Routes (v2.0+)**: Registered if `_has_slack` is True (requires `api/slack_adapter.py`)
-- **Legacy Webhook**: Registered if `_has_slack` is True (always registered, but behavior gated by `L9_ENABLE_LEGACY_SLACK_ROUTER`)
+- **Slack Routes (v2.0+)**: Registered in `api/server.py` if `_has_slack` is True AND `settings.slack_app_enabled` is True
+- **Legacy Webhook**: Registered in `api/server_memory.py` if `settings.slack_app_enabled` is True (behavior gated by `L9_ENABLE_LEGACY_SLACK_ROUTER`)
+
+**Note**: The v2.6 adapter in `api/adapters/slack_adapter/` exists but is incomplete (stub implementation). It is not used for production processing.
+
+**Initialization Requirements**:
+- Both `api/server.py` and `api/server_memory.py` validate `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` before initializing
+- If tokens are missing, routes are NOT mounted (fail-safe behavior)
+- Configuration is loaded from `IntegrationSettings` in `config/settings.py` (falls back to `os.getenv`)
 
 ### Feature Flags
 
@@ -27,33 +32,7 @@ All three implementations are **conditionally registered** in `api/server.py`:
 
 ## Architecture
 
-### 1. Slack Webhook Adapter (v2.6) - Recommended
-
-**Location**: `api/adapters/slack_adapter/`
-
-**Routes**:
-- `POST /slack/events` - Slack Events API webhook
-- `GET /slack/health` - Health check
-
-**Features**:
-- HMAC-SHA256 signature validation
-- Idempotent request handling (dedupe cache)
-- Packet emission to memory substrate
-- AIOS runtime integration
-- Module-spec v2.6 compliant
-
-**Wiring**: See `WIRING_LOG.md` in this directory.
-
-**Configuration**:
-```python
-# Environment variables (from config.py)
-SLACK_SIGNING_SECRET  # Required
-SLACK_BOT_TOKEN       # Required
-SLACK_APP_ENABLED     # Optional, feature toggle
-SLACK_WEBHOOK_LOG_LEVEL  # Optional
-```
-
-### 2. Slack Routes (v2.0+)
+### 1. Slack Routes (v2.0+) - Primary Implementation
 
 **Location**: `api/routes/slack.py`
 
@@ -62,15 +41,32 @@ SLACK_WEBHOOK_LOG_LEVEL  # Optional
 - `POST /slack/commands` - Slash command handler
 
 **Features**:
-- Uses `SlackRequestValidator` and `SlackRequestNormalizer` from `api/slack_adapter.py`
+- HMAC-SHA256 signature validation via `SlackRequestValidator`
+- Request normalization via `SlackRequestNormalizer`
 - Routes to memory ingestion layer (`memory/slack_ingest.py`)
+- HTTP POST to `/chat` endpoint for processing (not AIOS runtime object)
+- Posts replies back to Slack via `SlackAPIClient`
+- Packet emission to memory substrate (`slack.in`, `slack.out`, `slack.command`)
 - Dependency injection via FastAPI `Depends`
 
 **Initialization**: 
-- Validator and client initialized in `server.py` lifespan
+- Validator and client initialized in `api/server.py` lifespan (if `settings.slack_app_enabled` is True)
+- Configuration loaded from `IntegrationSettings` (`config/settings.py`) with fallback to `os.getenv`
+- Tokens validated before initialization; if missing, adapter is not initialized (no routes mounted)
 - Stored in `app.state.slack_validator` and `app.state.slack_client`
+- `app.state.aios_base_url` set to `AIOS_BASE_URL` env var (default: `http://localhost:8000`)
 
-### 3. Legacy Webhook Handler
+**Processing Flow**:
+```
+Slack Event → /slack/events (api/routes/slack.py)
+  → Signature validation
+  → handle_slack_events() (memory/slack_ingest.py)
+  → HTTP POST to {aios_base_url}/chat
+  → Post reply to Slack via SlackAPIClient
+  → Store packets in memory substrate
+```
+
+### 2. Legacy Webhook Handler
 
 **Location**: `api/webhook_slack.py`
 
@@ -88,21 +84,25 @@ SLACK_WEBHOOK_LOG_LEVEL  # Optional
 
 ## Event Flow
 
-### Current Flow (Legacy Router Enabled)
+### Primary Flow (Slack Routes)
+
+```
+Slack Event → POST /slack/events (api/routes/slack.py)
+  → Signature validation (SlackRequestValidator)
+  → handle_slack_events() (memory/slack_ingest.py)
+  → Dedupe check (event_id lookup)
+  → Retrieve thread context from memory
+  → HTTP POST to {aios_base_url}/chat
+  → Post reply to Slack (SlackAPIClient.post_message)
+  → Store inbound/outbound packets in memory substrate
+```
+
+### Legacy Flow (Legacy Router Enabled)
 
 ```
 Slack Event → /slack/events (webhook_slack.py)
   → Legacy routing (if L9_ENABLE_LEGACY_SLACK_ROUTER=true)
   → OR handle_slack_with_l_agent() → AgentTask → L-CTO (if flag=false)
-```
-
-### Target Flow (v2.6 Adapter)
-
-```
-Slack Event → /slack/events (slack_webhook_adapter)
-  → SlackWebhookAdapter.process()
-  → Memory substrate packet emission
-  → AIOS runtime integration
 ```
 
 ## OAuth Scopes
@@ -144,17 +144,31 @@ To enable "no @L needed" in DMs:
 
 ## Environment Variables
 
-### Required
+### Required (for Slack integration to work)
 ```bash
 SLACK_SIGNING_SECRET=xoxb-...  # From Slack App → Basic Information → Signing Secret
 SLACK_BOT_TOKEN=xoxb-...       # From Slack App → OAuth & Permissions → Bot User OAuth Token
 ```
 
-### Optional
+### Optional (but recommended)
 ```bash
-SLACK_APP_ENABLED=true          # Master toggle
+SLACK_APP_ENABLED=true          # Master toggle (must be true for routes to mount)
 L9_ENABLE_LEGACY_SLACK_ROUTER=false  # Use AgentTask routing (recommended)
+AIOS_BASE_URL=http://localhost:8000  # Base URL for /chat endpoint (default: http://localhost:8000)
 ```
+
+### Future OAuth Variables (defined in settings, not currently used)
+```bash
+SLACK_APP_ID=...              # For future OAuth installation flows
+SLACK_CLIENT_ID=...           # For future OAuth installation flows
+SLACK_CLIENT_SECRET=...       # For future OAuth installation flows
+SLACK_VERIFICATION_TOKEN=...  # Legacy token (for future OAuth flows)
+```
+
+**Configuration Loading**:
+- All variables are loaded via `IntegrationSettings` in `config/settings.py`
+- Falls back to `os.getenv()` if settings module unavailable
+- Variables can be set in `.env` file or environment
 
 ## Testing
 
@@ -168,28 +182,29 @@ pytest api/adapters/slack_adapter/tests/test_slack_webhook.py
 pytest api/adapters/slack_adapter/tests/test_slack_webhook_integration.py
 ```
 
-## Migration Path
+## Implementation Details
 
-### Phase 1: Current State ✅
-- All three implementations coexist
-- Legacy router enabled by default (`L9_ENABLE_LEGACY_SLACK_ROUTER=true`)
+### How Processing Works
 
-### Phase 2: Enable AgentTask Routing
-- Set `L9_ENABLE_LEGACY_SLACK_ROUTER=false`
-- DMs and messages containing "l9" route through L-CTO agent
-- See `igor/slack enabling.md` for detailed GMP prompt
+The primary implementation (`api/routes/slack.py` → `memory/slack_ingest.py`) processes Slack events as follows:
 
-### Phase 3: Migrate to v2.6 Adapter (Future)
-- Deprecate legacy webhook handler
-- Standardize on `api/adapters/slack_adapter/`
-- Remove duplicate routes
+1. **Signature Validation**: HMAC-SHA256 verification using `SLACK_SIGNING_SECRET`
+2. **Request Normalization**: Extracts thread UUID, event ID, user/channel info
+3. **Deduplication**: Checks for duplicate `event_id` in memory substrate
+4. **Context Retrieval**: Fetches thread history and semantic hits from memory
+5. **Processing**: HTTP POST to `/chat` endpoint (not an AIOS runtime object)
+6. **Reply**: Posts response back to Slack via `SlackAPIClient`
+7. **Persistence**: Stores `slack.in` and `slack.out` packets in memory substrate
+
+**Note**: The `/chat` endpoint is a standard HTTP endpoint, not an AIOS runtime integration. The code makes HTTP POST requests to `{AIOS_BASE_URL}/chat` (default: `http://localhost:8000/chat`).
 
 ## Troubleshooting
 
 ### Slack adapter not initializing
-- Check: `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` are set
-- Check: `SLACK_APP_ENABLED=true` (if using startup validation)
-- Check logs for: "Slack adapter not initialized: ..."
+- Check: `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` are set in environment or `.env` file
+- Check: `SLACK_APP_ENABLED=true` (required for initialization)
+- Check logs for: "Slack adapter not initialized: SLACK_SIGNING_SECRET or SLACK_BOT_TOKEN not set"
+- **Note**: If tokens are missing, routes are NOT mounted (fail-safe). Check both `api/server.py` and `api/server_memory.py` logs.
 
 ### Events not received
 - Verify Request URL in Slack App settings matches your server
@@ -203,118 +218,28 @@ pytest api/adapters/slack_adapter/tests/test_slack_webhook_integration.py
 
 ## Related Files
 
-- `api/adapters/slack_adapter/WIRING_LOG.md` - Technical wiring details
+- `api/routes/slack.py` - Primary working implementation (v2.0+ routes)
+- `memory/slack_ingest.py` - Core processing logic (HTTP /chat calls, packet storage)
+- `api/slack_adapter.py` - Validation/normalization utilities
+- `api/slack_client.py` - Slack API client for posting replies
+- `api/webhook_slack.py` - Legacy implementation
 - `l-cto/slack.scope.md` - OAuth scopes reference
 - `igor/slack enabling.md` - GMP prompt for enabling DM routing
-- `api/webhook_slack.py` - Legacy implementation
-- `api/routes/slack.py` - v2.0+ routes
-- `api/slack_adapter.py` - Validation/normalization utilities
-
-## v2.6 Adapter vs AgentTask Routing
-
-### Key Differences
-
-| Feature | AgentTask Routing (`handle_slack_with_l_agent`) | v2.6 Adapter |
-|---------|------------------------------------------------|--------------|
-| **Architecture** | Direct function call → AgentExecutorService | Structured orchestration pipeline |
-| **Memory Integration** | ❌ No packet emission | ✅ Automatic inbound/outbound/error packet emission |
-| **Idempotency** | ❌ No deduplication | ✅ Dedupe cache with TTL (24h default) |
-| **Thread UUID** | Manual generation | ✅ Deterministic UUIDv5 from request |
-| **Error Handling** | Basic try/catch | ✅ Structured error packets to memory |
-| **Validation** | Minimal | ✅ Multi-step validation pipeline |
-| **Observability** | Basic logging | ✅ Packet-based audit trail |
-| **AIOS Integration** | Direct agent execution | ✅ Can route to AIOS runtime OR agent executor |
-| **Module Compliance** | ❌ Custom implementation | ✅ Module-Spec v2.6 compliant |
-| **Side Effects** | Mixed with logic | ✅ Separated (`_execute_side_effects`) |
-| **Testing** | Manual integration | ✅ Unit + integration test suite |
-
-### Why v2.6 is Better
-
-#### 1. **Memory Substrate Integration**
-- **AgentTask**: No automatic packet emission. Events may not be fully auditable.
-- **v2.6**: Every request/response/error automatically written to memory substrate as packets:
-  - `slack_webhook.in` - Inbound request packet
-  - `slack_webhook.out` - Outbound response packet  
-  - `slack_webhook.error` - Error packet (if failure)
-- **Benefit**: Full audit trail, searchable history, thread reconstruction
-
-#### 2. **Idempotency & Deduplication**
-- **AgentTask**: Same message processed multiple times if Slack retries
-- **v2.6**: Dedupe cache prevents duplicate processing (24h TTL)
-- **Benefit**: Prevents duplicate agent responses, reduces API costs
-
-#### 3. **Deterministic Threading**
-- **AgentTask**: Thread UUID passed in (may be inconsistent)
-- **v2.6**: UUIDv5 generated deterministically from request (same request = same UUID)
-- **Benefit**: Consistent thread grouping across retries, better conversation continuity
-
-#### 4. **Structured Orchestration**
-- **AgentTask**: Single function with mixed concerns
-- **v2.6**: Clear pipeline:
-  ```
-  1. Generate context (thread UUID)
-  2. Validate request
-  3. Check idempotency
-  4. Write inbound packet
-  5. Execute business logic
-  6. Write outbound packet
-  7. Execute side effects (Slack API calls)
-  8. Cache response
-  ```
-- **Benefit**: Easier to test, debug, and extend
-
-#### 5. **Error Recovery**
-- **AgentTask**: Errors logged but not persisted
-- **v2.6**: Error packets written to memory with full context
-- **Benefit**: Error analysis, retry logic, failure pattern detection
-
-#### 6. **Module-Spec Compliance**
-- **AgentTask**: Custom implementation, not standardized
-- **v2.6**: Follows Module-Spec v2.6 patterns (same as email, twilio, calendar adapters)
-- **Benefit**: Consistent patterns across all integrations, easier maintenance
-
-#### 7. **Flexible Execution**
-- **AgentTask**: Hardcoded to `AgentExecutorService.start_agent_task()`
-- **v2.6**: Can route to:
-  - AIOS runtime (`aios_runtime_client.execute_reasoning()`)
-  - Agent executor (via AgentTask)
-  - Custom logic
-- **Benefit**: Supports multiple execution models, future-proof
-
-### When to Use Each
-
-**Use AgentTask Routing** when:
-- ✅ Quick prototype or temporary solution
-- ✅ Simple use case with no memory/audit requirements
-- ✅ Direct agent execution is sufficient
-
-**Use v2.6 Adapter** when:
-- ✅ Production deployment (recommended)
-- ✅ Need full audit trail and observability
-- ✅ Need idempotency (Slack retries)
-- ✅ Want consistent patterns with other adapters
-- ✅ Need error recovery and packet-based debugging
-
-### Migration Path
-
-1. **Current**: AgentTask routing works but lacks memory integration
-2. **Next**: Wire v2.6 adapter's `_execute()` to call `handle_slack_with_l_agent()` internally
-3. **Future**: Replace AgentTask call with direct AIOS runtime integration
-
-This gives you v2.6 benefits (packets, idempotency, audit) while keeping AgentTask execution.
 
 ## Summary
 
 **What's Currently Enabled**:
-- ✅ All three Slack implementations are registered
-- ✅ Legacy router is default (`L9_ENABLE_LEGACY_SLACK_ROUTER=true`)
-- ✅ AgentTask routing available when flag is `false`
-- ✅ v2.6 adapter ready but not primary yet
+- ✅ Slack Routes (v2.0+) - Primary working implementation
+- ✅ Legacy webhook handler - Available but gated by `L9_ENABLE_LEGACY_SLACK_ROUTER`
+- ✅ Packet emission to memory substrate (`slack.in`, `slack.out`, `slack.command`)
+- ✅ HTTP integration with `/chat` endpoint (not AIOS runtime object)
 
-**Recommended Next Steps**:
-1. Set `L9_ENABLE_LEGACY_SLACK_ROUTER=false` to enable AgentTask routing (immediate)
-2. Wire v2.6 adapter's `_execute()` to use AgentTask routing (get v2.6 benefits)
-3. Add `message.im` event subscription in Slack App for DM support
-4. Test DM flow without @L mentions
-5. Gradually migrate to direct AIOS runtime integration (future)
+**Key Implementation Notes**:
+- Processing uses HTTP POST to `/chat` endpoint, not an AIOS runtime integration
+- All packets are stored in memory substrate for audit trail
+- Signature validation is mandatory (fail-closed security)
+- Deduplication prevents duplicate processing of Slack retries
+- Configuration is centralized in `IntegrationSettings` (`config/settings.py`)
+- Token validation happens before route mounting (fail-safe: missing tokens = no routes)
+- Both `api/server.py` and `api/server_memory.py` independently validate and initialize Slack components
 

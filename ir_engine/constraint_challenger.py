@@ -24,7 +24,6 @@ from ir_engine.ir_schema import (
     IRGraph,
     ConstraintNode,
     ConstraintType,
-    ConstraintStatus,
     IRStatus,
 )
 
@@ -76,7 +75,7 @@ Return JSON:
 
 class ChallengeResult:
     """Result of constraint challenge analysis."""
-    
+
     def __init__(
         self,
         challenged: list[tuple[UUID, str, Optional[str]]],
@@ -88,7 +87,7 @@ class ChallengeResult:
         self.invalidated = invalidated  # (id, reason)
         self.hidden_found = hidden_found
         self.recommendations = recommendations
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "challenged_count": len(self.challenged),
@@ -100,8 +99,7 @@ class ChallengeResult:
                 for c in self.challenged
             ],
             "invalidated": [
-                {"id": str(i[0]), "reason": i[1]}
-                for i in self.invalidated
+                {"id": str(i[0]), "reason": i[1]} for i in self.invalidated
             ],
         }
 
@@ -109,10 +107,10 @@ class ChallengeResult:
 class ConstraintChallenger:
     """
     Challenges constraints to identify false, hidden, and improvable constraints.
-    
+
     Uses LLM reasoning to analyze constraint validity and suggest improvements.
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -122,7 +120,7 @@ class ConstraintChallenger:
     ):
         """
         Initialize the constraint challenger.
-        
+
         Args:
             api_key: OpenAI API key
             model: LLM model to use
@@ -134,19 +132,21 @@ class ConstraintChallenger:
         self._model = model
         self._temperature = temperature
         self._auto_apply = auto_apply
-        
-        logger.info(f"ConstraintChallenger initialized (model={model}, auto_apply={auto_apply})")
-    
+
+        logger.info(
+            f"ConstraintChallenger initialized (model={model}, auto_apply={auto_apply})"
+        )
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._api_key)
         return self._client
-    
+
     # ==========================================================================
     # Main Challenge Flow
     # ==========================================================================
-    
+
     async def challenge(
         self,
         graph: IRGraph,
@@ -154,82 +154,86 @@ class ConstraintChallenger:
     ) -> ChallengeResult:
         """
         Challenge constraints in the graph.
-        
+
         Args:
             graph: IR graph to analyze
             context: Additional context for analysis
-            
+
         Returns:
             ChallengeResult with findings
         """
         logger.info(f"Challenging constraints in graph {graph.graph_id}")
-        
+
         # Skip if no constraints
         if not graph.constraints:
             logger.info("No constraints to challenge")
             return ChallengeResult([], [], [], [])
-        
+
         # Get LLM analysis
         analysis = await self._analyze_constraints(graph, context)
-        
+
         # Process challenges
         challenged: list[tuple[UUID, str, Optional[str]]] = []
         invalidated: list[tuple[UUID, str]] = []
-        
+
         for challenge in analysis.get("challenges", []):
-            constraint_id = self._parse_constraint_id(challenge.get("constraint_id", ""), graph)
+            constraint_id = self._parse_constraint_id(
+                challenge.get("constraint_id", ""), graph
+            )
             if not constraint_id:
                 continue
-            
+
             verdict = challenge.get("verdict", "valid")
             reason = challenge.get("reason", "")
             alternative = challenge.get("alternative")
-            
+
             if verdict == "false":
                 invalidated.append((constraint_id, reason))
                 if self._auto_apply:
                     constraint = graph.get_constraint(constraint_id)
                     if constraint:
                         constraint.invalidate(reason)
-            
+
             elif verdict == "needs_revision":
                 challenged.append((constraint_id, reason, alternative))
                 if self._auto_apply:
                     constraint = graph.get_constraint(constraint_id)
                     if constraint:
                         constraint.challenge(reason, alternative)
-        
+
         # Process hidden constraints
         hidden_found: list[ConstraintNode] = []
         for hidden in analysis.get("hidden_constraints", []):
             new_constraint = ConstraintNode(
-                constraint_type=self._parse_constraint_type(hidden.get("type", "hidden")),
+                constraint_type=self._parse_constraint_type(
+                    hidden.get("type", "hidden")
+                ),
                 description=hidden.get("description", ""),
                 priority=self._parse_priority(hidden.get("priority", "medium")),
             )
             hidden_found.append(new_constraint)
-            
+
             if self._auto_apply:
                 graph.add_constraint(new_constraint)
-        
+
         # Update graph status
         if self._auto_apply and (challenged or invalidated or hidden_found):
             graph.set_status(IRStatus.CHALLENGED)
-        
+
         result = ChallengeResult(
             challenged=challenged,
             invalidated=invalidated,
             hidden_found=hidden_found,
             recommendations=analysis.get("recommendations", []),
         )
-        
+
         logger.info(
             f"Challenge complete: {len(challenged)} challenged, "
             f"{len(invalidated)} invalidated, {len(hidden_found)} hidden found"
         )
-        
+
         return result
-    
+
     async def _analyze_constraints(
         self,
         graph: IRGraph,
@@ -237,105 +241,122 @@ class ConstraintChallenger:
     ) -> dict[str, Any]:
         """Use LLM to analyze constraints."""
         client = self._ensure_client()
-        
+
         # Format graph data for prompt
-        intents_str = "\n".join([
-            f"- {i.intent_type.value}: {i.description} (target: {i.target})"
-            for i in graph.intents.values()
-        ])
-        
-        constraints_str = "\n".join([
-            f"- [{c.node_id}] {c.constraint_type.value}: {c.description} (status: {c.status.value})"
-            for c in graph.constraints.values()
-        ])
-        
-        actions_str = "\n".join([
-            f"- {a.action_type.value}: {a.description} (target: {a.target})"
-            for a in graph.actions.values()
-        ])
-        
+        intents_str = "\n".join(
+            [
+                f"- {i.intent_type.value}: {i.description} (target: {i.target})"
+                for i in graph.intents.values()
+            ]
+        )
+
+        constraints_str = "\n".join(
+            [
+                f"- [{c.node_id}] {c.constraint_type.value}: {c.description} (status: {c.status.value})"
+                for c in graph.constraints.values()
+            ]
+        )
+
+        actions_str = "\n".join(
+            [
+                f"- {a.action_type.value}: {a.description} (target: {a.target})"
+                for a in graph.actions.values()
+            ]
+        )
+
         prompt = CHALLENGE_PROMPT.format(
             intents=intents_str or "None",
             constraints=constraints_str or "None",
             actions=actions_str or "None",
             context=json.dumps(context or {}, indent=2),
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._model,
                 messages=[
-                    {"role": "system", "content": "You are a constraint analysis expert. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are a constraint analysis expert. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=self._temperature,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"LLM constraint analysis failed: {e}")
             return {"challenges": [], "hidden_constraints": [], "recommendations": []}
-    
+
     # ==========================================================================
     # Rule-Based Challenges
     # ==========================================================================
-    
+
     def challenge_rule_based(self, graph: IRGraph) -> ChallengeResult:
         """
         Apply rule-based constraint challenges (no LLM).
-        
+
         Useful for quick validation without API calls.
         """
         challenged: list[tuple[UUID, str, Optional[str]]] = []
         invalidated: list[tuple[UUID, str]] = []
-        
+
         for constraint_id, constraint in graph.constraints.items():
             # Check for vague constraints
             if len(constraint.description) < 10:
-                challenged.append((
-                    constraint_id,
-                    "Constraint description is too vague",
-                    "Provide more specific requirements"
-                ))
-            
+                challenged.append(
+                    (
+                        constraint_id,
+                        "Constraint description is too vague",
+                        "Provide more specific requirements",
+                    )
+                )
+
             # Check for orphan constraints
             if not constraint.applies_to:
-                challenged.append((
-                    constraint_id,
-                    "Constraint does not apply to any intent or action",
-                    "Specify which intents/actions this constraint applies to"
-                ))
-            
+                challenged.append(
+                    (
+                        constraint_id,
+                        "Constraint does not apply to any intent or action",
+                        "Specify which intents/actions this constraint applies to",
+                    )
+                )
+
             # Check for low confidence constraints
             if constraint.confidence < 0.5:
-                challenged.append((
-                    constraint_id,
-                    f"Low confidence constraint ({constraint.confidence:.2f})",
-                    "Review and verify this constraint"
-                ))
-            
+                challenged.append(
+                    (
+                        constraint_id,
+                        f"Low confidence constraint ({constraint.confidence:.2f})",
+                        "Review and verify this constraint",
+                    )
+                )
+
             # Check for conflicting keywords
             desc_lower = constraint.description.lower()
             if "always" in desc_lower and "never" in desc_lower:
-                invalidated.append((
-                    constraint_id,
-                    "Constraint contains conflicting terms (always + never)"
-                ))
-        
+                invalidated.append(
+                    (
+                        constraint_id,
+                        "Constraint contains conflicting terms (always + never)",
+                    )
+                )
+
         return ChallengeResult(
             challenged=challenged,
             invalidated=invalidated,
             hidden_found=[],
             recommendations=[],
         )
-    
+
     # ==========================================================================
     # Utility Methods
     # ==========================================================================
-    
+
     def _parse_constraint_id(self, id_str: str, graph: IRGraph) -> Optional[UUID]:
         """Parse constraint ID string to UUID."""
         try:
@@ -346,7 +367,7 @@ class ConstraintChallenger:
                 if str(cid).startswith(id_str):
                     return cid
             return None
-    
+
     def _parse_constraint_type(self, value: str) -> ConstraintType:
         """Parse constraint type string."""
         mapping = {
@@ -357,10 +378,11 @@ class ConstraintChallenger:
             "system": ConstraintType.SYSTEM,
         }
         return mapping.get(value.lower(), ConstraintType.HIDDEN)
-    
+
     def _parse_priority(self, value: str):
         """Parse priority string."""
         from ir_engine.ir_schema import NodePriority
+
         mapping = {
             "critical": NodePriority.CRITICAL,
             "high": NodePriority.HIGH,
@@ -368,11 +390,11 @@ class ConstraintChallenger:
             "low": NodePriority.LOW,
         }
         return mapping.get(value.lower(), NodePriority.MEDIUM)
-    
+
     # ==========================================================================
     # Batch Operations
     # ==========================================================================
-    
+
     async def challenge_multiple(
         self,
         graphs: list[IRGraph],
@@ -380,19 +402,18 @@ class ConstraintChallenger:
     ) -> dict[UUID, ChallengeResult]:
         """
         Challenge constraints in multiple graphs.
-        
+
         Args:
             graphs: List of graphs to challenge
             context: Shared context
-            
+
         Returns:
             Dict mapping graph IDs to results
         """
         results: dict[UUID, ChallengeResult] = {}
-        
+
         for graph in graphs:
             result = await self.challenge(graph, context)
             results[graph.graph_id] = result
-        
-        return results
 
+        return results

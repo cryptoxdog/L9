@@ -17,7 +17,14 @@ from config.settings import settings
 import os
 import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    Depends,
+    Header,
+)
 from pydantic import BaseModel
 from openai import OpenAI
 from api.memory.router import router as memory_router
@@ -29,9 +36,18 @@ import api.agent_routes as agent_routes
 # Optional: World Model API (v1.1.0+)
 try:
     from api.world_model_api import router as world_model_router
+
     _has_world_model = True
 except ImportError:
     _has_world_model = False
+
+# World Model Query Routes (GMP-18)
+try:
+    from api.routes.worldmodel import router as worldmodel_query_router
+
+    _has_worldmodel_query = True
+except ImportError:
+    _has_worldmodel_query = False
 
 # Optional: Slack Adapter (v2.0+)
 try:
@@ -39,6 +55,7 @@ try:
     from api.slack_adapter import SlackRequestValidator
     from api.slack_client import SlackAPIClient
     import httpx
+
     _has_slack = True
 except ImportError:
     _has_slack = False
@@ -47,6 +64,7 @@ except ImportError:
 try:
     from services.research.research_api import router as research_router
     from services.research.graph_runtime import init_runtime, shutdown_runtime
+
     _has_research = True
 except ImportError:
     _has_research = False
@@ -58,6 +76,7 @@ try:
         get_or_create_runtime,
         WorldModelRuntime,
     )
+
     _has_world_model_runtime = True
 except ImportError:
     _has_world_model_runtime = False
@@ -73,6 +92,7 @@ try:
         TaskKind,
         ToolBinding,
     )
+
     _has_agent_executor = True
 except ImportError:
     _has_agent_executor = False
@@ -80,13 +100,18 @@ except ImportError:
 # Optional: AIOS Runtime (v2.2+)
 try:
     from core.aios.runtime import AIOSRuntime, create_aios_runtime
+
     _has_aios_runtime = True
 except ImportError:
     _has_aios_runtime = False
 
 # Optional: Tool Registry Adapter (v2.2+)
 try:
-    from core.tools.registry_adapter import ExecutorToolRegistry, create_executor_tool_registry
+    from core.tools.registry_adapter import (
+        ExecutorToolRegistry,
+        create_executor_tool_registry,
+    )
+
     _has_tool_registry = True
 except ImportError:
     _has_tool_registry = False
@@ -94,60 +119,95 @@ except ImportError:
 # Optional: Research Factory (v2.3+)
 try:
     from api.routes.factory import router as factory_router
+
     _has_factory = True
 except ImportError:
     _has_factory = False
+
+# Optional: Igor Command Interface (v2.7+ / GMP-11)
+try:
+    from api.routes.commands import router as commands_router
+
+    _has_commands = True
+except ImportError:
+    _has_commands = False
+
+# Optional: Tools Router (v2.8+ / Wire Orchestrators)
+try:
+    from api.tools.router import router as tools_router
+
+    _has_tools_router = True
+except ImportError:
+    _has_tools_router = False
 
 # Optional: Governance Engine (v2.4+)
 try:
     from core.governance.engine import GovernanceEngineService, create_governance_engine
     from core.governance.loader import PolicyLoadError, InvalidPolicyError
+
     _has_governance = True
 except ImportError:
     _has_governance = False
 
+# Optional: Symbolic Computation Service (v2.9+ / GMP-SYMPY-TASK4)
+try:
+    from services.symbolic_computation.api.routes import router as symbolic_router
+
+    _has_symbolic = True
+except ImportError:
+    _has_symbolic = False
+
 # Optional: Kernel-Aware Agent Registry (v2.5+)
 try:
-    from core.agents.kernel_registry import create_kernel_aware_registry, KernelAwareAgentRegistry
+    from core.agents.kernel_registry import (
+        create_kernel_aware_registry,
+        KernelAwareAgentRegistry,
+    )
+
     _has_kernel_registry = True
 except ImportError:
     _has_kernel_registry = False
 
 # Optional: Calendar Adapter (v2.6+)
 try:
-    from api.adapters.calendar_adapter.routes.calendar_adapter import router as calendar_adapter_router
+    from api.adapters.calendar_adapter.routes.calendar_adapter import (
+        router as calendar_adapter_router,
+    )
     from api.adapters.calendar_adapter.config import get_config as get_calendar_config
+
     _has_calendar_adapter = True
 except ImportError:
     _has_calendar_adapter = False
 
 # Optional: Email Adapter (v2.6+)
 try:
-    from api.adapters.email_adapter.routes.email_adapter import router as email_adapter_router
+    from api.adapters.email_adapter.routes.email_adapter import (
+        router as email_adapter_router,
+    )
     from api.adapters.email_adapter.config import get_config as get_email_config
+
     _has_email_adapter = True
 except ImportError:
     _has_email_adapter = False
 
 # Optional: Twilio Adapter (v2.6+)
 try:
-    from api.adapters.twilio_adapter.routes.twilio_adapter import router as twilio_adapter_router
+    from api.adapters.twilio_adapter.routes.twilio_adapter import (
+        router as twilio_adapter_router,
+    )
     from api.adapters.twilio_adapter.config import get_config as get_twilio_config
+
     _has_twilio_adapter = True
 except ImportError:
     _has_twilio_adapter = False
 
-# Optional: Slack Webhook Adapter (v2.6+)
-try:
-    from api.adapters.slack_adapter.routes.slack_webhook import router as slack_webhook_adapter_router
-    from api.adapters.slack_adapter.config import get_config as get_slack_webhook_config
-    _has_slack_webhook_adapter = True
-except ImportError:
-    _has_slack_webhook_adapter = False
+# Slack Webhook Adapter (v2.6+) - NOT USED (using slack_router v2.0+ instead)
+_has_slack_webhook_adapter = False
 
 # Optional: Housekeeping Engine (v2.4+)
 try:
     from memory.housekeeping import HousekeepingEngine, init_housekeeping_engine
+
     _has_housekeeping = True
 except ImportError:
     _has_housekeeping = False
@@ -160,7 +220,7 @@ _has_waba = os.getenv("WABA_ENABLED", "false").lower() == "true"
 
 # Memory system imports
 from memory.migration_runner import run_migrations
-from memory.substrate_service import init_service, close_service, get_service
+from memory.substrate_service import init_service, close_service
 
 # Integration settings
 logger = structlog.get_logger(__name__)
@@ -172,6 +232,7 @@ LOCAL_DEV = os.getenv("LOCAL_DEV", "false").lower() == "true"
 if not LOCAL_DEV:
     db.init_db()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -181,9 +242,9 @@ async def lifespan(app: FastAPI):
     # ========================================================================
     # STARTUP: Validate required environment variables (fail-fast)
     # ========================================================================
-    required_env_vars = ['OPENAI_API_KEY']  # MEMORY_DSN is optional, SLACK is optional
-    recommended_env_vars = ['MEMORY_DSN', 'SLACK_BOT_TOKEN']
-    
+    required_env_vars = ["OPENAI_API_KEY"]  # MEMORY_DSN is optional, SLACK is optional
+    recommended_env_vars = ["MEMORY_DSN", "SLACK_BOT_TOKEN"]
+
     missing_required = [v for v in required_env_vars if not os.getenv(v)]
     if missing_required:
         logger.critical(
@@ -191,19 +252,19 @@ async def lifespan(app: FastAPI):
             missing_required,
         )
         raise RuntimeError(f"Missing required env vars: {missing_required}")
-    
+
     missing_recommended = [v for v in recommended_env_vars if not os.getenv(v)]
     if missing_recommended:
         logger.warning(
             "Missing recommended env vars (some features disabled): %s",
             missing_recommended,
         )
-    
+
     # ========================================================================
     # STARTUP: Run migrations and initialize memory service
     # ========================================================================
     logger.info("Starting L9 API server...")
-    
+
     # Get database URL
     database_url = os.getenv("MEMORY_DSN") or os.getenv("DATABASE_URL")
     if not database_url:
@@ -222,7 +283,7 @@ async def lifespan(app: FastAPI):
             )
             if migration_result["errors"]:
                 logger.error(f"Migration errors: {migration_result['error_details']}")
-            
+
             # Initialize memory service
             logger.info("Initializing memory service...")
             substrate_service = await init_service(
@@ -232,14 +293,14 @@ async def lifespan(app: FastAPI):
                 openai_api_key=os.getenv("OPENAI_API_KEY"),
             )
             logger.info("Memory service initialized")
-            
+
             # Store in app state for route dependencies
             app.state.substrate_service = substrate_service
         except Exception as e:
             logger.error(f"Failed to initialize memory system: {e}", exc_info=True)
             # Don't fail startup, but log error
             app.state.substrate_service = None
-    
+
     # Initialize Quantum Research Factory (if enabled)
     if _has_research and database_url:
         try:
@@ -253,9 +314,13 @@ async def lifespan(app: FastAPI):
     elif _has_research:
         logger.warning("Research Factory not initialized: database_url required")
         app.state.research_enabled = False
-    
+
     # Initialize World Model Runtime (if enabled and substrate available)
-    if _has_world_model_runtime and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+    if (
+        _has_world_model_runtime
+        and hasattr(app.state, "substrate_service")
+        and app.state.substrate_service
+    ):
         try:
             logger.info("Initializing World Model Runtime...")
             world_model_runtime = await create_runtime_with_substrate(
@@ -264,9 +329,10 @@ async def lifespan(app: FastAPI):
                 batch_size=50,
             )
             app.state.world_model_runtime = world_model_runtime
-            
+
             # Start the runtime loop in background
             import asyncio
+
             app.state.world_model_task = asyncio.create_task(
                 world_model_runtime.run_loop()
             )
@@ -276,24 +342,28 @@ async def lifespan(app: FastAPI):
                 batch_size=50,
             )
         except Exception as e:
-            logger.error(f"Failed to initialize World Model Runtime: {e}", exc_info=True)
+            logger.error(
+                f"Failed to initialize World Model Runtime: {e}", exc_info=True
+            )
             app.state.world_model_runtime = None
     elif _has_world_model_runtime:
-        logger.warning("World Model Runtime not initialized: substrate_service required")
+        logger.warning(
+            "World Model Runtime not initialized: substrate_service required"
+        )
         app.state.world_model_runtime = None
-    
+
     # Initialize Governance Engine (if enabled)
     if _has_governance:
         try:
             policy_dir = os.getenv("POLICY_MANIFEST_DIR", "config/policies")
             logger.info("Initializing Governance Engine from %s...", policy_dir)
-            
+
             substrate = getattr(app.state, "substrate_service", None)
             governance_engine = create_governance_engine(
                 policy_dir=policy_dir,
                 substrate_service=substrate,
             )
-            
+
             app.state.governance_engine = governance_engine
             logger.info(
                 "Governance Engine initialized: %d policies loaded",
@@ -304,16 +374,24 @@ async def lifespan(app: FastAPI):
             logger.critical("Governance Engine failed to initialize: %s", str(e))
             app.state.governance_engine = None
         except Exception as e:
-            logger.error("Failed to initialize Governance Engine: %s", str(e), exc_info=True)
+            logger.error(
+                "Failed to initialize Governance Engine: %s", str(e), exc_info=True
+            )
             app.state.governance_engine = None
     else:
         app.state.governance_engine = None
-    
+
     # Initialize Housekeeping Engine (if enabled and substrate available)
-    if _has_housekeeping and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+    if (
+        _has_housekeeping
+        and hasattr(app.state, "substrate_service")
+        and app.state.substrate_service
+    ):
         try:
             logger.info("Initializing Housekeeping Engine...")
-            housekeeping = init_housekeeping_engine(app.state.substrate_service._repository)
+            housekeeping = init_housekeeping_engine(
+                app.state.substrate_service._repository
+            )
             app.state.housekeeping_engine = housekeeping
             logger.info("Housekeeping Engine initialized")
         except Exception as e:
@@ -321,28 +399,36 @@ async def lifespan(app: FastAPI):
             app.state.housekeeping_engine = None
     else:
         app.state.housekeeping_engine = None
-    
+
     # Initialize Agent Executor (if enabled and substrate available)
-    if _has_agent_executor and hasattr(app.state, "substrate_service") and app.state.substrate_service:
+    if (
+        _has_agent_executor
+        and hasattr(app.state, "substrate_service")
+        and app.state.substrate_service
+    ):
         try:
             logger.info("Initializing Agent Executor...")
-            
+
             # Use real AIOS runtime if available, otherwise stub
             if _has_aios_runtime:
                 aios_runtime = create_aios_runtime()
                 logger.info("Using real AIOSRuntime")
             else:
+
                 class StubAIOSRuntime:
                     """Stub AIOS runtime - returns direct responses."""
+
                     async def execute_reasoning(self, context):
                         from core.agents.schemas import AIOSResult
+
                         return AIOSResult.response(
                             "AIOS runtime not yet implemented. Context received.",
-                            tokens_used=0
+                            tokens_used=0,
                         )
+
                 aios_runtime = StubAIOSRuntime()
                 logger.info("Using stub AIOSRuntime")
-            
+
             # Use real tool registry if available, otherwise stub
             if _has_tool_registry:
                 # Connect governance engine if available
@@ -356,23 +442,27 @@ async def lifespan(app: FastAPI):
                     "attached" if gov_engine else "legacy",
                 )
             else:
+
                 class StubToolRegistry:
                     """Stub tool registry - no tools available."""
+
                     async def dispatch_tool_call(self, tool_id, arguments, context):
                         from core.agents.schemas import ToolCallResult
                         from uuid import uuid4
+
                         return ToolCallResult(
                             call_id=uuid4(),
                             tool_id=tool_id,
                             success=False,
-                            error="Tool registry not yet implemented"
+                            error="Tool registry not yet implemented",
                         )
-                    
+
                     def get_approved_tools(self, agent_id, principal_id):
                         return []
+
                 tool_registry = StubToolRegistry()
                 logger.info("Using stub ToolRegistry")
-            
+
             # Initialize agent registry with kernel loading
             if _has_kernel_registry:
                 try:
@@ -392,23 +482,26 @@ async def lifespan(app: FastAPI):
                     agent_registry = None
             else:
                 agent_registry = None
-            
+
             # Fallback stub registry if kernel registry unavailable
             if agent_registry is None:
+
                 class StubAgentRegistry:
                     """Stub agent registry with default agent."""
+
                     def get_agent_config(self, agent_id):
                         return AgentConfig(
                             agent_id=agent_id,
                             personality_id=agent_id,
                             system_prompt="You are a helpful L9 AI assistant.",
                         )
-                    
+
                     def agent_exists(self, agent_id):
                         return True
+
                 agent_registry = StubAgentRegistry()
                 logger.warning("Using stub agent registry (kernels not loaded)")
-            
+
             # Create executor
             executor = AgentExecutorService(
                 aios_runtime=aios_runtime,
@@ -416,91 +509,157 @@ async def lifespan(app: FastAPI):
                 substrate_service=app.state.substrate_service,
                 agent_registry=agent_registry,
             )
-            
+
             app.state.agent_executor = executor
             app.state.aios_runtime = aios_runtime
             app.state.tool_registry = tool_registry
             logger.info("Agent Executor initialized")
+
+            # Initialize ActionToolOrchestrator (for /tools/execute endpoint)
+            try:
+                from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
+
+                gov_engine = getattr(app.state, "governance_engine", None)
+                action_tool_orchestrator = ActionToolOrchestrator(
+                    tool_registry=tool_registry,
+                    governance_engine=gov_engine,
+                )
+                app.state.action_tool_orchestrator = action_tool_orchestrator
+                logger.info("ActionToolOrchestrator initialized")
+            except ImportError:
+                logger.debug("ActionToolOrchestrator not available")
+                app.state.action_tool_orchestrator = None
+            except Exception as orch_err:
+                logger.warning(f"ActionToolOrchestrator init failed: {orch_err}")
+                app.state.action_tool_orchestrator = None
+
+            # Initialize MemoryOrchestrator (for /memory/batch, /memory/compact endpoints)
+            try:
+                from orchestrators.memory.orchestrator import MemoryOrchestrator
+
+                memory_orchestrator = MemoryOrchestrator()
+                app.state.memory_orchestrator = memory_orchestrator
+                logger.info("MemoryOrchestrator initialized")
+            except ImportError:
+                logger.debug("MemoryOrchestrator not available")
+                app.state.memory_orchestrator = None
+            except Exception as mem_orch_err:
+                logger.warning(f"MemoryOrchestrator init failed: {mem_orch_err}")
+                app.state.memory_orchestrator = None
+
+            # Initialize WorldModelService (explicit, not lazy)
+            try:
+                from world_model.service import get_world_model_service
+
+                world_model_service = get_world_model_service()
+                app.state.world_model_service = world_model_service
+                logger.info("WorldModelService initialized")
+            except ImportError:
+                logger.debug("WorldModelService not available")
+                app.state.world_model_service = None
+            except Exception as wm_err:
+                logger.warning(f"WorldModelService init failed: {wm_err}")
+                app.state.world_model_service = None
+
         except Exception as e:
             logger.error(f"Failed to initialize Agent Executor: {e}", exc_info=True)
             app.state.agent_executor = None
     elif _has_agent_executor:
         logger.warning("Agent Executor not initialized: substrate_service required")
         app.state.agent_executor = None
-    
+
     # Initialize Slack adapter (if enabled)
     if _has_slack:
-        try:
-            slack_signing_secret = os.getenv("SLACK_SIGNING_SECRET")
-            slack_bot_token = os.getenv("SLACK_BOT_TOKEN")
-            
-            if slack_signing_secret and slack_bot_token:
-                logger.info("Initializing Slack adapter...")
-                
-                # Initialize Slack components
-                validator = SlackRequestValidator(slack_signing_secret)
-                http_client = httpx.AsyncClient()
-                slack_client = SlackAPIClient(
-                    bot_token=slack_bot_token,
-                    http_client=http_client,
-                )
-                
-                # Store in app state for route dependencies
-                app.state.slack_validator = validator
-                app.state.slack_client = slack_client
-                app.state.aios_base_url = os.getenv("AIOS_BASE_URL", "http://localhost:8000")
-                app.state.http_client = http_client
-                
-                logger.info("Slack adapter initialized")
-            else:
-                logger.warning(
-                    "Slack adapter not initialized: SLACK_SIGNING_SECRET or SLACK_BOT_TOKEN not set"
-                )
-                app.state.slack_validator = None
-                app.state.slack_client = None
-        except Exception as e:
-            logger.error(f"Failed to initialize Slack adapter: {e}", exc_info=True)
+        from config.settings import get_integration_settings
+
+        integration_settings = get_integration_settings()
+
+        if not integration_settings.slack_app_enabled:
+            logger.debug("Slack adapter disabled (SLACK_APP_ENABLED=false)")
             app.state.slack_validator = None
             app.state.slack_client = None
-    
+        else:
+            try:
+                slack_signing_secret = (
+                    integration_settings.slack_signing_secret
+                    or os.getenv("SLACK_SIGNING_SECRET")
+                )
+                slack_bot_token = integration_settings.slack_bot_token or os.getenv(
+                    "SLACK_BOT_TOKEN"
+                )
+
+                if slack_signing_secret and slack_bot_token:
+                    logger.info("Initializing Slack adapter...")
+
+                    # Initialize Slack components
+                    validator = SlackRequestValidator(slack_signing_secret)
+                    http_client = httpx.AsyncClient()
+                    slack_client = SlackAPIClient(
+                        bot_token=slack_bot_token,
+                        http_client=http_client,
+                    )
+
+                    # Store in app state for route dependencies
+                    app.state.slack_validator = validator
+                    app.state.slack_client = slack_client
+                    app.state.aios_base_url = os.getenv(
+                        "AIOS_BASE_URL", "http://localhost:8000"
+                    )
+                    app.state.http_client = http_client
+
+                    logger.info("Slack adapter initialized")
+                else:
+                    logger.warning(
+                        "Slack adapter not initialized: SLACK_SIGNING_SECRET or SLACK_BOT_TOKEN not set"
+                    )
+                    app.state.slack_validator = None
+                    app.state.slack_client = None
+            except Exception as e:
+                logger.error(f"Failed to initialize Slack adapter: {e}", exc_info=True)
+                app.state.slack_validator = None
+                app.state.slack_client = None
+
     # ========================================================================
     # NEO4J GRAPH INTEGRATIONS (v2.7+)
     # ========================================================================
-    
+
     # Validate Neo4j URI format (if set)
-    neo4j_uri = os.getenv('NEO4J_URI')
+    neo4j_uri = os.getenv("NEO4J_URI")
     if neo4j_uri:
-        valid_prefixes = ('bolt://', 'neo4j://', 'neo4j+s://', 'neo4j+ssc://')
+        valid_prefixes = ("bolt://", "neo4j://", "neo4j+s://", "neo4j+ssc://")
         if not neo4j_uri.startswith(valid_prefixes):
             logger.error(
                 f"Invalid NEO4J_URI format: {neo4j_uri}. "
                 f"Must start with one of: {valid_prefixes}"
             )
             raise ValueError(f"Invalid NEO4J_URI format: {neo4j_uri}")
-    
+
     # Initialize Neo4j client (optional, graceful if unavailable)
     try:
         from memory.graph_client import get_neo4j_client, close_neo4j_client
+
         neo4j = await get_neo4j_client()
         if neo4j and neo4j.is_available():
             app.state.neo4j_client = neo4j
             logger.info("Neo4j graph client initialized")
-            
+
             # Register L9 tools in graph (for dependency tracking)
             try:
                 from core.tools.tool_graph import register_l9_tools, register_l_tools
+
                 tool_count = await register_l9_tools()
                 logger.info(f"Registered {tool_count} tools in Neo4j graph")
-                
+
                 # Register L agent internal tools
                 l_tool_count = await register_l_tools()
                 logger.info(f"Registered {l_tool_count} L agent tools in Neo4j graph")
             except Exception as e:
                 logger.warning(f"Failed to register tools in Neo4j: {e}")
-        
+
         # Start GMP worker (for processing approved GMP tasks)
         try:
             from runtime.gmp_worker import start_gmp_worker
+
             await start_gmp_worker(poll_interval=2.0)
             logger.info("GMP worker started")
         except Exception as e:
@@ -514,10 +673,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         app.state.neo4j_client = None
         logger.warning(f"Failed to initialize Neo4j: {e}")
-    
+
     # Initialize Redis client (optional, graceful if unavailable)
     try:
         from runtime.redis_client import get_redis_client, close_redis_client
+
         redis = await get_redis_client()
         if redis and redis.is_available():
             app.state.redis_client = redis
@@ -531,20 +691,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         app.state.redis_client = None
         logger.warning(f"Failed to initialize Redis: {e}")
-    
+
     # Store rate limiter in app state
     try:
         from runtime.rate_limiter import RateLimiter
+
         app.state.rate_limiter = RateLimiter()
         logger.info("Rate limiter initialized")
     except ImportError:
         app.state.rate_limiter = None
-    
+
     # Initialize Permission Graph (RBAC via Neo4j)
     try:
         from core.security.permission_graph import PermissionGraph
-        
-        if hasattr(app.state, 'neo4j_client') and app.state.neo4j_client:
+
+        if hasattr(app.state, "neo4j_client") and app.state.neo4j_client:
             app.state.permission_graph = PermissionGraph
             logger.info("✓ Permission Graph initialized (Neo4j-backed)")
         else:
@@ -556,35 +717,43 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         app.state.permission_graph = None
         logger.warning(f"Failed to initialize Permission Graph: {e}")
-    
+
     # ========================================================================
     # STARTUP VALIDATION: Enforce required components are initialized
     # ========================================================================
-    
+
     # Validate Neo4j (fail-fast if URI set but connection failed)
-    if os.getenv('NEO4J_URI'):
-        if not hasattr(app.state, 'neo4j_client') or not app.state.neo4j_client:
-            logger.critical("NEO4J_URI set but connection failed - graph features disabled")
+    if os.getenv("NEO4J_URI"):
+        if not hasattr(app.state, "neo4j_client") or not app.state.neo4j_client:
+            logger.critical(
+                "NEO4J_URI set but connection failed - graph features disabled"
+            )
             # Note: Not fatal - Neo4j is optional for dev mode
         else:
             logger.info("✓ Neo4j validation passed")
-    
+
+    # NOTE: L-CTO startup (LStartup) is DEPRECATED and archived.
+    # L-CTO agent initialization is now handled by KernelAwareAgentRegistry
+    # which loads kernels and activates the agent via runtime/kernel_loader.py.
+    # See core/agents/kernel_registry.py for the new kernel-based initialization.
+    app.state.l_cto_startup = None  # Kept for backward compatibility
+
     # Validate Permission Graph (required if Slack is enabled)
-    if os.getenv('SLACK_BOT_TOKEN'):
-        if not hasattr(app.state, 'permission_graph') or not app.state.permission_graph:
+    if os.getenv("SLACK_BOT_TOKEN"):
+        if not hasattr(app.state, "permission_graph") or not app.state.permission_graph:
             logger.warning(
                 "Slack enabled but Permission Graph not available. "
                 "RBAC checks will be skipped."
             )
         else:
             logger.info("✓ Permission Graph validation passed (Slack protected)")
-    
+
     # Validate kernel-aware agent registry (if enabled)
     if _has_kernel_registry:
-        if not hasattr(app.state, 'agent_registry') or app.state.agent_registry is None:
+        if not hasattr(app.state, "agent_registry") or app.state.agent_registry is None:
             logger.critical("STARTUP VALIDATION FAILED: agent_registry not initialized")
             # In dev mode, we continue; in prod, this would be fatal
-        elif hasattr(app.state.agent_registry, 'get_kernel_state'):
+        elif hasattr(app.state.agent_registry, "get_kernel_state"):
             kernel_state = app.state.agent_registry.get_kernel_state()
             if kernel_state != "ACTIVE":
                 logger.critical(
@@ -593,37 +762,39 @@ async def lifespan(app: FastAPI):
                 )
             else:
                 logger.info("✓✓✓ L9 FULLY INITIALIZED WITH ACTIVE KERNELS ✓✓✓")
-    
+
     # Validate rate limiter
-    if not hasattr(app.state, 'rate_limiter') or app.state.rate_limiter is None:
+    if not hasattr(app.state, "rate_limiter") or app.state.rate_limiter is None:
         logger.warning("STARTUP VALIDATION: Rate limiter not initialized")
-    
+
     # ========================================================================
     # REGISTER L-CTO TOOLS
     # ========================================================================
     try:
         from core.tools.registry_adapter import register_l_tools
+
         tool_count = await register_l_tools()
         logger.info(f"✓ L-CTO tools registered: {tool_count} tools available")
     except Exception as e:
         logger.warning(f"L-CTO tool registration skipped: {e}")
         # Non-fatal: tools still work via direct executor dispatch
-    
+
     yield
-    
+
     # ========================================================================
     # SHUTDOWN: Clean up memory service and Slack adapter
     # ========================================================================
     logger.info("Shutting down L9 API server...")
-    
+
     # Stop GMP worker
     try:
         from runtime.gmp_worker import stop_gmp_worker
+
         await stop_gmp_worker()
         logger.info("GMP worker stopped")
     except Exception as e:
         logger.warning(f"Error stopping GMP worker: {e}")
-    
+
     # Stop World Model Runtime
     if hasattr(app.state, "world_model_runtime") and app.state.world_model_runtime:
         try:
@@ -637,7 +808,7 @@ async def lifespan(app: FastAPI):
             logger.info("World Model Runtime stopped")
         except Exception as e:
             logger.error(f"Error stopping World Model Runtime: {e}")
-    
+
     # Cleanup Research Factory
     if _has_research and getattr(app.state, "research_enabled", False):
         try:
@@ -645,7 +816,7 @@ async def lifespan(app: FastAPI):
             logger.info("Research Factory shutdown")
         except Exception as e:
             logger.error(f"Error shutting down Research Factory: {e}")
-    
+
     # Cleanup Slack HTTP client
     if _has_slack and hasattr(app.state, "http_client") and app.state.http_client:
         try:
@@ -653,25 +824,27 @@ async def lifespan(app: FastAPI):
             logger.info("Slack HTTP client closed")
         except Exception as e:
             logger.error(f"Error closing Slack HTTP client: {e}")
-    
+
     # Cleanup Neo4j client
     if hasattr(app.state, "neo4j_client") and app.state.neo4j_client:
         try:
             from memory.graph_client import close_neo4j_client
+
             await close_neo4j_client()
             logger.info("Neo4j client closed")
         except Exception as e:
             logger.error(f"Error closing Neo4j client: {e}")
-    
+
     # Cleanup Redis client
     if hasattr(app.state, "redis_client") and app.state.redis_client:
         try:
             from runtime.redis_client import close_redis_client
+
             await close_redis_client()
             logger.info("Redis client closed")
         except Exception as e:
             logger.error(f"Error closing Redis client: {e}")
-    
+
     # Cleanup memory service
     try:
         await close_service()
@@ -703,19 +876,22 @@ async def global_exception_handler(request: Request, exc: Exception):
     try:
         from core.error_tracking import log_error_to_graph
         import asyncio
-        asyncio.create_task(log_error_to_graph(
-            error=exc,
-            context={
-                "endpoint": str(request.url.path),
-                "method": request.method,
-            },
-            source=f"api:{request.url.path}",
-        ))
+
+        asyncio.create_task(
+            log_error_to_graph(
+                error=exc,
+                context={
+                    "endpoint": str(request.url.path),
+                    "method": request.method,
+                },
+                source=f"api:{request.url.path}",
+            )
+        )
     except ImportError:
         pass  # Error tracking not available
     except Exception:
         pass  # Don't fail request due to error tracking
-    
+
     # Standard error response
     logger.error(f"Unhandled exception at {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
@@ -723,11 +899,12 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error"},
     )
 
+
 # Basic Root
 @app.get("/")
 def root():
     return {
-        "status": "L9 Phase 2 AI OS", 
+        "status": "L9 Phase 2 AI OS",
         "version": "0.5.0",
         "features": {
             "memory_substrate": True,
@@ -741,8 +918,10 @@ def root():
             "calendar_adapter": _has_calendar_adapter,
             "email_adapter": _has_email_adapter,
             "twilio_adapter": _has_twilio_adapter,
-            "slack_webhook_adapter": _has_slack_webhook_adapter,
-        }
+            "commands_interface": _has_commands,
+            "tools_router": _has_tools_router,
+            "symbolic_computation": _has_symbolic,
+        },
     }
 
 
@@ -763,9 +942,9 @@ async def neo4j_health():
     Neo4j graph database health check.
     Returns healthy if connected, unavailable if not configured.
     """
-    if not hasattr(app.state, 'neo4j_client') or not app.state.neo4j_client:
+    if not hasattr(app.state, "neo4j_client") or not app.state.neo4j_client:
         return {"status": "unavailable", "message": "Neo4j not configured"}
-    
+
     try:
         result = await app.state.neo4j_client.run_query("RETURN 1 as check")
         if result:
@@ -779,6 +958,7 @@ async def neo4j_health():
 class ChatRequest(BaseModel):
     message: str
     system_prompt: str | None = None
+
 
 class ChatResponse(BaseModel):
     reply: str
@@ -794,16 +974,24 @@ from pydantic import Field
 
 class LChatRequest(BaseModel):
     """Request for L-CTO agent chat via AgentExecutorService."""
+
     message: str = Field(..., description="User message to send to L")
-    thread_id: Optional[str] = Field(None, description="Thread identifier for conversation grouping")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    thread_id: Optional[str] = Field(
+        None, description="Thread identifier for conversation grouping"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
 
 class LChatResponse(BaseModel):
     """Response from L-CTO agent chat."""
+
     reply: str = Field(..., description="Agent reply content")
     task_id: str = Field(..., description="Task identifier")
-    status: str = Field(..., description="Execution status (completed, duplicate, failed)")
+    status: str = Field(
+        ..., description="Execution status (completed, duplicate, failed)"
+    )
 
 
 @app.post("/lchat", response_model=LChatResponse)
@@ -814,30 +1002,30 @@ async def lchat(
 ):
     """
     L-CTO agent chat endpoint using AgentExecutorService.
-    
+
     Routes messages through the kernel-aware agent stack:
     AgentTask -> AgentExecutorService -> AIOSRuntime
-    
+
     This is the recommended endpoint for interacting with L.
     """
     # Check if agent executor is available
     if not _has_agent_executor:
         raise HTTPException(
             status_code=503,
-            detail="Agent executor not available. L-CTO agent stack not initialized."
+            detail="Agent executor not available. L-CTO agent stack not initialized.",
         )
-    
+
     agent_executor = getattr(app.state, "agent_executor", None)
     if agent_executor is None:
         raise HTTPException(
             status_code=503,
-            detail="Agent executor not initialized. Check server startup logs."
+            detail="Agent executor not initialized. Check server startup logs.",
         )
-    
+
     # Construct AgentTask for L-CTO
     # Use deterministic thread identifier fallback
     thread_identifier = request.thread_id or "http-default"
-    
+
     task = AgentTask(
         agent_id="l-cto",
         kind=TaskKind.CONVERSATION,
@@ -849,21 +1037,21 @@ async def lchat(
             "metadata": request.metadata,
         },
     )
-    
+
     logger.info(
         "lchat: task_id=%s, agent_id=%s, thread=%s",
         str(task.id),
         task.agent_id,
         thread_identifier,
     )
-    
+
     # Execute task via AgentExecutorService
     try:
         result = await agent_executor.start_agent_task(task)
     except Exception as e:
         logger.exception("lchat: execution failed: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Agent execution error: {e}")
-    
+
     # Handle duplicate detection
     if isinstance(result, DuplicateTaskResponse):
         logger.info("lchat: duplicate task detected: %s", str(result.task_id))
@@ -872,7 +1060,7 @@ async def lchat(
             task_id=str(result.task_id),
             status="duplicate",
         )
-    
+
     # Handle ExecutionResult
     if isinstance(result, ExecutionResult):
         reply = result.result or result.error or "No response"
@@ -881,7 +1069,7 @@ async def lchat(
             task_id=str(result.task_id),
             status=result.status,
         )
-    
+
     # Fallback (should not happen)
     logger.warning("lchat: unexpected result type: %s", type(result))
     return LChatResponse(
@@ -889,6 +1077,7 @@ async def lchat(
         task_id=str(task.id),
         status="error",
     )
+
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if OPENAI_API_KEY:
@@ -898,6 +1087,7 @@ else:
 
 # Legacy /chat route - gated by L9_ENABLE_LEGACY_CHAT flag
 if settings.l9_enable_legacy_chat:
+
     @app.post("/chat", response_model=ChatResponse)
     async def chat(
         payload: ChatRequest,
@@ -907,29 +1097,31 @@ if settings.l9_enable_legacy_chat:
         """
         Basic LLM chat endpoint using OpenAI.
         Ingests both request and response to memory for audit trail.
-        
+
         LEGACY: This route calls OpenAI directly. Use POST /lchat for
         kernel-aware agent execution via AgentExecutorService.
         """
         if not chat_client:
             raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
-        
+
         from memory.ingestion import ingest_packet
         from memory.substrate_models import PacketEnvelopeIn
-        
+
         try:
             messages = []
             if payload.system_prompt:
                 messages.append({"role": "system", "content": payload.system_prompt})
             else:
-                messages.append({
-                    "role": "system",
-                    "content": (
-                        "You are L, an infrastructure-focused assistant connected to an L9 "
-                        "backend and memory system. Be concise, precise, and avoid destructive "
-                        "actions. When appropriate, suggest using tools like the CTO agent."
-                    ),
-                })
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are L, an infrastructure-focused assistant connected to an L9 "
+                            "backend and memory system. Be concise, precise, and avoid destructive "
+                            "actions. When appropriate, suggest using tools like the CTO agent."
+                        ),
+                    }
+                )
             messages.append({"role": "user", "content": payload.message})
 
             completion = chat_client.chat.completions.create(
@@ -937,7 +1129,7 @@ if settings.l9_enable_legacy_chat:
                 messages=messages,
             )
             reply = completion.choices[0].message.content
-            
+
             # Ingest chat interaction to memory (audit trail)
             try:
                 packet_in = PacketEnvelopeIn(
@@ -954,11 +1146,11 @@ if settings.l9_enable_legacy_chat:
             except Exception as mem_err:
                 # Log but don't fail the request if memory ingestion fails
                 logger.warning(f"Failed to ingest chat to memory: {mem_err}")
-            
+
             return ChatResponse(reply=reply)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Chat backend error: {e}")
-    
+
     logger.info("Legacy /chat route registered (L9_ENABLE_LEGACY_CHAT=true)")
 else:
     logger.info("Legacy /chat route DISABLED (L9_ENABLE_LEGACY_CHAT=false)")
@@ -971,11 +1163,16 @@ app.include_router(os_routes.router, prefix="/os")
 app.include_router(agent_routes.router, prefix="/agent")
 
 # Persistent memory router
-app.include_router(memory_router, prefix="/memory")
+app.include_router(memory_router, prefix="/api/v1/memory")
 
 # World Model router (v1.1.0+)
 if _has_world_model:
     app.include_router(world_model_router)
+
+# World Model Query router (GMP-18)
+if _has_worldmodel_query:
+    app.include_router(worldmodel_query_router)
+    logger.info("World Model Query router registered at /worldmodel")
 
 # Slack adapter router (v2.0+)
 if _has_slack:
@@ -989,6 +1186,37 @@ if _has_research:
 if _has_factory:
     app.include_router(factory_router)
 
+# Igor Command Interface router (v2.7+ / GMP-11)
+if _has_commands:
+    app.include_router(commands_router)
+    logger.info("Igor Command Interface registered at /commands")
+
+# Tools router (v2.8+ / Wire Orchestrators)
+if _has_tools_router:
+    app.include_router(tools_router, prefix="/tools")
+    logger.info("Tools router registered at /tools")
+
+# Compliance router (GMP-21)
+try:
+    from api.routes.compliance import router as compliance_router
+    app.include_router(compliance_router)
+    logger.info("Compliance router registered at /compliance")
+except ImportError:
+    logger.debug("Compliance router not available")
+
+# Simulation router (GMP-24)
+try:
+    from api.routes.simulation import router as simulation_router
+    app.include_router(simulation_router)
+    logger.info("Simulation router registered at /simulation")
+except ImportError:
+    logger.debug("Simulation router not available")
+
+# Symbolic Computation router (GMP-SYMPY-TASK4)
+if _has_symbolic:
+    app.include_router(symbolic_router)  # Router already has /symbolic prefix
+    logger.info("Symbolic Computation router registered at /symbolic")
+
 # Calendar Adapter router (v2.6+)
 if _has_calendar_adapter:
     app.include_router(calendar_adapter_router)
@@ -1001,25 +1229,14 @@ if _has_email_adapter:
 if _has_twilio_adapter:
     app.include_router(twilio_adapter_router)
 
-# Slack Webhook Adapter router (v2.6+)
-if _has_slack_webhook_adapter:
-    app.include_router(slack_webhook_adapter_router)
-
-# === Legacy Webhook Routers (gated by toggle flags) ===
-# These are the older webhook routers from server_memory.py for backward compatibility
-
-# Slack Events API (legacy)
-if _has_slack:
-    try:
-        from api.webhook_slack import router as webhook_slack_router
-        app.include_router(webhook_slack_router)
-    except Exception as e:
-        logger.warning(f"Failed to load legacy Slack webhook router: {e}")
+# Slack Webhook Adapter (v2.6+) - NOT USED (using slack_router v2.0+ instead)
+# Legacy webhook router - NOT USED (using slack_router v2.0+ instead)
 
 # Mac Agent API
 if _has_mac_agent:
     try:
         from api.webhook_mac_agent import router as mac_agent_router
+
         app.include_router(mac_agent_router)
     except Exception as e:
         logger.warning(f"Failed to load Mac Agent router: {e}")
@@ -1028,6 +1245,7 @@ if _has_mac_agent:
 if _has_twilio_adapter:
     try:
         from api.webhook_twilio import router as twilio_webhook_router
+
         app.include_router(twilio_webhook_router)
     except Exception as e:
         logger.warning(f"Failed to load legacy Twilio webhook router: {e}")
@@ -1036,6 +1254,7 @@ if _has_twilio_adapter:
 if _has_waba:
     try:
         from api.webhook_waba import router as waba_router
+
         app.include_router(waba_router)
     except Exception as e:
         logger.warning(f"Failed to load WABA router: {e}")
@@ -1044,16 +1263,18 @@ if _has_waba:
 if _has_email_adapter:
     try:
         from api.webhook_email import router as email_webhook_router
+
         app.include_router(email_webhook_router)
     except ImportError:
         # webhook_email.py might not exist - that's okay
         pass
     except Exception as e:
         logger.warning(f"Failed to load legacy Email webhook router: {e}")
-    
+
     # Email Agent API
     try:
         from email_agent.router import router as email_agent_router
+
         app.include_router(email_agent_router)
     except Exception as e:
         logger.warning(f"Failed to load Email Agent router: {e}")
@@ -1065,6 +1286,7 @@ if _has_email_adapter:
 async def on_startup():
     if hasattr(agent_routes, "startup"):
         await agent_routes.startup()
+
 
 @app.on_event("shutdown")
 async def on_shutdown():
@@ -1086,17 +1308,17 @@ from runtime.websocket_orchestrator import ws_orchestrator
 async def agent_ws_endpoint(websocket: WebSocket) -> None:
     """
     WebSocket entrypoint for L9 Mac Agents and other workers.
-    
+
     Protocol:
     1) Client connects and sends AgentHandshake JSON.
     2) Server validates handshake and registers the agent_id.
     3) Subsequent frames are EventMessage JSON payloads.
     4) On disconnect, agent is automatically unregistered.
-    
+
     Example client connection:
         import websockets
         import json
-        
+
         async with websockets.connect("ws://localhost:8000/ws/agent") as ws:
             # Step 1: Send handshake
             await ws.send(json.dumps({
@@ -1104,7 +1326,7 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
                 "agent_version": "1.0.0",
                 "capabilities": ["shell", "memory_read"]
             }))
-            
+
             # Step 2: Send/receive events
             await ws.send(json.dumps({
                 "type": "heartbeat",
@@ -1114,13 +1336,13 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
     """
     await websocket.accept()
     agent_id: str | None = None
-    
+
     try:
         # Step 1: Wait for handshake
         raw = await websocket.receive_json()
         handshake = AgentHandshake.model_validate(raw)
         agent_id = handshake.agent_id
-        
+
         # Register with orchestrator (store handshake metadata)
         await ws_orchestrator.register(
             agent_id,
@@ -1130,18 +1352,18 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
                 "capabilities": handshake.capabilities,
                 "hostname": handshake.hostname,
                 "platform": handshake.platform,
-            }
+            },
         )
-        
+
         # Step 2: Message loop
         while True:
             data = await websocket.receive_json()
-            
+
             # Ingest WebSocket event as packet (canonical memory entrypoint)
             try:
                 from memory.ingestion import ingest_packet
                 from memory.substrate_models import PacketEnvelopeIn
-                
+
                 packet_in = PacketEnvelopeIn(
                     packet_type="websocket_event",
                     payload=data,
@@ -1151,9 +1373,9 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
             except Exception as e:
                 # Log but don't fail WebSocket handling if memory ingestion fails
                 logger.warning(f"Failed to ingest WebSocket event: {e}")
-            
+
             await ws_orchestrator.handle_incoming(agent_id, data)
-            
+
     except WebSocketDisconnect:
         # Clean disconnect
         if agent_id:
@@ -1164,7 +1386,7 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
             "WebSocket error for agent %s: %s",
             agent_id or "unknown",
             exc,
-            exc_info=True
+            exc_info=True,
         )
         if agent_id:
             await ws_orchestrator.unregister(agent_id)
@@ -1174,14 +1396,15 @@ async def agent_ws_endpoint(websocket: WebSocket) -> None:
 # L-CTO Agent WebSocket Endpoint (kernel-aware via AgentExecutorService)
 # =============================================================================
 
+
 @app.websocket("/lws")
 async def l_ws(websocket: WebSocket) -> None:
     """
     WebSocket entrypoint for L-CTO agent interactions.
-    
+
     Routes messages through the kernel-aware agent stack:
     AgentTask -> AgentExecutorService -> AIOSRuntime
-    
+
     Protocol:
     1) Client connects (no handshake required).
     2) Client sends JSON frames with:
@@ -1192,11 +1415,11 @@ async def l_ws(websocket: WebSocket) -> None:
        - task_id: str
        - status: str (completed, duplicate, failed, error)
        - reply: str
-    
+
     Example client:
         import websockets
         import json
-        
+
         async with websockets.connect("ws://localhost:8000/lws") as ws:
             await ws.send(json.dumps({
                 "message": "What is L9?",
@@ -1206,27 +1429,31 @@ async def l_ws(websocket: WebSocket) -> None:
             print(response["reply"])
     """
     await websocket.accept()
-    
+
     # Check if agent executor is available
     if not _has_agent_executor:
-        await websocket.send_json({
-            "task_id": "",
-            "status": "error",
-            "reply": "Agent executor not available. L-CTO agent stack not initialized."
-        })
+        await websocket.send_json(
+            {
+                "task_id": "",
+                "status": "error",
+                "reply": "Agent executor not available. L-CTO agent stack not initialized.",
+            }
+        )
         await websocket.close(code=1011, reason="Agent executor unavailable")
         return
-    
+
     agent_executor = getattr(app.state, "agent_executor", None)
     if agent_executor is None:
-        await websocket.send_json({
-            "task_id": "",
-            "status": "error",
-            "reply": "Agent executor not initialized. Check server startup logs."
-        })
+        await websocket.send_json(
+            {
+                "task_id": "",
+                "status": "error",
+                "reply": "Agent executor not initialized. Check server startup logs.",
+            }
+        )
         await websocket.close(code=1011, reason="Agent executor not initialized")
         return
-    
+
     try:
         # Message loop
         while True:
@@ -1235,20 +1462,22 @@ async def l_ws(websocket: WebSocket) -> None:
             except Exception as recv_err:
                 logger.warning("lws: failed to receive JSON: %s", str(recv_err))
                 break
-            
+
             # Extract fields from frame
             message = data.get("message")
             if not message:
-                await websocket.send_json({
-                    "task_id": "",
-                    "status": "error",
-                    "reply": "Missing required field: message"
-                })
+                await websocket.send_json(
+                    {
+                        "task_id": "",
+                        "status": "error",
+                        "reply": "Missing required field: message",
+                    }
+                )
                 continue
-            
+
             thread_id = data.get("thread_id") or "ws-default"
             metadata = data.get("metadata", {})
-            
+
             # Build AgentTask for L-CTO
             try:
                 task = AgentTask(
@@ -1262,51 +1491,59 @@ async def l_ws(websocket: WebSocket) -> None:
                         "metadata": metadata,
                     },
                 )
-                
+
                 logger.info(
                     "lws: task_id=%s, thread=%s",
                     str(task.id),
                     thread_id,
                 )
-                
+
                 # Execute task via AgentExecutorService
                 result = await agent_executor.start_agent_task(task)
-                
+
                 # Handle duplicate detection
                 if isinstance(result, DuplicateTaskResponse):
-                    await websocket.send_json({
-                        "task_id": str(result.task_id),
-                        "status": "duplicate",
-                        "reply": "Duplicate task"
-                    })
+                    await websocket.send_json(
+                        {
+                            "task_id": str(result.task_id),
+                            "status": "duplicate",
+                            "reply": "Duplicate task",
+                        }
+                    )
                     continue
-                
+
                 # Handle ExecutionResult
                 if isinstance(result, ExecutionResult):
                     reply = result.result or result.error or "No response"
-                    await websocket.send_json({
-                        "task_id": str(result.task_id),
-                        "status": result.status,
-                        "reply": reply
-                    })
+                    await websocket.send_json(
+                        {
+                            "task_id": str(result.task_id),
+                            "status": result.status,
+                            "reply": reply,
+                        }
+                    )
                     continue
-                
+
                 # Fallback (should not happen)
                 logger.warning("lws: unexpected result type: %s", type(result))
-                await websocket.send_json({
-                    "task_id": str(task.id),
-                    "status": "error",
-                    "reply": "Unexpected result format"
-                })
-                
+                await websocket.send_json(
+                    {
+                        "task_id": str(task.id),
+                        "status": "error",
+                        "reply": "Unexpected result format",
+                    }
+                )
+
             except Exception as exec_err:
                 logger.exception("lws: execution error: %s", str(exec_err))
-                await websocket.send_json({
-                    "task_id": "",
-                    "status": "error",
-                    "reply": f"Execution error: {str(exec_err)}"
-                })
-                
+                await websocket.send_json(
+                    {
+                        "task_id": "",
+                        "status": "error",
+                        "reply": f"Execution error: {str(exec_err)}",
+                    }
+                )
+
     except WebSocketDisconnect:
         logger.debug("lws: client disconnected")
     except Exception as exc:

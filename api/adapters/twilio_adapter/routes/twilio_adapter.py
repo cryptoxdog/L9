@@ -70,7 +70,7 @@ async def handle_twilio_adapter(
 ) -> TwilioAdapterResponse:
     """
     Receives Twilio SMS/voice webhooks, validates signatures, and routes to AIOS for processing. Supports outbound messaging via Twilio API.
-    
+
     Auth: hmac-sha256
     """
     # ══════════════════════════════════════════════════════════════════════════

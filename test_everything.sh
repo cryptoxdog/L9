@@ -132,8 +132,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "4. MEMORY SYSTEM"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-test_info "Testing /memory/test"
-RESPONSE=$(curl -s -X POST "$API_URL/memory/test" \
+test_info "Testing /api/v1/memory/test"
+RESPONSE=$(curl -s -X POST "$API_URL/api/v1/memory/test" \
     -H "Authorization: Bearer $API_KEY" \
     -H "Content-Type: application/json")
 if echo "$RESPONSE" | grep -q "ok"; then
@@ -142,8 +142,8 @@ else
     test_fail "Memory test endpoint: $RESPONSE"
 fi
 
-test_info "Testing /memory/stats"
-STATUS=$(curl -s -w "%{http_code}" -o /dev/null "$API_URL/memory/stats" \
+test_info "Testing /api/v1/memory/stats"
+STATUS=$(curl -s -w "%{http_code}" -o /dev/null "$API_URL/api/v1/memory/stats" \
     -H "Authorization: Bearer $API_KEY")
 if [ "$STATUS" = "200" ] || [ "$STATUS" = "503" ]; then
     test_pass "Memory stats endpoint (status: $STATUS)"
@@ -151,8 +151,8 @@ else
     test_fail "Memory stats endpoint (status: $STATUS)"
 fi
 
-test_info "Testing /memory/packet write"
-PACKET_RESPONSE=$(curl -s -X POST "$API_URL/memory/packet" \
+test_info "Testing /api/v1/memory/packet write"
+PACKET_RESPONSE=$(curl -s -X POST "$API_URL/api/v1/memory/packet" \
     -H "Authorization: Bearer $API_KEY" \
     -H "Content-Type: application/json" \
     -d '{

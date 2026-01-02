@@ -28,61 +28,74 @@ from pydantic import BaseModel, Field
 class ToolName(str, Enum):
     """
     Enumeration of L9 tools that can be capability-gated.
-    
+
     Categories:
     - Execution: shell, browser, python
     - Memory: memory_read, memory_write
     - Knowledge: world_model_query, kernel_read
     - System: os_control, file_access
     """
+
     # Execution tools
     SHELL = "shell"
     BROWSER = "browser"
     PYTHON = "python"
-    
+
     # Memory tools
     MEMORY_WRITE = "memory_write"
     MEMORY_READ = "memory_read"
-    
+    MEMORY_SEARCH = "memory_search"
+
     # Knowledge tools
     WORLD_MODEL_QUERY = "world_model_query"
     KERNEL_READ = "kernel_read"
-    
+
     # System tools (added for completeness)
     OS_CONTROL = "os_control"
     FILE_ACCESS = "file_access"
     NETWORK = "network"
-    
+
     # Governance and execution tools
     GMP_RUN = "gmp_run"
     GIT_COMMIT = "git_commit"
     MCP_CALL_TOOL = "mcp_call_tool"
     MAC_AGENT_EXEC_TASK = "mac_agent_exec_task"
-    
+
     # Long plan orchestration tools
     LONG_PLAN_EXECUTE = "long_plan.execute"
     LONG_PLAN_SIMULATE = "long_plan.simulate"
+
+    # Symbolic computation tools (Quantum AI Factory)
+    SYMBOLIC_COMPUTE = "symbolic_compute"
+    SYMBOLIC_CODEGEN = "symbolic_codegen"
+
+    # Simulation tools (IR graph evaluation)
+    SIMULATION = "simulation"
 
 
 class Capability(BaseModel):
     """
     Single capability for a tool.
-    
+
     Attributes:
         tool: The tool this capability governs
         allowed: Whether the tool is allowed (True) or denied (False)
         rate_limit: Optional rate limit (invocations per minute)
         scope: Optional scope restriction (e.g., "read_only", "local_only", "requires_igor_approval")
     """
+
     tool: ToolName = Field(..., description="Tool this capability governs")
     allowed: bool = Field(default=True, description="Whether tool is allowed")
     rate_limit: Optional[int] = Field(None, ge=0, description="Max invocations/minute")
-    scope: Optional[str] = Field(None, description="Scope restriction (e.g., 'read_only', 'local_only', 'requires_igor_approval')")
-    
+    scope: Optional[str] = Field(
+        None,
+        description="Scope restriction (e.g., 'read_only', 'local_only', 'requires_igor_approval')",
+    )
+
     def requires_igor_approval(self) -> bool:
         """
         Check if this capability requires Igor's explicit approval.
-        
+
         Returns:
             True if scope is "requires_igor_approval"
         """
@@ -94,13 +107,13 @@ class Capability(BaseModel):
 class AgentCapabilities(BaseModel):
     """
     Complete capability set for an agent.
-    
+
     Attributes:
         agent_id: Unique agent identifier
         capabilities: List of tool capabilities
         default_allowed: Whether unlisted tools are allowed by default
         max_recursion_depth: Maximum task recursion depth
-        
+
     Usage:
         caps = AgentCapabilities(
             agent_id="coder-agent-1",
@@ -112,29 +125,25 @@ class AgentCapabilities(BaseModel):
             default_allowed=False,
         )
     """
+
     agent_id: str = Field(..., min_length=1, description="Unique agent identifier")
     capabilities: List[Capability] = Field(
-        default_factory=list,
-        description="List of tool capabilities"
+        default_factory=list, description="List of tool capabilities"
     )
     default_allowed: bool = Field(
-        default=False,
-        description="Whether unlisted tools are allowed by default"
+        default=False, description="Whether unlisted tools are allowed by default"
     )
     max_recursion_depth: int = Field(
-        default=3,
-        ge=1,
-        le=10,
-        description="Maximum task recursion depth"
+        default=3, ge=1, le=10, description="Maximum task recursion depth"
     )
-    
+
     def is_tool_allowed(self, tool: ToolName) -> bool:
         """
         Check if a specific tool is allowed for this agent.
-        
+
         Args:
             tool: The tool to check
-            
+
         Returns:
             True if allowed, False otherwise
         """
@@ -142,14 +151,14 @@ class AgentCapabilities(BaseModel):
             if cap.tool == tool:
                 return cap.allowed
         return self.default_allowed
-    
+
     def get_capability(self, tool: ToolName) -> Optional[Capability]:
         """
         Get the capability for a specific tool.
-        
+
         Args:
             tool: The tool to look up
-            
+
         Returns:
             Capability if found, None otherwise
         """
@@ -157,20 +166,20 @@ class AgentCapabilities(BaseModel):
             if cap.tool == tool:
                 return cap
         return None
-    
+
     def list_allowed_tools(self) -> List[ToolName]:
         """
         List all explicitly allowed tools.
-        
+
         Returns:
             List of allowed ToolName values
         """
         return [cap.tool for cap in self.capabilities if cap.allowed]
-    
+
     def list_denied_tools(self) -> List[ToolName]:
         """
         List all explicitly denied tools.
-        
+
         Returns:
             List of denied ToolName values
         """
@@ -226,17 +235,28 @@ DEFAULT_L_CAPABILITIES = AgentCapabilities(
         # Memory and knowledge tools (fully allowed)
         Capability(tool=ToolName.MEMORY_READ, allowed=True),
         Capability(tool=ToolName.MEMORY_WRITE, allowed=True),
+        Capability(tool=ToolName.MEMORY_SEARCH, allowed=True),
         Capability(tool=ToolName.WORLD_MODEL_QUERY, allowed=True),
         Capability(tool=ToolName.KERNEL_READ, allowed=True),
         # Integration tools (fully allowed)
         Capability(tool=ToolName.MCP_CALL_TOOL, allowed=True),
-        Capability(tool=ToolName.MAC_AGENT_EXEC_TASK, allowed=True),
+        # Mac agent execution (requires Igor approval - executes shell commands)
+        Capability(
+            tool=ToolName.MAC_AGENT_EXEC_TASK,
+            allowed=True,
+            scope="requires_igor_approval",
+        ),
         # Long plan orchestration tools (fully allowed)
         Capability(tool=ToolName.LONG_PLAN_EXECUTE, allowed=True),
         Capability(tool=ToolName.LONG_PLAN_SIMULATE, allowed=True),
+        # Symbolic computation tools (Quantum AI Factory)
+        Capability(tool=ToolName.SYMBOLIC_COMPUTE, allowed=True),
+        Capability(tool=ToolName.SYMBOLIC_CODEGEN, allowed=True),
         # Governance tools (allowed but require Igor approval)
         Capability(tool=ToolName.GMP_RUN, allowed=True, scope="requires_igor_approval"),
-        Capability(tool=ToolName.GIT_COMMIT, allowed=True, scope="requires_igor_approval"),
+        Capability(
+            tool=ToolName.GIT_COMMIT, allowed=True, scope="requires_igor_approval"
+        ),
         # Network remains gated
         Capability(tool=ToolName.NETWORK, allowed=False),
     ],
@@ -257,4 +277,3 @@ __all__ = [
     "DEFAULT_ARCHITECT_CAPABILITIES",
     "DEFAULT_L_CAPABILITIES",
 ]
-

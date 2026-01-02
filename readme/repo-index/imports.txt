@@ -4,6 +4,9 @@
   ..adapters.email_adapter_adapter
   ..adapters.twilio_adapter_adapter
   ..config
+  ..db
+  ..embeddings
+  ..models
   ..schemas
   ..tools.cursor_client
   .action_tool.orchestrator
@@ -17,12 +20,20 @@
   .config
   .controller
   .convergence
+  .db
   .evolution.orchestrator
   .executor
+  .guardrails
+  .health
   .housekeeping
+  .identity
   .interface
+  .kg_client
   .local_api
+  .mcpserver
+  .memory
   .memory.orchestrator
+  .memory_client
   .memory_extractor
   .meta.orchestrator
   .module_schema_extractor
@@ -31,9 +42,14 @@
   .reasoning.orchestrator
   .research_swarm.orchestrator
   .router
+  .routes
+  .routes.memory
+  .runtime_client
   .scheduler
   .schemas
+  .startup
   .validator
+  .value_alignment
   .websocket_client
   .world_model.orchestrator
   .ws_bridge
@@ -119,6 +135,7 @@
   core.governance.engine
   core.governance.loader
   core.governance.schemas
+  core.governance.validation
   core.kernel_wiring.packet_protocol_wiring
   core.kernels.bayesian_kernel
   core.kernels.integrity
@@ -140,6 +157,8 @@
   datetime
 # deepseek_sdk
   deepseek_sdk
+# dotenv
+  dotenv
 # email
   email
   email.header
@@ -166,8 +185,9 @@
   enum
 # fastapi
   fastapi
+  fastapi.middleware.cors
   fastapi.responses
-  fastapi.staticfiles
+  fastapi.security
   fastapi.testclient
 # fnmatch
   fnmatch
@@ -175,6 +195,8 @@
   functools
 # generate_module_code
   generate_module_code
+# graph_adapter
+  graph_adapter.packet_node_adapter
 # hashlib
   hashlib
 # hmac
@@ -201,8 +223,33 @@
   jinja2
 # json
   json
-# l9_langgraph
-  l9_langgraph.packet_node_adapter
+# l
+  l.l_core.engine
+  l.l_core.identity
+  l.l_governance.guardrails
+# l9_agent
+  l9_agent.desire_engine
+  l9_agent.persistence_engine
+  l9_agent.trust_model
+  l9_agent.value_alignment
+  l9_agent.will_engine
+# l_cto
+  l_cto.l_cto_core.identity
+  l_cto.l_cto_interface.runtime_client
+  l_cto.memory.l1.l1_query
+  l_cto.memory.l1.l1_reader
+  l_cto.memory.l1.l1_router
+  l_cto.memory.l1.l1_writer
+  l_cto.memory.mac.mac_router
+  l_cto.memory.meta.meta_router
+  l_cto.memory.shared.concurrency_manager
+  l_cto.memory.shared.connection_validator
+  l_cto.memory.shared.constants
+  l_cto.memory.shared.governance_filter
+  l_cto.memory.shared.hashing
+  l_cto.memory.shared.schema_cache
+  l_cto.memory.shared.supabase_client
+  l_cto.state_loader
 # langchain
   langchain.tools
 # langchain_core
@@ -210,6 +257,7 @@
   langchain_core.retrievers
 # langgraph
   langgraph.graph
+  langgraph.packet_node_adapter
 # logging
   logging
 # mac_agent
@@ -238,6 +286,8 @@
   mocks.memory_mocks
   mocks.orchestrator_mocks
   mocks.world_model_mocks
+# neo4j
+  neo4j
 # numpy
   numpy
 # openai
@@ -259,8 +309,6 @@
   orchestrators.research_swarm.orchestrator
 # os
   os
-# pandas
-  pandas
 # pathlib
   pathlib
 # platform
@@ -269,7 +317,6 @@
   plotly.graph_objects
 # psycopg
   psycopg
-  psycopg.rows
 # pydantic
   pydantic
 # pydantic_settings
@@ -298,6 +345,8 @@
   runtime.task_queue
   runtime.tool_call_wrapper
   runtime.websocket_orchestrator
+# secrets
+  secrets
 # services
   services.mac_tasks
   services.research.agents
@@ -336,11 +385,19 @@
 # src
   src.agent_integration
   src.architecture
+  src.config
+  src.db
+  src.embeddings
+  src.mcp_server
+  src.models
+  src.routes
   src.semantic_kernel
 # structlog
   structlog
 # subprocess
   subprocess
+# supabase
+  supabase
 # sys
   sys
 # tempfile

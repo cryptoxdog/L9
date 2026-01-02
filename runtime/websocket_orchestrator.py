@@ -134,26 +134,26 @@ class WebSocketOrchestrator:
     async def on_user_message(self, message: str) -> List[str]:
         """
         Handle user message and trigger reactive task generation and dispatch.
-        
+
         Args:
             message: User message text
-            
+
         Returns:
             List of task IDs for generated and dispatched tasks
         """
         from core.agents.executor import _generate_tasks_from_query
         from runtime.task_queue import dispatch_task_immediate, QueuedTask
         from uuid import uuid4
-        
+
         # Generate tasks from query
         task_specs = await _generate_tasks_from_query(message)
-        
+
         if not task_specs:
             logger.warning(f"No tasks generated from message: {message[:100]}")
             return []
-        
+
         task_ids = []
-        
+
         # Dispatch each task immediately
         for spec in task_specs:
             try:
@@ -166,13 +166,15 @@ class WebSocketOrchestrator:
                     priority=spec.get("priority", 5),
                     tags=["reactive", "user_message"],
                 )
-                
+
                 task_id = await dispatch_task_immediate(task)
                 task_ids.append(task_id)
                 logger.info(f"Dispatched reactive task {task_id} from user message")
             except Exception as e:
-                logger.error(f"Failed to dispatch task from message: {e}", exc_info=True)
-        
+                logger.error(
+                    f"Failed to dispatch task from message: {e}", exc_info=True
+                )
+
         return task_ids
 
     # =========================================================================
@@ -201,7 +203,9 @@ class WebSocketOrchestrator:
             payload = dict(event)
 
         await ws.send_json(payload)
-        logger.debug("Dispatched event to agent %s: type=%s", agent_id, payload.get("type"))
+        logger.debug(
+            "Dispatched event to agent %s: type=%s", agent_id, payload.get("type")
+        )
 
     async def broadcast(self, event: Any, exclude: Optional[list[str]] = None) -> int:
         """
@@ -236,4 +240,3 @@ class WebSocketOrchestrator:
 ws_orchestrator = WebSocketOrchestrator()
 
 __all__ = ["WebSocketOrchestrator", "ws_orchestrator"]
-

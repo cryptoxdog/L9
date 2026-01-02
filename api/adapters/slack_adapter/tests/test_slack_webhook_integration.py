@@ -43,23 +43,24 @@ from api.adapters.slack_adapter.routes.slack_webhook import router
 
 
 @pytest.fixture
-def app():
+def app(monkeypatch):
     """Create test FastAPI app."""
+    # Set test secret in environment for signature verification
+    monkeypatch.setenv("SLACK_SIGNING_SECRET", "test_secret")
+
     app = FastAPI()
     app.include_router(router)
-    
+
     # Mock app state
     app.state.substrate_service = AsyncMock()
     app.state.substrate_service.write_packet = AsyncMock(
         return_value=MagicMock(packet_id=uuid4())
     )
     app.state.substrate_service.search_packets = AsyncMock(return_value=[])
-    
+
     app.state.aios_runtime = AsyncMock()
-    app.state.aios_runtime.execute_reasoning = AsyncMock(
-        return_value={"status": "ok"}
-    )
-    
+    app.state.aios_runtime.execute_reasoning = AsyncMock(return_value={"status": "ok"})
+
     return app
 
 
@@ -69,14 +70,12 @@ def client(app):
     return TestClient(app)
 
 
-def generate_slack_signature(body: str, timestamp: str, secret: str = "test_secret") -> str:
+def generate_slack_signature(
+    body: str, timestamp: str, secret: str = "test_secret"
+) -> str:
     """Generate valid Slack HMAC-SHA256 signature."""
     sig_basestring = f"v0:{timestamp}:{body}"
-    sig = hmac.new(
-        secret.encode(),
-        sig_basestring.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    sig = hmac.new(secret.encode(), sig_basestring.encode(), hashlib.sha256).hexdigest()
     return f"v0={sig}"
 
 
@@ -95,7 +94,7 @@ class TestRoutes:
             json={"event_id": "test", "payload": {}},
             # No X-Slack-Signature header
         )
-        
+
         # ASSERTION: 401 Unauthorized
         assert response.status_code == 401
 
@@ -110,7 +109,7 @@ class TestRoutes:
                 "X-Slack-Request-Timestamp": timestamp,
             },
         )
-        
+
         # ASSERTION: 401 Unauthorized
         assert response.status_code == 401
 
@@ -118,7 +117,7 @@ class TestRoutes:
         """Slack URL verification challenge response."""
         timestamp = str(int(time.time()))
         body = '{"type": "url_verification", "challenge": "test_challenge_123"}'
-        
+
         response = client.post(
             "/slack/events",
             content=body,
@@ -128,7 +127,7 @@ class TestRoutes:
                 "X-Slack-Request-Timestamp": timestamp,
             },
         )
-        
+
         # ASSERTION: Should return challenge
         assert response.status_code == 200
         data = response.json()
@@ -137,9 +136,8 @@ class TestRoutes:
     def test_health_endpoint(self, client):
         """Health check endpoint works."""
         response = client.get("/slack/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
         assert data["module"] == "slack.webhook"
-

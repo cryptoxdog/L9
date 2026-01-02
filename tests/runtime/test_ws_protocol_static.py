@@ -10,7 +10,6 @@ Covers:
 
 from uuid import UUID
 
-import pytest
 
 from core.schemas.ws_event_stream import (
     EventMessage,
@@ -111,4 +110,3 @@ class TestErrorEvent:
         assert restored.message == "Invalid token"
         assert restored.details["reason"] == "token_mismatch"
         assert restored.agent_id == "mac_agent_01"
-

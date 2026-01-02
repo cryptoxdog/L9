@@ -54,4 +54,3 @@ def envelope_to_json(envelope: PacketEnvelope) -> str:
 def envelope_from_json(payload: str) -> PacketEnvelope:
     """Load a PacketEnvelope from a JSON string."""
     return envelope_from_dict(json.loads(payload))
-

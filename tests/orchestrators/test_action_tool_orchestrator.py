@@ -15,6 +15,7 @@ import pytest
 # Test Class: Action Tool Orchestrator
 # =============================================================================
 
+
 class TestActionToolOrchestrator:
     """Tests for ActionToolOrchestrator."""
 
@@ -27,11 +28,13 @@ class TestActionToolOrchestrator:
         Contract: ActionToolOrchestrator initializes successfully.
         """
         from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
-        
+
         orchestrator = ActionToolOrchestrator()
-        
+
         # Should initialize without error
-        assert orchestrator is not None, "ActionToolOrchestrator should initialize successfully"
+        assert orchestrator is not None, (
+            "ActionToolOrchestrator should initialize successfully"
+        )
 
     # =============================================================================
     # Test: Validate action request
@@ -42,13 +45,13 @@ class TestActionToolOrchestrator:
         Contract: ActionToolRequest model validates correctly.
         """
         from orchestrators.action_tool.interface import ActionToolRequest
-        
+
         # Valid request
         request = ActionToolRequest(
             tool_id="test_tool",
             arguments={"param": "value"},
         )
-        
+
         assert request.tool_id == "test_tool"
         assert request.arguments == {"param": "value"}
 
@@ -62,18 +65,23 @@ class TestActionToolOrchestrator:
         Contract: execute() returns ActionToolResponse with success status.
         """
         from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
-        from orchestrators.action_tool.interface import ActionToolRequest, ActionToolResponse
-        
+        from orchestrators.action_tool.interface import (
+            ActionToolRequest,
+            ActionToolResponse,
+        )
+
         orchestrator = ActionToolOrchestrator()
-        
+
         request = ActionToolRequest(
             tool_id="echo",
             arguments={"message": "hello"},
         )
-        
+
         result = await orchestrator.execute(request)
-        
-        assert isinstance(result, ActionToolResponse), f"Expected ActionToolResponse, got {type(result)}"
+
+        assert isinstance(result, ActionToolResponse), (
+            f"Expected ActionToolResponse, got {type(result)}"
+        )
         assert result.success is True, f"Expected success=True, got {result.success}"
         assert result.message is not None, "Response message should not be None"
 
@@ -85,8 +93,11 @@ class TestActionToolOrchestrator:
         """
         Contract: ActionToolResponse model validates correctly.
         """
-        from orchestrators.action_tool.interface import ActionToolResponse, ToolSafetyLevel
-        
+        from orchestrators.action_tool.interface import (
+            ActionToolResponse,
+            ToolSafetyLevel,
+        )
+
         response = ActionToolResponse(
             success=True,
             message="Test completed",
@@ -94,7 +105,7 @@ class TestActionToolOrchestrator:
             retries_used=0,
             safety_level=ToolSafetyLevel.SAFE,
         )
-        
+
         assert response.success is True
         assert response.message == "Test completed"
         assert response.result == {"output": "value"}
@@ -110,12 +121,12 @@ class TestActionToolOrchestrator:
         Contract: ActionToolRequest handles optional fields correctly.
         """
         from orchestrators.action_tool.interface import ActionToolRequest
-        
+
         # Minimal request with defaults
         request = ActionToolRequest()
-        
+
         # Should have default values
-        assert hasattr(request, 'tool_id') or hasattr(request, 'arguments')
+        assert hasattr(request, "tool_id") or hasattr(request, "arguments")
 
     # =============================================================================
     # Edge Case Tests
@@ -127,17 +138,20 @@ class TestActionToolOrchestrator:
         Contract: Non-existent tool_id returns error response.
         """
         from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
-        from orchestrators.action_tool.interface import ActionToolRequest, ActionToolResponse
-        
+        from orchestrators.action_tool.interface import (
+            ActionToolRequest,
+            ActionToolResponse,
+        )
+
         orchestrator = ActionToolOrchestrator()
-        
+
         request = ActionToolRequest(
             tool_id="nonexistent_tool_12345",
             arguments={"param": "value"},
         )
-        
+
         result = await orchestrator.execute(request)
-        
+
         assert isinstance(result, ActionToolResponse)
         assert result.success is False
         assert result.message is not None
@@ -148,17 +162,20 @@ class TestActionToolOrchestrator:
         Contract: Empty arguments handled correctly.
         """
         from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
-        from orchestrators.action_tool.interface import ActionToolRequest, ActionToolResponse
-        
+        from orchestrators.action_tool.interface import (
+            ActionToolRequest,
+            ActionToolResponse,
+        )
+
         orchestrator = ActionToolOrchestrator()
-        
+
         request = ActionToolRequest(
             tool_id="echo",
             arguments={},
         )
-        
+
         result = await orchestrator.execute(request)
-        
+
         assert isinstance(result, ActionToolResponse)
         assert result.success is True
 
@@ -168,19 +185,21 @@ class TestActionToolOrchestrator:
         Contract: Execution timeout returns appropriate error.
         """
         from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
-        from orchestrators.action_tool.interface import ActionToolRequest, ActionToolResponse
-        
+        from orchestrators.action_tool.interface import (
+            ActionToolRequest,
+            ActionToolResponse,
+        )
+
         orchestrator = ActionToolOrchestrator()
-        
+
         # Request with very short timeout to trigger timeout handling
         request = ActionToolRequest(
             tool_id="echo",
             arguments={"message": "test"},
         )
-        
+
         # Note: Actual timeout testing would require mocking time or using asyncio.wait_for
         # This test verifies the orchestrator handles timeout scenarios gracefully
         result = await orchestrator.execute(request)
-        
-        assert isinstance(result, ActionToolResponse)
 
+        assert isinstance(result, ActionToolResponse)

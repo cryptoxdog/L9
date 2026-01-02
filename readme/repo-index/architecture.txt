@@ -1,4 +1,5 @@
 agents/ - 
+aios/ - 
 api/ - 
 api/adapters/calendar_adapter/ - No module docstring
 api/adapters/email_adapter/ - No module docstring
@@ -7,6 +8,15 @@ api/adapters/twilio_adapter/ - No module docstring
 api/memory/ - Memory API module.
 api/routes/ - API routes package.
 api/tools/ - 
+archive/deprecated/l-cto-legacy/l_cto_core/ - 
+archive/deprecated/l-cto-legacy/l_cto_interface/ - 
+archive/deprecated/l-cto-legacy/l_governance/ - 
+archive/deprecated/l-cto-legacy/l_memory/ - 
+archive/deprecated/l-cto-memory-supabase/memory/ - No module docstring
+archive/deprecated/l-cto-memory-supabase/memory/l1/ - No module docstring
+archive/deprecated/l-cto-memory-supabase/memory/mac/ - No module docstring
+archive/deprecated/l-cto-memory-supabase/memory/meta/ - No module docstring
+archive/deprecated/l-cto-memory-supabase/memory/shared/ - No module docstring
 ci/ - 
 clients/ - 
 collaborative_cells/ - 
@@ -25,17 +35,25 @@ core/security/ -
 core/tools/ - 
 dev/ - No module docstring
 dev/tools/ - No module docstring
+docs/_archive/mcp-memory-deprecated/ - 
+docs/_archive/mcp-memory-deprecated/routes/ - No module docstring
+docs/_archive/mcp-memory-deprecated/schema/ - 
+docs/_archive/mcp-memory-deprecated/scripts/ - 
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/ - No module docstring
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/ - No module docstring
 docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/ - No module docstring
 email_agent/ - L9 Email Agent - Gmail API integration.
+graph_adapter/ - L9 LangGraph Integration - PacketNodeAdapter for memory-logg
 ir_engine/ - 
-l9_langgraph/ - L9 LangGraph Integration - local helpers (renamed from langg
-l9_os/ - 
-l9_private/ - 
-l9_private/security/ - 
+l-cto-phase-2/l9_agent/ - 
+l-cto/ - 
+l-cto/api/ - L API Endpoints
+langgraph/ - L9 LangGraph Integration - local helpers (renamed from langg
 mac_agent/ - L9 Mac Agent package.
 mac_agent/helpers/ - Mac Agent helper utilities.
+mcp_memory/src/ - 
+mcp_memory/src/routes/ - Route modules for L9 MCP Memory Server.
+mcp_memory/tests/ - L9 MCP Memory Server Tests.
 memory/ - 
 memory/extractor/ - 
 memory/extractor/ingestion/ - Memory extractor ingestion module.
@@ -49,6 +67,8 @@ orchestrators/meta/ -
 orchestrators/reasoning/ - 
 orchestrators/research_swarm/ - 
 orchestrators/world_model/ - 
+private/ - 
+private/security/ - 
 runtime/ - 
 services/ - 
 services/research/ - 

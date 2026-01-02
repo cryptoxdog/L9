@@ -26,4 +26,3 @@ __all__ = [
     "can_access",
     "get_user_permissions",
 ]
-

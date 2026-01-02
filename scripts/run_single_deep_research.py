@@ -2,6 +2,7 @@
 """
 Single deep research request for config_loader module.
 """
+
 import os
 import structlog
 import sys
@@ -11,6 +12,8 @@ import httpx
 # Get API key directly from .env
 
 logger = structlog.get_logger(__name__)
+
+
 def get_api_key():
     env_path = "/Users/ib-mac/Projects/L9/.env"
     with open(env_path) as f:
@@ -18,6 +21,7 @@ def get_api_key():
             if line.startswith("PERPLEXITY_API_KEY="):
                 return line.split("=", 1)[1].strip()
     return None
+
 
 API_KEY = get_api_key()
 if not API_KEY:
@@ -70,30 +74,30 @@ try:
             "https://api.perplexity.ai/chat/completions",
             headers={
                 "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
             json={
                 "model": "sonar-deep-research",
                 "messages": [{"role": "user", "content": PROMPT}],
                 "temperature": 0.2,
-                "max_tokens": 8000
-            }
+                "max_tokens": 8000,
+            },
         )
-        
+
         elapsed = time.time() - start
         logger.info(f"\n⏱️  Response in {elapsed:.1f}s (status: {resp.status_code})")
-        
+
         if resp.status_code == 200:
             data = resp.json()
             content = data["choices"][0]["message"]["content"]
             citations = data.get("citations", [])
             usage = data.get("usage", {})
-            
-            logger.info(f"✅ SUCCESS!")
+
+            logger.info("✅ SUCCESS!")
             logger.info(f"   Citations: {len(citations)}")
             logger.info(f"   Tokens: {usage.get('total_tokens', 'N/A')}")
             logger.info(f"   Cost: ${usage.get('cost', {}).get('total_cost', 'N/A')}")
-            
+
             # Save output
             output_path = "/Users/ib-mac/Projects/L9/docs/Perplexity/outputs/01_config_loader_spec.md"
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -105,20 +109,21 @@ try:
                 f.write("\n\n---\n\n## Sources\n\n")
                 for i, cite in enumerate(citations[:20], 1):
                     f.write(f"{i}. {cite}\n")
-            
+
             logger.info(f"\n📁 Saved to: {output_path}")
-            logger.info(f"\n{'='*60}")
+            logger.info(f"\n{'=' * 60}")
             logger.info("SPEC OUTPUT:")
-            logger.info("="*60)
+            logger.info("=" * 60)
             logger.info(content[:2000])
             if len(content) > 2000:
-                logger.info(f"\n... [truncated, full output in file] ...")
+                logger.info("\n... [truncated, full output in file] ...")
         else:
             logger.error(f"❌ Error: {resp.status_code}")
             logger.info(resp.text)
-            
+
 except httpx.TimeoutException:
-    logger.info(f"❌ Timeout after {time.time() - start:.1f}s - deep research taking too long")
+    logger.info(
+        f"❌ Timeout after {time.time() - start:.1f}s - deep research taking too long"
+    )
 except Exception as e:
     logger.error(f"❌ Exception: {type(e).__name__}: {e}")
-

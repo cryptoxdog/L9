@@ -1,0 +1,90 @@
+---
+description: "GMP audit and verification rules: canonical and guide prompts mapped to L9 PRs and workspaces."
+alwaysApply: true
+---
+
+# GMP audit and verification (L9)
+
+## Audit entrypoints
+
+- Treat any **PR, large diff, or deployment change** as a **GMP audit target**; use structures from the canonical and guide GMP audit prompts.
+- Before merging, run a **Cursor audit pass** that:
+  - Scans the final diff.
+  - Applies canonical audit questions: scope, invariants, risk, tests, rollback.
+  - Produces a short audit note tied to the commit or PR.
+
+---
+
+## Audit checklist (minimal)
+
+Each audit must answer, in the prompt or notes:
+
+- **Scope:** Exactly which files and behaviors changed? Any hidden or incidental edits?
+- **Invariants:** Did any L9 critical invariants (safety kernels, executor loop, memory ingestion, deployment wiring) change? If yes, how are they re‑established?
+- **Tests:** Which test types were run (unit, integration, critical-path, deployment smoke)? What still lacks coverage?
+- **Risk & Rollback:** What’s the failure mode if this ships? How do we roll back quickly?
+
+---
+
+## Workspace audit prompts
+
+- When using Cursor on the L9 workspace, prefer **audit-style prompts**:
+  - “Act as a GMP auditor. Review this diff with respect to: safety kernels, executor, memory, orchestrators, deployment.”
+  - Feed in **only the final diff** and relevant tests, not the entire codebase, to stay token efficient.
+- Require **explicit PASS/FAIL per checklist item**, with concrete file references.
+
+---
+
+## Evidence recording
+
+- For high-impact changes, store the audit summary directly in:
+  - The PR description, and
+  - A workspace note (e.g., a `GMP-Report-*` file or dedicated `GMP_AUDIT_LOG.md`).
+- Audit notes should cite:
+  - Phase numbers completed.
+  - Which GMP Action/Test templates were used (unit, integration, critical path, generator, orchestrator wiring).
+- Never mark an audit as complete without stating **which template(s)** were applied.
+
+---
+
+## No silent partial work
+
+- If any checklist item is inconclusive, explicitly mark it as **INCOMPLETE** in the audit note and block merge until resolved.
+- For ambiguous areas (e.g., orchestrator wiring, deployment manifests), run a **focused sub‑audit** using the relevant action prompt (wire orchestrators, deployment, etc.).
+
+---
+
+## GMP report generation protocol
+
+### Rule: Generate Production Report After Every GMP Run
+
+After completing any GMP execution (partial or full), you MUST:
+
+1. **Generate a production report** following canonical structure
+2. **Save to `/reports/`** with naming: `GMP_Report_<GMP-ID>.md`
+3. **Include required sections:**
+   - Header (GMP ID, Title, Tier, Date, Status)
+   - TODO Plan (locked)
+   - Scope Boundaries
+   - Files Modified + Line Ranges
+   - Validation Results (test output)
+   - Phase 5 Recursive Verification
+   - Outstanding Items
+   - Final Declaration
+
+### When to Generate Reports
+
+| Scenario | Action |
+|----------|--------|
+| Full GMP execution (all phases) | ✅ Generate full report |
+| Partial GMP completion | ✅ Generate report with "PARTIAL" status |
+| GMP verification audit | ✅ Generate audit report |
+| Quick fix (< 3 files, no GMP) | ❌ No report needed |
+
+### Report Template Reference
+
+Use existing reports as templates:
+- `reports/GMP_Report_GMP-11.md` — Full execution example
+- `reports/GMP_Report_GMP-16.md` — Closed-loop learning example
+
+**Rationale:** Reports provide audit trail and document changes for future reference.

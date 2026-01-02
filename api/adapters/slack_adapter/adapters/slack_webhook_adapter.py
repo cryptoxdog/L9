@@ -39,6 +39,7 @@ PACKET_TYPE_ERROR = "slack_webhook.error"
 @dataclass
 class SlackWebhookRequest:
     """Inbound request schema."""
+
     event_id: Optional[str] = None
     source: Optional[str] = None
     payload: dict = field(default_factory=dict)
@@ -47,6 +48,7 @@ class SlackWebhookRequest:
 @dataclass
 class SlackWebhookResponse:
     """Response schema."""
+
     ok: bool
     packet_id: Optional[UUID] = None
     dedupe: bool = False
@@ -56,6 +58,7 @@ class SlackWebhookResponse:
 @dataclass
 class SlackWebhookContext:
     """Execution context for the adapter."""
+
     thread_uuid: UUID
     source: str = "slack.webhook"
     task_id: Optional[str] = None
@@ -202,9 +205,7 @@ class SlackWebhookAdapter:
         # Override this method with module-specific logic
         return f"{request}"
 
-    async def _validate(
-        self, request: SlackWebhookRequest
-    ) -> SlackWebhookResponse:
+    async def _validate(self, request: SlackWebhookRequest) -> SlackWebhookResponse:
         """Validate incoming request."""
         # Add validation logic here
         return SlackWebhookResponse(ok=True)
@@ -310,4 +311,3 @@ class SlackWebhookAdapter:
         except Exception as e:
             self.logger.warning("error_packet_store_failed", error=str(e))
             return None
-

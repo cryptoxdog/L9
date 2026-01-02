@@ -10,7 +10,6 @@ Version: 1.0.0
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
@@ -23,6 +22,7 @@ if str(project_root) not in sys.path:
 # =============================================================================
 # Test Class: Server Health
 # =============================================================================
+
 
 class TestServerHealth:
     """Tests for server health check endpoints."""
@@ -37,10 +37,10 @@ class TestServerHealth:
         """
         try:
             from api.server import app
-            
+
             client = TestClient(app)
             response = client.get("/health")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "ok"
@@ -58,10 +58,10 @@ class TestServerHealth:
         """
         try:
             from api.server import app
-            
+
             client = TestClient(app)
             response = client.get("/")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "L9 Phase 2 AI OS"
@@ -80,10 +80,10 @@ class TestServerHealth:
         """
         try:
             from api.server import app
-            
+
             client = TestClient(app)
             response = client.get("/docs")
-            
+
             # Docs endpoint should return HTML (200) or redirect
             assert response.status_code in [200, 307, 308]
         except Exception as e:

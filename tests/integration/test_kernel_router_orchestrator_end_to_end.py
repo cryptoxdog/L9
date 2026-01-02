@@ -30,6 +30,7 @@ from core.kernel_wiring.packet_protocol_wiring import (
 # FIXTURES
 # ------------------------------------------------------------
 
+
 @pytest.fixture
 def kernel_stack():
     """Load deterministic 10-kernel stack."""
@@ -39,6 +40,7 @@ def kernel_stack():
 @pytest.fixture
 def ws_mock():
     """Mock WS connection for outbound transmissions."""
+
     class MockWS:
         sent = []
 
@@ -51,6 +53,7 @@ def ws_mock():
 # ------------------------------------------------------------
 # TEST 1: Kernel + Protocol Integrity
 # ------------------------------------------------------------
+
 
 def test_kernels_and_protocol_integrity(kernel_stack):
     proto = get_packet_protocol()
@@ -65,11 +68,18 @@ def test_kernels_and_protocol_integrity(kernel_stack):
 def test_kernel_stack_loads_all_10_kernels(kernel_stack):
     """Verify all 10 kernels are loaded."""
     expected_ids = [
-        "master", "identity", "cognitive", "behavioral",
-        "memory", "worldmodel", "execution", "safety",
-        "developer", "packet_protocol"
+        "master",
+        "identity",
+        "cognitive",
+        "behavioral",
+        "memory",
+        "worldmodel",
+        "execution",
+        "safety",
+        "developer",
+        "packet_protocol",
     ]
-    
+
     for kid in expected_ids:
         kernel = kernel_stack.get_kernel(kid)
         assert kernel is not None, f"Kernel '{kid}' not loaded"
@@ -88,7 +98,7 @@ def test_kernel_get_rule_traversal(kernel_stack):
     # Test a known path in master kernel
     mode = kernel_stack.get_rule("master", "modes.default", default="fallback")
     assert mode == "executive"
-    
+
     # Test unknown path returns default
     unknown = kernel_stack.get_rule("master", "nonexistent.path", default="default_val")
     assert unknown == "default_val"

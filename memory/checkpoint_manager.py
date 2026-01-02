@@ -31,4 +31,3 @@ class CheckpointManager:
     async def load(self, agent_id: str) -> Optional[dict[str, Any]]:
         """Load latest state for an agent."""
         return await self._service.get_checkpoint(agent_id=agent_id)
-

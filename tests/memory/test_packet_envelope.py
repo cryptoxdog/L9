@@ -1,4 +1,5 @@
 import pytest
+
 pytest.skip("Legacy memory substrate system — skipping.", allow_module_level=True)
 
 """
@@ -6,7 +7,6 @@ L9 Tests - PacketEnvelope Focused Tests
 Version: 1.0.0
 """
 
-from uuid import uuid4
 
 import pytest
 
@@ -46,4 +46,3 @@ class TestPacketEnvelopeRoundtrip:
         assert envelope.payload["x"] == 1
         assert envelope.packet_id is not None
         assert envelope.timestamp is not None
-

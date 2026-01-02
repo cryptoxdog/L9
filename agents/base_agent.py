@@ -29,6 +29,7 @@ logger = structlog.get_logger(__name__)
 
 class AgentRole(str, Enum):
     """Agent roles in the system."""
+
     ARCHITECT_PRIMARY = "architect_primary"
     ARCHITECT_CHALLENGER = "architect_challenger"
     CODER_PRIMARY = "coder_primary"
@@ -40,6 +41,7 @@ class AgentRole(str, Enum):
 @dataclass
 class AgentConfig:
     """Configuration for an agent."""
+
     api_key: Optional[str] = None
     model: str = "gpt-4o"
     temperature: float = 0.3
@@ -52,12 +54,13 @@ class AgentConfig:
 @dataclass
 class AgentMessage:
     """A message to/from an agent."""
+
     message_id: UUID = field(default_factory=uuid4)
     role: str = "user"  # system, user, assistant
     content: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    
+
     def to_dict(self) -> dict[str, str]:
         """Convert to OpenAI message format."""
         return {"role": self.role, "content": self.content}
@@ -66,6 +69,7 @@ class AgentMessage:
 @dataclass
 class AgentResponse:
     """Response from an agent."""
+
     response_id: UUID = field(default_factory=uuid4)
     agent_id: str = ""
     content: str = ""
@@ -75,12 +79,14 @@ class AgentResponse:
     success: bool = True
     error: Optional[str] = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "response_id": str(self.response_id),
             "agent_id": self.agent_id,
-            "content": self.content[:200] + "..." if len(self.content) > 200 else self.content,
+            "content": self.content[:200] + "..."
+            if len(self.content) > 200
+            else self.content,
             "success": self.success,
             "tokens_used": self.tokens_used,
             "duration_ms": self.duration_ms,
@@ -90,15 +96,15 @@ class AgentResponse:
 class BaseAgent(ABC):
     """
     Abstract base class for all L9 agents.
-    
+
     Subclasses must implement:
     - get_system_prompt(): Return the agent's system prompt
     - run(): Execute the agent's primary function
     """
-    
+
     agent_role: AgentRole = AgentRole.REFLECTION
     agent_name: str = "base_agent"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -106,7 +112,7 @@ class BaseAgent(ABC):
     ):
         """
         Initialize the agent.
-        
+
         Args:
             agent_id: Unique identifier (auto-generated if not provided)
             config: Agent configuration
@@ -116,57 +122,59 @@ class BaseAgent(ABC):
         self._client: Optional[AsyncOpenAI] = None
         self._conversation_history: list[AgentMessage] = []
         self._initialized = False
-        
+
         logger.info(f"Initialized {self.agent_name} with id={self._agent_id}")
-    
+
     @property
     def agent_id(self) -> str:
         """Get agent ID."""
         return self._agent_id
-    
+
     @property
     def config(self) -> AgentConfig:
         """Get agent configuration."""
         return self._config
-    
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._config.api_key)
         return self._client
-    
+
     # ==========================================================================
     # Abstract Methods
     # ==========================================================================
-    
+
     @abstractmethod
     def get_system_prompt(self) -> str:
         """
         Get the agent's system prompt.
-        
+
         Returns:
             System prompt string
         """
         pass
-    
+
     @abstractmethod
-    async def run(self, task: dict[str, Any], context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def run(
+        self, task: dict[str, Any], context: Optional[dict[str, Any]] = None
+    ) -> AgentResponse:
         """
         Execute the agent's primary function.
-        
+
         Args:
             task: Task specification
             context: Optional execution context
-            
+
         Returns:
             AgentResponse with result
         """
         pass
-    
+
     # ==========================================================================
     # LLM Interaction
     # ==========================================================================
-    
+
     async def call_llm(
         self,
         messages: list[AgentMessage],
@@ -175,42 +183,42 @@ class BaseAgent(ABC):
     ) -> AgentResponse:
         """
         Call the LLM with messages.
-        
+
         Args:
             messages: List of messages
             temperature: Override temperature
             json_mode: If True, request JSON output
-            
+
         Returns:
             AgentResponse
         """
         client = self._ensure_client()
         start_time = datetime.utcnow()
-        
+
         # Build message list with system prompt
-        api_messages = [
-            {"role": "system", "content": self.get_system_prompt()}
-        ]
+        api_messages = [{"role": "system", "content": self.get_system_prompt()}]
         api_messages.extend([m.to_dict() for m in messages])
-        
+
         try:
             kwargs: dict[str, Any] = {
                 "model": self._config.model,
                 "messages": api_messages,
-                "temperature": temperature if temperature is not None else self._config.temperature,
+                "temperature": temperature
+                if temperature is not None
+                else self._config.temperature,
                 "max_tokens": self._config.max_tokens,
             }
-            
+
             if json_mode:
                 kwargs["response_format"] = {"type": "json_object"}
-            
+
             response = await client.chat.completions.create(**kwargs)
-            
+
             content = response.choices[0].message.content or ""
             tokens = response.usage.total_tokens if response.usage else 0
-            
+
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             # Parse JSON if in json_mode
             structured_output = None
             if json_mode:
@@ -218,7 +226,7 @@ class BaseAgent(ABC):
                     structured_output = json.loads(content)
                 except json.JSONDecodeError:
                     structured_output = self._extract_json(content)
-            
+
             return AgentResponse(
                 agent_id=self._agent_id,
                 content=content,
@@ -227,11 +235,11 @@ class BaseAgent(ABC):
                 duration_ms=duration_ms,
                 success=True,
             )
-            
+
         except Exception as e:
             logger.error(f"LLM call failed for {self._agent_id}: {e}")
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             return AgentResponse(
                 agent_id=self._agent_id,
                 content="",
@@ -239,7 +247,7 @@ class BaseAgent(ABC):
                 error=str(e),
                 duration_ms=duration_ms,
             )
-    
+
     async def call_llm_json(
         self,
         prompt: str,
@@ -247,23 +255,23 @@ class BaseAgent(ABC):
     ) -> dict[str, Any]:
         """
         Call LLM and get JSON response.
-        
+
         Args:
             prompt: User prompt
             context: Optional context to include
-            
+
         Returns:
             Parsed JSON dict
         """
         full_prompt = prompt
         if context:
             full_prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [AgentMessage(role="user", content=full_prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         return response.structured_output or {}
-    
+
     def _extract_json(self, text: str) -> dict[str, Any]:
         """Extract JSON from text that may contain extra content."""
         try:
@@ -273,41 +281,41 @@ class BaseAgent(ABC):
                 return json.loads(text[start:end])
         except json.JSONDecodeError:
             pass
-        
-        logger.warning(f"Could not extract JSON from response")
+
+        logger.warning("Could not extract JSON from response")
         return {}
-    
+
     # ==========================================================================
     # Conversation Management
     # ==========================================================================
-    
+
     def add_message(self, message: AgentMessage) -> None:
         """Add a message to conversation history."""
         self._conversation_history.append(message)
-    
+
     def get_history(self) -> list[AgentMessage]:
         """Get conversation history."""
         return self._conversation_history.copy()
-    
+
     def clear_history(self) -> None:
         """Clear conversation history."""
         self._conversation_history.clear()
-    
+
     def get_recent_messages(self, count: int = 10) -> list[AgentMessage]:
         """Get recent messages from history."""
         return self._conversation_history[-count:]
-    
+
     # ==========================================================================
     # Memory Integration
     # ==========================================================================
-    
+
     def to_packet_payload(self, response: AgentResponse) -> dict[str, Any]:
         """
         Convert response to memory packet payload.
-        
+
         Args:
             response: Agent response
-            
+
         Returns:
             Payload for PacketEnvelopeIn
         """
@@ -321,19 +329,19 @@ class BaseAgent(ABC):
             "duration_ms": response.duration_ms,
             "content_length": len(response.content),
         }
-    
+
     # ==========================================================================
     # Utility Methods
     # ==========================================================================
-    
+
     def format_user_message(self, content: str) -> AgentMessage:
         """Create a user message."""
         return AgentMessage(role="user", content=content)
-    
+
     def format_assistant_message(self, content: str) -> AgentMessage:
         """Create an assistant message."""
         return AgentMessage(role="assistant", content=content)
-    
+
     async def health_check(self) -> dict[str, Any]:
         """Check agent health."""
         try:
@@ -353,4 +361,3 @@ class BaseAgent(ABC):
                 "agent_id": self._agent_id,
                 "error": str(e),
             }
-

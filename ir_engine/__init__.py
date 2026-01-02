@@ -31,6 +31,53 @@ from ir_engine.constraint_challenger import ConstraintChallenger
 from ir_engine.simulation_router import SimulationRouter
 from ir_engine.ir_to_plan_adapter import IRToPlanAdapter
 from ir_engine.deliberation_cell import DeliberationCell
+from ir_engine.schema_validator import (
+    SchemaValidator,
+    SchemaValidationError,
+    validate_schema,
+    validate_and_parse,
+)
+from ir_engine.compile_meta_to_ir import (
+    MetaToIRCompiler,
+    ModuleIR,
+    GenerationTarget,
+    DependencyEdge,
+    PacketSpec,
+    TestSpec,
+    WiringSpec,
+    compile_meta_to_ir,
+    compile_contract_to_ir,
+)
+from ir_engine.ir_to_python import (
+    IRToPythonCompiler,
+    compile_ir_to_python,
+    compile_ir_to_single,
+)
+from ir_engine.meta_ir import (
+    MetaContract,
+    MetaContractValidationResult,
+    MetaContractValidationError,
+    ModuleMetadata,
+    OwnershipSpec,
+    RuntimeWiringSpec,
+    ExternalSurface,
+    DependencySpec,
+    PacketContract,
+    IdempotencySpec,
+    ErrorPolicy,
+    ObservabilitySpec,
+    RuntimeTouchpoints,
+    TestScope,
+    AcceptanceSpec,
+    GlobalInvariantsAck,
+    SpecConfidence,
+    RepoSpec,
+    InterfacesSpec,
+    EnvironmentSpec,
+    OrchestrationSpec,
+    BootImpact,
+    StandardsSpec,
+)
 
 __all__ = [
     # Schema
@@ -48,5 +95,47 @@ __all__ = [
     "SimulationRouter",
     "IRToPlanAdapter",
     "DeliberationCell",
+    # Schema Validator
+    "SchemaValidator",
+    "SchemaValidationError",
+    "validate_schema",
+    "validate_and_parse",
+    # MetaContract (Module-Spec v2.4)
+    "MetaContract",
+    "MetaContractValidationResult",
+    "MetaContractValidationError",
+    "ModuleMetadata",
+    "OwnershipSpec",
+    "RuntimeWiringSpec",
+    "ExternalSurface",
+    "DependencySpec",
+    "PacketContract",
+    "IdempotencySpec",
+    "ErrorPolicy",
+    "ObservabilitySpec",
+    "RuntimeTouchpoints",
+    "TestScope",
+    "AcceptanceSpec",
+    "GlobalInvariantsAck",
+    "SpecConfidence",
+    "RepoSpec",
+    "InterfacesSpec",
+    "EnvironmentSpec",
+    "OrchestrationSpec",
+    "BootImpact",
+    "StandardsSpec",
+    # IR Compiler
+    "MetaToIRCompiler",
+    "ModuleIR",
+    "GenerationTarget",
+    "DependencyEdge",
+    "PacketSpec",
+    "TestSpec",
+    "WiringSpec",
+    "compile_meta_to_ir",
+    "compile_contract_to_ir",
+    # IR to Python Compiler
+    "IRToPythonCompiler",
+    "compile_ir_to_python",
+    "compile_ir_to_single",
 ]
-

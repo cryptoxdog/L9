@@ -111,45 +111,51 @@ class TestAcceptancePositive:
     async def test_valid_request_processed(self, adapter, sample_request):
         """ACCEPTANCE: valid_email_processed - request succeeds."""
         response = await adapter.handle(sample_request)
-        
+
         assert response.ok is True
         assert response.error is None
 
     @pytest.mark.asyncio
-    async def test_idempotent_replay_cached(self, adapter, sample_request, mock_substrate_service, mock_aios_client):
+    async def test_idempotent_replay_cached(
+        self, adapter, sample_request, mock_substrate_service, mock_aios_client
+    ):
         """ACCEPTANCE: idempotent_replay_cached - duplicate returns cached, AIOS NOT called."""
         # Setup: substrate returns existing packet on search
         mock_substrate_service.search_packets = AsyncMock(
             return_value=[{"packet_id": uuid4()}]
         )
-        
+
         response = await adapter.handle(sample_request)
-        
+
         # ASSERTION: dedupe is True
         assert response.dedupe is True
         assert response.ok is True
-        
+
         # ASSERTION: AIOS client was NOT called on dedupe
         mock_aios_client.chat.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_aios_response_forwarded(self, adapter, sample_request, mock_aios_client):
+    async def test_aios_response_forwarded(
+        self, adapter, sample_request, mock_aios_client
+    ):
         """ACCEPTANCE: aios_response_forwarded - AIOS is called on success."""
         response = await adapter.handle(sample_request)
-        
+
         assert response.ok is True
-        
+
         # ASSERTION: AIOS client WAS called
         mock_aios_client.chat.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_packet_written_on_success(self, adapter, sample_request, mock_substrate_service):
+    async def test_packet_written_on_success(
+        self, adapter, sample_request, mock_substrate_service
+    ):
         """ACCEPTANCE: packet_written_on_success - in/out packets written."""
         await adapter.handle(sample_request)
-        
+
         # ASSERTION: write_packet called at least twice (in + out)
         assert mock_substrate_service.write_packet.call_count >= 2
-        
+
         # Verify packet types
         calls = mock_substrate_service.write_packet.call_args_list
         packet_types = [c[0][0].packet_type for c in calls]
@@ -157,13 +163,15 @@ class TestAcceptancePositive:
         assert PACKET_TYPE_OUT in packet_types
 
     @pytest.mark.asyncio
-    async def test_attachment_handling(self, adapter, request_with_attachments, mock_substrate_service):
+    async def test_attachment_handling(
+        self, adapter, request_with_attachments, mock_substrate_service
+    ):
         """ACCEPTANCE: attachment_handling - attachment metadata stored in packet."""
         await adapter.handle(request_with_attachments)
-        
+
         # ASSERTION: packet was written with attachment metadata
         assert mock_substrate_service.write_packet.call_count >= 2
-        
+
         # Find the outbound packet
         for call in mock_substrate_service.write_packet.call_args_list:
             packet = call[0][0]
@@ -183,27 +191,29 @@ class TestAcceptanceNegative:
     """Negative acceptance criteria tests."""
 
     @pytest.mark.asyncio
-    async def test_duplicate_event_dedupes(self, adapter, sample_request, mock_substrate_service, mock_aios_client):
+    async def test_duplicate_event_dedupes(
+        self, adapter, sample_request, mock_substrate_service, mock_aios_client
+    ):
         """ACCEPTANCE: duplicate_event_deduped - second request with same event_id is deduplicated."""
         # First request succeeds normally
         mock_substrate_service.search_packets = AsyncMock(return_value=[])
         response1 = await adapter.handle(sample_request)
         assert response1.dedupe is False
-        
+
         # Configure substrate to return existing packet for second request
         mock_substrate_service.search_packets = AsyncMock(
             return_value=[{"packet_id": response1.packet_id}]
         )
-        
+
         # Reset AIOS mock to verify it's NOT called
         mock_aios_client.chat.reset_mock()
-        
+
         # Second request
         response2 = await adapter.handle(sample_request)
-        
+
         # ASSERTION: dedupe is True
         assert response2.dedupe is True
-        
+
         # ASSERTION: AIOS NOT called on duplicate
         mock_aios_client.chat.assert_not_called()
 
@@ -217,19 +227,24 @@ class TestErrorHandling:
     """Error handling and compensating action tests."""
 
     @pytest.mark.asyncio
-    async def test_error_emits_error_packet(self, adapter, sample_request, mock_substrate_service, mock_aios_client):
+    async def test_error_emits_error_packet(
+        self, adapter, sample_request, mock_substrate_service, mock_aios_client
+    ):
         """ERROR: on failure, error packet is emitted."""
         # Configure AIOS to fail
         mock_aios_client.chat = AsyncMock(side_effect=Exception("AIOS failure"))
-        
+
         response = await adapter.handle(sample_request)
-        
+
         # ASSERTION: response indicates failure
         assert response.ok is False
         assert "AIOS failure" in response.error
-        
+
         # ASSERTION: error packet was written
-        packet_types = [c[0][0].packet_type for c in mock_substrate_service.write_packet.call_args_list]
+        packet_types = [
+            c[0][0].packet_type
+            for c in mock_substrate_service.write_packet.call_args_list
+        ]
         assert PACKET_TYPE_ERROR in packet_types
 
     @pytest.mark.asyncio
@@ -238,13 +253,13 @@ class TestErrorHandling:
         # This test enforces deterministic threading behavior
         request1 = TwilioAdapterRequest(event_id="test", payload={"key": "value"})
         request2 = TwilioAdapterRequest(event_id="test", payload={"key": "value"})
-        
+
         context1 = adapter._generate_context(request1)
         context2 = adapter._generate_context(request2)
-        
+
         # ASSERTION: deterministic threading - same inputs = same UUID
         assert context1.thread_uuid == context2.thread_uuid
-        
+
         # Verify different inputs produce different UUIDs
         request3 = TwilioAdapterRequest(event_id="different", payload={"key": "other"})
         context3 = adapter._generate_context(request3)
