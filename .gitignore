@@ -90,3 +90,6 @@ docs/12-19-25/generated/specs/config_loader.yaml
 
 # CodeGen extractions (generated output)
 codegen/extractions/
+
+# Prototype/roadmap docs (contains secrets, not production code)
+docs/
