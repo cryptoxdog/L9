@@ -66,17 +66,18 @@ class MemoryOrchestrator(IMemoryOrchestrator):
             "Executing memory orchestration",
             operation=request.operation,
             packet_count=len(request.packets),
+            tenant_id=request.tenant_id,
         )
 
         try:
             if request.operation == MemoryOperation.BATCH_WRITE:
-                return await self._batch_write(request.packets)
+                return await self._batch_write(request.packets, request)
 
             elif request.operation == MemoryOperation.REPLAY:
                 return await self._replay(request)
 
             elif request.operation == MemoryOperation.GC:
-                return await self._garbage_collect(request.gc_threshold_days)
+                return await self._garbage_collect(request)
 
             elif request.operation == MemoryOperation.COMPACT:
                 return await self._compact()
@@ -95,7 +96,11 @@ class MemoryOrchestrator(IMemoryOrchestrator):
                 errors=[str(e)],
             )
 
-    async def _batch_write(self, packets: List[Dict[str, Any]]) -> MemoryResponse:
+    async def _batch_write(
+        self,
+        packets: List[Dict[str, Any]],
+        request: Optional[MemoryRequest] = None,
+    ) -> MemoryResponse:
         """Store multiple packets in batch."""
         if not packets:
             return MemoryResponse(
@@ -105,6 +110,16 @@ class MemoryOrchestrator(IMemoryOrchestrator):
             )
 
         substrate = await self._get_substrate_service()
+
+        # Set RLS scope if request context provided
+        if request:
+            await substrate.set_session_scope(
+                tenant_id=request.tenant_id,
+                org_id=request.org_id,
+                user_id=request.user_id,
+                role=request.role,
+            )
+
         errors = []
         stored_count = 0
 
@@ -127,11 +142,23 @@ class MemoryOrchestrator(IMemoryOrchestrator):
         """Replay packets from memory to world model."""
         substrate = await self._get_substrate_service()
 
+        # Set RLS scope
+        await substrate.set_session_scope(
+            tenant_id=request.tenant_id,
+            org_id=request.org_id,
+            user_id=request.user_id,
+            role=request.role,
+        )
+
         try:
-            # Query recent packets
+            # Query recent packets with RLS context
             result = await substrate.query_packets(
                 limit=100,
                 since=datetime.utcnow() - timedelta(days=7),
+                tenant_id=request.tenant_id,
+                org_id=request.org_id,
+                user_id=request.user_id,
+                role=request.role,
             )
 
             packets = result.get("packets", [])
@@ -139,7 +166,13 @@ class MemoryOrchestrator(IMemoryOrchestrator):
             # Trigger world model update with replayed packets
             if packets:
                 insights = [{"packet": p, "trigger_world_model": True} for p in packets]
-                await substrate.trigger_world_model_update(insights)
+                await substrate.trigger_world_model_update(
+                    insights,
+                    tenant_id=request.tenant_id,
+                    org_id=request.org_id,
+                    user_id=request.user_id,
+                    role=request.role,
+                )
 
             return MemoryResponse(
                 success=True,
@@ -155,13 +188,20 @@ class MemoryOrchestrator(IMemoryOrchestrator):
                 errors=[str(e)],
             )
 
-    async def _garbage_collect(self, threshold_days: int) -> MemoryResponse:
+    async def _garbage_collect(self, request: MemoryRequest) -> MemoryResponse:
         """
         Garbage collect packets older than threshold.
 
         Delegates to Housekeeping for actual deletion.
         """
-        result = await self._housekeeping.garbage_collect(threshold_days)
+        # Pass RLS context to housekeeping
+        result = await self._housekeeping.garbage_collect(
+            threshold_days=request.gc_threshold_days,
+            tenant_id=request.tenant_id,
+            org_id=request.org_id,
+            user_id=request.user_id,
+            role=request.role,
+        )
 
         return MemoryResponse(
             success=result.get("success", False),

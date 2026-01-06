@@ -30,6 +30,15 @@ class MemoryRequest(BaseModel):
     )
     gc_threshold_days: int = Field(default=30, description="GC threshold in days")
 
+    # Multi-tenant RLS context (required for all operations)
+    tenant_id: str = Field(..., description="Tenant UUID for RLS isolation")
+    org_id: str = Field(..., description="Organization UUID for RLS isolation")
+    user_id: str = Field(..., description="User UUID for RLS isolation")
+    role: str = Field(
+        default="end_user",
+        description="User role: platform_admin, tenant_admin, org_admin, end_user",
+    )
+
 
 class MemoryResponse(BaseModel):
     """Response from memory orchestrator."""

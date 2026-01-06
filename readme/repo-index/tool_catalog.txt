@@ -2,6 +2,25 @@
 # ================
 # All tools with category, scope, risk level, and approval requirements.
 
+## High-Risk Tools (Require Igor Approval)
+
+| Tool | Description |
+|------|-------------|
+| `gmp_run` | Execute GMP protocol (code changes) |
+| `git_commit` | Commit changes to git repository |
+| `git_push` | Push changes to remote repository |
+| `file_delete` | Delete files from filesystem |
+| `database_write` | Write to production database |
+| `deploy` | Deploy to production environment |
+| `mac_agent_exec` | Execute commands on Mac agent |
+
+## Memory Tools (Registered in Phase 5)
+
+| Tool | Purpose |
+|------|---------|
+| `memory_search` | Search memory substrate (semantic + keyword) |
+| `memory_write` | Write packets to memory substrate |
+
 ## Tool Scopes
 
 | Scope | Description |
@@ -9,57 +28,3 @@
 | `internal` | L9-internal operations, no external calls |
 | `external` | Calls external APIs (GitHub, Notion, etc.) |
 | `requires_igor_approval` | High-risk, needs explicit Igor approval |
-
-## Risk Levels
-
-| Risk | Description |
-|------|-------------|
-| `low` | Read-only or safe operations |
-| `medium` | Write operations with rollback |
-| `high` | Destructive or irreversible operations |
-
-## L Agent Tools
-
-| Tool | Category | Scope | Risk | Approval Required |
-|------|----------|-------|------|-------------------|
-| `web_search` | research | internal | low | No |
-| `llm_chat` | ai | internal | low | No |
-| `memory_write` | memory | internal | low | No |
-| `memory_search` | memory | internal | low | No |
-| `slack_send` | communication | internal | low | No |
-| `email_send` | communication | internal | low | No |
-| `calendar_create` | scheduling | internal | low | No |
-| `memory_read` | memory | internal | low | No |
-| `memory_search` | memory | internal | low | No |
-| `memory_write` | memory | internal | low | No |
-| `world_model_query` | knowledge | internal | low | No |
-| `kernel_read` | knowledge | internal | low | No |
-| `mac_agent_exec_task` | general | internal | low | No |
-| `gmp_run` | general | internal | low | No |
-| `git_commit` | execution | requires_igor_approval | high | No |
-| `mcp_call_tool` | general | internal | low | No |
-| `github.create_issue` | integration | external | low | No |
-| `github.create_pull_request` | integration | external | medium | No |
-| `github.merge_pull_request` | integration | external | high | No |
-| `notion.create_page` | integration | external | low | No |
-| `notion.update_page` | integration | external | low | No |
-| `vercel.trigger_deploy` | integration | external | high | No |
-| `vercel.get_deploy_status` | integration | external | low | No |
-| `godaddy.update_dns_record` | integration | external | high | No |
-| `long_plan.execute` | general | internal | low | No |
-| `long_plan.simulate` | general | internal | low | No |
-
-## External API Dependencies
-
-| API | Used By |
-|-----|---------|
-| OpenAI | LLM chat, embeddings |
-| PostgreSQL | Memory substrate, packet store |
-| Neo4j | Graph DB, tool registry |
-| Redis | Task queue, rate limiting |
-| Slack | Messaging, webhooks |
-| GitHub (MCP) | Issues, PRs |
-| Notion (MCP) | Pages, databases |
-| Vercel (MCP) | Deployments |
-| Perplexity | Research queries |
-| Firecrawl | Web scraping |

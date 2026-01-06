@@ -9,7 +9,7 @@ import asyncio
 import time
 from typing import Dict, List, Optional, Union, Any, Callable
 from functools import lru_cache
-import logging
+import structlog
 
 import sympy as sp
 from sympy.utilities.lambdify import lambdify
@@ -28,6 +28,8 @@ from .models import (
 from .exceptions import SymbolicComputationError, EvaluationError, CodeGenerationError
 from .logger import get_logger
 
+
+logger = structlog.get_logger(__name__)
 logger = get_logger(__name__)
 
 
@@ -410,3 +412,6 @@ class SymbolicComputation:
                 "status": "unhealthy",
                 "error": str(e)
             }
+
+
+

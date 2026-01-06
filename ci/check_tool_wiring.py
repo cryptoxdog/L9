@@ -24,9 +24,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import structlog
+
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+logger = structlog.get_logger(__name__)
 
 
 def check_tool_wiring() -> tuple[bool, list[str]]:
@@ -64,7 +68,7 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
     # Check 1: TOOL_EXECUTORS vs ToolName enum
     # =========================================================================
     
-    print("\n🔍 Check 1: TOOL_EXECUTORS vs ToolName enum")
+    logger.info("\n🔍 Check 1: TOOL_EXECUTORS vs ToolName enum")
     
     # Tools in TOOL_EXECUTORS but not in ToolName
     missing_from_enum = l_tools_executors - toolname_values
@@ -73,15 +77,15 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
             errors.append(
                 f"Tool '{tool}' is in TOOL_EXECUTORS but missing from ToolName enum"
             )
-        print(f"   ❌ {len(missing_from_enum)} tool(s) missing from ToolName enum")
+        logger.info(f"   ❌ {len(missing_from_enum)} tool(s) missing from ToolName enum")
     else:
-        print("   ✅ All TOOL_EXECUTORS have ToolName enum entries")
+        logger.info("   ✅ All TOOL_EXECUTORS have ToolName enum entries")
     
     # =========================================================================
     # Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES
     # =========================================================================
     
-    print("\n🔍 Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES")
+    logger.info("\n🔍 Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES")
     
     # Tools in TOOL_EXECUTORS but not in L's capabilities
     missing_from_capabilities = l_tools_executors - l_capability_tools
@@ -92,15 +96,15 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
                 f"Tool '{tool}' is in TOOL_EXECUTORS but not in DEFAULT_L_CAPABILITIES "
                 "(may be intentional if ungated)"
             )
-        print(f"   ⚠️  {len(missing_from_capabilities)} tool(s) not in L capabilities (may be intentional)")
+        logger.info(f"   ⚠️  {len(missing_from_capabilities)} tool(s) not in L capabilities (may be intentional)")
     else:
-        print("   ✅ All TOOL_EXECUTORS have L capability entries")
+        logger.info("   ✅ All TOOL_EXECUTORS have L capability entries")
     
     # =========================================================================
     # Check 3: Verify high-risk tools have approval flags
     # =========================================================================
     
-    print("\n🔍 Check 3: High-risk tools have approval requirements")
+    logger.info("\n🔍 Check 3: High-risk tools have approval requirements")
     
     HIGH_RISK_TOOLS = {"gmp_run", "git_commit", "mac_agent_exec_task"}
     
@@ -121,15 +125,15 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
             )
     
     if not any("High-risk" in e for e in errors):
-        print("   ✅ All high-risk tools have approval requirements")
+        logger.info("   ✅ All high-risk tools have approval requirements")
     else:
-        print(f"   ❌ High-risk tool governance issues found")
+        logger.info(f"   ❌ High-risk tool governance issues found")
     
     # =========================================================================
     # Check 4: Verify ToolDefinitions in register_l_tools match TOOL_EXECUTORS
     # =========================================================================
     
-    print("\n🔍 Check 4: register_l_tools() ToolDefinitions match TOOL_EXECUTORS")
+    logger.info("\n🔍 Check 4: register_l_tools() ToolDefinitions match TOOL_EXECUTORS")
     
     try:
         # We can't easily extract ToolDefinitions without running the function,
@@ -143,19 +147,23 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
         defined_tools = set(re.findall(tool_def_pattern, content))
         
         # Extract tool names from TOOL_EXECUTORS in register_l_tools
-        # Look for the TOOL_EXECUTORS dict assignment
-        executor_pattern = r'"([^"]+)":\s*\w+,'
-        # Find the TOOL_EXECUTORS block in register_l_tools function
-        match = re.search(
-            r'# Map tool names to their executor functions\s*\n\s*TOOL_EXECUTORS = \{([^}]+)\}',
-            content,
-            re.DOTALL
-        )
-        if match:
-            executor_block = match.group(1)
-            registered_executors = set(re.findall(executor_pattern, executor_block))
+        # Pattern 1: Direct import from runtime.l_tools (preferred)
+        if 'from runtime.l_tools import TOOL_EXECUTORS' in content:
+            # TOOL_EXECUTORS is imported, use l_tools_executors as the source of truth
+            registered_executors = l_tools_executors
         else:
-            registered_executors = set()
+            # Pattern 2: Local dict definition (legacy)
+            executor_pattern = r'"([^"]+)":\s*\w+,'
+            match = re.search(
+                r'# Map tool names to their executor functions\s*\n\s*TOOL_EXECUTORS = \{([^}]+)\}',
+                content,
+                re.DOTALL
+            )
+            if match:
+                executor_block = match.group(1)
+                registered_executors = set(re.findall(executor_pattern, executor_block))
+            else:
+                registered_executors = set()
         
         # Check for mismatches
         defs_without_executors = defined_tools - registered_executors
@@ -174,9 +182,9 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
                 )
         
         if not defs_without_executors and not executors_without_defs:
-            print("   ✅ All ToolDefinitions have matching executors")
+            logger.info("   ✅ All ToolDefinitions have matching executors")
         else:
-            print(f"   ❌ Mismatch between ToolDefinitions and executors")
+            logger.info(f"   ❌ Mismatch between ToolDefinitions and executors")
             
     except Exception as e:
         errors.append(f"Failed to analyze registry_adapter.py: {e}")
@@ -185,7 +193,7 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
     # Check 5: Verify l_tools.py TOOL_EXECUTORS matches register_l_tools()
     # =========================================================================
     
-    print("\n🔍 Check 5: l_tools.py TOOL_EXECUTORS consistency with register_l_tools()")
+    logger.info("\n🔍 Check 5: l_tools.py TOOL_EXECUTORS consistency with register_l_tools()")
     
     if registered_executors:
         l_tools_only = l_tools_executors - registered_executors
@@ -206,51 +214,51 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
                 )
         
         if not l_tools_only and not register_only:
-            print("   ✅ TOOL_EXECUTORS consistent between l_tools.py and register_l_tools()")
+            logger.info("   ✅ TOOL_EXECUTORS consistent between l_tools.py and register_l_tools()")
         else:
-            print(f"   ⚠️  Inconsistency detected")
+            logger.info(f"   ⚠️  Inconsistency detected")
     
     # =========================================================================
     # Summary
     # =========================================================================
     
-    print("\n" + "=" * 60)
-    print("📊 TOOL WIRING CHECK SUMMARY")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("📊 TOOL WIRING CHECK SUMMARY")
+    logger.info("=" * 60)
     
-    print(f"\n   Tools in TOOL_EXECUTORS: {len(l_tools_executors)}")
-    print(f"   Tools in ToolName enum:  {len(toolname_values)}")
-    print(f"   Tools in L capabilities: {len(l_capability_tools)}")
+    logger.info(f"\n   Tools in TOOL_EXECUTORS: {len(l_tools_executors)}")
+    logger.info(f"   Tools in ToolName enum:  {len(toolname_values)}")
+    logger.info(f"   Tools in L capabilities: {len(l_capability_tools)}")
     
     if errors:
-        print(f"\n   ❌ ERRORS: {len(errors)}")
+        logger.info(f"\n   ❌ ERRORS: {len(errors)}")
         for err in errors:
-            print(f"      • {err}")
+            logger.info(f"      • {err}")
     
     if warnings:
-        print(f"\n   ⚠️  WARNINGS: {len(warnings)}")
+        logger.info(f"\n   ⚠️  WARNINGS: {len(warnings)}")
         for warn in warnings:
-            print(f"      • {warn}")
+            logger.info(f"      • {warn}")
     
     if not errors and not warnings:
-        print("\n   ✅ All tool wiring checks passed!")
+        logger.info("\n   ✅ All tool wiring checks passed!")
     
     return len(errors) == 0, errors
 
 
 def main() -> int:
     """Main entry point."""
-    print("=" * 60)
-    print("🔧 L9 CI GATE: Tool Wiring Consistency Check")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("🔧 L9 CI GATE: Tool Wiring Consistency Check")
+    logger.info("=" * 60)
     
     passed, errors = check_tool_wiring()
     
     if passed:
-        print("\n✅ CI GATE PASSED: Tool wiring is consistent\n")
+        logger.info("\n✅ CI GATE PASSED: Tool wiring is consistent\n")
         return 0
     else:
-        print(f"\n❌ CI GATE FAILED: {len(errors)} error(s) found\n")
+        logger.info(f"\n❌ CI GATE FAILED: {len(errors)} error(s) found\n")
         return 1
 
 

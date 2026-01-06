@@ -1,0 +1,11 @@
+Feature,L9 Current,Frontier Labs,Gap Impact
+Tool Audit Trail,Planned (spec exists),Automatic (AgentCore/Vertex),🔴 Critical
+Tool Call Memory,Manual via segments.py,Automatic (every invocation),🔴 Critical
+Tool Dependency Tracking,No,Yes (workflow DAG),🔴 Critical
+Tool Cost Tracking,No,Yes (per-tool cost tracking),🔴 Critical
+Tool Performance Metrics,No (telemetry stub),Yes (Prometheus/CloudWatch),🟡 Medium
+Tool Caching/Deduplication,Redis cache (search results),Yes (content-hash based),🟡 Medium
+Tool Failure Recovery,Basic retry,Multi-strategy (checkpoints/resume),🟡 Medium
+Computer Use (bash/terminal),No,Yes (Claude SDK/Vertex sandbox),🔴 Critical
+Code Execution Sandbox,No,Yes (safe code exec),🔴 Critical
+Tool Chaining,Sequential via agents,Automatic via planning,🟡 Medium

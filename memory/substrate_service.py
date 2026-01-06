@@ -25,6 +25,11 @@ from memory.substrate_semantic import (
     create_embedding_provider,
 )
 from memory.substrate_graph import SubstrateDAG
+from telemetry.memory_metrics import (
+    record_memory_write,
+    record_memory_search,
+    set_memory_substrate_health,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -75,10 +80,68 @@ class MemorySubstrateService:
         logger.info("MemorySubstrateService initialized")
 
     # =========================================================================
+    # RLS Session Scope
+    # =========================================================================
+
+    async def set_session_scope(
+        self,
+        tenant_id: str,
+        org_id: str,
+        user_id: str,
+        role: str = "end_user",
+    ) -> None:
+        """
+        Set PostgreSQL session variables for RLS (Row-Level Security).
+
+        Calls l9_set_scope() SQL function to set:
+        - app.tenant_id
+        - app.org_id
+        - app.user_id
+        - app.role
+
+        CRITICAL: Must be called before every database query to enforce tenant isolation.
+
+        Args:
+            tenant_id: Tenant UUID for isolation
+            org_id: Organization UUID for isolation
+            user_id: User UUID for isolation
+            role: User role (platform_admin, tenant_admin, org_admin, end_user)
+
+        Raises:
+            RuntimeError: If session scope setting fails
+        """
+        try:
+            async with self._repository.acquire() as conn:
+                await conn.execute(
+                    """SELECT l9_set_scope($1::uuid, $2::uuid, $3::uuid, $4::text)""",
+                    tenant_id,
+                    org_id,
+                    user_id,
+                    role,
+                )
+            logger.debug(
+                "RLS session scope set",
+                tenant_id=tenant_id,
+                org_id=org_id,
+                user_id=user_id,
+                role=role,
+            )
+        except Exception as e:
+            logger.error(f"Failed to set RLS session scope: {e}", exc_info=True)
+            raise RuntimeError(f"RLS scope initialization failed: {e}") from e
+
+    # =========================================================================
     # Packet Operations
     # =========================================================================
 
-    async def write_packet(self, packet_in: PacketEnvelopeIn) -> PacketWriteResult:
+    async def write_packet(
+        self,
+        packet_in: PacketEnvelopeIn,
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
+    ) -> PacketWriteResult:
         """
         Submit a packet to the substrate for processing.
 
@@ -91,17 +154,35 @@ class MemorySubstrateService:
 
         Args:
             packet_in: Input packet envelope
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
 
         Returns:
             PacketWriteResult with status and written tables
         """
         logger.info(f"Processing packet: type={packet_in.packet_type}")
 
+        # Set RLS scope if provided
+        if tenant_id and org_id and user_id:
+            await self.set_session_scope(tenant_id, org_id, user_id, role)
+        else:
+            logger.warning(
+                "RLS scope not provided for write_packet - queries may be restricted"
+            )
+
         # Convert input to full envelope
         envelope = packet_in.to_envelope()
 
         # Run through DAG
         result = await self._dag.run(envelope)
+
+        # Record Prometheus metrics for memory write
+        record_memory_write(
+            segment=packet_in.packet_type or "unknown",
+            status=result.status,
+        )
 
         logger.info(
             f"Packet {envelope.packet_id} processed: "
@@ -156,7 +237,16 @@ class MemorySubstrateService:
                 packet_type=packet_type,
                 limit=limit,
             )
-            return [row.envelope for row in rows]
+            results = [row.envelope for row in rows]
+
+            # Record Prometheus metrics for search
+            record_memory_search(
+                segment=packet_type or "all",
+                hit_count=len(results),
+                search_type="thread",
+            )
+
+            return results
         except Exception as e:
             logger.error(f"Error searching packets by thread {thread_id}: {e}")
             return []
@@ -184,7 +274,16 @@ class MemorySubstrateService:
                 agent_id=agent_id,
                 limit=limit,
             )
-            return [row.envelope for row in rows]
+            results = [row.envelope for row in rows]
+
+            # Record Prometheus metrics for search
+            record_memory_search(
+                segment=packet_type,
+                hit_count=len(results),
+                search_type="type",
+            )
+
+            return results
         except Exception as e:
             logger.error(f"Error searching packets by type {packet_type}: {e}")
             return []
@@ -195,6 +294,10 @@ class MemorySubstrateService:
         limit: int = 50,
         since: Optional[datetime] = None,
         agent_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
     ) -> dict[str, Any]:
         """
         Query packets for world model ingestion.
@@ -208,11 +311,19 @@ class MemorySubstrateService:
             limit: Maximum packets to return
             since: Only fetch packets after this timestamp
             agent_id: Optional filter by agent
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
 
         Returns:
             Dict with 'packets' list and metadata
         """
         try:
+            # Set RLS scope if provided
+            if tenant_id and org_id and user_id:
+                await self.set_session_scope(tenant_id, org_id, user_id, role)
+
             all_packets = []
 
             if packet_types:
@@ -291,6 +402,13 @@ class MemorySubstrateService:
             query=request.query,
             top_k=request.top_k,
             agent_id=request.agent_id,
+        )
+
+        # Record Prometheus metrics for semantic search
+        record_memory_search(
+            segment="semantic",
+            hit_count=len(hits),
+            search_type="semantic",
         )
 
         return SemanticSearchResult(
@@ -446,6 +564,10 @@ class MemorySubstrateService:
     async def trigger_world_model_update(
         self,
         insights: list[dict[str, Any]],
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
     ) -> dict[str, Any]:
         """
         Trigger world model update from insights.
@@ -455,11 +577,19 @@ class MemorySubstrateService:
 
         Args:
             insights: List of insights to propagate
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
 
         Returns:
             Status dict with update results
         """
         logger.info(f"World model update triggered with {len(insights)} insights")
+
+        # Set RLS scope for world model operations
+        if tenant_id and org_id and user_id:
+            await self.set_session_scope(tenant_id, org_id, user_id, role)
 
         # Filter to insights that should trigger updates
         triggering = [i for i in insights if i.get("trigger_world_model", False)]
@@ -542,6 +672,10 @@ class MemorySubstrateService:
             Health status dict
         """
         db_health = await self._repository.health_check()
+
+        # Update Prometheus health gauge
+        is_healthy = db_health["status"] == "healthy"
+        set_memory_substrate_health(is_healthy)
 
         return {
             "status": db_health["status"],

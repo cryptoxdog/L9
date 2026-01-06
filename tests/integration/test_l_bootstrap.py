@@ -40,7 +40,7 @@ from core.agents.schemas import AgentTask, TaskKind, AIOSResult, AIOSResultType
 from core.governance.approvals import ApprovalManager
 from core.tools.tool_graph import ToolGraph, ToolDefinition
 from orchestration.long_plan_graph import extract_tasks_from_plan
-from services.research.tools.tool_registry import recall_task_history
+from core.tools.base_registry import recall_task_history
 from tests.core.agents.test_executor import (
     MockAIOSRuntime,
     MockToolRegistry,

@@ -193,3 +193,4 @@ async def run_migrations(database_url: Optional[str] = None) -> dict[str, any]:
     await _runner.disconnect()
 
     return result
+

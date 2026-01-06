@@ -491,3 +491,4 @@ python -m pytest tests/core/agents/test_executor.py -v
 **L-CTO** — *Igor's autonomous CTO, governed by kernels, audited by memory.*
 
 
+

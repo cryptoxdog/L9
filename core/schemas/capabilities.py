@@ -68,6 +68,7 @@ class ToolName(str, Enum):
     # Symbolic computation tools (Quantum AI Factory)
     SYMBOLIC_COMPUTE = "symbolic_compute"
     SYMBOLIC_CODEGEN = "symbolic_codegen"
+    SYMBOLIC_OPTIMIZE = "symbolic_optimize"
 
     # Simulation tools (IR graph evaluation)
     SIMULATION = "simulation"
@@ -252,6 +253,9 @@ DEFAULT_L_CAPABILITIES = AgentCapabilities(
         # Symbolic computation tools (Quantum AI Factory)
         Capability(tool=ToolName.SYMBOLIC_COMPUTE, allowed=True),
         Capability(tool=ToolName.SYMBOLIC_CODEGEN, allowed=True),
+        Capability(tool=ToolName.SYMBOLIC_OPTIMIZE, allowed=True),
+        # Simulation tools (IR graph evaluation)
+        Capability(tool=ToolName.SIMULATION, allowed=True),
         # Governance tools (allowed but require Igor approval)
         Capability(tool=ToolName.GMP_RUN, allowed=True, scope="requires_igor_approval"),
         Capability(

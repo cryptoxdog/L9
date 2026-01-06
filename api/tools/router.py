@@ -1,21 +1,22 @@
 """
 L9 Tools API Router
-Version: 1.0.0
+Version: 2.0.0
 
-Tool execution endpoints using ActionToolOrchestrator.
+Tool execution endpoints using ExecutorToolRegistry.
 All tool calls are validated, safety-checked, and logged.
+
+DEPRECATED: ActionToolOrchestrator (v1.x) removed in v2.0.
+Using ExecutorToolRegistry for governance-aware dispatch.
 """
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from api.auth import verify_api_key
 from typing import Dict, Any, Optional
+from datetime import datetime
 import structlog
 
-from orchestrators.action_tool.interface import (
-    ActionToolRequest,
-)
-from orchestrators.action_tool.orchestrator import ActionToolOrchestrator
+from core.tools.registry_adapter import ExecutorToolRegistry
 
 logger = structlog.get_logger(__name__)
 
@@ -51,19 +52,24 @@ class ToolExecuteResponse(BaseModel):
 
 
 # ============================================================================
-# Dependency: Get ActionToolOrchestrator from app.state
+# Dependency: Get ExecutorToolRegistry from app.state
 # ============================================================================
 
 
-def get_action_tool_orchestrator(request: Request) -> ActionToolOrchestrator:
-    """Get ActionToolOrchestrator from app.state."""
-    orchestrator = getattr(request.app.state, "action_tool_orchestrator", None)
-    if orchestrator is None:
+def get_tool_registry(request: Request) -> ExecutorToolRegistry:
+    """
+    Get ExecutorToolRegistry from app.state.
+    
+    DEPRECATED: ActionToolOrchestrator (v1.x) removed in v2.0.
+    Using ExecutorToolRegistry for governance-aware dispatch.
+    """
+    registry = getattr(request.app.state, "tool_registry", None)
+    if registry is None:
         raise HTTPException(
             status_code=503,
-            detail="ActionToolOrchestrator not initialized. Check server logs.",
+            detail="Tool registry not initialized. Check server logs.",
         )
-    return orchestrator
+    return registry
 
 
 # ============================================================================
@@ -83,53 +89,82 @@ async def tools_test(
 @router.post("/execute", response_model=ToolExecuteResponse)
 async def execute_tool(
     request: ToolExecuteRequest,
+    http_request: Request,
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),
-    orchestrator: ActionToolOrchestrator = Depends(get_action_tool_orchestrator),
+    registry: ExecutorToolRegistry = Depends(get_tool_registry),
 ):
     """
-    Execute a tool via ActionToolOrchestrator.
+    Execute a tool via ExecutorToolRegistry.
 
-    The orchestrator handles:
-    - Tool validation
-    - Safety assessment
-    - Execution with retries
-    - Packet logging
+    DEPRECATED: ActionToolOrchestrator (v1.x) removed in v2.0.
+    Using ExecutorToolRegistry for governance-aware dispatch.
+
+    The registry handles:
+    - Tool validation via Pydantic schemas
+    - Governance policy checks
+    - Execution with timeout
+    - Packet logging to memory substrate
     """
     try:
         logger.info(
             "Tool execution request",
             tool_id=request.tool_id,
-            max_retries=request.max_retries,
             require_approval=request.require_approval,
         )
 
-        # Build orchestrator request
-        action_request = ActionToolRequest(
+        # Build execution context
+        context = {
+            "principal_id": "api",
+            "agent_id": "api-tools-router",
+            "require_approval": request.require_approval,
+        }
+
+        # Execute via registry dispatch
+        result = await registry.dispatch_tool_call(
             tool_id=request.tool_id,
             arguments=request.arguments,
-            max_retries=request.max_retries,
-            require_approval=request.require_approval,
+            context=context,
         )
-
-        # Execute via orchestrator
-        result = await orchestrator.execute(action_request)
 
         logger.info(
             "Tool execution complete",
             tool_id=request.tool_id,
             success=result.success,
-            safety_level=result.safety_level.value,
-            retries_used=result.retries_used,
+            duration_ms=result.duration_ms,
         )
 
         return ToolExecuteResponse(
             success=result.success,
-            result=result.result,
-            safety_level=result.safety_level.value,
-            retries_used=result.retries_used,
-            message=result.message,
+            result=result.result if result.success else None,
+            safety_level="safe",  # Registry handles governance checks
+            retries_used=0,  # Registry doesn't track retries
+            message=result.error if not result.success else "OK",
         )
     except Exception as e:
         logger.error(f"Tool execution failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Tool execution failed: {str(e)}")
+
+
+@router.get("/health")
+async def tool_graph_health(request: Request) -> dict:
+    """
+    Check tool graph health status.
+    
+    Returns:
+        {
+            "status": "healthy" | "degraded",
+            "neo4j_available": true | false,
+            "impact": null | "No blast radius/dependency queries",
+            "tools_executable": true,
+            "timestamp": "2026-01-04T..."
+        }
+    """
+    is_healthy = getattr(request.app.state, "tool_graph_healthy", False)
+    return {
+        "status": "healthy" if is_healthy else "degraded",
+        "neo4j_available": is_healthy,
+        "impact": None if is_healthy else "No blast radius/dependency queries",
+        "tools_executable": True,
+        "timestamp": datetime.utcnow().isoformat()
+    }

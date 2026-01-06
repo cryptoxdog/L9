@@ -61,6 +61,9 @@ numpy>=1.24.0
 # Browser Automation (Mac Agent)
 playwright>=1.40.0
 
+# Observability
+prometheus_client>=0.19.0
+
 # Testing (optional, for dev)
 pytest>=7.4.0
 pytest-asyncio>=0.23.0

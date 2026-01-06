@@ -22,6 +22,12 @@ from typing import Any, Optional
 
 logger = structlog.get_logger(__name__)
 
+# L's tenant ID for key prefixing - SEPARATE from Cursor's
+# L uses:      L9_TENANT_ID = 'l-cto' (here)
+# Cursor uses: CURSOR_TENANT_ID = 'cursor-ide' (core/governance/cursor_memory_kernel.py)
+# This prevents session state cross-contamination when Igor talks to both simultaneously
+DEFAULT_TENANT_ID = os.getenv("L9_TENANT_ID", "l-cto")
+
 # Try to import Redis
 try:
     import redis.asyncio as aioredis
@@ -123,6 +129,23 @@ class RedisClient:
         """Check if Redis is available."""
         return self._available and self._client is not None
 
+    def _prefixed_key(self, key: str, tenant_id: Optional[str] = None) -> str:
+        """
+        Create a tenant-prefixed key for multi-tenant isolation.
+        
+        Args:
+            key: Original key (e.g., "tasks", "session:123")
+            tenant_id: Tenant ID (default: DEFAULT_TENANT_ID)
+            
+        Returns:
+            Prefixed key (e.g., "l9-shared:tasks", "l9-shared:session:123")
+        """
+        tid = tenant_id or DEFAULT_TENANT_ID
+        # Avoid double-prefixing if key already has tenant prefix
+        if key.startswith(f"{tid}:"):
+            return key
+        return f"{tid}:{key}"
+
     # =========================================================================
     # Task Queue Operations
     # =========================================================================
@@ -154,8 +177,9 @@ class RedisClient:
             task_data["task_id"] = task_id
             task_data["priority"] = priority
 
-            # Store task data
-            task_key = f"{queue_name}:task:{task_id}"
+            # Store task data (with tenant prefix)
+            prefixed_queue = self._prefixed_key(queue_name)
+            task_key = f"{prefixed_queue}:task:{task_id}"
             await self._client.setex(
                 task_key,
                 3600,  # 1 hour TTL
@@ -164,12 +188,12 @@ class RedisClient:
 
             # Add to priority queue (sorted set)
             await self._client.zadd(
-                f"{queue_name}:queue",
+                f"{prefixed_queue}:queue",
                 {task_id: priority},
             )
 
             logger.debug(
-                f"Enqueued task {task_id} to {queue_name} with priority {priority}"
+                f"Enqueued task {task_id} to {prefixed_queue} with priority {priority}"
             )
             return task_id
         except Exception as e:
@@ -190,14 +214,15 @@ class RedisClient:
             return None
 
         try:
-            # Get highest priority task (lowest score)
-            result = await self._client.zpopmin(f"{queue_name}:queue", count=1)
+            # Get highest priority task (lowest score) - with tenant prefix
+            prefixed_queue = self._prefixed_key(queue_name)
+            result = await self._client.zpopmin(f"{prefixed_queue}:queue", count=1)
 
             if not result:
                 return None
 
             task_id, _ = result[0]
-            task_key = f"{queue_name}:task:{task_id}"
+            task_key = f"{prefixed_queue}:task:{task_id}"
 
             # Get task data
             task_data_str = await self._client.get(task_key)
@@ -220,7 +245,8 @@ class RedisClient:
             return 0
 
         try:
-            return await self._client.zcard(f"{queue_name}:queue")
+            prefixed_queue = self._prefixed_key(queue_name)
+            return await self._client.zcard(f"{prefixed_queue}:queue")
         except Exception as e:
             logger.error(f"Redis queue_size failed: {e}")
             return 0
@@ -243,7 +269,8 @@ class RedisClient:
             return 0
 
         try:
-            value = await self._client.get(key)
+            prefixed = self._prefixed_key(key)
+            value = await self._client.get(prefixed)
             return int(value) if value else 0
         except Exception as e:
             logger.error(f"Redis get_rate_limit failed: {e}")
@@ -265,7 +292,8 @@ class RedisClient:
             return False
 
         try:
-            await self._client.setex(key, ttl, value)
+            prefixed = self._prefixed_key(key)
+            await self._client.setex(prefixed, ttl, value)
             return True
         except Exception as e:
             logger.error(f"Redis set_rate_limit failed: {e}")
@@ -286,9 +314,10 @@ class RedisClient:
             return 0
 
         try:
-            count = await self._client.incr(key)
+            prefixed = self._prefixed_key(key)
+            count = await self._client.incr(prefixed)
             if count == 1:  # First increment, set TTL
-                await self._client.expire(key, ttl)
+                await self._client.expire(prefixed, ttl)
             return count
         except Exception as e:
             logger.error(f"Redis increment_rate_limit failed: {e}")
@@ -308,7 +337,7 @@ class RedisClient:
             return {}
 
         try:
-            context_key = f"task_context:{task_id}"
+            context_key = self._prefixed_key(f"task_context:{task_id}")
             context_str = await self._client.get(context_key)
             if context_str:
                 return json.loads(context_str)
@@ -335,7 +364,7 @@ class RedisClient:
             return False
 
         try:
-            context_key = f"task_context:{task_id}"
+            context_key = self._prefixed_key(f"task_context:{task_id}")
             await self._client.setex(context_key, ttl, json.dumps(context))
             return True
         except Exception as e:
@@ -348,60 +377,93 @@ class RedisClient:
             return 0
 
         try:
-            return await self._client.decr(key)
+            prefixed = self._prefixed_key(key)
+            return await self._client.decr(prefixed)
         except Exception as e:
             logger.error(f"Redis decrement_rate_limit failed: {e}")
             return 0
 
     # =========================================================================
-    # Generic Key-Value Operations
+    # Generic Key-Value Operations (all tenant-prefixed by default)
     # =========================================================================
 
-    async def get(self, key: str) -> Optional[str]:
-        """Get value by key."""
+    async def get(self, key: str, raw: bool = False) -> Optional[str]:
+        """
+        Get value by key.
+        
+        Args:
+            key: Key to get
+            raw: If True, use key as-is (no tenant prefix)
+        """
         if not self.is_available():
             return None
 
         try:
-            return await self._client.get(key)
+            prefixed = key if raw else self._prefixed_key(key)
+            return await self._client.get(prefixed)
         except Exception as e:
             logger.error(f"Redis get failed: {e}")
             return None
 
-    async def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
-        """Set key-value with optional TTL."""
+    async def set(
+        self, key: str, value: str, ttl: Optional[int] = None, raw: bool = False
+    ) -> bool:
+        """
+        Set key-value with optional TTL.
+        
+        Args:
+            key: Key to set
+            value: Value to set
+            ttl: Optional TTL in seconds
+            raw: If True, use key as-is (no tenant prefix)
+        """
         if not self.is_available():
             return False
 
         try:
+            prefixed = key if raw else self._prefixed_key(key)
             if ttl:
-                await self._client.setex(key, ttl, value)
+                await self._client.setex(prefixed, ttl, value)
             else:
-                await self._client.set(key, value)
+                await self._client.set(prefixed, value)
             return True
         except Exception as e:
             logger.error(f"Redis set failed: {e}")
             return False
 
-    async def delete(self, key: str) -> bool:
-        """Delete key."""
+    async def delete(self, key: str, raw: bool = False) -> bool:
+        """
+        Delete key.
+        
+        Args:
+            key: Key to delete
+            raw: If True, use key as-is (no tenant prefix)
+        """
         if not self.is_available():
             return False
 
         try:
-            await self._client.delete(key)
+            prefixed = key if raw else self._prefixed_key(key)
+            await self._client.delete(prefixed)
             return True
         except Exception as e:
             logger.error(f"Redis delete failed: {e}")
             return False
 
-    async def keys(self, pattern: str) -> list[str]:
-        """Get keys matching pattern."""
+    async def keys(self, pattern: str, raw: bool = False) -> list[str]:
+        """
+        Get keys matching pattern.
+        
+        Args:
+            pattern: Pattern to match
+            raw: If True, use pattern as-is (no tenant prefix)
+        """
         if not self.is_available():
             return []
 
         try:
-            return [key async for key in self._client.scan_iter(match=pattern)]
+            prefixed = pattern if raw else self._prefixed_key(pattern)
+            return [key async for key in self._client.scan_iter(match=prefixed)]
         except Exception as e:
             logger.error(f"Redis keys failed: {e}")
             return []

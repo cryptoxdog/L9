@@ -171,3 +171,6 @@ ssh root@157.180.73.53 "docker exec l9-postgres psql -U postgres -d l9memory -c 
 3. Igor can verify both see the same data (empirical proof)
 
 
+
+
+

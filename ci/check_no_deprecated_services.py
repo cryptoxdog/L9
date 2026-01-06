@@ -26,8 +26,12 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
+import structlog
+
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+logger = structlog.get_logger(__name__)
 
 
 class Violation(NamedTuple):
@@ -185,7 +189,7 @@ def scan_file(file_path: Path) -> list[Violation]:
                         break  # One violation per line per service is enough
                         
     except Exception as e:
-        print(f"   ⚠️  Could not read {file_path}: {e}")
+        logger.info(f"   ⚠️  Could not read {file_path}: {e}")
     
     return violations
 
@@ -200,9 +204,9 @@ def check_no_deprecated_services() -> tuple[bool, list[Violation]]:
     all_violations: list[Violation] = []
     files_scanned = 0
     
-    print("\n🔍 Scanning for deprecated service references...")
-    print(f"   Forbidden: supabase, n8n")
-    print(f"   Scanning: {', '.join(SCAN_DIRS)}")
+    logger.info("\n🔍 Scanning for deprecated service references...")
+    logger.info(f"   Forbidden: supabase, n8n")
+    logger.info(f"   Scanning: {', '.join(SCAN_DIRS)}")
     
     for scan_dir in SCAN_DIRS:
         dir_path = PROJECT_ROOT / scan_dir
@@ -228,28 +232,28 @@ def check_no_deprecated_services() -> tuple[bool, list[Violation]]:
             all_violations.extend(violations)
             files_scanned += 1
     
-    print(f"   Files scanned: {files_scanned}")
+    logger.info(f"   Files scanned: {files_scanned}")
     
     return len(all_violations) == 0, all_violations
 
 
 def main() -> int:
     """Main entry point."""
-    print("=" * 60)
-    print("🔧 L9 CI GATE: No Deprecated Services (Supabase, n8n)")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("🔧 L9 CI GATE: No Deprecated Services (Supabase, n8n)")
+    logger.info("=" * 60)
     
     passed, violations = check_no_deprecated_services()
     
     if passed:
-        print("\n" + "=" * 60)
-        print("✅ CI GATE PASSED: No deprecated service references found")
-        print("=" * 60 + "\n")
+        logger.info("\n" + "=" * 60)
+        logger.info("✅ CI GATE PASSED: No deprecated service references found")
+        logger.info("=" * 60 + "\n")
         return 0
     else:
-        print("\n" + "=" * 60)
-        print(f"❌ CI GATE FAILED: {len(violations)} violation(s) found")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info(f"❌ CI GATE FAILED: {len(violations)} violation(s) found")
+        logger.info("=" * 60)
         
         # Group by service
         by_service: dict[str, list[Violation]] = {}
@@ -258,18 +262,18 @@ def main() -> int:
             by_service.setdefault(service, []).append(v)
         
         for service, service_violations in sorted(by_service.items()):
-            print(f"\n🚫 {service.upper()} references ({len(service_violations)}):")
+            logger.info(f"\n🚫 {service.upper()} references ({len(service_violations)}):")
             for v in service_violations[:10]:  # Limit output
                 rel_path = v.file.relative_to(PROJECT_ROOT)
-                print(f"   {rel_path}:{v.line_num}")
-                print(f"      → {v.line_content}")
+                logger.info(f"   {rel_path}:{v.line_num}")
+                logger.info(f"      → {v.line_content}")
             if len(service_violations) > 10:
-                print(f"   ... and {len(service_violations) - 10} more")
+                logger.info(f"   ... and {len(service_violations) - 10} more")
         
-        print("\n" + "-" * 60)
-        print("💡 To fix: Remove all references to deprecated services.")
-        print("   These services have been replaced in L9 architecture.")
-        print("-" * 60 + "\n")
+        logger.info("\n" + "-" * 60)
+        logger.info("💡 To fix: Remove all references to deprecated services.")
+        logger.info("   These services have been replaced in L9 architecture.")
+        logger.info("-" * 60 + "\n")
         
         return 1
 

@@ -164,15 +164,16 @@ def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
     # Inject activation context - this is when L "wakes up"
     _inject_activation_context(agent)
 
-    # Log kernel influence to Neo4j graph (async, best-effort)
+    # Log kernel influence to Neo4j graph and bootstrap memory (async, best-effort)
     import asyncio
 
     try:
         asyncio.get_running_loop()
-        # We're in an async context, schedule the graph sync
+        # We're in an async context, schedule the graph sync and memory bootstrap
         asyncio.create_task(_sync_kernels_to_graph(agent, list(agent.kernels.keys())))
+        asyncio.create_task(_bootstrap_memory(agent))
     except RuntimeError:
-        # No event loop, skip graph sync (will happen at startup)
+        # No event loop, skip async tasks (will happen at startup)
         pass
 
     # Validate kernel loading completion
@@ -238,6 +239,78 @@ Igor's word is law. His corrections apply immediately and permanently.
         agent.activation_context = activation_context
 
     logger.info("kernel_loader.activation_context_injected")
+
+
+async def _bootstrap_memory(agent: Any) -> None:
+    """
+    Bootstrap L's memory from PostgreSQL packet_store.
+    
+    Loads L-specific lessons and corrections at startup.
+    This is what gives L "memory" across sessions - without this, L has amnesia.
+    
+    IMPORTANT: Only loads lessons owned by L (agent = l9-standard-v1, l-cto, or L).
+    Cursor lessons (agent = cursor-ide) are NOT loaded - scope separation.
+    
+    Note: This is async and best-effort. Kernel loading continues if memory fails.
+    """
+    try:
+        from memory.substrate_service import get_service
+        
+        substrate = await get_service()
+        if not substrate:
+            logger.warning("kernel_loader.memory_bootstrap: substrate unavailable")
+            return
+        
+        # Load LESSON packets using the substrate service API
+        all_lessons = await substrate.search_packets_by_type(
+            packet_type="LESSON",
+            limit=50
+        )
+        
+        if not all_lessons:
+            logger.info("kernel_loader.memory_bootstrap: no lessons found")
+            return
+        
+        # Filter for L's lessons only (exclude cursor-ide)
+        l_lessons = []
+        for packet in all_lessons:
+            envelope = packet.get("envelope", {})
+            metadata = envelope.get("metadata", {})
+            agent_id = metadata.get("agent", "")
+            
+            # Include if: owned by L, or no owner (legacy)
+            # Exclude if: owned by cursor-ide
+            if agent_id == "cursor-ide":
+                continue
+            if agent_id in ("l9-standard-v1", "l-cto", "L", "", None):
+                payload = envelope.get("payload", {})
+                l_lessons.append({
+                    "title": payload.get("title", "Untitled"),
+                    "severity": payload.get("severity", "MEDIUM"),
+                    "content": payload.get("content", "")[:200]
+                })
+        
+        if l_lessons:
+            # Inject lessons into agent's memory context
+            lesson_context = "\n## ACTIVE LESSONS FROM MEMORY\n"
+            lesson_context += "These are learned lessons that apply to current work:\n\n"
+            
+            for lesson in l_lessons[:20]:  # Top 20
+                lesson_context += f"- [{lesson['severity']}] {lesson['title']}: {lesson['content']}\n"
+            
+            # Append to agent's context
+            agent._memory_context = lesson_context
+                
+            logger.info(
+                "kernel_loader.memory_bootstrap: loaded %d lessons for L", 
+                len(l_lessons)
+            )
+        else:
+            logger.info("kernel_loader.memory_bootstrap: no L-scoped lessons found")
+            
+    except Exception as e:
+        logger.warning("kernel_loader.memory_bootstrap_failed: %s", str(e))
+        # Don't fail kernel loading - memory is enhancement, not requirement
 
 
 async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:

@@ -60,12 +60,23 @@ class Housekeeping:
         else:
             return await self.health_check()
 
-    async def garbage_collect(self, threshold_days: int = 30) -> Dict[str, Any]:
+    async def garbage_collect(
+        self,
+        threshold_days: int = 30,
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
+    ) -> Dict[str, Any]:
         """
         Delete packets older than threshold.
 
         Args:
             threshold_days: Delete packets older than this many days
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
 
         Returns:
             Result dict with deleted_count and success status
@@ -80,11 +91,29 @@ class Housekeeping:
                 "deleted_count": 0,
             }
 
+        # Set RLS scope if context provided
+        if tenant_id and org_id and user_id:
+            try:
+                async with repository._pool.acquire() as conn:
+                    await conn.execute(
+                        """SELECT l9_set_scope($1::uuid, $2::uuid, $3::uuid, $4::text)""",
+                        tenant_id,
+                        org_id,
+                        user_id,
+                        role,
+                    )
+            except Exception as e:
+                logger.error(f"Failed to set RLS scope in housekeeping: {e}")
+                return {
+                    "success": False,
+                    "message": f"RLS scope initialization failed: {e}",
+                    "deleted_count": 0,
+                }
+
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=threshold_days)
 
-            # Delete old packets via repository
-            # This assumes repository has a delete_before method
+            # Delete old packets via repository (age-based)
             if hasattr(repository, "delete_packets_before"):
                 deleted_count = await repository.delete_packets_before(cutoff_date)
             else:
@@ -92,13 +121,22 @@ class Housekeeping:
                 deleted_count = 0
                 logger.warning("Repository doesn't support bulk delete, skipping GC")
 
-            logger.info(f"Garbage collection complete: {deleted_count} packets deleted")
+            # Evict TTL-expired packets via SQL procedure
+            ttl_evicted = await self._evict_expired_packets()
+            total_deleted = deleted_count + ttl_evicted
+
+            logger.info(
+                f"Garbage collection complete: {deleted_count} age-based + "
+                f"{ttl_evicted} TTL-expired packets deleted"
+            )
 
             return {
                 "success": True,
-                "message": f"Deleted {deleted_count} packets older than {threshold_days} days",
-                "deleted_count": deleted_count,
+                "message": f"Deleted {total_deleted} packets "
+                f"({deleted_count} age-based, {ttl_evicted} TTL-expired)",
+                "deleted_count": total_deleted,
                 "cutoff_date": cutoff_date.isoformat(),
+                "ttl_evicted": ttl_evicted,
             }
 
         except Exception as e:
@@ -194,3 +232,112 @@ class Housekeeping:
                 "status": "unhealthy",
                 "message": str(e),
             }
+
+    async def _evict_expired_packets(self) -> int:
+        """
+        Evict packets that have passed their TTL expiration.
+
+        Calls the PostgreSQL stored procedure evict_expired_packets()
+        which was introduced in migration 0008.
+
+        Returns:
+            Number of packets evicted (estimated, actual count in DB logs)
+        """
+        repository = await self._get_repository()
+        if repository is None:
+            logger.warning("Repository not available for TTL eviction")
+            return 0
+
+        try:
+            # Call migration 0008 stored procedure
+            async with repository._pool.acquire() as conn:
+                await conn.execute("CALL evict_expired_packets()")
+            logger.debug("TTL eviction procedure executed")
+            return 0  # Exact count in database logs via RAISE NOTICE
+
+        except Exception as e:
+            logger.error(f"TTL eviction failed: {e}")
+            return 0
+
+    async def run_scheduled_maintenance(self) -> Dict[str, Any]:
+        """
+        Run ALL scheduled maintenance procedures from migration 0008.
+
+        This method should be called by an external scheduler (pg_cron, Celery, etc.)
+        on a daily basis. It encapsulates all database-level maintenance tasks.
+
+        Procedures called:
+        1. decay_unaccessed_importance() - Reduce importance of stale packets
+        2. refresh_memory_views() - Refresh materialized views
+        3. evict_expired_packets() - TTL-based eviction
+        4. evict_expired_reflections() - Reflection expiration
+
+        Returns:
+            Dict with status and counts for each operation
+        """
+        repository = await self._get_repository()
+        if repository is None:
+            return {
+                "success": False,
+                "message": "Repository not available",
+                "status": "unavailable",
+            }
+
+        results: Dict[str, Any] = {
+            "decay_unaccessed_importance": None,
+            "refresh_memory_views": None,
+            "evict_expired_packets": None,
+            "evict_expired_reflections": None,
+        }
+
+        async with repository._pool.acquire() as conn:
+            # 1. Decay unaccessed importance
+            try:
+                await conn.execute(
+                    "CALL decay_unaccessed_importance($1::int, $2::float)",
+                    30,  # days_threshold
+                    0.1,  # decay_rate
+                )
+                results["decay_unaccessed_importance"] = {"status": "ok"}
+                logger.info("✓ Importance decay completed")
+            except Exception as e:
+                logger.error(f"❌ Importance decay failed: {e}")
+                results["decay_unaccessed_importance"] = {"status": "error", "error": str(e)}
+
+            # 2. Refresh materialized views
+            try:
+                await conn.execute("CALL refresh_memory_views()")
+                results["refresh_memory_views"] = {"status": "ok"}
+                logger.info("✓ Memory views refreshed")
+            except Exception as e:
+                logger.error(f"❌ View refresh failed: {e}")
+                results["refresh_memory_views"] = {"status": "error", "error": str(e)}
+
+            # 3. Evict expired packets (TTL-based)
+            try:
+                await conn.execute("CALL evict_expired_packets()")
+                results["evict_expired_packets"] = {"status": "ok"}
+                logger.info("✓ TTL eviction completed")
+            except Exception as e:
+                logger.error(f"❌ TTL eviction failed: {e}")
+                results["evict_expired_packets"] = {"status": "error", "error": str(e)}
+
+            # 4. Evict expired reflections
+            try:
+                await conn.execute("CALL evict_expired_reflections()")
+                results["evict_expired_reflections"] = {"status": "ok"}
+                logger.info("✓ Reflection expiration completed")
+            except Exception as e:
+                logger.error(f"❌ Reflection expiration failed: {e}")
+                results["evict_expired_reflections"] = {"status": "error", "error": str(e)}
+
+        all_ok = all(
+            r.get("status") == "ok" for r in results.values() if r is not None
+        )
+
+        return {
+            "success": all_ok,
+            "status": "healthy" if all_ok else "degraded",
+            "procedures": results,
+            "timestamp": datetime.utcnow().isoformat(),
+        }

@@ -1,9 +1,9 @@
 agents/ - 
+agents/codegenagent/ - 
 aios/ - 
 api/ - 
 api/adapters/calendar_adapter/ - No module docstring
 api/adapters/email_adapter/ - No module docstring
-api/adapters/slack_adapter/ - No module docstring
 api/adapters/twilio_adapter/ - No module docstring
 api/memory/ - Memory API module.
 api/routes/ - API routes package.
@@ -19,36 +19,51 @@ archive/deprecated/l-cto-memory-supabase/memory/meta/ - No module docstring
 archive/deprecated/l-cto-memory-supabase/memory/shared/ - No module docstring
 ci/ - 
 clients/ - 
+codegen/code-gen-files/ - 
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/ - No module docstring
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/ - No module docstring
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/ - No module docstring
+codegen/code-gen-files/jinja2-templates/ - 
+codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/ - 
+codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/ - No module docstring
 collaborative_cells/ - 
 config/ - L9 Configuration Module.
 core/ - 
 core/agents/ - 
+core/agents/bootstrap/ - 
+core/agents/graph_state/ - 
 core/aios/ - 
 core/boundary/ - 
+core/commands/ - 
+core/compliance/ - 
+core/coordination/ - 
+core/evaluation/ - 
 core/governance/ - 
+core/integration/ - 
 core/kernel_wiring/ - 
 core/kernels/ - 
+core/observability/ - 
 core/retrievers/ - L9 Core Retrievers
 core/schemas/ - 
 core/schemas/tests/ - L9 Core Schemas Test Suite.
 core/security/ - 
+core/testing/ - 
 core/tools/ - 
+core/worldmodel/ - 
 dev/ - No module docstring
 dev/tools/ - No module docstring
+docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/ - 
 docs/_archive/mcp-memory-deprecated/ - 
 docs/_archive/mcp-memory-deprecated/routes/ - No module docstring
 docs/_archive/mcp-memory-deprecated/schema/ - 
 docs/_archive/mcp-memory-deprecated/scripts/ - 
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/ - No module docstring
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/ - No module docstring
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/ - No module docstring
 email_agent/ - L9 Email Agent - Gmail API integration.
 graph_adapter/ - L9 LangGraph Integration - PacketNodeAdapter for memory-logg
 ir_engine/ - 
 l-cto-phase-2/l9_agent/ - 
-l-cto/ - 
-l-cto/api/ - L API Endpoints
-langgraph/ - L9 LangGraph Integration - local helpers (renamed from langg
+l9/ - 
+l9/agents/ - 
+l9/orchestration/ - 
 mac_agent/ - L9 Mac Agent package.
 mac_agent/helpers/ - Mac Agent helper utilities.
 mcp_memory/src/ - 
@@ -74,18 +89,21 @@ services/ -
 services/research/ - 
 services/research/agents/ - 
 services/research/tools/ - 
-services/research_factory/ - 
-services/research_factory/templates/ - 
+services/symbolic_computation/ - 
+services/symbolic_computation/api/ - 
+services/symbolic_computation/core/ - 
+services/symbolic_computation/tools/ - 
 simulation/ - 
 telemetry/ - L9 Telemetry module.
 tests/ - 
-tests/agents/ - 
 tests/api/ - 
 tests/clients/ - 
+tests/codegen/ - Tests for CodeGenAgent and IR Engine code generation.
 tests/collaborative_cells/ - 
 tests/core/agents/ - Tests for core.agents module.
 tests/core/aios/ - 
 tests/core/governance/ - Tests for governance engine.
+tests/core/observability/ - Tests for core.observability module.
 tests/core/security/ - 
 tests/core/tools/ - 
 tests/docker/ - Docker smoke tests for L9 stack validation.
@@ -98,9 +116,12 @@ tests/mocks/ -
 tests/orchestrators/ - 
 tests/os/ - 
 tests/performance/ - Performance Tests
-tests/services/research_factory/ - 
 tests/simulation/ - 
+tests/telemetry/ - 
+tests/upgrades/ - 
 tests/world_model/ - World Model Tests
 tools/ - 
+upgrades/ - 
+upgrades/packet_envelope/ - 
 world_model/ - 
 world_model/nodes/ - 

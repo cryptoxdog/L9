@@ -1,12 +1,29 @@
 """
 L9 Packet Envelope Schema
+Version: 1.0.1 (DEPRECATED)
+
+⚠️  DEPRECATION NOTICE ⚠️
+This module is DEPRECATED as of 2026-01-05.
+Use `core.schemas.packet_envelope_v2` for the canonical PacketEnvelope.
+
+Sunset timeline:
+- 2026-01-05: Deprecation announced
+- 2026-02-20: Sunset warning (45 days)
+- 2026-03-22: Write block (75 days)
+- 2026-04-05: Read block (90 days) - migration required
+
+Migration:
+    # OLD (deprecated)
+    from core.schemas.packet_envelope import PacketEnvelope
+    
+    # NEW (canonical)
+    from core.schemas.packet_envelope_v2 import PacketEnvelope
 
 Generated from: Memory.yaml v1.0.1
 Module ID: memory.packet_envelope.v1.0.1
-Status: aligned_with_repo
+Status: DEPRECATED
 
 Canonical event container used by the Memory Substrate.
-Matches the v1.0 repository implementation in substrate_models.py.
 Immutable once written.
 
 Contracts:
@@ -16,12 +33,22 @@ Contracts:
 - Only packet_type, payload, timestamp are guaranteed.
 """
 
+import warnings
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
+
+# Emit deprecation warning on import
+warnings.warn(
+    "core.schemas.packet_envelope is deprecated (v1.0.1). "
+    "Use core.schemas.packet_envelope_v2 instead. "
+    "Sunset date: 2026-04-05",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 # =============================================================================

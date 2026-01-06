@@ -1,9 +1,27 @@
 """
 L9 Memory Substrate - Pydantic Models
-Version: 1.1.0
+Version: 1.1.1 (DEPRECATED)
 
-Defines PacketEnvelope, StructuredReasoningBlock, and all DTOs
-for the memory substrate API.
+⚠️  DEPRECATION NOTICE ⚠️
+This module is DEPRECATED as of 2026-01-05.
+Use `core.schemas.packet_envelope_v2` for the canonical PacketEnvelope.
+
+Sunset timeline:
+- 2026-01-05: Deprecation announced
+- 2026-02-20: Sunset warning (45 days)
+- 2026-03-22: Write block (75 days)
+- 2026-04-05: Read block (90 days) - migration required
+
+Migration:
+    # OLD (deprecated)
+    from memory.substrate_models import PacketEnvelope
+    
+    # NEW (canonical)
+    from core.schemas.packet_envelope_v2 import PacketEnvelope
+
+Changelog v1.1.1:
+- Added frozen=True to enforce immutability (GMP#1)
+- DEPRECATED in favor of core.schemas.packet_envelope_v2
 
 Changelog v1.1.0:
 - Added PacketLineage model for DAG-style packet relationships
@@ -12,11 +30,48 @@ Changelog v1.1.0:
 - Updated PacketStoreRow with new DB columns
 """
 
+import warnings
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
+
+# Emit deprecation warning on import
+warnings.warn(
+    "memory.substrate_models is deprecated. "
+    "Use core.schemas.packet_envelope_v2 instead. "
+    "Sunset date: 2026-04-05",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+
+# =============================================================================
+# Memory Segment Enum
+# =============================================================================
+
+
+class MemorySegment(str, Enum):
+    """
+    L9 memory organization - 4 canonical segments.
+
+    Each segment represents a distinct type of memory with different
+    retention, access patterns, and governance rules.
+    """
+
+    GOVERNANCE_META = "governance_meta"
+    """Authority, meta-prompts, kernel definitions (immutable)."""
+
+    PROJECT_HISTORY = "project_history"
+    """Plans, decisions, outcomes, GMP reports."""
+
+    TOOL_AUDIT = "tool_audit"
+    """Tool invocation audit trail - every tool call logged."""
+
+    SESSION_CONTEXT = "session_context"
+    """Short-term working memory, conversation context (TTL-based)."""
 
 
 # =============================================================================
@@ -34,6 +89,8 @@ class PacketConfidence(BaseModel):
         None, description="Explanation of confidence level"
     )
 
+    model_config = {"frozen": True}
+
 
 class PacketProvenance(BaseModel):
     """Provenance information for packet traceability."""
@@ -43,6 +100,8 @@ class PacketProvenance(BaseModel):
     )
     source: Optional[str] = Field(None, description="Source system or agent")
     tool: Optional[str] = Field(None, description="Tool that generated this packet")
+
+    model_config = {"frozen": True}
 
 
 class PacketLineage(BaseModel):
@@ -57,21 +116,25 @@ class PacketLineage(BaseModel):
         default_factory=list, description="Parent packet IDs (multi-parent DAG)"
     )
     derivation_type: Optional[str] = Field(
-        None, description="How derived: 'split', 'merge', 'transform', 'inference'"
+        None, description="How derived: 'split', 'merge', 'transform', 'inference', 'mutation'"
     )
     generation: int = Field(default=0, description="Generation number in lineage chain")
     root_packet_id: Optional[UUID] = Field(
         None, description="Original root packet if known"
     )
 
+    model_config = {"frozen": True}
+
 
 class PacketMetadata(BaseModel):
     """Metadata attached to a packet envelope."""
 
-    schema_version: Optional[str] = Field("1.0.0", description="Schema version")
+    schema_version: Optional[str] = Field("1.1.1", description="Schema version")
     reasoning_mode: Optional[str] = Field(None, description="Reasoning mode used")
     agent: Optional[str] = Field(None, description="Agent identifier")
-    domain: Optional[str] = Field("plastic_brokerage", description="Domain context")
+    domain: Optional[str] = Field("l9", description="Domain context")
+
+    model_config = {"frozen": True, "extra": "allow"}
 
 
 class PacketEnvelope(BaseModel):
@@ -81,8 +144,13 @@ class PacketEnvelope(BaseModel):
     This is the core data structure for all agent events, memory writes,
     and reasoning traces flowing through the memory substrate.
 
+    IMMUTABLE CONTRACT: PacketEnvelope is frozen once created. Any
+    modifications must use with_mutation() which creates a new packet
+    with proper lineage chain linking to the parent.
+
     v1.1.0: Added thread_id, lineage, tags, ttl for enhanced
     threading, DAG-style lineage, labeling, and memory expiration.
+    v1.1.1: Added model_config for immutability enforcement (frozen=True).
     """
 
     packet_id: UUID = Field(default_factory=uuid4, description="UUID for this packet")
@@ -117,6 +185,55 @@ class PacketEnvelope(BaseModel):
     ttl: Optional[datetime] = Field(
         None, description="Optional expiry timestamp for memory hygiene/GC"
     )
+
+    # v1.1.1: IMMUTABILITY ENFORCEMENT (matches core/schemas/packet_envelope.py)
+    model_config = {
+        "frozen": True,  # IMMUTABILITY ENFORCED - packets cannot be mutated
+        "validate_assignment": True,
+        "extra": "forbid",
+    }
+
+    def with_mutation(self, **updates) -> "PacketEnvelope":
+        """
+        Create a new PacketEnvelope with updates, linking to this as parent.
+
+        This is the ONLY way to "modify" a packet (immutability preserved).
+        Creates proper lineage chain for audit trail and DAG relationships.
+
+        Args:
+            **updates: Fields to update in the new packet
+
+        Returns:
+            New PacketEnvelope with:
+            - New packet_id
+            - Updated timestamp
+            - Lineage linking to this packet as parent
+            - All other fields preserved or updated
+        """
+        # Build lineage chain
+        current_generation = self.lineage.generation if self.lineage else 0
+        root_id = (
+            self.lineage.root_packet_id
+            if self.lineage and self.lineage.root_packet_id
+            else self.packet_id
+        )
+
+        new_lineage = PacketLineage(
+            parent_ids=[self.packet_id],
+            derivation_type="mutation",
+            generation=current_generation + 1,
+            root_packet_id=root_id,
+        )
+
+        # Create new packet with updates
+        return self.model_copy(
+            update={
+                "packet_id": uuid4(),
+                "timestamp": datetime.utcnow(),
+                "lineage": new_lineage,
+                **updates,
+            }
+        )
 
 
 class PacketEnvelopeIn(BaseModel):

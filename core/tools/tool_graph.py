@@ -8,17 +8,29 @@ Tracks tool dependencies in Neo4j for:
 - Detecting circular dependencies
 - API usage monitoring
 
-Version: 1.0.0
+Version: 1.1.0 (UKG Phase 2 - Unified Knowledge Graph)
+
+Changes v1.1.0:
+- CAN_EXECUTE replaces HAS_TOOL (unified relationship)
+- Shares Agent nodes with Graph State (no duplicate nodes)
+- Uses ENSURE_AGENT_QUERY from graph_state.schema
 """
 
 from __future__ import annotations
 
 import structlog
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 logger = structlog.get_logger(__name__)
+
+# L's tenant ID for Neo4j tool graph - L's exclusive domain
+# Cursor does NOT use the tool graph (it's for L's tool execution only)
+# L uses:      L9_TENANT_ID = 'l-cto' (here and runtime/redis_client.py)
+# Cursor uses: CURSOR_TENANT_ID = 'cursor-ide' (core/governance/cursor_memory_kernel.py)
+DEFAULT_TENANT_ID = os.getenv("L9_TENANT_ID", "l-cto")
 
 
 @dataclass
@@ -45,8 +57,16 @@ class ToolGraph:
     Graph structure:
         (Tool)-[:USES]->(API)
         (Tool)-[:DEPENDS_ON]->(Tool)
-        (Agent)-[:HAS_TOOL]->(Tool)
+        (Agent)-[:CAN_EXECUTE]->(Tool)
+    
+    Note: CAN_EXECUTE is the unified relationship type (v1.1.0+).
+    Legacy HAS_TOOL queries still work but are deprecated.
     """
+    
+    # Unified relationship type (v1.1.0 - UKG Phase 1)
+    AGENT_TOOL_REL = "CAN_EXECUTE"
+    # Legacy alias (deprecated, will be removed in v2.0)
+    LEGACY_AGENT_TOOL_REL = "HAS_TOOL"
 
     @staticmethod
     async def _get_neo4j():
@@ -59,6 +79,55 @@ class ToolGraph:
             return None
 
     @staticmethod
+    async def ensure_agent_exists(agent_id: str) -> bool:
+        """
+        Ensure agent node exists in Neo4j (UKG Phase 2).
+        
+        Uses shared ENSURE_AGENT_QUERY from graph_state.schema.
+        This prevents duplicate Agent nodes when Tool Graph and Graph State
+        both reference the same agent.
+        
+        Args:
+            agent_id: Agent identifier (e.g., "L")
+            
+        Returns:
+            True if agent exists or was created
+        """
+        neo4j = await ToolGraph._get_neo4j()
+        if not neo4j:
+            return False
+            
+        try:
+            # Import the shared query from graph_state schema
+            from core.agents.graph_state.schema import ENSURE_AGENT_QUERY
+            
+            result = await neo4j.run_query(
+                ENSURE_AGENT_QUERY,
+                {"agent_id": agent_id}
+            )
+            
+            if result:
+                logger.debug(f"Agent {agent_id} ensured in graph")
+                return True
+            return False
+            
+        except ImportError:
+            # Fallback: create agent directly if graph_state not available
+            await neo4j.create_entity(
+                entity_type="Agent",
+                entity_id=agent_id,
+                properties={
+                    "agent_id": agent_id,
+                    "status": "ACTIVE",
+                    "created_at": datetime.utcnow().isoformat(),
+                },
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to ensure agent {agent_id}: {e}")
+            return False
+
+    @staticmethod
     async def register_tool(tool: ToolDefinition) -> bool:
         """
         Register a tool and its dependencies in Neo4j.
@@ -68,7 +137,7 @@ class ToolGraph:
         - API nodes for external dependencies
         - USES relationships to APIs
         - DEPENDS_ON relationships to other tools
-        - HAS_TOOL relationship from agent (if agent_id provided)
+        - CAN_EXECUTE relationship from agent (if agent_id provided)
 
         Args:
             tool: Tool definition to register
@@ -78,11 +147,15 @@ class ToolGraph:
         """
         neo4j = await ToolGraph._get_neo4j()
         if not neo4j:
-            logger.debug(f"Neo4j unavailable - skipping tool registration: {tool.name}")
+            logger.warning(
+                f"Neo4j unavailable - tool graph disabled for '{tool.name}'. "
+                "Governance queries (blast radius, dependencies) unavailable.",
+                extra={"alert": "neo4j_unavailable", "tool_name": tool.name}
+            )
             return False
 
         try:
-            # Create tool node
+            # Create tool node with tenant isolation
             await neo4j.create_entity(
                 entity_type="Tool",
                 entity_id=tool.name,
@@ -96,15 +169,20 @@ class ToolGraph:
                     "risk_level": tool.risk_level,
                     "requires_igor_approval": tool.requires_igor_approval,
                     "registered_at": datetime.utcnow().isoformat(),
+                    "tenant_id": DEFAULT_TENANT_ID,  # Tenant isolation
                 },
             )
 
-            # Create API nodes and USES relationships
+            # Create API nodes and USES relationships (with tenant isolation)
             for api in tool.external_apis:
                 await neo4j.create_entity(
                     entity_type="API",
                     entity_id=api,
-                    properties={"name": api, "type": "external"},
+                    properties={
+                        "name": api,
+                        "type": "external",
+                        "tenant_id": DEFAULT_TENANT_ID,
+                    },
                 )
                 await neo4j.create_relationship(
                     from_type="Tool",
@@ -124,14 +202,16 @@ class ToolGraph:
                     rel_type="DEPENDS_ON",
                 )
 
-            # Link to agent if specified
+            # Link to agent if specified (using unified CAN_EXECUTE relationship)
+            # UKG Phase 2: Ensure agent exists first (shares node with Graph State)
             if tool.agent_id:
+                await ToolGraph.ensure_agent_exists(tool.agent_id)
                 await neo4j.create_relationship(
                     from_type="Agent",
                     from_id=tool.agent_id,
                     to_type="Tool",
                     to_id=tool.name,
-                    rel_type="HAS_TOOL",
+                    rel_type=ToolGraph.AGENT_TOOL_REL,  # CAN_EXECUTE (unified)
                     properties={
                         "scope": tool.scope,
                         "requires_approval": tool.requires_igor_approval,
@@ -163,12 +243,14 @@ class ToolGraph:
             return []
 
         try:
+            # Tenant-filtered query
             result = await neo4j.run_query(
                 """
                 MATCH (t:Tool)-[:USES]->(a:API {id: $api_name})
+                WHERE t.tenant_id = $tenant_id
                 RETURN t.id as tool_name
             """,
-                {"api_name": api_name},
+                {"api_name": api_name, "tenant_id": DEFAULT_TENANT_ID},
             )
 
             return [r["tool_name"] for r in result] if result else []
@@ -188,13 +270,14 @@ class ToolGraph:
             return {"apis": [], "tools": []}
 
         try:
-            # Get APIs
+            # Get APIs (tenant-filtered)
             api_result = await neo4j.run_query(
                 """
                 MATCH (t:Tool {id: $tool_name})-[:USES]->(a:API)
+                WHERE t.tenant_id = $tenant_id
                 RETURN a.id as api_name
             """,
-                {"tool_name": tool_name},
+                {"tool_name": tool_name, "tenant_id": DEFAULT_TENANT_ID},
             )
 
             # Get tools
@@ -304,7 +387,8 @@ class ToolGraph:
         """
         Get L's complete tool catalog with metadata.
 
-        Queries Neo4j for all tools linked to agent "L" via HAS_TOOL relationship.
+        Queries Neo4j for all tools linked to agent "L" via CAN_EXECUTE relationship.
+        Also supports legacy HAS_TOOL for backward compatibility.
 
         Returns:
             List of dicts with tool metadata: name, description, category, scope, risk_level, requires_igor_approval
@@ -314,9 +398,10 @@ class ToolGraph:
             return []
 
         try:
-            result = await neo4j.run_query("""
-                MATCH (a:Agent {id: "L"})-[:HAS_TOOL]->(t:Tool)
-                RETURN t
+            # Query with unified CAN_EXECUTE, fallback to legacy HAS_TOOL
+            result = await neo4j.run_query(f"""
+                MATCH (a:Agent {{id: "L"}})-[:{ToolGraph.AGENT_TOOL_REL}|{ToolGraph.LEGACY_AGENT_TOOL_REL}]->(t:Tool)
+                RETURN DISTINCT t
                 ORDER BY t.name
             """)
 
@@ -627,6 +712,158 @@ L_INTERNAL_TOOLS = [
         external_apis=["PostgreSQL"],
         agent_id="L",
     ),
+    # Memory Substrate Direct Access (GMP-31 Batch 1)
+    ToolDefinition(
+        name="memory_get_packet",
+        description="Get specific packet by ID from memory substrate",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_query_packets",
+        description="Query packets with complex filters",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_search_by_thread",
+        description="Search packets by conversation thread ID",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_search_by_type",
+        description="Search packets by type (REASONING, TOOL_CALL, etc.)",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_get_events",
+        description="Get memory audit events (tool calls, decisions)",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_get_reasoning_traces",
+        description="Get L's reasoning traces from memory",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_get_facts",
+        description="Get knowledge facts by subject from memory graph",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL", "Neo4j"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_write_insight",
+        description="Write an insight to memory substrate",
+        category="memory",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_embed_text",
+        description="Generate embedding vector for text",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["OpenAI"],
+        agent_id="L",
+    ),
+    # Memory Client API (GMP-31 Batch 2)
+    ToolDefinition(
+        name="memory_hybrid_search",
+        description="Hybrid search combining semantic + keyword matching",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL", "OpenAI"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_fetch_lineage",
+        description="Fetch packet lineage (ancestors or descendants)",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_fetch_thread",
+        description="Fetch all packets in a conversation thread",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_fetch_facts_api",
+        description="Fetch knowledge facts from memory API",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_fetch_insights",
+        description="Fetch insights from memory",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="memory_gc_stats",
+        description="Get garbage collection statistics from memory",
+        category="memory",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        external_apis=["PostgreSQL"],
+        agent_id="L",
+    ),
     ToolDefinition(
         name="world_model_query",
         description="Query the world model for knowledge",
@@ -667,6 +904,7 @@ L_INTERNAL_TOOLS = [
         is_destructive=True,
         requires_confirmation=True,
         risk_level="high",
+        requires_igor_approval=True,
         external_apis=["Cursor"],
         agent_id="L",
     ),
@@ -679,18 +917,52 @@ L_INTERNAL_TOOLS = [
         is_destructive=True,
         requires_confirmation=True,
         risk_level="high",
+        requires_igor_approval=True,
         agent_id="L",
     ),
-    # MCP Meta-tool
+    # MCP Meta-tools (Dynamic Discovery)
+    ToolDefinition(
+        name="mcp_list_servers",
+        description="List all configured MCP servers and their status",
+        category="integration",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="mcp_list_tools",
+        description="List available tools from an MCP server (dynamic discovery)",
+        category="integration",
+        scope="external",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["MCP"],
+        agent_id="L",
+    ),
     ToolDefinition(
         name="mcp_call_tool",
-        description="Call a tool on an MCP server (GitHub, Notion, Vercel, GoDaddy)",
+        description="Call any tool on any MCP server (GitHub, Notion, Filesystem, etc.)",
         category="integration",
         scope="external",
         is_destructive=False,  # Meta-tool itself is not destructive, but may call destructive tools
         requires_confirmation=False,
         risk_level="medium",
         external_apis=["MCP"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="mcp_discover_and_register",
+        description="Auto-discover all MCP tools and register them in Neo4j graph",
+        category="integration",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["MCP", "Neo4j"],
         agent_id="L",
     ),
     # GitHub MCP Tools
@@ -724,6 +996,7 @@ L_INTERNAL_TOOLS = [
         is_destructive=True,
         requires_confirmation=True,
         risk_level="high",
+        requires_igor_approval=True,
         external_apis=["GitHub", "MCP"],
         agent_id="L",
     ),
@@ -759,6 +1032,7 @@ L_INTERNAL_TOOLS = [
         is_destructive=True,
         requires_confirmation=True,
         risk_level="high",
+        requires_igor_approval=True,
         external_apis=["Vercel", "MCP"],
         agent_id="L",
     ),
@@ -782,6 +1056,7 @@ L_INTERNAL_TOOLS = [
         is_destructive=True,
         requires_confirmation=True,
         risk_level="high",
+        requires_igor_approval=True,
         external_apis=["GoDaddy", "MCP"],
         agent_id="L",
     ),
@@ -808,6 +1083,241 @@ L_INTERNAL_TOOLS = [
         internal_dependencies=["memory_search", "mcp_call_tool"],
         agent_id="L",
     ),
+    # Neo4j Graph Database Tools
+    ToolDefinition(
+        name="neo4j_query",
+        description="Run Cypher queries against Neo4j graph (tool deps, events, knowledge)",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Neo4j"],
+        agent_id="L",
+    ),
+    # Redis Cache Tools
+    ToolDefinition(
+        name="redis_get",
+        description="Get value from Redis cache",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_set",
+        description="Set value in Redis cache with optional TTL",
+        category="cache",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_keys",
+        description="List Redis keys matching a pattern",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    # Redis State Management (GMP-31 Batch 3)
+    ToolDefinition(
+        name="redis_delete",
+        description="Delete a key from Redis",
+        category="cache",
+        scope="internal",
+        is_destructive=True,
+        requires_confirmation=False,
+        risk_level="medium",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_enqueue_task",
+        description="Enqueue a task to Redis queue",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="medium",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_dequeue_task",
+        description="Dequeue task from Redis queue",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_queue_size",
+        description="Get size of a Redis task queue",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_get_task_context",
+        description="Get cached task context from Redis",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="redis_set_task_context",
+        description="Set task context in Redis cache",
+        category="cache",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="medium",
+        external_apis=["Redis"],
+        agent_id="L",
+    ),
+    # Tool Graph Introspection (GMP-31 Batch 4)
+    ToolDefinition(
+        name="tools_list_all",
+        description="List all registered tools",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="tools_list_enabled",
+        description="List only enabled tools",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="tools_get_metadata",
+        description="Get detailed metadata for a tool",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="tools_get_schema",
+        description="Get OpenAI function schema for a tool",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="tools_get_by_type",
+        description="Get all tools of a specific type",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="tools_get_for_role",
+        description="Get all tools available for a role",
+        category="introspection",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    # World Model Operations (GMP-31 Batch 5)
+    ToolDefinition(
+        name="world_model_get_entity",
+        description="Get entity from world model by ID",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_list_entities",
+        description="List entities from world model",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_snapshot",
+        description="Create snapshot of world model state",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="medium",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_list_snapshots",
+        description="List recent world model snapshots",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_send_insights",
+        description="Send insights for world model update",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="medium",
+        agent_id="L",
+    ),
+    ToolDefinition(
+        name="world_model_get_state_version",
+        description="Get current world model state version",
+        category="knowledge",
+        scope="internal",
+        is_destructive=False,
+        requires_confirmation=False,
+        risk_level="low",
+        agent_id="L",
+    ),
 ]
 
 
@@ -816,7 +1326,7 @@ async def register_l_tools() -> int:
     Register all L agent internal tools in the graph.
 
     Call this at startup to populate L's tool graph with proper metadata.
-    Tools are linked to agent L via HAS_TOOL relationships.
+    Tools are linked to agent L via CAN_EXECUTE relationships (unified v1.1.0+).
 
     Returns:
         Number of tools registered

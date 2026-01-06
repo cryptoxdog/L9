@@ -166,6 +166,64 @@ class SymbolicComputationTool:
             Health status dict
         """
         return await self._engine.health_check()
+    
+    def optimize(
+        self,
+        expression: str,
+        strategies: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Optimize a symbolic expression for faster evaluation.
+        
+        Args:
+            expression: Mathematical expression
+            strategies: Optimization strategies ("simplify", "expand", "factor", "cse")
+            
+        Returns:
+            Dict with original and optimized expressions
+        """
+        strategies = strategies or ["simplify"]
+        
+        try:
+            # Use sympy optimization functions
+            from sympy import sympify, simplify, expand, factor, cse
+            
+            expr = sympify(expression)
+            optimized = expr
+            
+            for strategy in strategies:
+                if strategy == "simplify":
+                    optimized = simplify(optimized)
+                elif strategy == "expand":
+                    optimized = expand(optimized)
+                elif strategy == "factor":
+                    optimized = factor(optimized)
+                elif strategy == "cse":
+                    # Common subexpression elimination returns (replacements, reduced)
+                    replacements, reduced = cse(optimized)
+                    if reduced:
+                        optimized = reduced[0]
+            
+            logger.info(
+                "symbolic_optimize_complete",
+                expression=expression[:50],
+                strategies=strategies,
+            )
+            
+            return {
+                "status": "success",
+                "original": expression,
+                "optimized": str(optimized),
+                "strategies_applied": strategies,
+            }
+            
+        except Exception as e:
+            logger.error("symbolic_optimize_failed", error=str(e))
+            return {
+                "status": "error",
+                "error": str(e),
+            }
 
 
 # ============================================================================
@@ -235,4 +293,28 @@ async def symbolic_codegen(
         **kwargs,
     )
 
+
+def symbolic_optimize(
+    expression: str,
+    strategies: Optional[List[str]] = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """
+    Optimize a symbolic expression for faster evaluation.
+    
+    This is an L9 tool executor function.
+    
+    Args:
+        expression: Mathematical expression
+        strategies: Optimization strategies ("simplify", "expand", "factor", "cse")
+        
+    Returns:
+        Dict with original and optimized expressions
+    """
+    tool = SymbolicComputationTool()
+    return tool.optimize(
+        expression=expression,
+        strategies=strategies,
+        **kwargs,
+    )
 

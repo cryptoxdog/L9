@@ -13,20 +13,6 @@
 | `COMMAND` | Command packet |
 | `QUERY` | Query packet |
 
-## PacketEnvelope Schema
-
-```
-PacketEnvelope:
-  packet_id: UUID           # Unique identifier
-  packet_type: str          # Type of packet
-  kind: PacketKind          # Classification
-  payload: dict             # Arbitrary JSON payload
-  timestamp: datetime       # Creation timestamp
-  metadata: PacketMetadata  # Schema version, agent, domain
-  confidence: PacketConfidence  # Score 0-1, rationale
-  provenance: PacketProvenance  # Parent packet, source agent
-```
-
 ## Memory DAG Pipeline Events
 
 | Stage | Event | Description |
@@ -39,21 +25,3 @@ PacketEnvelope:
 | 6 | `store_insights` | Insights stored |
 | 7 | `world_model_trigger` | World model update triggered |
 | 8 | `checkpoint` | DAG state checkpointed |
-
-## WebSocket Event Types
-
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `handshake` | Client → Server | Agent registration |
-| `task_request` | Client → Server | Task submission |
-| `task_result` | Server → Client | Task completion |
-| `error` | Server → Client | Error notification |
-| `ping` | Bidirectional | Keepalive |
-
-## Slack Event Types
-
-| Event | Handler | Description |
-|-------|---------|-------------|
-| `message` | webhook_slack.py | Slack message received |
-| `app_mention` | webhook_slack.py | Bot mentioned |
-| `slash_command` | webhook_slack.py | Slash command invoked |

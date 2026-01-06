@@ -9,7 +9,7 @@ Enforces access control and rate limits.
 import structlog
 from typing import Any, Optional
 
-from services.research.tools.tool_registry import (
+from core.tools.base_registry import (
     ToolRegistry,
     ToolMetadata,
     get_tool_registry,

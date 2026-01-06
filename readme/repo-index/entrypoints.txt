@@ -9,7 +9,7 @@ aios/runtime.py
 api/server.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
-  Routes (10):
+  Routes (12):
     - GET /
     - GET /health
     - GET /health/neo4j
@@ -20,6 +20,7 @@ api/server.py
     - ROUTER /os/*
     - ROUTER /agent/*
     - ROUTER /api/v1/memory/*
+    ... and 2 more
 api/server_memory.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
@@ -35,7 +36,16 @@ api/vps_executor.py
   Routes (2):
     - GET /agent/health
     - POST /agent/exec
+ci/check_no_deprecated_services.py
+  Type: Script
+  Has __main__ block: Yes
+ci/check_schema_deprecation.py
+  Type: Script
+  Has __main__ block: Yes
 ci/check_syntax.py
+  Type: Script
+  Has __main__ block: Yes
+ci/check_tool_wiring.py
   Type: Script
   Has __main__ block: Yes
 ci/lint_forbidden_imports.py
@@ -47,28 +57,199 @@ ci/validate_codegen.py
 ci/validate_spec_v25.py
   Type: Script
   Has __main__ block: Yes
+codegen/code-gen-files/examples_symbolic_computation.py
+  Type: Script
+  Has __main__ block: Yes
+codegen/code-gen-files/validate_codegen.py
+  Type: Script
+  Has __main__ block: Yes
+codegen/code-gen-files/validate_spec_v25.py
+  Type: Script
+  Has __main__ block: Yes
+codegen/scripts/generate_spec.py
+  Type: Script
+  Has __main__ block: Yes
+core/governance/cursor_memory_kernel.py
+  Type: Script
+  Has __main__ block: Yes
 dev/tools/global_state_audit.py
   Type: Script
   Has __main__ block: Yes
-docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py
   Type: Script
   Has __main__ block: Yes
-docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script_1.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py
   Type: Script
   Has __main__ block: Yes
-docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/script_2.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/SUPER_PROMPT_TEMPLATE.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/autonomous-research-agent.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py
   Type: Script
   Has __main__ block: Yes
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Perplexity Super-Prompt Pack/production-config.py
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/MortgageOS/Tensor-Git-einsum-n-dimension-main/einsum_scratch.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/script.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/script_1.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/script_2.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/SUPER_PROMPT_TEMPLATE.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py
+  Type: Script
+  Has __main__ block: Yes
+docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/production-config.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/backwards_compatibility_processor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/closed_loop_improvement.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-main.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/hash-verifier.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker_daemon.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/prevention_effectiveness_tracker.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_mistakes_to_cursorrules.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/update-suite6-references.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py
+  Type: Script
+  Has __main__ block: Yes
+docs/__01-05-2026/packetEnvelope - RollOut/deployment_automation.py
   Type: Script
   Has __main__ block: Yes
 docs/_archive/mcp-memory-deprecated/main.py
@@ -80,31 +261,13 @@ docs/_archive/mcp-memory-deprecated/main.py
 docs/_archive/mcp-memory-deprecated/scripts/migrate_db.py
   Type: Script
   Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py
-  Type: Script
-  Has __main__ block: Yes
-docs/roadmap/MortgageOS/Tensor-Git-einsum-n-dimension-main/einsum_scratch.py
-  Type: Script
-  Has __main__ block: Yes
 email_agent/oauth_server.py
+  Type: Script
+  Has __main__ block: Yes
+l9/agents/__main__.py
+  Type: Script
+  Has __main__ block: Yes
+l9/agents/research_agent.py
   Type: Script
   Has __main__ block: Yes
 local_dashboard/app.py
@@ -129,7 +292,22 @@ mcp_memory/src/main.py
     - GET /mcp/tools
     - POST /mcp/call
     - ROUTER /memory/*
+scripts/audit_hidden_capabilities.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/audit_orphan_classes.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/audit_uncalled_functions.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/audit_wiring.py
+  Type: Script
+  Has __main__ block: Yes
 scripts/batch_generate_specs.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/bootstrap_neo4j_schema.py
   Type: Script
   Has __main__ block: Yes
 scripts/delegate_deep_research.py
@@ -141,16 +319,31 @@ scripts/extract_perplexity_pack.py
 scripts/factory_extract.py
   Type: Script
   Has __main__ block: Yes
+scripts/init_workspace.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/init_workspace_NEW.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/load_indexes_to_neo4j.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/migrate_kernels_to_graph.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/neo4j_merge_agent_nodes.py
+  Type: Script
+  Has __main__ block: Yes
+scripts/neo4j_unify_relationships.py
+  Type: Script
+  Has __main__ block: Yes
 scripts/rename_l_to_l_cto.py
   Type: Script
   Has __main__ block: Yes
 scripts/send_perplexity_spec_request.py
   Type: Script
   Has __main__ block: Yes
-services/research_factory/validate_codegen.py
-  Type: Script
-  Has __main__ block: Yes
-services/research_factory/validate_spec_v25.py
+services/symbolic_computation/health_check.py
   Type: Script
   Has __main__ block: Yes
 tools/export_repo_indexes.py

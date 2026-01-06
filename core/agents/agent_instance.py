@@ -271,6 +271,33 @@ class AgentInstance:
             }
         )
 
+    def add_assistant_message_with_tool_calls(
+        self,
+        tool_calls: list[dict[str, Any]],
+        content: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Add an assistant message with tool_calls to history.
+
+        OpenAI requires assistant messages with tool_calls to precede
+        tool result messages. This method properly formats the message.
+
+        Args:
+            tool_calls: List of tool call dicts with id, type, function
+            content: Optional message content (usually None for tool calls)
+            metadata: Optional metadata
+        """
+        self._history.append(
+            {
+                "role": "assistant",
+                "content": content,
+                "tool_calls": tool_calls,
+                "metadata": metadata or {},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
     def add_tool_result(
         self,
         tool_id: str,
@@ -314,12 +341,12 @@ class AgentInstance:
         """Get message history."""
         return self._history.copy()
 
-    def get_messages_for_aios(self) -> list[dict[str, str]]:
+    def get_messages_for_aios(self) -> list[dict[str, Any]]:
         """
         Get messages formatted for AIOS call.
 
         Returns:
-            List of message dicts with role and content
+            List of message dicts formatted for OpenAI API
         """
         messages = []
         for msg in self._history:
@@ -330,6 +357,16 @@ class AgentInstance:
                         "role": "tool",
                         "tool_call_id": msg.get("tool_call_id", ""),
                         "content": msg["content"],
+                    }
+                )
+            elif msg["role"] == "assistant" and msg.get("tool_calls"):
+                # Assistant message with tool calls - must include tool_calls array
+                # OpenAI requires content to be a string (empty string if no content)
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": msg.get("content") or "",  # Empty string, never None
+                        "tool_calls": msg["tool_calls"],
                     }
                 )
             else:

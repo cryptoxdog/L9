@@ -132,7 +132,7 @@ class IntegrationSettings(BaseSettings):
 
 
 # Singleton instance
-_settings: IntegrationSettings | None = None
+_settings: Optional[IntegrationSettings] = None
 
 
 def get_integration_settings() -> IntegrationSettings:

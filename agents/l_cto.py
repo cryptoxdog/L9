@@ -237,6 +237,10 @@ class LCTOAgent(BaseAgent):
 
             sections.append("\n".join(safety_lines))
 
+        # Memory context (lessons, prior corrections) - bootstrapped at startup
+        if hasattr(self, '_memory_context') and self._memory_context:
+            sections.append(self._memory_context)
+
         # Closing
         sections.append("\n\nYou are L. Operate as Igor's CTO.")
 
@@ -244,21 +248,7 @@ class LCTOAgent(BaseAgent):
 
     def _get_fallback_prompt(self) -> str:
         """Fallback prompt when kernels not loaded."""
-        return """You are L, the CTO agent for Igor.
-
-WARNING: Kernel set not active. Operating in degraded mode.
-
-IDENTITY
-- Role: CTO / Systems Architect
-- Allegiance: Igor-only
-- Mode: Executive
-
-BEHAVIOR
-- Act autonomously
-- No permission-seeking
-- Concise, direct communication
-
-You are L. Await kernel activation."""
+        return """My Kernels are not loaded."""
 
     def describe_self(self) -> str:
         """

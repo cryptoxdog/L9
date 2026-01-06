@@ -463,19 +463,28 @@ async def get_context_injection(
     top_k: int = 5,
     include_recent: bool = True,
     kinds: Optional[List[str]] = None,
+    allowed_scopes: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Auto-retrieve relevant memories for context injection before a task.
     This is the key leverage point - automatically surface relevant context.
+    
+    Args:
+        allowed_scopes: If provided, restricts search to these scopes only.
+                       Cursor gets ["user", "project", "global"] (no l-private).
+                       L gets None (all scopes including l-private).
     """
     start_time = time.time()
+    
+    # Default scopes if not restricted
+    search_scopes = allowed_scopes if allowed_scopes else ["user", "project", "global", "l-private"]
     
     try:
         # 1. Get semantically relevant memories for the task
         relevant_result = await search_memory_handler(
             user_id=user_id,
             query=task_description,
-            scopes=["user", "project", "global"],
+            scopes=search_scopes,
             kinds=kinds,
             top_k=top_k,
             threshold=0.6,  # Lower threshold for context injection
@@ -644,12 +653,21 @@ async def get_proactive_suggestions(
     include_error_fixes: bool = True,
     include_preferences: bool = True,
     top_k: int = 3,
+    allowed_scopes: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Get proactive memory suggestions based on current context.
     Surfaces relevant past experiences, error fixes, and preferences.
+    
+    Args:
+        allowed_scopes: If provided, restricts search to these scopes only.
+                       Cursor gets ["user", "project", "global"] (no l-private).
+                       L gets None (all scopes including l-private).
     """
     start_time = time.time()
+    
+    # Default scopes if not restricted
+    search_scopes = allowed_scopes if allowed_scopes else ["user", "project", "global", "l-private"]
     
     try:
         suggestions = []
@@ -660,7 +678,7 @@ async def get_proactive_suggestions(
         search_result = await search_memory_handler(
             user_id=user_id,
             query=current_context,
-            scopes=["user", "project", "global"],
+            scopes=search_scopes,
             kinds=None,  # All kinds
             top_k=top_k * 2,  # Get more, then filter
             threshold=0.65,
@@ -670,10 +688,12 @@ async def get_proactive_suggestions(
         
         # 2. Get relevant error/fix pairs
         if include_error_fixes:
+            # Filter scopes for error search (respect allowed_scopes)
+            error_scopes = [s for s in ["user", "project"] if s in search_scopes]
             error_search = await search_memory_handler(
                 user_id=user_id,
                 query=current_context,
-                scopes=["user", "project"],
+                scopes=error_scopes if error_scopes else ["user", "project"],
                 kinds=["error"],
                 top_k=3,
                 threshold=0.6,
@@ -689,10 +709,12 @@ async def get_proactive_suggestions(
         
         # 3. Get relevant preferences
         if include_preferences:
+            # Filter scopes for preference search (respect allowed_scopes)
+            pref_scopes = [s for s in ["user"] if s in search_scopes]
             pref_search = await search_memory_handler(
                 user_id=user_id,
                 query=current_context,
-                scopes=["user"],
+                scopes=pref_scopes if pref_scopes else ["user"],
                 kinds=["preference"],
                 top_k=3,
                 threshold=0.5,  # Lower threshold for preferences

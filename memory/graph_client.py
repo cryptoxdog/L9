@@ -129,6 +129,21 @@ class Neo4jClient:
         """Check if Neo4j is available."""
         return self._available and self._driver is not None
 
+    @property
+    def driver(self) -> Optional[AsyncDriver]:
+        """Expose the raw AsyncDriver for components that need it (e.g., AgentGraphLoader)."""
+        return self._driver
+
+    def session(self, database: Optional[str] = None) -> AsyncSession:
+        """Create a session (AsyncDriver-compatible interface).
+        
+        This allows Neo4jClient to be used where an AsyncDriver is expected.
+        """
+        if not self._driver:
+            raise RuntimeError("Neo4j driver not initialized")
+        db = database or self._database
+        return self._driver.session(database=db)
+
     async def _get_session(self) -> Optional[AsyncSession]:
         """Get a session for database operations."""
         if not self.is_available():

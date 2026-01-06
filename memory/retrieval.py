@@ -621,8 +621,9 @@ async def get_governance_patterns(
         # Query governance_pattern packets
         async with pipeline._repository.acquire() as conn:
             # Build query with filters
+            # Note: packet_store uses packet_id (not id), envelope (not payload), timestamp (not created_at)
             query = """
-                SELECT id, packet_type, payload, provenance, created_at
+                SELECT packet_id, packet_type, envelope, provenance, timestamp
                 FROM packet_store
                 WHERE packet_type = 'governance_pattern'
             """
@@ -630,21 +631,21 @@ async def get_governance_patterns(
             param_idx = 1
 
             if tool_name:
-                query += f" AND payload->>'tool_name' = ${param_idx}"
+                query += f" AND envelope->'payload'->>'tool_name' = ${param_idx}"
                 params.append(tool_name)
                 param_idx += 1
 
             if task_type:
-                query += f" AND payload->>'task_type' = ${param_idx}"
+                query += f" AND envelope->'payload'->>'task_type' = ${param_idx}"
                 params.append(task_type)
                 param_idx += 1
 
             if decision:
-                query += f" AND payload->>'decision' = ${param_idx}"
+                query += f" AND envelope->'payload'->>'decision' = ${param_idx}"
                 params.append(decision)
                 param_idx += 1
 
-            query += f" ORDER BY created_at DESC LIMIT ${param_idx}"
+            query += f" ORDER BY timestamp DESC LIMIT ${param_idx}"
             params.append(limit)
 
             rows = await conn.fetch(query, *params)
@@ -652,11 +653,13 @@ async def get_governance_patterns(
             patterns = []
             for row in rows:
                 try:
-                    payload = row["payload"]
-                    if isinstance(payload, str):
+                    envelope = row["envelope"]
+                    if isinstance(envelope, str):
                         import json
 
-                        payload = json.loads(payload)
+                        envelope = json.loads(envelope)
+                    # Extract payload from envelope
+                    payload = envelope.get("payload", envelope)
                     patterns.append(payload)
                 except Exception as e:
                     logger.warning(f"Failed to parse pattern: {e}")

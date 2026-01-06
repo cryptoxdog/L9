@@ -5,10 +5,13 @@ Provides HTTP endpoint for health monitoring in production.
 """
 
 import asyncio
+import structlog
 from typing import Dict, Any
 from symbolic_computation import SymbolicComputation
 
 
+
+logger = structlog.get_logger(__name__)
 async def perform_health_check() -> Dict[str, Any]:
     """
     Perform comprehensive health check.
@@ -45,7 +48,7 @@ async def perform_health_check() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     result = asyncio.run(perform_health_check())
-    print(result)
+    logger.info(result)
 
     # Exit with appropriate code
     exit(0 if result["status"] == "healthy" else 1)

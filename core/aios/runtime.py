@@ -197,6 +197,17 @@ class AIOSRuntime:
                             "content": msg.get("content", ""),
                         }
                     )
+                elif msg.get("role") == "assistant" and msg.get("tool_calls"):
+                    # Assistant message with tool_calls - MUST include tool_calls array
+                    # OpenAI requires assistant messages that precede tool results
+                    # to have the tool_calls that generated those results
+                    api_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": msg.get("content") or "",  # Empty string, never None
+                            "tool_calls": msg.get("tool_calls"),
+                        }
+                    )
                 else:
                     api_messages.append(
                         {

@@ -12,7 +12,7 @@ pytest.skip(
 )
 from unittest.mock import AsyncMock, MagicMock
 
-from services.research.tools.tool_registry import (
+from core.tools.base_registry import (
     ToolType,
     ToolMetadata,
     ToolRegistry,

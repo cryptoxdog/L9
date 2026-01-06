@@ -13,39 +13,6 @@
 | `_neo4j_client` | memory.graph_client | Neo4j graph database client | Lazy |
 | `_redis_client` | runtime.redis_client | Redis cache/queue client | Lazy |
 
-## FastAPI State
-
-| Key | Module | Purpose |
-|-----|--------|---------|
-| `app.state.neo4j_client` | api.server | Neo4j client for request context |
-| `app.state.redis_client` | api.server | Redis client for request context |
-
-## Singleton Access Patterns
-
-### Memory Substrate
-```python
-from memory.substrate_service import get_service
-service = await get_service()
-```
-
-### Neo4j Client
-```python
-from memory.graph_client import get_neo4j_client
-client = await get_neo4j_client()  # Returns None if unavailable
-```
-
-### Redis Client
-```python
-from runtime.redis_client import get_redis_client
-client = await get_redis_client()  # Returns in-memory fallback if unavailable
-```
-
-### WebSocket Orchestrator
-```python
-from runtime.websocket_orchestrator import ws_orchestrator
-await ws_orchestrator.broadcast(message)
-```
-
 ## Lifecycle
 
 1. **Startup** (`lifespan()` in api/server.py):
@@ -53,6 +20,7 @@ await ws_orchestrator.broadcast(message)
    - `init_service()` - Initialize memory substrate
    - `get_neo4j_client()` - Connect to Neo4j
    - `get_redis_client()` - Connect to Redis
+   - `bootstrap_agent()` - Run 7-phase agent init
 
 2. **Shutdown** (`lifespan()` exit):
    - `close_service()` - Close memory substrate

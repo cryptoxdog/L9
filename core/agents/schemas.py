@@ -160,16 +160,19 @@ class AgentConfig(BaseModel):
 
     Attributes:
         agent_id: Unique agent identifier
+        name: Human-readable agent name
         personality_id: Reference to agent personality/prompt definition
         model: LLM model to use
         temperature: LLM temperature
         max_tokens: Max response tokens
         tools: List of tools bound to this agent
         system_prompt: Optional system prompt override
+        kernel_refs: List of kernel YAML files for bootstrap ceremony
         metadata: Additional configuration metadata
     """
 
     agent_id: str = Field(..., description="Unique agent identifier")
+    name: str = Field(default="", description="Human-readable agent name")
     personality_id: str = Field(
         default="l9-standard-v1", description="Personality reference"
     )
@@ -182,6 +185,9 @@ class AgentConfig(BaseModel):
     )
     tools: list[ToolBinding] = Field(default_factory=list, description="Bound tools")
     system_prompt: Optional[str] = Field(None, description="System prompt override")
+    kernel_refs: list[str] = Field(
+        default_factory=list, description="Kernel YAML files for bootstrap ceremony"
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )

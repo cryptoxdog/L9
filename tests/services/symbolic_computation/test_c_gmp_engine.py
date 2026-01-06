@@ -5,6 +5,9 @@ Tests for CodeGenAgent c_gmp_engine module.
 import pytest
 import tempfile
 from pathlib import Path
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 from agents.codegenagent.c_gmp_engine import CGMPEngine, CGMPEngineError
 from agents.codegenagent.meta_loader import MetaLoader
@@ -64,7 +67,7 @@ code:
 
     def test_is_not_mathematical(self, engine):
         """Test non-mathematical section detection."""
-        section = {"type": "template", "content": "print('hello')"}
+        section = {"type": "template", "content": "logger.info('hello')"}
         assert engine._is_mathematical(section) is False
 
     def test_expand_template(self, engine):
@@ -156,5 +159,8 @@ code:
         engine._generated_files.append({"test": "file"})
         engine.clear_generated()
         assert len(engine._generated_files) == 0
+
+
+
 
 

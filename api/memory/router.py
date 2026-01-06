@@ -199,7 +199,7 @@ async def get_packet(
 async def get_thread(
     thread_id: str,
     limit: int = Query(100, ge=1, le=1000),
-    order: str = Query("asc", regex="^(asc|desc)$"),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),
 ):
@@ -226,7 +226,7 @@ async def get_thread(
 @router.get("/lineage/{packet_id}")
 async def get_lineage(
     packet_id: str,
-    direction: str = Query("ancestors", regex="^(ancestors|descendants)$"),
+    direction: str = Query("ancestors", pattern="^(ancestors|descendants)$"),
     max_depth: int = Query(10, ge=1, le=50),
     authorization: str = Header(None),
     _: bool = Depends(verify_api_key),

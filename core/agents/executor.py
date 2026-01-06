@@ -22,8 +22,9 @@ Version: 1.0.0
 
 from __future__ import annotations
 
-import structlog
+import json
 import os
+import structlog
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Protocol
 from uuid import UUID
@@ -422,13 +423,13 @@ class AgentExecutorService:
             # Emit DORA trace block (auto-updates on every execution)
             await emit_executor_trace(
                 task_id=task_id_str,
-                task_name=task.name or "agent_task",
+                task_name=getattr(task, "name", None) or f"task_{task.kind.value}",
                 agent_id=task.agent_id,
                 inputs={"query": task.payload.get("query", "") if task.payload else ""},
                 outputs={
                     "status": result.status,
                     "iterations": result.iterations,
-                    "output": str(result.output)[:500] if result.output else None,
+                    "result": str(result.result)[:500] if result.result else None,
                 },
                 duration_ms=result.duration_ms,
                 errors=[result.error] if result.error else None,
@@ -925,6 +926,22 @@ class AgentExecutorService:
                     error = "AIOS returned tool_call type but no tool_call data"
                     instance.transition_to(ExecutorState.FAILED)
                     break
+
+                # CRITICAL: Add assistant message with tool_calls BEFORE tool result
+                # OpenAI requires: assistant (with tool_calls) → tool (with matching tool_call_id)
+                instance.add_assistant_message_with_tool_calls(
+                    tool_calls=[
+                        {
+                            "id": str(tool_call.call_id),
+                            "type": "function",
+                            "function": {
+                                "name": tool_call.tool_id,
+                                "arguments": json.dumps(tool_call.arguments),
+                            },
+                        }
+                    ],
+                    content=None,  # Tool call messages typically have no content
+                )
 
                 # Dispatch tool call using tool_id
                 tool_result = await self._dispatch_tool_call(instance, tool_call)

@@ -293,6 +293,30 @@ gate_8_no_deprecated_services() {
 }
 
 # =============================================================================
+# GATE 9: SCHEMA DEPRECATION CHECK
+# =============================================================================
+
+gate_9_schema_deprecation() {
+    log_header "GATE 9: SCHEMA DEPRECATION CHECK"
+    
+    if [ ! -f "$SCRIPT_DIR/check_schema_deprecation.py" ]; then
+        log_warn "Schema deprecation checker not found, skipping"
+        return 0
+    fi
+    
+    log_info "Checking for deprecated PacketEnvelope imports..."
+    
+    if ! python3 "$SCRIPT_DIR/check_schema_deprecation.py"; then
+        log_error "SCHEMA DEPRECATION CHECK FAILED"
+        log_error "Migrate deprecated imports to core.schemas.packet_envelope_v2"
+        return 1
+    fi
+    
+    log_info "✅ Schema deprecation check passed"
+    return 0
+}
+
+# =============================================================================
 # GATE 7: TEST FILE PRESENCE
 # =============================================================================
 
@@ -393,6 +417,7 @@ main() {
     gate_5_forbidden_imports "${files[@]}" || exit 1
     gate_6_tool_wiring || exit 1
     gate_8_no_deprecated_services || exit 1
+    gate_9_schema_deprecation || exit 1
     run_test_presence_check "$spec_file" "${files[@]}" || exit 1
     
     log_header "🎉 ALL CI GATES PASSED"
@@ -402,6 +427,7 @@ main() {
 }
 
 main "$@"
+
 
 
 

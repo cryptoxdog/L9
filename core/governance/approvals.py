@@ -5,14 +5,14 @@ L9 Core Governance - Approval Manager
 Manages approval of high-risk tasks that require Igor's explicit approval.
 Now includes governance pattern creation for closed-loop learning.
 
-Version: 1.1.0
+Version: 1.2.0 (Enhanced with high-risk tool detection)
 """
 
 from __future__ import annotations
 
 import structlog
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from memory.substrate_models import PacketEnvelopeIn
 from memory.governance_patterns import (
@@ -23,18 +23,196 @@ from memory.governance_patterns import (
 
 logger = structlog.get_logger(__name__)
 
+# Tools that always require Igor approval before execution
+HIGH_RISK_TOOLS = {
+    "gmp_run": "Execute GMP protocol (code changes)",
+    "git_commit": "Commit changes to git repository",
+    "git_push": "Push changes to remote repository",
+    "file_delete": "Delete files from filesystem",
+    "database_write": "Write to production database",
+    "deploy": "Deploy to production environment",
+    "mac_agent_exec": "Execute commands on Mac agent",
+}
+
 
 class ApprovalManager:
     """Manages approval of high-risk tasks."""
 
-    def __init__(self, substrate_service):
+    def __init__(self, substrate_service, slack_client=None, notification_channel=None):
         """
         Initialize ApprovalManager.
 
         Args:
             substrate_service: Memory substrate service for storing approval records
+            slack_client: Optional Slack client for notifications
+            notification_channel: Slack channel for approval requests
         """
         self._substrate = substrate_service
+        self._slack_client = slack_client
+        self._notification_channel = notification_channel
+        
+        # Cache of permanent approvals (tool_id -> True)
+        self._permanent_approvals: Dict[str, bool] = {}
+
+    def requires_approval(self, tool_id: str) -> bool:
+        """
+        Check if a tool requires Igor approval.
+        
+        Args:
+            tool_id: Tool identifier
+            
+        Returns:
+            True if tool requires approval
+        """
+        return tool_id in HIGH_RISK_TOOLS
+
+    def get_high_risk_tools(self) -> List[str]:
+        """Get list of high-risk tool IDs"""
+        return list(HIGH_RISK_TOOLS.keys())
+
+    async def request_approval(
+        self,
+        tool_id: str,
+        task_id: str,
+        agent_id: str,
+        arguments: Dict[str, Any],
+        operation_summary: Optional[str] = None,
+    ) -> str:
+        """
+        Create an approval request for a high-risk operation.
+        
+        Args:
+            tool_id: Tool being requested
+            task_id: Task requesting the tool
+            agent_id: Agent making the request
+            arguments: Tool arguments
+            operation_summary: Human-readable summary
+            
+        Returns:
+            Request ID for tracking
+        """
+        from uuid import uuid4
+        
+        request_id = str(uuid4())
+        
+        if operation_summary is None:
+            operation_summary = HIGH_RISK_TOOLS.get(tool_id, f"Execute {tool_id}")
+        
+        # Store approval request
+        await self._substrate.write_packet(
+            packet_in=PacketEnvelopeIn(
+                packet_type="approval_request",
+                payload={
+                    "request_id": request_id,
+                    "tool_id": tool_id,
+                    "task_id": task_id,
+                    "agent_id": agent_id,
+                    "operation_summary": operation_summary,
+                    "arguments": arguments,
+                    "status": "pending",
+                    "created_at": datetime.utcnow().isoformat(),
+                },
+            )
+        )
+        
+        # Send Slack notification if available
+        if self._slack_client and self._notification_channel:
+            try:
+                await self._notify_slack(request_id, tool_id, operation_summary)
+            except Exception as e:
+                logger.warning(f"Failed to send Slack notification: {e}")
+        
+        logger.info(
+            f"Approval request created",
+            request_id=request_id,
+            tool_id=tool_id,
+            task_id=task_id,
+        )
+        
+        return request_id
+
+    async def _notify_slack(
+        self,
+        request_id: str,
+        tool_id: str,
+        operation_summary: str,
+    ) -> None:
+        """Send Slack notification for approval request"""
+        if not self._slack_client:
+            return
+        
+        message = (
+            f"🔐 *Approval Required*\n"
+            f"• Tool: `{tool_id}`\n"
+            f"• Operation: {operation_summary}\n"
+            f"• Request ID: `{request_id}`\n\n"
+            f"Reply: `/approve {request_id}` or `/reject {request_id} [reason]`"
+        )
+        
+        await self._slack_client.post_message(
+            channel=self._notification_channel,
+            text=message,
+        )
+
+    async def check_tool_approved(self, tool_id: str, task_id: str) -> bool:
+        """
+        Check if a tool execution is approved for a specific task.
+        
+        Args:
+            tool_id: Tool identifier
+            task_id: Task identifier
+            
+        Returns:
+            True if approved (permanent or task-specific)
+        """
+        # Check permanent approvals first
+        if tool_id in self._permanent_approvals:
+            return True
+        
+        # Check for approved request for this task
+        results = await self._substrate.search_packets_by_type(
+            packet_type="approval_record",
+            limit=100,
+        )
+        
+        for result in results:
+            payload = result.get("payload", {})
+            if payload.get("task_id") == task_id:
+                return True
+        
+        return False
+
+    async def grant_permanent_approval(self, tool_id: str, approved_by: str = "Igor") -> bool:
+        """
+        Grant permanent approval for a tool (applies to all future calls).
+        
+        Args:
+            tool_id: Tool to approve permanently
+            approved_by: Who granted approval (must be Igor)
+            
+        Returns:
+            True if granted
+        """
+        if approved_by != "Igor":
+            logger.warning(f"Unauthorized permanent approval attempt by {approved_by}")
+            return False
+        
+        self._permanent_approvals[tool_id] = True
+        
+        # Store permanently in memory
+        await self._substrate.write_packet(
+            packet_in=PacketEnvelopeIn(
+                packet_type="permanent_approval",
+                payload={
+                    "tool_id": tool_id,
+                    "approved_by": approved_by,
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        )
+        
+        logger.info(f"Permanent approval granted for tool {tool_id} by {approved_by}")
+        return True
 
     async def approve_task(
         self,

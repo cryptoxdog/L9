@@ -1,3 +1,4 @@
+.github/workflows/terminology-guard.yml
 .mypy_cache/3.12/PIL/ExifTags.data.json
 .mypy_cache/3.12/PIL/ExifTags.meta.json
 .mypy_cache/3.12/PIL/GimpGradientFile.data.json
@@ -2349,9 +2350,91 @@
 .mypy_cache/3.12/zstandard/__init__.data.json
 .mypy_cache/3.12/zstandard/__init__.meta.json
 .suite6-config.json
-Repo-Files/docker/docker-Dockerfile
-Repo-Files/runtime/*runtime-Dockerfile
-Repo-Files/runtime/runtime-docker-compose.yml
+VPS-Repo-Files/docker/docker-Dockerfile
+VPS-Repo-Files/runtime/*runtime-Dockerfile
+VPS-Repo-Files/runtime/runtime-docker-compose.yml
+agents/codegenagent/codegen+codegenAgent_specs/.github_workflows_l9_ci.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_cli_cursor_cli_launcher.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_README.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_ap_generator.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_c_gmp_engine.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_codegen_agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_compliance_auditor.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_cursor_context_sync_engine.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_cursor_sync.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_file_emitter.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_meta.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_meta_loader.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_pipeline_validator.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent_telemetry_codegen.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_context_bridge_cursor_memory_bridge.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_README.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_governance_hooks.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_mainagent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_memory_enricher.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_meta.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_reasoning_manifest.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_reasoning_trace.yaml
+agents/codegenagent/codegen+codegenAgent_specs/agents_mainagent_v6_tensor_bridge.yaml
+agents/codegenagent/codegen+codegenAgent_specs/api_routes_codegen.yaml
+agents/codegenagent/codegen+codegenAgent_specs/api_routes_mainagent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/audits_gmp_patch_diff_auditor.yaml
+agents/codegenagent/codegen+codegenAgent_specs/autonomy_codegen_autonomy_loop.yaml
+agents/codegenagent/codegen+codegenAgent_specs/ci_ci_meta_checker.yaml
+agents/codegenagent/codegen+codegenAgent_specs/compliance_shadow_agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/constructs_CodeGenAgent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/core_agent_registry_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/core_capsule_Live_Manifest_Builder.yaml
+agents/codegenagent/codegen+codegenAgent_specs/cursor_cursor_state_mirror.yaml
+agents/codegenagent/codegen+codegenAgent_specs/docs_codegen_agent_evolution_plan.yaml
+agents/codegenagent/codegen+codegenAgent_specs/factories_gmp_manifest_factory.yaml
+agents/codegenagent/codegen+codegenAgent_specs/governance_agent_overrides.yaml
+agents/codegenagent/codegen+codegenAgent_specs/governance_eval_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/governance_kernel_integrity_monitor.yaml
+agents/codegenagent/codegen+codegenAgent_specs/ir_engine_compile_meta_to_ir.yaml
+agents/codegenagent/codegen+codegenAgent_specs/ir_engine_meta_ir.yaml
+agents/codegenagent/codegen+codegenAgent_specs/kernel_policy_mainagent_policy.yaml
+agents/codegenagent/codegen+codegenAgent_specs/memory_memory_lattice_enhancer.yaml
+agents/codegenagent/codegen+codegenAgent_specs/memory_substrate_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/metrics_metrics_mainagent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_dags_mainagent_dag.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_langgraph_builder.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_memory_aware_auto_orchestrator.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_multi_agent_code_swarm.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_orchestrator_sync.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_research_swarm_loader.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_schedules_reflection_schedule.yaml
+agents/codegenagent/codegen+codegenAgent_specs/orchestration_unified_controller_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/reflection_reflective_kernel_patcher.yaml
+agents/codegenagent/codegen+codegenAgent_specs/registry_agent_tool_registry_enhancer.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_agents_autonomous-research-agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_api_OpenAPI_RouteEmitter.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_constructors_Canonical_Agent_Constructor.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_gmp_GMP_Audit_Engine.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_gmp_worker_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_kernel_hot_patch.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_orchestration_CGA_Autogen_Orchestrator.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_patch_AutoLinter_Injector.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_perplexity_Construct_Enhancer_From_PPX.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_perplexity_Perplexity_Interface_Agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_perplexity_SuperPrompt_Emitter.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_reflection_Capsule_Reflection_Engine.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_semantic_Knowledge_Model_Integrator.yaml
+agents/codegenagent/codegen+codegenAgent_specs/runtime_worldmodel_WorldModel_HookEmitter.yaml
+agents/codegenagent/codegen+codegenAgent_specs/sandbox_session_roadmap_l9.yaml
+agents/codegenagent/codegen+codegenAgent_specs/schemas_research_Research-Factory-Spec.yaml
+agents/codegenagent/codegen+codegenAgent_specs/schemas_worldmodel_L9_World_Model_Canonical_Schema_v2.0.yaml
+agents/codegenagent/codegen+codegenAgent_specs/services_template_Template_Compiler_API.yaml
+agents/codegenagent/codegen+codegenAgent_specs/templates_Canonical-Schema-Template-v6.0.yaml
+agents/codegenagent/codegen+codegenAgent_specs/templates_GMP-Prompt-Schema.yaml
+agents/codegenagent/codegen+codegenAgent_specs/testing_l9_tool_simulation_harness.yaml
+agents/codegenagent/codegen+codegenAgent_specs/tests_harness_Test_Harness_Autowire.yaml
+agents/codegenagent/codegen+codegenAgent_specs/tests_test_codegen_agent.yaml
+agents/codegenagent/codegen+codegenAgent_specs/tests_test_mainagent_packet_flow.yaml
+agents/codegenagent/codegen+codegenAgent_specs/ui_patch_audit_viewer.yaml
+agents/codegenagent/codegen+codegenAgent_specs/worldmodel_tool_link_mapper.yaml
+agents/codegenagent/codegen+codegenAgent_specs/worldmodel_tool_metadata_reflector.yaml
 agents/codegenagent/patches/patches-done/agents_codegen_agent_meta_kernel_hooks.yaml
 agents/codegenagent/patches/patches-done/agents_codegen_agent_rollback_hook.yaml
 agents/codegenagent/patches/patches-done/api_server_router_patch.yaml
@@ -2374,136 +2457,161 @@ agents/codegenagent/patches/patches-done/runtime_kernel_hot_patch.yaml
 agents/codegenagent/patches/patches-done/runtime_patch_AutoLinter_Injector.yaml
 agents/codegenagent/patches/patches-done/runtime_perplexity_Construct_Enhancer_From_PPX.yaml
 agents/codegenagent/patches/patches-done/ui_patch_audit_viewer.yaml
-agents/codegenagent/specs/.github_workflows_l9_ci.yaml
-agents/codegenagent/specs/agents_cli_cursor_cli_launcher.yaml
-agents/codegenagent/specs/agents_codegen_agent.yaml
-agents/codegenagent/specs/agents_codegen_agent_README.yaml
-agents/codegenagent/specs/agents_codegen_agent_ap_generator.yaml
-agents/codegenagent/specs/agents_codegen_agent_c_gmp_engine.yaml
-agents/codegenagent/specs/agents_codegen_agent_codegen_agent.yaml
-agents/codegenagent/specs/agents_codegen_agent_compliance_auditor.yaml
-agents/codegenagent/specs/agents_codegen_agent_cursor_context_sync_engine.yaml
-agents/codegenagent/specs/agents_codegen_agent_cursor_sync.yaml
-agents/codegenagent/specs/agents_codegen_agent_file_emitter.yaml
-agents/codegenagent/specs/agents_codegen_agent_meta.yaml
-agents/codegenagent/specs/agents_codegen_agent_meta_loader.yaml
-agents/codegenagent/specs/agents_codegen_agent_pipeline_validator.yaml
-agents/codegenagent/specs/agents_codegen_agent_telemetry_codegen.yaml
-agents/codegenagent/specs/agents_context_bridge_cursor_memory_bridge.yaml
-agents/codegenagent/specs/agents_mainagent_v6_README.yaml
-agents/codegenagent/specs/agents_mainagent_v6_governance_hooks.yaml
-agents/codegenagent/specs/agents_mainagent_v6_mainagent.yaml
-agents/codegenagent/specs/agents_mainagent_v6_memory_enricher.yaml
-agents/codegenagent/specs/agents_mainagent_v6_meta.yaml
-agents/codegenagent/specs/agents_mainagent_v6_reasoning_manifest.yaml
-agents/codegenagent/specs/agents_mainagent_v6_reasoning_trace.yaml
-agents/codegenagent/specs/agents_mainagent_v6_tensor_bridge.yaml
-agents/codegenagent/specs/api_routes_codegen.yaml
-agents/codegenagent/specs/api_routes_mainagent.yaml
-agents/codegenagent/specs/audits_gmp_patch_diff_auditor.yaml
-agents/codegenagent/specs/autonomy_codegen_autonomy_loop.yaml
-agents/codegenagent/specs/ci_ci_meta_checker.yaml
-agents/codegenagent/specs/compliance_shadow_agent.yaml
-agents/codegenagent/specs/constructs_CodeGenAgent.yaml
-agents/codegenagent/specs/core_agent_registry_patch.yaml
-agents/codegenagent/specs/core_capsule_Live_Manifest_Builder.yaml
-agents/codegenagent/specs/cursor_cursor_state_mirror.yaml
-agents/codegenagent/specs/docs_codegen_agent_evolution_plan.yaml
-agents/codegenagent/specs/factories_gmp_manifest_factory.yaml
-agents/codegenagent/specs/governance_agent_overrides.yaml
-agents/codegenagent/specs/governance_eval_patch.yaml
-agents/codegenagent/specs/governance_kernel_integrity_monitor.yaml
-agents/codegenagent/specs/ir_engine_compile_meta_to_ir.yaml
-agents/codegenagent/specs/ir_engine_meta_ir.yaml
-agents/codegenagent/specs/kernel_policy_mainagent_policy.yaml
-agents/codegenagent/specs/memory_memory_lattice_enhancer.yaml
-agents/codegenagent/specs/memory_substrate_patch.yaml
-agents/codegenagent/specs/metrics_metrics_mainagent.yaml
-agents/codegenagent/specs/orchestration_dags_mainagent_dag.yaml
-agents/codegenagent/specs/orchestration_langgraph_builder.yaml
-agents/codegenagent/specs/orchestration_memory_aware_auto_orchestrator.yaml
-agents/codegenagent/specs/orchestration_multi_agent_code_swarm.yaml
-agents/codegenagent/specs/orchestration_orchestrator_sync.yaml
-agents/codegenagent/specs/orchestration_research_swarm_loader.yaml
-agents/codegenagent/specs/orchestration_schedules_reflection_schedule.yaml
-agents/codegenagent/specs/orchestration_unified_controller_patch.yaml
-agents/codegenagent/specs/reflection_reflective_kernel_patcher.yaml
-agents/codegenagent/specs/registry_agent_tool_registry_enhancer.yaml
-agents/codegenagent/specs/runtime_agents_autonomous-research-agent.yaml
-agents/codegenagent/specs/runtime_api_OpenAPI_RouteEmitter.yaml
-agents/codegenagent/specs/runtime_constructors_Canonical_Agent_Constructor.yaml
-agents/codegenagent/specs/runtime_gmp_GMP_Audit_Engine.yaml
-agents/codegenagent/specs/runtime_gmp_worker_patch.yaml
-agents/codegenagent/specs/runtime_kernel_hot_patch.yaml
-agents/codegenagent/specs/runtime_orchestration_CGA_Autogen_Orchestrator.yaml
-agents/codegenagent/specs/runtime_patch_AutoLinter_Injector.yaml
-agents/codegenagent/specs/runtime_perplexity_Construct_Enhancer_From_PPX.yaml
-agents/codegenagent/specs/runtime_perplexity_Perplexity_Interface_Agent.yaml
-agents/codegenagent/specs/runtime_perplexity_SuperPrompt_Emitter.yaml
-agents/codegenagent/specs/runtime_reflection_Capsule_Reflection_Engine.yaml
-agents/codegenagent/specs/runtime_semantic_Knowledge_Model_Integrator.yaml
-agents/codegenagent/specs/runtime_worldmodel_WorldModel_HookEmitter.yaml
-agents/codegenagent/specs/sandbox_session_roadmap_l9.yaml
-agents/codegenagent/specs/schemas_research_Research-Factory-Spec.yaml
-agents/codegenagent/specs/schemas_worldmodel_L9_World_Model_Canonical_Schema_v2.0.yaml
-agents/codegenagent/specs/services_template_Template_Compiler_API.yaml
-agents/codegenagent/specs/templates_Canonical-Schema-Template-v6.0.yaml
-agents/codegenagent/specs/templates_GMP-Prompt-Schema.yaml
-agents/codegenagent/specs/testing_l9_tool_simulation_harness.yaml
-agents/codegenagent/specs/tests_harness_Test_Harness_Autowire.yaml
-agents/codegenagent/specs/tests_test_codegen_agent.yaml
-agents/codegenagent/specs/tests_test_mainagent_packet_flow.yaml
-agents/codegenagent/specs/ui_patch_audit_viewer.yaml
-agents/codegenagent/specs/worldmodel_tool_link_mapper.yaml
-agents/codegenagent/specs/worldmodel_tool_metadata_reflector.yaml
 api/adapters/calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
 api/adapters/email_adapter/Module-Spec-v2.6-email_adapter.yaml
 api/adapters/twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
+codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Module-Spec-v2.1.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Module-Spec-v2.2.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Module-Spec-v2.3.yaml
+codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/TIER_2_MODULE_GUIDANCE.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/.github_workflows_l9_ci.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_cli_cursor_cli_launcher.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_README.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_ap_generator.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_c_gmp_engine.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_codegen_agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_compliance_auditor.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_cursor_context_sync_engine.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_cursor_sync.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_file_emitter.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_meta.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_meta_loader.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_pipeline_validator.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_codegen_agent_telemetry_codegen.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_context_bridge_cursor_memory_bridge.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_README.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_governance_hooks.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_mainagent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_memory_enricher.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_meta.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_reasoning_manifest.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_reasoning_trace.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/agents_mainagent_v6_tensor_bridge.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/api_routes_codegen.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/api_routes_mainagent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/audits_gmp_patch_diff_auditor.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/autonomy_codegen_autonomy_loop.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/ci_ci_meta_checker.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/compliance_shadow_agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/constructs_CodeGenAgent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/core_agent_registry_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/core_capsule_Live_Manifest_Builder.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/cursor_cursor_state_mirror.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/docs_codegen_agent_evolution_plan.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/factories_gmp_manifest_factory.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/governance_agent_overrides.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/governance_eval_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/governance_kernel_integrity_monitor.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/ir_engine_compile_meta_to_ir.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/ir_engine_meta_ir.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/kernel_policy_mainagent_policy.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/memory_memory_lattice_enhancer.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/memory_substrate_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/metrics_metrics_mainagent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_dags_mainagent_dag.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_langgraph_builder.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_memory_aware_auto_orchestrator.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_multi_agent_code_swarm.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_orchestrator_sync.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_research_swarm_loader.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_schedules_reflection_schedule.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/orchestration_unified_controller_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/reflection_reflective_kernel_patcher.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/registry_agent_tool_registry_enhancer.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_agents_autonomous-research-agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_api_OpenAPI_RouteEmitter.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_constructors_Canonical_Agent_Constructor.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_gmp_GMP_Audit_Engine.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_gmp_worker_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_kernel_hot_patch.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_orchestration_CGA_Autogen_Orchestrator.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_patch_AutoLinter_Injector.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_perplexity_Construct_Enhancer_From_PPX.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_perplexity_Perplexity_Interface_Agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_perplexity_SuperPrompt_Emitter.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_reflection_Capsule_Reflection_Engine.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_semantic_Knowledge_Model_Integrator.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/runtime_worldmodel_WorldModel_HookEmitter.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/sandbox_session_roadmap_l9.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/schemas_research_Research-Factory-Spec.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/schemas_worldmodel_L9_World_Model_Canonical_Schema_v2.0.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/services_template_Template_Compiler_API.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/templates_Canonical-Schema-Template-v6.0.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/templates_GMP-Prompt-Schema.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/testing_l9_tool_simulation_harness.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/tests_harness_Test_Harness_Autowire.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/tests_test_codegen_agent.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/tests_test_mainagent_packet_flow.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/ui_patch_audit_viewer.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/worldmodel_tool_link_mapper.yaml
+codegen/codegenAgent Spec/Spec-codegen+codegenAgent/worldmodel_tool_metadata_reflector.yaml
+codegen/codegenAgent Spec/spec.symbolic_computation_service_extraction.yaml
+codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge_extraction_glue.yaml
+codegen/extractions/domain_tensor_bridge_v6_20260102/manifests/domain_tensor_bridge_v6_manifest.json
+codegen/meta/readme-meta-yaml-spec.yaml
+codegen/process/meta.codegen.schema.yaml
+codegen/process/meta.dependency.integration.yaml
+codegen/process/meta.extraction.sequence.yaml
+codegen/process/meta.validation.checklist.yaml
+codegen/schemas/Module-Prompt-CURSOR-v2.0.yaml
+codegen/schemas/Module-Spec-v2.4.yaml
+codegen/schemas/config_loader_schema.yaml
+codegen/schemas/domain_adapter.yaml
+codegen/schemas/dora-contract.yaml
+codegen/schemas/glue_layer.yaml
+codegen/schemas/orchestrator.yaml
+codegen/schemas/simple_agent.yaml
+codegen/schemas/sympy_schema_v6.yaml
+codegen/specs/L9_Canonical_v4.1_Unified.yaml
+codegen/sympy_extraction_glue.yaml
+codegen/templates/_spec-files-to-build/spec-reflexive autonomy system.yaml
 config/agents/l9-standard-v1.yaml
 config/agents/research-agent-v1.yaml
 config/boot_overlay.yaml
 config/policies/defaults.yaml
 config/policies/tool_usage.yaml
 config/settings.yaml
-core/schemas/Memory.yaml
 docker-compose.override.yml.example
 docker-compose.yml
-docs/12-19-25/docker-compose.txt
-docs/12-19-25/generated/specs/config_loader.yaml
-docs/12-24-25/L-CTO (Agent)/YAML FILES/INITIALIZATION_KERNEL_UNIFIED.yaml
-docs/12-24-25/L-CTO (Agent)/YAML FILES/L9 AGENT MANIFEST — L-CTO v1.0.yaml
-docs/12-24-25/L-CTO (Agent)/YAML FILES/personality_kernel.yaml
-docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/FILE_MANIFEST.json
-docs/CodeGen/AI-OS & AI-Factory Implemenation Strategy/god_research_agent_aios/comprehensive_research_foundation.json
-docs/CodeGen/Factory Deployment Strategy (YAML->Code)/example-L9_Tensor_MainAgent_Schema_v6.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/Emma_v5.3.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/Emma_v6.0.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/Emma_v7.0.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/Emma_v8.0.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/Emma_v8.1_Canonical.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/L9_Canonical_v4.1_Unified.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/L9_Capsule_Handoff_v3.3.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/L9_Session_Capsule_v3.0.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/L9_v4.1_GodMode_Prompt.yaml
-docs/CodeGen/L9 Learning & Adaptation Layer/L9_v4.1_Manifest_GodMode.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.1.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.2.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.3.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/Module-Spec-v2.4.yaml
-docs/CodeGen/_Module Canonical Trio/Manus/TIER_2_MODULE_GUIDANCE.yaml
-docs/CodeGen/_Module Canonical Trio/Module-Prompt-CURSOR-v2.0.yaml
-docs/CodeGen/research_factory_schema.yaml
-docs/CodeGen/sample_schemas/domain_adapter.yaml
-docs/CodeGen/sample_schemas/glue_layer.yaml
-docs/CodeGen/sample_schemas/orchestrator.yaml
-docs/CodeGen/sample_schemas/simple_agent.yaml
-docs/Docs-L Key Files/INITIALIZATION_KERNEL_UNIFIED.yaml
-docs/Docs-L Key Files/l9_operator_handbook_v2.yaml
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Module-Spec-v2.5.yaml
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/outputs/01_config_loader_spec.yaml
-docs/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/research_factory_schema.yaml
+docker/prometheus.yml
+docs/Roadmap-Upgrades/CA Coding Agent/L-CTO.yaml
+docs/Roadmap-Upgrades/CA Coding Agent/Module-Prompt-CURSOR-v2.0.yaml
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/schema/rule-registry-v2-schema.json
+docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.yaml
+docs/Roadmap-Upgrades/L-CTO (Agent)/Docs-L Key Files/INITIALIZATION_KERNEL_UNIFIED.yaml
+docs/Roadmap-Upgrades/L-CTO (Agent)/Docs-L Key Files/l9_operator_handbook_v2.yaml
+docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/INITIALIZATION_KERNEL_UNIFIED.yaml
+docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/L9 AGENT MANIFEST — L-CTO v1.0.yaml
+docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/personality_kernel.yaml
+docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_Capsule_Handoff_v3.3.yaml
+docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_Session_Capsule_v3.0.yaml
+docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_v4.1_GodMode_Prompt.yaml
+docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_v4.1_Manifest_GodMode.yaml
+docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/strategy_governance_policy.yaml
+docs/Roadmap-Upgrades/Quantum Factory (YAML->Code)/example-L9_Tensor_MainAgent_Schema_v6.yaml
+docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Module-Spec-v2.5.yaml
+docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/outputs/01_config_loader_spec.yaml
+docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/research_factory_schema.yaml
+docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/FILE_MANIFEST.json
+docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/comprehensive_research_foundation.json
+docs/Roadmap-Upgrades/emma_agent_ready/Emma_v5.3.yaml
+docs/Roadmap-Upgrades/emma_agent_ready/Emma_v6.0.yaml
+docs/Roadmap-Upgrades/emma_agent_ready/Emma_v7.0.yaml
+docs/Roadmap-Upgrades/emma_agent_ready/Emma_v8.0.yaml
+docs/Roadmap-Upgrades/emma_agent_ready/Emma_v8.1_Canonical.yaml
+docs/Roadmap-Upgrades/emma_agent_ready/emma_manifest.json
+docs/Roadmap-Upgrades/research_factory_schema.yaml
 docs/_Context-L9-Repo/YAML/PacketEnvelope.yaml
 docs/_Context-L9-Repo/docker/Dockerfile
 docs/_Context-L9-Repo/docker/Dockerfile.api
@@ -2511,33 +2619,31 @@ docs/_Context-L9-Repo/docker/docker-compose-VPS.yaml
 docs/_Context-L9-Repo/docker/docker-compose.yml
 docs/_Context-L9-Repo/docker/root-docker-compose.yml
 docs/_Context-L9-Repo/docker/runtime-Dockerfile
+docs/_VPS/VPS-12-19-25/docker-compose.txt
+docs/_VPS/docker-compose.yaml
+docs/__01-04-2026/Governance Audit/Active Files/foundation/logic/rule-registry.json
+docs/__01-04-2026/Governance Audit/Active Files/setup-new-workspace.yaml
+docs/__01-04-2026/Governance Audit/Active Files/startup/REASONING_STACK.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/ci-cd.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/docker-compose.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/feedback_loop_config.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/gmp-todo.schema.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/metrics.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/pre-commit-config.yaml
+docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/state.yaml
+docs/__01-05-2026/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
 docs/_archive/mcp-memory-deprecated/mcp-api.json
-docs/docker-compose.yaml
-docs/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
-docs/roadmap/CA Coding Agent/Cursor Agent/L-CTO.yaml
-docs/roadmap/CA Coding Agent/Module-Prompt-CURSOR-v2.0.yaml
-docs/roadmap/Core Bayesian layer/Bayesian Upgrade/schema/rule-registry-v2-schema.json
-docs/roadmap/Core Bayesian layer/Bayesian layer/bayesian_kernel.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
-docs/roadmap/Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
-docs/roadmap/emma_agent_ready/emma_manifest.json
 generated/specs/config_loader.yaml
+grafana/dashboards/l9-tool-observability.json
+igor/audit-tools/Current Config/07_execution_kernel.yaml
+igor/audit-tools/Current Config/10_packet_protocol_kernel.yaml
+igor/l-cto-Setup/l-cto-yaml-files/INITIALIZATION_KERNEL_UNIFIED.yaml
+igor/l-cto-Setup/l-cto-yaml-files/L-CTO.yaml
+igor/l-cto-Setup/l-cto-yaml-files/L9 AGENT MANIFEST — L-CTO v1.0.yaml
+igor/l-cto-Setup/l-cto-yaml-files/personality_kernel.yaml
 l-cto-phase-2/config/core_values.yaml
 l-cto-phase-2/config/desire_profile.yaml
 l-cto-phase-2/config/trust_config.yaml
-l-cto/Prompts & Docs/workflow_todo_kernel.yaml
-l-cto/body.json
-l-cto/l-cto-yaml-files/INITIALIZATION_KERNEL_UNIFIED.yaml
-l-cto/l-cto-yaml-files/L-CTO.yaml
-l-cto/l-cto-yaml-files/L9 AGENT MANIFEST — L-CTO v1.0.yaml
-l-cto/l-cto-yaml-files/personality_kernel.yaml
-l-cto/l_identity.json
 mac_agent/config.yaml
 memory/memory-yaml2.0.yaml
 openapi.json
@@ -2571,5 +2677,7 @@ private/security/l9_security_kernel.yaml
 pyproject.toml
 pytest.ini
 runtime/Dockerfile
+services/symbolic_computation/Dockerfile
+services/symbolic_computation/docker-compose.yml
 specs/MODULE_REGISTRY.yaml
 tests/test-wirein-memory-yaml2.0.yaml

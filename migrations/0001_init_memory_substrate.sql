@@ -118,7 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_packet_store_type_timestamp ON packet_store(packe
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS graph_checkpoints (
     checkpoint_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    agent_id TEXT NOT NULL,
+    agent_id TEXT NOT NULL UNIQUE,  -- UNIQUE for ON CONFLICT upsert in substrate_repository.py
     graph_state JSONB NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

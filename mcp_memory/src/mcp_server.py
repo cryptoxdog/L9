@@ -30,7 +30,7 @@ def get_mcp_tools() -> List[MCPTool]:
                         "type": "string",
                         "enum": ["preference", "fact", "context", "error", "success"],
                     },
-                    "scope": {"type": "string", "enum": ["user", "project", "global"]},
+                    "scope": {"type": "string", "enum": ["user", "project", "global", "l-private"]},
                     "duration": {"type": "string", "enum": ["short", "medium", "long"]},
                     "user_id": {"type": "string"},
                     "tags": {
@@ -263,7 +263,7 @@ def get_mcp_tools() -> List[MCPTool]:
                         "type": "string",
                         "enum": ["preference", "fact", "context", "error", "success", "learning", "decision"],
                     },
-                    "scope": {"type": "string", "enum": ["user", "project", "global"]},
+                    "scope": {"type": "string", "enum": ["user", "project", "global", "l-private"]},
                     "duration": {"type": "string", "enum": ["short", "medium", "long"]},
                     "user_id": {"type": "string"},
                     "confidence": {
@@ -313,11 +313,17 @@ async def handle_tool_call(tool: MCPToolCall, user_id: str, caller: Any = None) 
     if tool.name == "save_memory":
         from src.routes.memory import save_memory_handler
 
+        requested_scope = tool.arguments.get("scope", "user")
+        
+        # Enforce: Cursor CANNOT write l-private scope
+        if caller_id == "C" and requested_scope == "l-private":
+            raise ValueError("Cursor cannot write to l-private scope. Only L-CTO can write private memories.")
+        
         return await save_memory_handler(
             user_id=user_id,
             content=tool.arguments.get("content"),
             kind=tool.arguments.get("kind"),
-            scope=tool.arguments.get("scope", "user"),
+            scope=requested_scope,
             duration=tool.arguments.get("duration"),
             tags=tool.arguments.get("tags", []),
             importance=tool.arguments.get("importance", 1.0),
@@ -328,10 +334,21 @@ async def handle_tool_call(tool: MCPToolCall, user_id: str, caller: Any = None) 
     elif tool.name == "search_memory":
         from src.routes.memory import search_memory_handler
 
+        requested_scopes = tool.arguments.get("scopes", ["user", "project", "global"])
+        
+        # Enforce: Cursor CANNOT see l-private scope (filter it out)
+        if caller_id == "C" and "l-private" in requested_scopes:
+            requested_scopes = [s for s in requested_scopes if s != "l-private"]
+        
+        # L gets all scopes including l-private
+        if caller_id == "L" and "l-private" not in requested_scopes:
+            # L can explicitly request l-private, but default includes it
+            pass  # Don't auto-add, respect explicit request
+        
         return await search_memory_handler(
             user_id=user_id,
             query=tool.arguments.get("query"),
-            scopes=tool.arguments.get("scopes", ["user", "project", "global"]),
+            scopes=requested_scopes,
             kinds=tool.arguments.get("kinds"),
             top_k=tool.arguments.get("top_k", 5),
             threshold=tool.arguments.get("threshold", 0.7),
@@ -367,12 +384,16 @@ async def handle_tool_call(tool: MCPToolCall, user_id: str, caller: Any = None) 
     elif tool.name == "get_context":
         from src.routes.memory import get_context_injection
 
+        # Cursor gets filtered scopes (no l-private), L gets all
+        allowed_scopes = ["user", "project", "global"] if caller_id == "C" else None
+        
         return await get_context_injection(
             task_description=tool.arguments.get("task_description"),
             user_id=user_id,
             top_k=tool.arguments.get("top_k", 5),
             include_recent=tool.arguments.get("include_recent", True),
             kinds=tool.arguments.get("kinds"),
+            allowed_scopes=allowed_scopes,
         )
     elif tool.name == "extract_session_learnings":
         from src.routes.memory import extract_session_learnings
@@ -388,12 +409,16 @@ async def handle_tool_call(tool: MCPToolCall, user_id: str, caller: Any = None) 
     elif tool.name == "get_proactive_suggestions":
         from src.routes.memory import get_proactive_suggestions
 
+        # Cursor gets filtered scopes (no l-private), L gets all
+        allowed_scopes = ["user", "project", "global"] if caller_id == "C" else None
+        
         return await get_proactive_suggestions(
             current_context=tool.arguments.get("current_context"),
             user_id=user_id,
             include_error_fixes=tool.arguments.get("include_error_fixes", True),
             include_preferences=tool.arguments.get("include_preferences", True),
             top_k=tool.arguments.get("top_k", 3),
+            allowed_scopes=allowed_scopes,
         )
     elif tool.name == "query_temporal":
         from src.routes.memory import query_temporal
@@ -408,11 +433,17 @@ async def handle_tool_call(tool: MCPToolCall, user_id: str, caller: Any = None) 
     elif tool.name == "save_memory_with_confidence":
         from src.routes.memory import save_memory_with_confidence
 
+        requested_scope = tool.arguments.get("scope", "user")
+        
+        # Enforce: Cursor CANNOT write l-private scope
+        if caller_id == "C" and requested_scope == "l-private":
+            raise ValueError("Cursor cannot write to l-private scope. Only L-CTO can write private memories.")
+        
         return await save_memory_with_confidence(
             user_id=user_id,
             content=tool.arguments.get("content"),
             kind=tool.arguments.get("kind"),
-            scope=tool.arguments.get("scope", "user"),
+            scope=requested_scope,
             duration=tool.arguments.get("duration"),
             confidence=tool.arguments.get("confidence", 1.0),
             # Source is enforced server-side, not from client

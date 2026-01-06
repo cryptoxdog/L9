@@ -6,7 +6,7 @@ In-memory tool registry and wrappers for research tools.
 Includes production Perplexity client with best practices codified.
 """
 
-from services.research.tools.tool_registry import (
+from core.tools.base_registry import (
     ToolType,
     ToolMetadata,
     ToolRegistry,

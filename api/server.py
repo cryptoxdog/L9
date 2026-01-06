@@ -33,6 +33,18 @@ import api.db as db
 import api.os_routes as os_routes
 import api.agent_routes as agent_routes
 
+# Telemetry / Prometheus metrics
+try:
+    from telemetry.memory_metrics import init_metrics, PROMETHEUS_AVAILABLE
+    from prometheus_client import make_asgi_app as prometheus_make_asgi_app
+
+    _has_prometheus = PROMETHEUS_AVAILABLE
+except ImportError:
+    _has_prometheus = False
+
+    def init_metrics():
+        return False
+
 # Optional: World Model API (v1.1.0+)
 try:
     from api.world_model_api import router as world_model_router
@@ -167,6 +179,87 @@ try:
     _has_kernel_registry = True
 except ImportError:
     _has_kernel_registry = False
+
+# Optional: Agent Bootstrap Orchestrator (v3.0+ Paradigm Shift)
+try:
+    from core.agents.bootstrap import AgentBootstrapOrchestrator
+
+    _has_bootstrap = True
+except ImportError:
+    _has_bootstrap = False
+
+# Feature flag for new agent initialization
+L9_NEW_AGENT_INIT = os.getenv("L9_NEW_AGENT_INIT", "false").lower() == "true"
+
+# Stage 3 Modules: Tool Audit, Event Queue, Virtual Context, Evaluator
+L9_STAGE3_MODULES = os.getenv("L9_STAGE3_MODULES", "true").lower() == "true"
+
+# Stage 5: Graph-Backed Agent State (Neo4j for mutable agent state)
+L9_GRAPH_AGENT_STATE = os.getenv("L9_GRAPH_AGENT_STATE", "false").lower() == "true"
+
+# Optional: Graph-Backed Agent State (v3.2+ Stage 5)
+try:
+    from core.agents.graph_state import (
+        AgentGraphLoader,
+        GraphHydrator,
+        bootstrap_l_graph,
+    )
+    from core.tools.agent_self_modify import (
+        AgentSelfModifyTool,
+        create_self_modify_tool,
+    )
+
+    _has_graph_agent_state = True
+except ImportError:
+    _has_graph_agent_state = False
+
+# Optional: Five-Tier Observability (v3.3+ GMP-OBS-DEPLOY)
+L9_OBSERVABILITY = os.getenv("L9_OBSERVABILITY", "true").lower() == "true"
+try:
+    from core.observability.service import initialize_observability, ObservabilityService
+    from core.observability.l9_integration import (
+        instrument_agent_executor,
+        instrument_tool_registry,
+        instrument_governance_engine,
+        instrument_memory_substrate,
+    )
+
+    _has_observability = True
+except ImportError:
+    _has_observability = False
+    L9_OBSERVABILITY = False
+
+# Optional: ToolAuditService (v3.1+ Stage 3)
+try:
+    from core.tools.tool_audit import ToolAuditService
+
+    _has_tool_audit_service = True
+except ImportError:
+    _has_tool_audit_service = False
+
+# Optional: Event Queue (v3.1+ Stage 3)
+try:
+    from core.coordination.event_queue import EventQueue, init_event_driven_coordination
+
+    _has_event_queue = True
+except ImportError:
+    _has_event_queue = False
+
+# Optional: Virtual Context Manager (v3.1+ Stage 3)
+try:
+    from core.memory.virtual_context import VirtualContextManager
+
+    _has_virtual_context = True
+except ImportError:
+    _has_virtual_context = False
+
+# Optional: Evaluator (v3.1+ Stage 3)
+try:
+    from core.evaluation.evaluator import Evaluator
+
+    _has_evaluator = True
+except ImportError:
+    _has_evaluator = False
 
 # Optional: Calendar Adapter (v2.6+)
 try:
@@ -643,6 +736,23 @@ async def lifespan(app: FastAPI):
             app.state.neo4j_client = neo4j
             logger.info("Neo4j graph client initialized")
 
+            # Bootstrap governance schema (creates Responsibility, Directive, SOP labels)
+            try:
+                from scripts.bootstrap_neo4j_schema import bootstrap_l_governance
+
+                bootstrap_result = await bootstrap_l_governance(neo4j._driver)
+                if bootstrap_result.get("success"):
+                    logger.info(
+                        "Neo4j governance schema bootstrapped",
+                        responsibilities=bootstrap_result.get("responsibilities", 0),
+                        directives=bootstrap_result.get("directives", 0),
+                        sops=bootstrap_result.get("sops", 0),
+                    )
+                else:
+                    logger.warning(f"Governance schema bootstrap failed: {bootstrap_result.get('error')}")
+            except Exception as e:
+                logger.warning(f"Failed to bootstrap governance schema: {e}")
+
             # Register L9 tools in graph (for dependency tracking)
             try:
                 from core.tools.tool_graph import register_l9_tools, register_l_tools
@@ -656,15 +766,16 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning(f"Failed to register tools in Neo4j: {e}")
 
-        # Start GMP worker (for processing approved GMP tasks)
-        try:
-            from runtime.gmp_worker import start_gmp_worker
+            # Start GMP worker (for processing approved GMP tasks)
+            try:
+                from runtime.gmp_worker import start_gmp_worker
 
-            await start_gmp_worker(poll_interval=2.0)
-            logger.info("GMP worker started")
-        except Exception as e:
-            logger.warning(f"Failed to start GMP worker: {e}")
+                await start_gmp_worker(poll_interval=2.0)
+                logger.info("GMP worker started")
+            except Exception as e:
+                logger.warning(f"Failed to start GMP worker: {e}")
         else:
+            # Neo4j not available or not healthy
             app.state.neo4j_client = None
             logger.info("Neo4j not available - graph features disabled")
     except ImportError:
@@ -738,6 +849,61 @@ async def lifespan(app: FastAPI):
     # See core/agents/kernel_registry.py for the new kernel-based initialization.
     app.state.l_cto_startup = None  # Kept for backward compatibility
 
+    # ========================================================================
+    # AGENT BOOTSTRAP CEREMONY (v3.0+ Paradigm Shift)
+    # ========================================================================
+    if L9_NEW_AGENT_INIT and _has_bootstrap:
+        try:
+            logger.info("╔════════════════════════════════════════╗")
+            logger.info("║  L9_NEW_AGENT_INIT=true                ║")
+            logger.info("║  Running Agent Bootstrap Ceremony...   ║")
+            logger.info("╚════════════════════════════════════════╝")
+
+            substrate = getattr(app.state, "substrate_service", None)
+            if substrate:
+                bootstrap = AgentBootstrapOrchestrator(substrate)
+
+                # Bootstrap L-CTO agent with full kernel stack
+                l_config = AgentConfig(
+                    agent_id="l-cto",
+                    name="L CTO",
+                    kernel_refs=[
+                        "01_master_kernel.yaml",
+                        "02_identity_kernel.yaml",
+                        "03_cognitive_kernel.yaml",
+                        "04_behavioral_kernel.yaml",
+                        "05_memory_kernel.yaml",
+                        "06_worldmodel_kernel.yaml",
+                        "07_execution_kernel.yaml",
+                        "08_safety_kernel.yaml",
+                        "09_developer_kernel.yaml",
+                        "10_packet_protocol_kernel.yaml",
+                    ],
+                )
+
+                l_instance = await bootstrap.bootstrap_agent(l_config)
+                app.state.l_agent_instance = l_instance
+                app.state.l_agent_ready = True
+
+                logger.info(
+                    "✓ L-CTO Agent Bootstrap complete",
+                    instance_id=l_instance.instance_id[:12],
+                    signature=l_instance.initialization_signature[:16] if l_instance.initialization_signature else "none",
+                )
+            else:
+                logger.warning("Bootstrap skipped: substrate_service not available")
+                app.state.l_agent_ready = False
+
+        except Exception as e:
+            logger.error("Agent Bootstrap failed: %s", str(e), exc_info=True)
+            app.state.l_agent_ready = False
+            # Non-fatal in dev mode - fall back to legacy initialization
+    elif L9_NEW_AGENT_INIT:
+        logger.warning("L9_NEW_AGENT_INIT=true but bootstrap module not available")
+        app.state.l_agent_ready = False
+    else:
+        app.state.l_agent_ready = False  # Using legacy init
+
     # Validate Permission Graph (required if Slack is enabled)
     if os.getenv("SLACK_BOT_TOKEN"):
         if not hasattr(app.state, "permission_graph") or not app.state.permission_graph:
@@ -774,10 +940,375 @@ async def lifespan(app: FastAPI):
         from core.tools.registry_adapter import register_l_tools
 
         tool_count = await register_l_tools()
-        logger.info(f"✓ L-CTO tools registered: {tool_count} tools available")
+        if tool_count > 0:
+            logger.info(f"✓ L-CTO tools registered: {tool_count} tools available")
+            app.state.tool_graph_healthy = True
+        else:
+            logger.warning(
+                "⚠️ Tool registration returned 0 tools. "
+                "System will operate in degraded mode.",
+                extra={"alert": "tool_graph_degraded"}
+            )
+            app.state.tool_graph_healthy = False
     except Exception as e:
-        logger.warning(f"L-CTO tool registration skipped: {e}")
+        logger.error(
+            f"❌ Tool registration failed: {e}. Tool graph unavailable.",
+            exc_info=True,
+            extra={"alert": "tool_graph_failed"}
+        )
+        app.state.tool_graph_healthy = False
         # Non-fatal: tools still work via direct executor dispatch
+
+    # ========================================================================
+    # REGISTER MEMORY TOOLS (Agent Self-Query)
+    # ========================================================================
+    try:
+        from core.tools.memory_tools import register_memory_tools
+
+        tool_registry = getattr(app.state, "tool_registry", None)
+        substrate_service = getattr(app.state, "memory_service", None)
+        if tool_registry:
+            memory_tool_count = await register_memory_tools(
+                tool_registry,
+                substrate_service=substrate_service,
+            )
+            logger.info(f"✓ Memory tools registered: {memory_tool_count} tools")
+            app.state.memory_tools_registered = True
+        else:
+            logger.warning("⚠️ Memory tools not registered: tool_registry not available")
+            app.state.memory_tools_registered = False
+    except Exception as e:
+        logger.error(f"❌ Memory tool registration failed: {e}", exc_info=True)
+        app.state.memory_tools_registered = False
+
+    # ========================================================================
+    # STARTUP: Initialize Prometheus metrics
+    # ========================================================================
+    if _has_prometheus:
+        metrics_ok = init_metrics()
+        app.state.prometheus_enabled = metrics_ok
+        if metrics_ok:
+            logger.info("✓ Prometheus metrics initialized")
+        else:
+            logger.warning("⚠️ Prometheus metrics init returned False")
+    else:
+        app.state.prometheus_enabled = False
+        logger.info("Prometheus metrics not available (prometheus_client not installed)")
+
+    # ========================================================================
+    # STAGE 3 MODULES: Tool Audit, Event Queue, Virtual Context, Evaluator
+    # ========================================================================
+    if L9_STAGE3_MODULES:
+        logger.info("╔════════════════════════════════════════╗")
+        logger.info("║  Stage 3: Wiring Enterprise Modules    ║")
+        logger.info("╚════════════════════════════════════════╝")
+
+        substrate = getattr(app.state, "substrate_service", None)
+
+        # 1. Tool Audit Service (Postgres-backed audit trail)
+        if _has_tool_audit_service and substrate:
+            try:
+                tool_audit_service = ToolAuditService(
+                    substrate_service=substrate,
+                    buffer_size=100,
+                )
+                await tool_audit_service.start()
+                app.state.tool_audit_service = tool_audit_service
+                logger.info("✓ ToolAuditService initialized (Postgres audit trail)")
+            except Exception as e:
+                logger.error(f"❌ ToolAuditService init failed: {e}", exc_info=True)
+                app.state.tool_audit_service = None
+        else:
+            app.state.tool_audit_service = None
+            if not _has_tool_audit_service:
+                logger.debug("ToolAuditService module not available")
+
+        # 2. Event Queue (Async agent coordination)
+        if _has_event_queue:
+            try:
+                event_queue = await init_event_driven_coordination(app.state)
+                logger.info("✓ EventQueue initialized (async coordination)")
+            except Exception as e:
+                logger.error(f"❌ EventQueue init failed: {e}", exc_info=True)
+                app.state.event_queue = None
+        else:
+            app.state.event_queue = None
+            logger.debug("EventQueue module not available")
+
+        # 3. Virtual Context Manager (MemGPT-style tiered memory)
+        if _has_virtual_context and substrate:
+            try:
+                # Pass neo4j_driver for graph state consolidation
+                neo4j_for_vcm = getattr(app.state, "neo4j_client", None)
+                virtual_context = VirtualContextManager(
+                    substrate_service=substrate,
+                    neo4j_driver=neo4j_for_vcm,
+                    main_context_size=4096,
+                    working_memory_size=8192,
+                )
+                app.state.virtual_context_manager = virtual_context
+                logger.info("✓ VirtualContextManager initialized (tiered memory)")
+            except Exception as e:
+                logger.error(f"❌ VirtualContextManager init failed: {e}", exc_info=True)
+                app.state.virtual_context_manager = None
+        else:
+            app.state.virtual_context_manager = None
+            if not _has_virtual_context:
+                logger.debug("VirtualContextManager module not available")
+
+        # 4. Evaluator (LLM-as-judge + CI/CD gates)
+        if _has_evaluator and substrate:
+            try:
+                evaluator = Evaluator(
+                    substrate_service=substrate,
+                )
+                app.state.evaluator = evaluator
+                logger.info("✓ Evaluator initialized (LLM-as-judge)")
+            except Exception as e:
+                logger.error(f"❌ Evaluator init failed: {e}", exc_info=True)
+                app.state.evaluator = None
+        else:
+            app.state.evaluator = None
+            if not _has_evaluator:
+                logger.debug("Evaluator module not available")
+
+        logger.info("Stage 3 module wiring complete")
+    else:
+        logger.info("Stage 3 modules disabled (L9_STAGE3_MODULES=false)")
+
+    # ========================================================================
+    # STAGE 4: Memory Consolidation (Background Cleanup)
+    # ========================================================================
+    import asyncio  # Ensure asyncio is available for this block
+
+    L9_STAGE4_CONSOLIDATION = os.getenv("L9_STAGE4_CONSOLIDATION", "true").lower() == "true"
+
+    if L9_STAGE4_CONSOLIDATION:
+        logger.info("╔════════════════════════════════════════╗")
+        logger.info("║  Stage 4: Memory Consolidation         ║")
+        logger.info("╚════════════════════════════════════════╝")
+
+        try:
+            from core.memory.virtual_context import MemoryConsolidationService
+
+            substrate = getattr(app.state, "substrate_service", None) or getattr(app.state, "memory_service", None)
+            llm_service = getattr(app.state, "llm_service", None)
+
+            if substrate:
+                consolidation_service = MemoryConsolidationService(
+                    substrate_service=substrate,
+                    llm_service=llm_service,
+                )
+                app.state.consolidation_service = consolidation_service
+
+                # Schedule background cleanup every 24 hours
+                async def run_consolidation_loop():
+                    """Background task for periodic memory consolidation"""
+                    consolidation_interval = int(os.getenv("L9_CONSOLIDATION_INTERVAL_HOURS", "24")) * 3600
+                    logger.info(f"Memory consolidation scheduled every {consolidation_interval // 3600} hours")
+                    
+                    while True:
+                        try:
+                            await asyncio.sleep(consolidation_interval)
+                            logger.info("Running scheduled memory consolidation...")
+                            # Consolidate for L (primary agent)
+                            if hasattr(consolidation_service, 'consolidate'):
+                                metrics = consolidation_service.get_metrics() if hasattr(consolidation_service, 'get_metrics') else {}
+                                logger.info(f"Consolidation metrics: {metrics}")
+                            
+                            # UKG Phase 5: Consolidate graph state (if method exists)
+                            if hasattr(consolidation_service, 'consolidate_graph_state'):
+                                try:
+                                    graph_result = await consolidation_service.consolidate_graph_state("L")
+                                    logger.info(f"Graph state consolidation: {graph_result.get('status', 'UNKNOWN')}")
+                                except Exception as e:
+                                    logger.warning(f"Graph state consolidation failed: {e}")
+                        except asyncio.CancelledError:
+                            logger.info("Consolidation loop cancelled")
+                            break
+                        except Exception as e:
+                            logger.error(f"Consolidation loop error: {e}", exc_info=True)
+
+                # Start background consolidation task
+                app.state.consolidation_task = asyncio.create_task(run_consolidation_loop())
+                logger.info("✓ MemoryConsolidationService initialized (24h cleanup cycle)")
+            else:
+                logger.warning("⚠️ Consolidation not started: substrate_service not available")
+                app.state.consolidation_service = None
+
+        except ImportError as e:
+            logger.debug(f"MemoryConsolidationService not available: {e}")
+            app.state.consolidation_service = None
+        except Exception as e:
+            logger.error(f"❌ Stage 4 (consolidation) init failed: {e}", exc_info=True)
+            app.state.consolidation_service = None
+    else:
+        logger.info("Stage 4 (consolidation) disabled (L9_STAGE4_CONSOLIDATION=false)")
+
+    # ========================================================================
+    # STAGE 5: Graph-Backed Agent State (Neo4j for mutable agent state)
+    # ========================================================================
+    if L9_GRAPH_AGENT_STATE and _has_graph_agent_state:
+        logger.info("╔════════════════════════════════════════╗")
+        logger.info("║  Stage 5: Graph-Backed Agent State     ║")
+        logger.info("╚════════════════════════════════════════╝")
+
+        try:
+            # Get Neo4j client from app state (stored as neo4j_client, not neo4j_driver)
+            neo4j_client = getattr(app.state, "neo4j_client", None)
+            substrate = getattr(app.state, "substrate_service", None) or getattr(
+                app.state, "memory_service", None
+            )
+
+            if neo4j_client:
+                # Initialize AgentGraphLoader (uses neo4j_client)
+                agent_graph_loader = AgentGraphLoader(neo4j_client)
+                app.state.agent_graph_loader = agent_graph_loader
+                logger.info("✓ AgentGraphLoader initialized")
+
+                # Initialize GraphHydrator (with optional kernel stack)
+                kernel_stack = getattr(app.state, "kernel_stack", None)
+                graph_hydrator = GraphHydrator(
+                    neo4j_driver=neo4j_client,
+                    kernel_stack=kernel_stack,
+                )
+                app.state.graph_hydrator = graph_hydrator
+                logger.info("✓ GraphHydrator initialized")
+
+                # Initialize AgentSelfModifyTool
+                self_modify_tool = create_self_modify_tool(
+                    neo4j_driver=neo4j_client,
+                    substrate_service=substrate,
+                )
+                app.state.agent_self_modify_tool = self_modify_tool
+                logger.info("✓ AgentSelfModifyTool initialized")
+
+                # Check if L exists in graph, bootstrap if not
+                if await agent_graph_loader.exists("L"):
+                    logger.info("✓ L agent found in Neo4j graph")
+                else:
+                    logger.warning("L agent not in graph - run migration script")
+                    logger.info(
+                        "  python scripts/migrate_kernels_to_graph.py"
+                    )
+
+                logger.info("Stage 5 (Graph-Backed Agent State) complete")
+            else:
+                logger.warning(
+                    "⚠️ Stage 5 not started: neo4j_client not available"
+                )
+                app.state.agent_graph_loader = None
+                app.state.graph_hydrator = None
+                app.state.agent_self_modify_tool = None
+
+        except Exception as e:
+            logger.error(f"❌ Stage 5 init failed: {e}", exc_info=True)
+            app.state.agent_graph_loader = None
+            app.state.graph_hydrator = None
+            app.state.agent_self_modify_tool = None
+    elif L9_GRAPH_AGENT_STATE and not _has_graph_agent_state:
+        logger.warning(
+            "Stage 5 enabled but graph_state module not available"
+        )
+    else:
+        logger.debug("Stage 5 (Graph-Backed Agent State) disabled")
+
+    # ========================================================================
+    # STARTUP: UKG Phase 3 - Graph to World Model Sync (optional)
+    # ========================================================================
+    L9_GRAPH_WM_SYNC = os.getenv("L9_GRAPH_WM_SYNC", "false").lower() == "true"
+    
+    if L9_GRAPH_WM_SYNC:
+        try:
+            from core.integration.graph_to_wm_sync import (
+                start_graph_wm_sync,
+                get_graph_wm_sync,
+            )
+            
+            # Pass neo4j_driver to sync service
+            neo4j_for_sync = getattr(app.state, "neo4j_client", None)
+            await start_graph_wm_sync(neo4j_driver=neo4j_for_sync)
+            app.state.graph_wm_sync = get_graph_wm_sync(neo4j_driver=neo4j_for_sync)
+            logger.info("✅ UKG Phase 3: Graph-WM Sync started")
+        except ImportError:
+            logger.warning("Graph-WM Sync module not available")
+            app.state.graph_wm_sync = None
+        except Exception as e:
+            logger.error(f"Graph-WM Sync init failed: {e}")
+            app.state.graph_wm_sync = None
+    else:
+        logger.debug("Graph-WM Sync disabled (L9_GRAPH_WM_SYNC=false)")
+        app.state.graph_wm_sync = None
+
+    # ========================================================================
+    # STARTUP: UKG Phase 4 - Tool Pattern Extraction (optional)
+    # ========================================================================
+    L9_TOOL_PATTERN_EXTRACTION = os.getenv(
+        "L9_TOOL_PATTERN_EXTRACTION", "false"
+    ).lower() == "true"
+    
+    if L9_TOOL_PATTERN_EXTRACTION:
+        try:
+            from core.integration.tool_pattern_extractor import (
+                start_tool_pattern_extraction,
+                get_tool_pattern_extractor,
+            )
+            
+            await start_tool_pattern_extraction()
+            app.state.tool_pattern_extractor = get_tool_pattern_extractor()
+            logger.info("✅ UKG Phase 4: Tool Pattern Extraction started (6h interval)")
+        except ImportError:
+            logger.warning("Tool Pattern Extraction module not available")
+            app.state.tool_pattern_extractor = None
+        except Exception as e:
+            logger.error(f"Tool Pattern Extraction init failed: {e}")
+            app.state.tool_pattern_extractor = None
+    else:
+        logger.debug("Tool Pattern Extraction disabled (L9_TOOL_PATTERN_EXTRACTION=false)")
+        app.state.tool_pattern_extractor = None
+
+    # ========================================================================
+    # STARTUP: Five-Tier Observability (v3.3+ GMP-OBS-DEPLOY)
+    # ========================================================================
+    if _has_observability and L9_OBSERVABILITY:
+        try:
+            substrate = getattr(app.state, "substrate_service", None)
+            logger.info("Initializing Five-Tier Observability...")
+            observability = await initialize_observability(substrate_service=substrate)
+            app.state.observability_service = observability
+
+            # Instrument L9 services (non-blocking, wraps existing methods)
+            executor = getattr(app.state, "agent_executor", None)
+            tool_registry = getattr(app.state, "tool_registry", None)
+            governance = getattr(app.state, "governance_engine", None)
+
+            if executor:
+                await instrument_agent_executor(executor)
+            if tool_registry:
+                await instrument_tool_registry(tool_registry)
+            if governance:
+                await instrument_governance_engine(governance)
+            if substrate:
+                await instrument_memory_substrate(substrate)
+
+            logger.info(
+                "✅ Five-Tier Observability initialized",
+                instrumented={
+                    "executor": executor is not None,
+                    "tool_registry": tool_registry is not None,
+                    "governance": governance is not None,
+                    "substrate": substrate is not None,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Observability init failed: {e}", exc_info=True)
+            app.state.observability_service = None
+    else:
+        if not _has_observability:
+            logger.debug("Observability module not available")
+        else:
+            logger.debug("Observability disabled (L9_OBSERVABILITY=false)")
+        app.state.observability_service = None
 
     yield
 
@@ -785,6 +1316,63 @@ async def lifespan(app: FastAPI):
     # SHUTDOWN: Clean up memory service and Slack adapter
     # ========================================================================
     logger.info("Shutting down L9 API server...")
+
+    # Shutdown Five-Tier Observability (flush spans)
+    if hasattr(app.state, "observability_service") and app.state.observability_service:
+        try:
+            await app.state.observability_service.shutdown()
+            logger.info("Observability service shutdown complete")
+        except Exception as e:
+            logger.warning(f"Error shutting down observability: {e}")
+
+    # Stop UKG Phase 4: Tool Pattern Extraction
+    if hasattr(app.state, "tool_pattern_extractor") and app.state.tool_pattern_extractor:
+        try:
+            from core.integration.tool_pattern_extractor import stop_tool_pattern_extraction
+            await stop_tool_pattern_extraction()
+            logger.info("Tool Pattern Extraction stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping Tool Pattern Extraction: {e}")
+
+    # Stop UKG Phase 3: Graph-WM Sync
+    if hasattr(app.state, "graph_wm_sync") and app.state.graph_wm_sync:
+        try:
+            from core.integration.graph_to_wm_sync import stop_graph_wm_sync
+            await stop_graph_wm_sync()
+            logger.info("Graph-WM Sync stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping Graph-WM Sync: {e}")
+
+    # Stop Stage 4 consolidation
+    if hasattr(app.state, "consolidation_task") and app.state.consolidation_task:
+        try:
+            app.state.consolidation_task.cancel()
+            await app.state.consolidation_task
+        except asyncio.CancelledError:
+            logger.info("Consolidation task stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping consolidation task: {e}")
+
+    # Stop Stage 3 modules
+    if hasattr(app.state, "tool_audit_service") and app.state.tool_audit_service:
+        try:
+            await app.state.tool_audit_service.stop()
+            logger.info("ToolAuditService stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping ToolAuditService: {e}")
+
+    if hasattr(app.state, "event_queue") and app.state.event_queue:
+        try:
+            app.state.event_queue.stop()
+            if hasattr(app.state, "event_processor_task"):
+                app.state.event_processor_task.cancel()
+                try:
+                    await app.state.event_processor_task
+                except asyncio.CancelledError:
+                    pass
+            logger.info("EventQueue stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping EventQueue: {e}")
 
     # Stop GMP worker
     try:
@@ -808,6 +1396,16 @@ async def lifespan(app: FastAPI):
             logger.info("World Model Runtime stopped")
         except Exception as e:
             logger.error(f"Error stopping World Model Runtime: {e}")
+
+    # Cleanup World Model Service singleton
+    try:
+        from world_model.service import close_world_model_service
+        await close_world_model_service()
+        logger.info("World Model Service closed")
+    except ImportError:
+        pass  # world_model.service not available
+    except Exception as e:
+        logger.warning(f"Error closing World Model Service: {e}")
 
     # Cleanup Research Factory
     if _has_research and getattr(app.state, "research_enabled", False):
@@ -1279,6 +1877,24 @@ if _has_email_adapter:
     except Exception as e:
         logger.warning(f"Failed to load Email Agent router: {e}")
 
+# PacketEnvelope Upgrades API (Phases 2-5)
+try:
+    from api.routes.upgrades import router as upgrades_router
+
+    app.include_router(upgrades_router, prefix="/api/v1")
+    logger.info("PacketEnvelope upgrades router registered at /api/v1/upgrades")
+except Exception as e:
+    logger.warning(f"Failed to load PacketEnvelope upgrades router: {e}")
+
+# Prometheus metrics endpoint
+if _has_prometheus:
+    try:
+        metrics_app = prometheus_make_asgi_app()
+        app.mount("/metrics", metrics_app)
+        logger.info("Prometheus metrics endpoint registered at /metrics")
+    except Exception as e:
+        logger.warning(f"Failed to mount Prometheus metrics endpoint: {e}")
+
 
 # Startup + Shutdown events (if the modules expose them)
 # NOTE: Migrations and memory init are handled in lifespan() above
@@ -1426,7 +2042,7 @@ async def l_ws(websocket: WebSocket) -> None:
                 "thread_id": "my-session-123"
             }))
             response = json.loads(await ws.recv())
-            print(response["reply"])
+            logger.info(response["reply"])
     """
     await websocket.accept()
 

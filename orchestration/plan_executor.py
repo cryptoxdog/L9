@@ -39,6 +39,14 @@ from enum import Enum
 from typing import Any, Callable, Optional
 from uuid import UUID, uuid4
 
+# Strategy Memory (optional - Phase 0)
+from l9.orchestration.strategymemory import (
+    IStrategyMemoryService,
+    StrategyCandidate,
+    StrategyFeedback,
+    StrategyRetrievalRequest,
+)
+
 logger = structlog.get_logger(__name__)
 
 
@@ -186,12 +194,17 @@ class PlanExecutor:
         result = await executor.execute(plan)
     """
 
-    def __init__(self, config: Optional[ExecutorConfig] = None):
+    def __init__(
+        self,
+        config: Optional[ExecutorConfig] = None,
+        strategy_memory: Optional[IStrategyMemoryService] = None,
+    ):
         """
         Initialize the executor.
 
         Args:
             config: Executor configuration
+            strategy_memory: Optional Strategy Memory service for plan reuse
         """
         self._config = config or ExecutorConfig()
         self._handlers: dict[str, Callable] = {}
@@ -204,10 +217,16 @@ class PlanExecutor:
         # World model hook
         self._world_model: Optional[Any] = None
 
+        # Strategy Memory (Phase 0: retrieval-only)
+        self._strategy_memory: Optional[IStrategyMemoryService] = strategy_memory
+
         # Register default handlers
         self._register_default_handlers()
 
-        logger.info("PlanExecutor initialized")
+        logger.info(
+            "PlanExecutor initialized",
+            strategy_memory_enabled=strategy_memory is not None,
+        )
 
     def _register_default_handlers(self) -> None:
         """Register default step handlers."""
@@ -240,6 +259,144 @@ class PlanExecutor:
         """
         self._world_model = world_model
         logger.info("World model attached to PlanExecutor")
+
+    def set_strategy_memory(self, strategy_memory: IStrategyMemoryService) -> None:
+        """
+        Set the Strategy Memory service.
+
+        Args:
+            strategy_memory: IStrategyMemoryService implementation
+        """
+        self._strategy_memory = strategy_memory
+        logger.info("Strategy Memory attached to PlanExecutor")
+
+    # =========================================================================
+    # Strategy Memory Integration (Phase 0)
+    # =========================================================================
+
+    async def maybe_apply_strategy(
+        self,
+        task_id: str,
+        task_kind: str,
+        goal_description: str,
+        context_embedding: Optional[list[float]] = None,
+        tags: Optional[list[str]] = None,
+        min_confidence: float = 0.6,
+    ) -> Optional[StrategyCandidate]:
+        """
+        Attempt to retrieve a matching strategy for the given task.
+
+        This is the main entry point for strategy reuse. If a high-confidence
+        match is found, the returned StrategyCandidate contains a plan_payload
+        that can be executed directly instead of running IR compilation.
+
+        Args:
+            task_id: Current task ID
+            task_kind: Type of task (e.g., "research", "deploy", "code_review")
+            goal_description: Natural language description of the goal
+            context_embedding: Optional pre-computed embedding (384-dim)
+            tags: Preferred strategy tags
+            min_confidence: Minimum confidence threshold for match
+
+        Returns:
+            StrategyCandidate if a good match is found, None otherwise
+        """
+        if self._strategy_memory is None:
+            logger.debug("Strategy Memory not configured, skipping retrieval")
+            return None
+
+        try:
+            request = StrategyRetrievalRequest(
+                task_id=task_id,
+                task_kind=task_kind,
+                goal_description=goal_description,
+                context_embedding=context_embedding or [],
+                tags=tags or [],
+                min_confidence=min_confidence,
+            )
+
+            candidates = await self._strategy_memory.retrieve_strategies(
+                request, limit=1
+            )
+
+            if candidates and candidates[0].confidence >= min_confidence:
+                logger.info(
+                    "strategy_match_found",
+                    task_id=task_id,
+                    strategy_id=candidates[0].strategy_id,
+                    confidence=candidates[0].confidence,
+                    score=candidates[0].score,
+                )
+                return candidates[0]
+
+            logger.debug(
+                "no_strategy_match",
+                task_id=task_id,
+                candidates_checked=len(candidates),
+            )
+            return None
+
+        except Exception as e:
+            logger.warning(f"Strategy retrieval failed: {e}")
+            return None
+
+    async def record_strategy_feedback(
+        self,
+        strategy_id: str,
+        task_id: str,
+        success: bool,
+        outcome_score: float,
+        execution_time_ms: int,
+        resource_cost: float = 0.0,
+        was_adapted: bool = False,
+        adaptation_distance: Optional[int] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        """
+        Record feedback for a strategy after execution.
+
+        Call this after executing a plan that was retrieved from Strategy Memory.
+        The feedback is used to update the strategy's performance scores.
+
+        Args:
+            strategy_id: ID of the strategy that was used
+            task_id: ID of the task it was applied to
+            success: Whether execution succeeded
+            outcome_score: Quality score (0.0-1.0)
+            execution_time_ms: Execution duration in milliseconds
+            resource_cost: Estimated resource cost
+            was_adapted: Whether the strategy was adapted before use
+            adaptation_distance: Graph edit distance if adapted
+            metadata: Additional feedback metadata
+        """
+        if self._strategy_memory is None:
+            return
+
+        try:
+            feedback = StrategyFeedback(
+                strategy_id=strategy_id,
+                task_id=task_id,
+                success=success,
+                outcome_score=outcome_score,
+                execution_time_ms=execution_time_ms,
+                resource_cost=resource_cost,
+                was_adapted=was_adapted,
+                adaptation_distance=adaptation_distance,
+                metadata=metadata or {},
+            )
+
+            await self._strategy_memory.update_strategy_outcome(feedback)
+
+            logger.info(
+                "strategy_feedback_recorded",
+                strategy_id=strategy_id,
+                task_id=task_id,
+                success=success,
+                outcome_score=outcome_score,
+            )
+
+        except Exception as e:
+            logger.warning(f"Strategy feedback recording failed: {e}")
 
     # =========================================================================
     # Handler Registration

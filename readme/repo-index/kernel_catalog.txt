@@ -65,25 +65,10 @@
 - **Purpose**: 
 
 
-## Kernel Wiring Functions (core/kernel_wiring/)
+## Kernel Loading (7-Phase Bootstrap)
 
-| Function | Source File | Purpose |
-|----------|-------------|---------|
-| `get_active_mode()` | master_wiring.py | Get current system mode |
-| `get_identity_profile()` | identity_wiring.py | Get L's identity profile |
-| `apply_identity_to_response()` | identity_wiring.py | Apply identity to outputs |
-| `get_reasoning_mode()` | cognitive_wiring.py | Get reasoning mode config |
-| `should_enable_meta_cognition()` | cognitive_wiring.py | Check meta-cognition flag |
-| `get_output_verbosity()` | behavioral_wiring.py | Get output verbosity level |
-| `is_topic_blocked()` | behavioral_wiring.py | Check if topic is blocked |
-| `get_memory_layers_config()` | memory_wiring.py | Get memory layer config |
-| `should_checkpoint_now()` | memory_wiring.py | Check checkpoint trigger |
-| `get_worldmodel_schema()` | worldmodel_wiring.py | Get world model schema |
-| `get_execution_state_machine()` | execution_wiring.py | Get execution FSM |
-| `get_allowed_transitions()` | execution_wiring.py | Get allowed state transitions |
-| `get_safety_policies()` | safety_wiring.py | Get safety policies |
-| `is_destructive_action()` | safety_wiring.py | Check if action is destructive |
-| `get_dev_policies()` | developer_wiring.py | Get developer policies |
-| `get_packet_protocol()` | packet_protocol_wiring.py | Get packet protocol config |
-| `get_allowed_event_types()` | packet_protocol_wiring.py | Get allowed event types |
-| `get_default_channel()` | packet_protocol_wiring.py | Get default channel |
+| Phase | Function | Purpose |
+|-------|----------|---------|
+| 1 | load_and_parse_kernels() | Load all 10 YAML kernels |
+| 3 | bind_kernels_to_agent() | Attach kernels to AgentInstance |
+| 6 | wire_governance_gates() | Apply safety constraints |

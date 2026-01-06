@@ -1,0 +1,136 @@
+# L9 Terminology Guard — Enforces New Architecture Terminology
+# Blocks PRs using deprecated agent initialization terms
+#
+# Version: 1.0.0
+# Created: 2026-01-05
+
+name: Terminology Guard
+
+on:
+  pull_request:
+    paths:
+      - 'core/**'
+      - 'api/**'
+      - 'memory/**'
+      - 'runtime/**'
+      - 'agents/**'
+
+jobs:
+  check-deprecated-terms:
+    runs-on: ubuntu-latest
+    name: Block Deprecated Terminology
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for deprecated agent init terms
+        run: |
+          echo "🔍 Scanning for deprecated agent initialization terminology..."
+          
+          # Define deprecated terms and their replacements
+          DEPRECATED_PATTERNS=(
+            # Old lazy-loading patterns
+            "lazy[_-]?load|LazyLoad"
+            "on[_-]?demand[_-]?init|OnDemandInit"
+            "deferred[_-]?bootstrap"
+            
+            # Old startup patterns (context matters - flagged for review)
+            # "startup[_-]?wiring"  # Ambiguous - might be valid
+            
+            # Old agent init (without 7-phase)
+            "simple[_-]?init|SimpleInit"
+            "quick[_-]?boot|QuickBoot"
+          )
+          
+          # Combine patterns
+          PATTERN=$(IFS='|'; echo "${DEPRECATED_PATTERNS[*]}")
+          
+          # Search in changed files only
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'core/' 'api/' 'memory/' 'runtime/' 'agents/' || echo "")
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "✓ No relevant files changed"
+            exit 0
+          fi
+          
+          echo "📁 Checking changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Search for deprecated terms
+          VIOLATIONS=$(echo "$CHANGED_FILES" | xargs grep -l -E -i "$PATTERN" 2>/dev/null || true)
+          
+          if [ -n "$VIOLATIONS" ]; then
+            echo ""
+            echo "❌ DEPRECATED TERMINOLOGY FOUND"
+            echo "================================"
+            echo ""
+            echo "The following files contain deprecated agent initialization terms:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "Matches:"
+            echo "$CHANGED_FILES" | xargs grep -n -E -i "$PATTERN" 2>/dev/null || true
+            echo ""
+            echo "📖 MIGRATION GUIDE:"
+            echo "==================="
+            echo "• lazy_load → Use 7-phase atomic bootstrap (AgentBootstrapOrchestrator)"
+            echo "• on_demand_init → Use kernel-aware startup (L9_NEW_AGENT_INIT=true)"
+            echo "• simple_init → Use full bootstrap ceremony (Phase 0-7)"
+            echo ""
+            echo "See: docs/__01-04-2026/__Agent Initialization - Paradigm Shift/"
+            exit 1
+          fi
+          
+          echo "✓ No deprecated terminology found"
+
+      - name: Verify new terminology usage
+        run: |
+          echo "🔍 Verifying new architecture terminology..."
+          
+          # Check that new bootstrap files use correct patterns
+          BOOTSTRAP_FILES=$(find core/agents/bootstrap -name "*.py" 2>/dev/null || echo "")
+          
+          if [ -n "$BOOTSTRAP_FILES" ]; then
+            echo "📁 Bootstrap files found:"
+            echo "$BOOTSTRAP_FILES"
+            
+            # Verify key patterns exist
+            for file in $BOOTSTRAP_FILES; do
+              if [ -f "$file" ]; then
+                # Check for async def (required for all phase functions)
+                if ! grep -q "async def" "$file"; then
+                  echo "⚠️ Warning: $file missing async functions"
+                fi
+              fi
+            done
+            
+            echo "✓ Bootstrap structure verified"
+          else
+            echo "ℹ️ No bootstrap files in this change set"
+          fi
+
+      - name: Check feature flag usage
+        run: |
+          echo "🔍 Checking feature flag patterns..."
+          
+          # Ensure L9_NEW_AGENT_INIT is used for conditional bootstrap
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'api/server.py' 'core/agents/' || echo "")
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "✓ No agent/server files changed"
+            exit 0
+          fi
+          
+          # Check for proper feature flag guard
+          if echo "$CHANGED_FILES" | grep -q "server.py"; then
+            if ! grep -q "L9_NEW_AGENT_INIT" api/server.py 2>/dev/null; then
+              echo "⚠️ Warning: api/server.py should use L9_NEW_AGENT_INIT feature flag"
+            else
+              echo "✓ Feature flag L9_NEW_AGENT_INIT properly used"
+            fi
+          fi
+          
+          echo "✓ Feature flag check complete"
+

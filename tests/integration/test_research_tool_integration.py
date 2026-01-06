@@ -15,7 +15,7 @@ class TestResearchToolIntegration:
 
     def test_tool_registry_loads(self):
         """Tool registry initializes with tools."""
-        from services.research.tools.tool_registry import ToolRegistry
+        from core.tools.base_registry import ToolRegistry
 
         registry = ToolRegistry()
         # Should initialize without error
@@ -24,7 +24,7 @@ class TestResearchToolIntegration:
     @pytest.mark.asyncio
     async def test_tool_execution_returns_result(self):
         """Tool execution returns structured result."""
-        from services.research.tools.tool_registry import (
+        from core.tools.base_registry import (
             ToolRegistry,
             ToolMetadata,
             ToolType,

@@ -1,0 +1,11 @@
+Feature,L9 Current,Frontier Labs,Gap Impact
+Multi-Agent Coordination,L/CA/Critic/Igor roles,Dynamic swarm (OpenAI/Anthropic),🟡 Medium
+Subagent Spawning,Not implemented,Yes (Claude SDK subagents),🔴 Critical
+Parallel Execution,asyncio tasks,True parallelization (AWS/Google),🟡 Medium
+Agent-to-Agent Protocol,Custom PacketEnvelope,A2A Protocol (Google) / MCP (Anthropic),🔴 Critical
+Context Isolation,Separate memory segments,Separate context windows per agent,🟢 Good
+Orchestration Pattern,Single coordinator,Hierarchical + swarm hybrid,🟡 Medium
+Agent Handoff,Manual,Automatic via triage patterns,🔴 Critical
+Workflow DAG Tracking,No,Yes (dependencies tracked),🔴 Critical
+Agent Specialization,Role-based (4 agents),Task-based dynamic specialization,🟡 Medium
+Load Balancing,No,Yes (Agent Engine),🔴 Critical

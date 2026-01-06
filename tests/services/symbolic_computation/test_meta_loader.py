@@ -6,6 +6,9 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 from agents.codegenagent.meta_loader import MetaLoader, MetaLoaderError, load_meta
 
@@ -25,7 +28,7 @@ description: A test module
 version: 1.0.0
 code:
   - type: template
-    content: "print('hello')"
+    content: "logger.info('hello')"
 """)
             
             # Create an invalid YAML file
@@ -102,5 +105,8 @@ code:
         meta = load_meta(spec_path)
 
         assert meta["name"] == "test_module"
+
+
+
 
 

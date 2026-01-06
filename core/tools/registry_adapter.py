@@ -1,23 +1,91 @@
 """
-L9 Core Tools - Registry Adapter
-================================
+L9 Core Tools - Registry Adapter (ExecutorToolRegistry)
+========================================================
 
-Adapts the existing tool registry for use with AgentExecutorService.
+HYBRID TOOL SYSTEM ARCHITECTURE (Neo4j + Postgres)
+--------------------------------------------------
 
-This adapter:
-- Implements ToolRegistryProtocol expected by executor
-- Wraps the existing services.research.tools.tool_registry
-- Converts ToolMetadata to ToolBinding
-- Dispatches tool calls and returns ToolCallResult
-- Integrates with GovernanceEngineService for policy-based access control
+This module implements the primary tool dispatch mechanism for L9.
+Tools are registered and executed through ExecutorToolRegistry,
+which integrates with Neo4j for governance and Postgres for data.
 
-Version: 2.0.0 (Governance Integration)
+ARCHITECTURE OVERVIEW
+~~~~~~~~~~~~~~~~~~~~~
+
+Neo4j Graph Database (Optional - Observability Layer):
+    - Tool metadata (scope, risk_level, requires_igor_approval)
+    - Tool dependency graph (DEPENDS_ON, USES relationships)
+    - Blast radius queries ("What breaks if OpenAI down?")
+    - Governance audit trails (tool history, approval logs)
+
+Postgres (Required - Data Layer):
+    - Memory substrate (packets, embeddings, agent history)
+    - User data, sessions, authentication
+    - Task queue (QueuedTask models)
+
+ExecutorToolRegistry (This Module):
+    - Tool dispatch via dispatch_tool_call()
+    - Governance enforcement (policy checks via engine)
+    - Tool validation (Pydantic input schemas)
+    - Rate limiting (if registry supports)
+    - Error handling + logging
+
+GRACEFUL DEGRADATION
+~~~~~~~~~~~~~~~~~~~~
+
+If Neo4j unavailable:
+    - Tools still execute (via ExecutorToolRegistry + Postgres)
+    - No graph queries (blast radius, dependencies)
+    - No Neo4j-based governance audits
+    - WARNING logged at startup + app.state.tool_graph_healthy = False
+
+If Postgres unavailable:
+    - System fails (required - memory + tasks + users)
+    - No graceful degradation possible
+
+GOVERNANCE MODEL
+~~~~~~~~~~~~~~~~
+
+High-Risk Tools (requires Igor approval):
+    - GMPRUN - Execute GMP in Cursor
+    - GITCOMMIT - Commit code to repository
+    - MACAGENTEXECTASK - Execute shell command via Mac Agent
+
+Approval Flow:
+    1. L calls tool -> ExecutorToolRegistry.dispatch_tool_call()
+    2. Governance engine checks: is_tool_approved(L, tool_id)?
+    3. If high-risk + not approved -> return error (pending approval)
+    4. If approved or low-risk -> execute via executor function
+    5. Audit trail logged to memory substrate
+
+LEGACY ORCHESTRATOR
+~~~~~~~~~~~~~~~~~~~
+
+ActionToolOrchestrator (orchestrators/action_tool/):
+    Status: DEPRECATED v1.x -> v2.0
+    Replacement: ExecutorToolRegistry (this module)
+    Migration: See api/tools/router.py refactor
+    Removal: Scheduled for Phase 3 cleanup
+
+ACCESS PATTERN
+~~~~~~~~~~~~~~
+
+    # From FastAPI endpoints:
+    registry = request.app.state.tool_registry
+    result = await registry.dispatch_tool_call(
+        tool_id="memory_search",
+        arguments={"query": "L's capabilities", "limit": 10},
+        context={"principal_id": "user123", "agent_id": "L"}
+    )
+
+Version: 2.1.0 (Governance Integration + Architecture Docs)
 """
 
 from __future__ import annotations
 
 import asyncio
 import structlog
+import time
 from datetime import datetime
 from typing import Any, Optional, Protocol, TYPE_CHECKING
 from uuid import uuid4
@@ -27,6 +95,7 @@ from core.agents.schemas import (
     ToolCallResult,
 )
 from core.schemas.capabilities import ToolName, DEFAULT_L_CAPABILITIES
+from memory.tool_audit import log_tool_invocation
 
 if TYPE_CHECKING:
     from core.governance.engine import GovernanceEngineService
@@ -110,7 +179,7 @@ class ExecutorToolRegistry:
         # Get or create base registry
         if base_registry is None:
             try:
-                from services.research.tools.tool_registry import get_tool_registry
+                from core.tools.base_registry import get_tool_registry
 
                 self._registry = get_tool_registry()
             except ImportError:
@@ -254,6 +323,7 @@ class ExecutorToolRegistry:
 
         Uses tool_id as the sole identity for lookup and dispatch.
         Governance is checked via engine if available.
+        All tool calls are logged to memory substrate for audit.
 
         Args:
             tool_id: Canonical tool identity
@@ -264,11 +334,23 @@ class ExecutorToolRegistry:
             ToolCallResult with success/failure, result, and tool_id
         """
         call_id = uuid4()
-        start_time = datetime.utcnow()
+        start_time = time.monotonic()
+        agent_id = context.get("agent_id", "unknown")
+        task_id = context.get("task_id")
 
         try:
             # Get tool from registry using tool_id
             if self._registry is None:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="failure",
+                    duration_ms=duration_ms,
+                    error="Tool registry not available",
+                )
                 return ToolCallResult(
                     call_id=call_id,
                     tool_id=tool_id,
@@ -278,6 +360,16 @@ class ExecutorToolRegistry:
 
             tool_meta = self._registry.get(tool_id)
             if tool_meta is None:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="failure",
+                    duration_ms=duration_ms,
+                    error=f"Tool not found: {tool_id}",
+                )
                 return ToolCallResult(
                     call_id=call_id,
                     tool_id=tool_id,
@@ -287,6 +379,16 @@ class ExecutorToolRegistry:
 
             # Check if tool is enabled
             if not tool_meta.enabled:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="failure",
+                    duration_ms=duration_ms,
+                    error=f"Tool is disabled: {tool_id}",
+                )
                 return ToolCallResult(
                     call_id=call_id,
                     tool_id=tool_id,
@@ -295,8 +397,6 @@ class ExecutorToolRegistry:
                 )
 
             # Governance check - use engine if available, else fallback
-            agent_id = context.get("agent_id", "unknown")
-
             if self._governance_engine:
                 # Use policy-based governance
                 allowed = self._governance_engine.is_allowed(
@@ -306,6 +406,16 @@ class ExecutorToolRegistry:
                     context=context,
                 )
                 if not allowed:
+                    duration_ms = int((time.monotonic() - start_time) * 1000)
+                    await log_tool_invocation(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        agent_id=agent_id,
+                        task_id=task_id,
+                        status="denied",
+                        duration_ms=duration_ms,
+                        error=f"Tool {tool_id} denied by governance policy",
+                    )
                     return ToolCallResult(
                         call_id=call_id,
                         tool_id=tool_id,
@@ -316,6 +426,16 @@ class ExecutorToolRegistry:
                 # Fallback to hardcoded rules
                 if tool_id in SIDE_EFFECT_TOOLS:
                     if not self._is_approved(agent_id, tool_id):
+                        duration_ms = int((time.monotonic() - start_time) * 1000)
+                        await log_tool_invocation(
+                            call_id=call_id,
+                            tool_id=tool_id,
+                            agent_id=agent_id,
+                            task_id=task_id,
+                            status="denied",
+                            duration_ms=duration_ms,
+                            error=f"Tool {tool_id} requires governance approval",
+                        )
                         return ToolCallResult(
                             call_id=call_id,
                             tool_id=tool_id,
@@ -325,14 +445,30 @@ class ExecutorToolRegistry:
 
             # Use registry's execute_tool if available (handles timeout)
             if hasattr(self._registry, "execute_tool"):
+                # Inject agent_id and task_id into arguments for tools that need them
+                arguments_with_context = {
+                    **arguments,
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                }
                 logger.info(
                     "Executing tool via registry: %s with arguments: %s",
                     tool_id,
-                    arguments,
+                    arguments_with_context,
                 )
-                result = await self._registry.execute_tool(tool_id, arguments)
+                result = await self._registry.execute_tool(tool_id, arguments_with_context)
+                duration_ms = int((time.monotonic() - start_time) * 1000)
 
                 if result["success"]:
+                    await log_tool_invocation(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        agent_id=agent_id,
+                        task_id=task_id,
+                        status="success",
+                        duration_ms=duration_ms,
+                        arguments=arguments,
+                    )
                     return ToolCallResult(
                         call_id=call_id,
                         tool_id=tool_id,
@@ -341,6 +477,16 @@ class ExecutorToolRegistry:
                         duration_ms=result["duration_ms"],
                     )
                 else:
+                    await log_tool_invocation(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        agent_id=agent_id,
+                        task_id=task_id,
+                        status="failure",
+                        duration_ms=duration_ms,
+                        error=result["error"],
+                        arguments=arguments,
+                    )
                     return ToolCallResult(
                         call_id=call_id,
                         tool_id=tool_id,
@@ -352,6 +498,16 @@ class ExecutorToolRegistry:
             # Fallback: direct execution (legacy path)
             executor = self._registry.get_executor(tool_id)
             if executor is None:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="failure",
+                    duration_ms=duration_ms,
+                    error=f"No executor registered for tool: {tool_id}",
+                )
                 return ToolCallResult(
                     call_id=call_id,
                     tool_id=tool_id,
@@ -359,24 +515,40 @@ class ExecutorToolRegistry:
                     error=f"No executor registered for tool: {tool_id}",
                 )
 
+            # Inject agent_id and task_id for legacy path too
+            arguments_with_context = {
+                **arguments,
+                "agent_id": agent_id,
+                "task_id": task_id,
+            }
             logger.info(
                 "Executing tool: %s with arguments: %s",
                 tool_id,
-                arguments,
+                arguments_with_context,
             )
 
             # Handle both sync and async executors
             if hasattr(executor, "execute"):
                 if asyncio.iscoroutinefunction(executor.execute):
-                    result = await executor.execute(**arguments)
+                    result = await executor.execute(**arguments_with_context)
                 else:
-                    result = executor.execute(**arguments)
+                    result = executor.execute(**arguments_with_context)
             elif callable(executor):
                 if asyncio.iscoroutinefunction(executor):
-                    result = await executor(**arguments)
+                    result = await executor(**arguments_with_context)
                 else:
-                    result = executor(**arguments)
+                    result = executor(**arguments_with_context)
             else:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="failure",
+                    duration_ms=duration_ms,
+                    error=f"Tool executor is not callable: {tool_id}",
+                )
                 return ToolCallResult(
                     call_id=call_id,
                     tool_id=tool_id,
@@ -385,12 +557,23 @@ class ExecutorToolRegistry:
                 )
 
             # Calculate duration
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration_ms = int((time.monotonic() - start_time) * 1000)
 
             logger.info(
                 "Tool %s completed in %dms",
                 tool_id,
                 duration_ms,
+            )
+
+            # Log successful execution
+            await log_tool_invocation(
+                call_id=call_id,
+                tool_id=tool_id,
+                agent_id=agent_id,
+                task_id=task_id,
+                status="success",
+                duration_ms=duration_ms,
+                arguments=arguments,
             )
 
             return ToolCallResult(
@@ -402,8 +585,20 @@ class ExecutorToolRegistry:
             )
 
         except Exception as e:
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            duration_ms = int((time.monotonic() - start_time) * 1000)
             logger.exception("Tool execution failed: %s", str(e))
+
+            # Log failed execution
+            await log_tool_invocation(
+                call_id=call_id,
+                tool_id=tool_id,
+                agent_id=agent_id,
+                task_id=task_id,
+                status="failure",
+                duration_ms=duration_ms,
+                error=str(e),
+                arguments=arguments,
+            )
 
             return ToolCallResult(
                 call_id=call_id,
@@ -462,10 +657,533 @@ class ExecutorToolRegistry:
         Get JSON Schema for a tool's parameters.
 
         Returns a basic schema based on tool type.
-        In production, tools would provide their own schemas.
+        L-CTO tools have comprehensive schemas; research tools have basic schemas.
         """
-        # Basic schemas for known tools
-        schemas = {
+        # L-CTO tool schemas (comprehensive - for function calling)
+        l_tool_schemas = {
+            "memory_search": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language search query",
+                    },
+                    "segment": {
+                        "type": "string",
+                        "description": "Memory segment: 'all', 'governance', 'project', 'session'",
+                        "default": "all",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum results to return (1-100)",
+                        "default": 10,
+                    },
+                },
+                "required": ["query"],
+            },
+            "memory_write": {
+                "type": "object",
+                "properties": {
+                    "packet": {
+                        "type": "object",
+                        "description": "Packet data to write",
+                    },
+                    "segment": {
+                        "type": "string",
+                        "description": "Target memory segment",
+                    },
+                },
+                "required": ["packet", "segment"],
+            },
+            # Memory Substrate Direct Access (GMP-31 Batch 1)
+            "memory_get_packet": {
+                "type": "object",
+                "properties": {
+                    "packet_id": {"type": "string", "description": "UUID of packet to retrieve"},
+                },
+                "required": ["packet_id"],
+            },
+            "memory_query_packets": {
+                "type": "object",
+                "properties": {
+                    "filters": {"type": "object", "description": "Filter criteria"},
+                    "limit": {"type": "integer", "description": "Max results", "default": 50},
+                },
+                "required": ["filters"],
+            },
+            "memory_search_by_thread": {
+                "type": "object",
+                "properties": {
+                    "thread_id": {"type": "string", "description": "Thread/conversation ID"},
+                    "limit": {"type": "integer", "description": "Max results", "default": 50},
+                },
+                "required": ["thread_id"],
+            },
+            "memory_search_by_type": {
+                "type": "object",
+                "properties": {
+                    "packet_type": {"type": "string", "description": "Packet kind (REASONING, TOOL_CALL, etc.)"},
+                    "limit": {"type": "integer", "description": "Max results", "default": 50},
+                },
+                "required": ["packet_type"],
+            },
+            "memory_get_events": {
+                "type": "object",
+                "properties": {
+                    "event_type": {"type": "string", "description": "Optional event type filter"},
+                    "limit": {"type": "integer", "description": "Max results", "default": 50},
+                },
+                "required": [],
+            },
+            "memory_get_reasoning_traces": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "Optional task ID filter"},
+                    "limit": {"type": "integer", "description": "Max traces", "default": 20},
+                },
+                "required": [],
+            },
+            "memory_get_facts": {
+                "type": "object",
+                "properties": {
+                    "subject": {"type": "string", "description": "Subject to query facts about"},
+                    "limit": {"type": "integer", "description": "Max facts", "default": 20},
+                },
+                "required": ["subject"],
+            },
+            "memory_write_insight": {
+                "type": "object",
+                "properties": {
+                    "insight": {"type": "string", "description": "Insight text to store"},
+                    "category": {"type": "string", "description": "Category (governance, project, session)"},
+                    "confidence": {"type": "number", "description": "Confidence 0-1", "default": 0.8},
+                },
+                "required": ["insight", "category"],
+            },
+            "memory_embed_text": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Text to embed"},
+                },
+                "required": ["text"],
+            },
+            # Memory Client API (GMP-31 Batch 2)
+            "memory_hybrid_search": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query"},
+                    "top_k": {"type": "integer", "description": "Max results", "default": 10},
+                    "filters": {"type": "object", "description": "Optional filters"},
+                },
+                "required": ["query"],
+            },
+            "memory_fetch_lineage": {
+                "type": "object",
+                "properties": {
+                    "packet_id": {"type": "string", "description": "Packet UUID"},
+                    "direction": {"type": "string", "description": "ancestors or descendants", "default": "ancestors"},
+                    "max_depth": {"type": "integer", "description": "Max traversal depth", "default": 5},
+                },
+                "required": ["packet_id"],
+            },
+            "memory_fetch_thread": {
+                "type": "object",
+                "properties": {
+                    "thread_id": {"type": "string", "description": "Thread ID"},
+                    "limit": {"type": "integer", "description": "Max packets", "default": 100},
+                },
+                "required": ["thread_id"],
+            },
+            "memory_fetch_facts_api": {
+                "type": "object",
+                "properties": {
+                    "subject": {"type": "string", "description": "Subject filter"},
+                    "predicate": {"type": "string", "description": "Predicate filter"},
+                    "limit": {"type": "integer", "description": "Max facts", "default": 50},
+                },
+                "required": [],
+            },
+            "memory_fetch_insights": {
+                "type": "object",
+                "properties": {
+                    "packet_id": {"type": "string", "description": "Source packet filter"},
+                    "insight_type": {"type": "string", "description": "Insight type filter"},
+                    "limit": {"type": "integer", "description": "Max insights", "default": 50},
+                },
+                "required": [],
+            },
+            "memory_gc_stats": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "gmp_run": {
+                "type": "object",
+                "properties": {
+                    "gmp_id": {
+                        "type": "string",
+                        "description": "GMP identifier (e.g., 'GMP-L-CTO-P0-TOOLS')",
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "GMP execution parameters",
+                        "default": {},
+                    },
+                },
+                "required": ["gmp_id"],
+            },
+            "git_commit": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Commit message",
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Files to commit (empty = all staged)",
+                        "default": [],
+                    },
+                },
+                "required": ["message"],
+            },
+            "mac_agent_exec_task": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "Shell command to execute",
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Timeout in seconds (5-300)",
+                        "default": 30,
+                    },
+                },
+                "required": ["command"],
+            },
+            "mcp_list_servers": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "mcp_list_tools": {
+                "type": "object",
+                "properties": {
+                    "server_id": {
+                        "type": "string",
+                        "description": "MCP server identifier: 'github', 'notion', 'filesystem', 'memory', 'l9-memory'",
+                    },
+                },
+                "required": ["server_id"],
+            },
+            "mcp_call_tool": {
+                "type": "object",
+                "properties": {
+                    "server_id": {
+                        "type": "string",
+                        "description": "MCP server identifier: 'github', 'notion', 'filesystem', etc.",
+                    },
+                    "tool_name": {
+                        "type": "string",
+                        "description": "Tool name (e.g., 'create_issue', 'search', 'read_file')",
+                    },
+                    "arguments": {
+                        "type": "object",
+                        "description": "Tool arguments",
+                        "default": {},
+                    },
+                },
+                "required": ["server_id", "tool_name"],
+            },
+            "mcp_discover_and_register": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "world_model_query": {
+                "type": "object",
+                "properties": {
+                    "query_type": {
+                        "type": "string",
+                        "description": "Query type: 'get_entity', 'list_entities', 'state_version'",
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Query parameters",
+                        "default": {},
+                    },
+                },
+                "required": ["query_type"],
+            },
+            "kernel_read": {
+                "type": "object",
+                "properties": {
+                    "kernel_name": {
+                        "type": "string",
+                        "description": "Kernel identifier: 'identity', 'safety', 'execution', etc.",
+                    },
+                    "property": {
+                        "type": "string",
+                        "description": "Property to read from kernel",
+                    },
+                },
+                "required": ["kernel_name", "property"],
+            },
+            "long_plan.execute": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {
+                        "type": "string",
+                        "description": "Plan identifier",
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Execution parameters",
+                        "default": {},
+                    },
+                },
+                "required": ["plan_id"],
+            },
+            "long_plan.simulate": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {
+                        "type": "string",
+                        "description": "Plan identifier",
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Simulation parameters",
+                        "default": {},
+                    },
+                },
+                "required": ["plan_id"],
+            },
+            "neo4j_query": {
+                "type": "object",
+                "properties": {
+                    "cypher": {
+                        "type": "string",
+                        "description": "Cypher query to run against Neo4j graph",
+                    },
+                    "params": {
+                        "type": "object",
+                        "description": "Query parameters",
+                        "default": {},
+                    },
+                },
+                "required": ["cypher"],
+            },
+            "redis_get": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Redis key to retrieve",
+                    },
+                },
+                "required": ["key"],
+            },
+            "redis_set": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "Redis key",
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "Value to store",
+                    },
+                    "ttl_seconds": {
+                        "type": "integer",
+                        "description": "Optional TTL in seconds",
+                    },
+                },
+                "required": ["key", "value"],
+            },
+            "redis_keys": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Key pattern (e.g., 'agent:*')",
+                        "default": "*",
+                    },
+                },
+                "required": [],
+            },
+            # Redis State Management (GMP-31 Batch 3)
+            "redis_delete": {
+                "type": "object",
+                "properties": {"key": {"type": "string", "description": "Key to delete"}},
+                "required": ["key"],
+            },
+            "redis_enqueue_task": {
+                "type": "object",
+                "properties": {
+                    "queue_name": {"type": "string", "description": "Queue name"},
+                    "task_data": {"type": "object", "description": "Task payload"},
+                    "priority": {"type": "integer", "description": "Priority", "default": 0},
+                },
+                "required": ["queue_name", "task_data"],
+            },
+            "redis_dequeue_task": {
+                "type": "object",
+                "properties": {"queue_name": {"type": "string", "description": "Queue name"}},
+                "required": ["queue_name"],
+            },
+            "redis_queue_size": {
+                "type": "object",
+                "properties": {"queue_name": {"type": "string", "description": "Queue name"}},
+                "required": ["queue_name"],
+            },
+            "redis_get_task_context": {
+                "type": "object",
+                "properties": {"task_id": {"type": "string", "description": "Task ID"}},
+                "required": ["task_id"],
+            },
+            "redis_set_task_context": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "Task ID"},
+                    "context": {"type": "object", "description": "Context data"},
+                    "ttl_seconds": {"type": "integer", "description": "TTL", "default": 3600},
+                },
+                "required": ["task_id", "context"],
+            },
+            # Tool Graph Introspection (GMP-31 Batch 4)
+            "tools_list_all": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "tools_list_enabled": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "tools_get_metadata": {
+                "type": "object",
+                "properties": {"tool_id": {"type": "string", "description": "Tool ID"}},
+                "required": ["tool_id"],
+            },
+            "tools_get_schema": {
+                "type": "object",
+                "properties": {"tool_id": {"type": "string", "description": "Tool ID"}},
+                "required": ["tool_id"],
+            },
+            "tools_get_by_type": {
+                "type": "object",
+                "properties": {"tool_type": {"type": "string", "description": "Tool type"}},
+                "required": ["tool_type"],
+            },
+            "tools_get_for_role": {
+                "type": "object",
+                "properties": {"role": {"type": "string", "description": "Role identifier"}},
+                "required": ["role"],
+            },
+            # World Model Operations (GMP-31 Batch 5)
+            "world_model_get_entity": {
+                "type": "object",
+                "properties": {"entity_id": {"type": "string", "description": "Entity ID"}},
+                "required": ["entity_id"],
+            },
+            "world_model_list_entities": {
+                "type": "object",
+                "properties": {
+                    "entity_type": {"type": "string", "description": "Entity type filter"},
+                    "min_confidence": {"type": "number", "description": "Min confidence"},
+                    "limit": {"type": "integer", "description": "Max entities", "default": 50},
+                },
+                "required": [],
+            },
+            "world_model_snapshot": {
+                "type": "object",
+                "properties": {"description": {"type": "string", "description": "Snapshot description"}},
+                "required": [],
+            },
+            "world_model_list_snapshots": {
+                "type": "object",
+                "properties": {"limit": {"type": "integer", "description": "Max snapshots", "default": 20}},
+                "required": [],
+            },
+            "world_model_send_insights": {
+                "type": "object",
+                "properties": {"insights": {"type": "array", "description": "List of insights"}},
+                "required": ["insights"],
+            },
+            "world_model_get_state_version": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            "symbolic_compute": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Symbolic mathematical expression",
+                    },
+                    "variables": {
+                        "type": "object",
+                        "description": "Variable substitutions",
+                        "default": {},
+                    },
+                },
+                "required": ["expression"],
+            },
+            "symbolic_codegen": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Symbolic expression to compile",
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Target language: 'python', 'c', 'fortran'",
+                        "default": "python",
+                    },
+                },
+                "required": ["expression"],
+            },
+            "symbolic_optimize": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Symbolic expression to optimize",
+                    },
+                },
+                "required": ["expression"],
+            },
+            "simulation": {
+                "type": "object",
+                "properties": {
+                    "graph_data": {
+                        "type": "object",
+                        "description": "IR graph data from IRGenerator.to_dict()",
+                    },
+                    "scenario_params": {
+                        "type": "object",
+                        "description": "Scenario configuration",
+                        "default": {},
+                    },
+                    "mode": {
+                        "type": "string",
+                        "description": "Simulation mode: 'fast', 'standard', 'thorough'",
+                        "default": "standard",
+                    },
+                },
+                "required": ["graph_data"],
+            },
+        }
+
+        # Research tool schemas (basic)
+        research_schemas = {
             "perplexity_search": {
                 "type": "object",
                 "properties": {
@@ -507,7 +1225,10 @@ class ExecutorToolRegistry:
             },
         }
 
-        return schemas.get(tool_id, {"type": "object", "properties": {}})
+        # Merge schemas (L tools take precedence)
+        all_schemas = {**research_schemas, **l_tool_schemas}
+
+        return all_schemas.get(tool_id, {"type": "object", "properties": {}})
 
     # =========================================================================
     # Registry Passthrough
@@ -538,7 +1259,7 @@ class ExecutorToolRegistry:
             return
 
         try:
-            from services.research.tools.tool_registry import ToolMetadata, ToolType
+            from core.tools.base_registry import ToolMetadata, ToolType
 
             # Try to get tool type enum, default to MOCK if unknown
             try:
@@ -631,6 +1352,519 @@ __all__ = [
 # =============================================================================
 
 
+def _get_l_tool_schema_for_registry(tool_name: str):
+    """
+    Get ToolSchema object for an L-CTO tool.
+    
+    Returns a ToolSchema compatible with the base registry.
+    Uses the same schema definitions as _get_tool_schema().
+    """
+    from core.tools.base_registry import ToolSchema
+    
+    # L-CTO tool schemas (same as _get_tool_schema but returns ToolSchema)
+    schemas = {
+        "memory_search": ToolSchema(
+            type="object",
+            properties={
+                "query": {"type": "string", "description": "Natural language search query"},
+                "segment": {"type": "string", "description": "Memory segment: 'all', 'governance', 'project', 'session'"},
+                "limit": {"type": "integer", "description": "Maximum results to return (1-100)"},
+            },
+            required=["query"],
+        ),
+        "memory_write": ToolSchema(
+            type="object",
+            properties={
+                "packet": {"type": "object", "description": "Packet data to write"},
+                "segment": {"type": "string", "description": "Target memory segment"},
+            },
+            required=["packet", "segment"],
+        ),
+        # Memory Substrate Direct Access (GMP-31 Batch 1)
+        "memory_get_packet": ToolSchema(
+            type="object",
+            properties={"packet_id": {"type": "string", "description": "UUID of packet"}},
+            required=["packet_id"],
+        ),
+        "memory_query_packets": ToolSchema(
+            type="object",
+            properties={
+                "filters": {"type": "object", "description": "Filter criteria"},
+                "limit": {"type": "integer", "description": "Max results"},
+            },
+            required=["filters"],
+        ),
+        "memory_search_by_thread": ToolSchema(
+            type="object",
+            properties={
+                "thread_id": {"type": "string", "description": "Thread ID"},
+                "limit": {"type": "integer", "description": "Max results"},
+            },
+            required=["thread_id"],
+        ),
+        "memory_search_by_type": ToolSchema(
+            type="object",
+            properties={
+                "packet_type": {"type": "string", "description": "Packet kind"},
+                "limit": {"type": "integer", "description": "Max results"},
+            },
+            required=["packet_type"],
+        ),
+        "memory_get_events": ToolSchema(
+            type="object",
+            properties={
+                "event_type": {"type": "string", "description": "Event type filter"},
+                "limit": {"type": "integer", "description": "Max results"},
+            },
+            required=[],
+        ),
+        "memory_get_reasoning_traces": ToolSchema(
+            type="object",
+            properties={
+                "task_id": {"type": "string", "description": "Task ID filter"},
+                "limit": {"type": "integer", "description": "Max traces"},
+            },
+            required=[],
+        ),
+        "memory_get_facts": ToolSchema(
+            type="object",
+            properties={
+                "subject": {"type": "string", "description": "Subject to query"},
+                "limit": {"type": "integer", "description": "Max facts"},
+            },
+            required=["subject"],
+        ),
+        "memory_write_insight": ToolSchema(
+            type="object",
+            properties={
+                "insight": {"type": "string", "description": "Insight text"},
+                "category": {"type": "string", "description": "Category"},
+                "confidence": {"type": "number", "description": "Confidence 0-1"},
+            },
+            required=["insight", "category"],
+        ),
+        "memory_embed_text": ToolSchema(
+            type="object",
+            properties={"text": {"type": "string", "description": "Text to embed"}},
+            required=["text"],
+        ),
+        # Memory Client API (GMP-31 Batch 2)
+        "memory_hybrid_search": ToolSchema(
+            type="object",
+            properties={
+                "query": {"type": "string", "description": "Search query"},
+                "top_k": {"type": "integer", "description": "Max results"},
+                "filters": {"type": "object", "description": "Optional filters"},
+            },
+            required=["query"],
+        ),
+        "memory_fetch_lineage": ToolSchema(
+            type="object",
+            properties={
+                "packet_id": {"type": "string", "description": "Packet UUID"},
+                "direction": {"type": "string", "description": "ancestors or descendants"},
+                "max_depth": {"type": "integer", "description": "Max depth"},
+            },
+            required=["packet_id"],
+        ),
+        "memory_fetch_thread": ToolSchema(
+            type="object",
+            properties={
+                "thread_id": {"type": "string", "description": "Thread ID"},
+                "limit": {"type": "integer", "description": "Max packets"},
+            },
+            required=["thread_id"],
+        ),
+        "memory_fetch_facts_api": ToolSchema(
+            type="object",
+            properties={
+                "subject": {"type": "string", "description": "Subject filter"},
+                "predicate": {"type": "string", "description": "Predicate filter"},
+                "limit": {"type": "integer", "description": "Max facts"},
+            },
+            required=[],
+        ),
+        "memory_fetch_insights": ToolSchema(
+            type="object",
+            properties={
+                "packet_id": {"type": "string", "description": "Source packet"},
+                "insight_type": {"type": "string", "description": "Type filter"},
+                "limit": {"type": "integer", "description": "Max insights"},
+            },
+            required=[],
+        ),
+        "memory_gc_stats": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        "gmp_run": ToolSchema(
+            type="object",
+            properties={
+                "gmp_id": {"type": "string", "description": "GMP identifier"},
+                "params": {"type": "object", "description": "GMP execution parameters"},
+            },
+            required=["gmp_id"],
+        ),
+        "git_commit": ToolSchema(
+            type="object",
+            properties={
+                "message": {"type": "string", "description": "Commit message"},
+                "files": {"type": "array", "items": {"type": "string"}, "description": "Files to commit"},
+            },
+            required=["message"],
+        ),
+        "mac_agent_exec_task": ToolSchema(
+            type="object",
+            properties={
+                "command": {"type": "string", "description": "Shell command to execute"},
+                "timeout": {"type": "integer", "description": "Timeout in seconds (5-300)"},
+            },
+            required=["command"],
+        ),
+        "mcp_list_servers": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        "mcp_list_tools": ToolSchema(
+            type="object",
+            properties={
+                "server_id": {"type": "string", "description": "MCP server: 'github', 'notion', 'filesystem', etc."},
+            },
+            required=["server_id"],
+        ),
+        "mcp_call_tool": ToolSchema(
+            type="object",
+            properties={
+                "server_id": {"type": "string", "description": "MCP server: 'github', 'notion', 'filesystem', etc."},
+                "tool_name": {"type": "string", "description": "Tool name (e.g., 'create_issue', 'search')"},
+                "arguments": {"type": "object", "description": "Tool arguments"},
+            },
+            required=["server_id", "tool_name"],
+        ),
+        "mcp_discover_and_register": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        "world_model_query": ToolSchema(
+            type="object",
+            properties={
+                "query_type": {"type": "string", "description": "Query type"},
+                "params": {"type": "object", "description": "Query parameters"},
+            },
+            required=["query_type"],
+        ),
+        "kernel_read": ToolSchema(
+            type="object",
+            properties={
+                "kernel_name": {"type": "string", "description": "Kernel identifier"},
+                "property": {"type": "string", "description": "Property to read"},
+            },
+            required=["kernel_name", "property"],
+        ),
+        "long_plan.execute": ToolSchema(
+            type="object",
+            properties={
+                "plan_id": {"type": "string", "description": "Plan identifier"},
+                "params": {"type": "object", "description": "Execution parameters"},
+            },
+            required=["plan_id"],
+        ),
+        "long_plan.simulate": ToolSchema(
+            type="object",
+            properties={
+                "plan_id": {"type": "string", "description": "Plan identifier"},
+                "params": {"type": "object", "description": "Simulation parameters"},
+            },
+            required=["plan_id"],
+        ),
+        "neo4j_query": ToolSchema(
+            type="object",
+            properties={
+                "cypher": {"type": "string", "description": "Cypher query to run against Neo4j"},
+                "params": {"type": "object", "description": "Query parameters"},
+            },
+            required=["cypher"],
+        ),
+        "redis_get": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Redis key to retrieve"},
+            },
+            required=["key"],
+        ),
+        "redis_set": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Redis key"},
+                "value": {"type": "string", "description": "Value to store"},
+                "ttl_seconds": {"type": "integer", "description": "Optional TTL in seconds"},
+            },
+            required=["key", "value"],
+        ),
+        "redis_keys": ToolSchema(
+            type="object",
+            properties={
+                "pattern": {"type": "string", "description": "Key pattern (e.g., 'agent:*')"},
+            },
+            required=[],
+        ),
+        # Redis State Management (GMP-31 Batch 3)
+        "redis_delete": ToolSchema(
+            type="object",
+            properties={"key": {"type": "string", "description": "Key to delete"}},
+            required=["key"],
+        ),
+        "redis_enqueue_task": ToolSchema(
+            type="object",
+            properties={
+                "queue_name": {"type": "string", "description": "Queue name"},
+                "task_data": {"type": "object", "description": "Task payload"},
+                "priority": {"type": "integer", "description": "Priority"},
+            },
+            required=["queue_name", "task_data"],
+        ),
+        "redis_dequeue_task": ToolSchema(
+            type="object",
+            properties={"queue_name": {"type": "string", "description": "Queue name"}},
+            required=["queue_name"],
+        ),
+        "redis_queue_size": ToolSchema(
+            type="object",
+            properties={"queue_name": {"type": "string", "description": "Queue name"}},
+            required=["queue_name"],
+        ),
+        "redis_get_task_context": ToolSchema(
+            type="object",
+            properties={"task_id": {"type": "string", "description": "Task ID"}},
+            required=["task_id"],
+        ),
+        "redis_set_task_context": ToolSchema(
+            type="object",
+            properties={
+                "task_id": {"type": "string", "description": "Task ID"},
+                "context": {"type": "object", "description": "Context data"},
+                "ttl_seconds": {"type": "integer", "description": "TTL"},
+            },
+            required=["task_id", "context"],
+        ),
+        # Tool Graph Introspection (GMP-31 Batch 4)
+        "tools_list_all": ToolSchema(type="object", properties={}, required=[]),
+        "tools_list_enabled": ToolSchema(type="object", properties={}, required=[]),
+        "tools_get_metadata": ToolSchema(
+            type="object",
+            properties={"tool_id": {"type": "string", "description": "Tool ID"}},
+            required=["tool_id"],
+        ),
+        "tools_get_schema": ToolSchema(
+            type="object",
+            properties={"tool_id": {"type": "string", "description": "Tool ID"}},
+            required=["tool_id"],
+        ),
+        "tools_get_by_type": ToolSchema(
+            type="object",
+            properties={"tool_type": {"type": "string", "description": "Tool type"}},
+            required=["tool_type"],
+        ),
+        "tools_get_for_role": ToolSchema(
+            type="object",
+            properties={"role": {"type": "string", "description": "Role"}},
+            required=["role"],
+        ),
+        # World Model Operations (GMP-31 Batch 5)
+        "world_model_get_entity": ToolSchema(
+            type="object",
+            properties={"entity_id": {"type": "string", "description": "Entity ID"}},
+            required=["entity_id"],
+        ),
+        "world_model_list_entities": ToolSchema(
+            type="object",
+            properties={
+                "entity_type": {"type": "string", "description": "Type filter"},
+                "min_confidence": {"type": "number", "description": "Min confidence"},
+                "limit": {"type": "integer", "description": "Max entities"},
+            },
+            required=[],
+        ),
+        "world_model_snapshot": ToolSchema(
+            type="object",
+            properties={"description": {"type": "string", "description": "Description"}},
+            required=[],
+        ),
+        "world_model_list_snapshots": ToolSchema(
+            type="object",
+            properties={"limit": {"type": "integer", "description": "Max snapshots"}},
+            required=[],
+        ),
+        "world_model_send_insights": ToolSchema(
+            type="object",
+            properties={"insights": {"type": "array", "description": "Insights list"}},
+            required=["insights"],
+        ),
+        "world_model_get_state_version": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        "symbolic_compute": ToolSchema(
+            type="object",
+            properties={
+                "expression": {"type": "string", "description": "Symbolic mathematical expression"},
+                "variables": {"type": "object", "description": "Variable substitutions"},
+            },
+            required=["expression"],
+        ),
+        "symbolic_codegen": ToolSchema(
+            type="object",
+            properties={
+                "expression": {"type": "string", "description": "Symbolic expression to compile"},
+                "language": {"type": "string", "description": "Target language: 'python', 'c', 'fortran'"},
+            },
+            required=["expression"],
+        ),
+        "symbolic_optimize": ToolSchema(
+            type="object",
+            properties={
+                "expression": {"type": "string", "description": "Symbolic expression to optimize"},
+            },
+            required=["expression"],
+        ),
+        "simulation": ToolSchema(
+            type="object",
+            properties={
+                "graph_data": {"type": "object", "description": "IR graph data"},
+                "scenario_params": {"type": "object", "description": "Scenario configuration"},
+                "mode": {"type": "string", "description": "Simulation mode"},
+            },
+            required=["graph_data"],
+        ),
+        # MCP Server Control (GMP-32 Batch 6)
+        "mcp_start_server": ToolSchema(
+            type="object",
+            properties={
+                "server_id": {"type": "string", "description": "MCP server ID to start"},
+            },
+            required=["server_id"],
+        ),
+        "mcp_stop_server": ToolSchema(
+            type="object",
+            properties={
+                "server_id": {"type": "string", "description": "MCP server ID to stop"},
+            },
+            required=["server_id"],
+        ),
+        "mcp_stop_all_servers": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        # Rate Limiting (GMP-32 Batch 7)
+        "redis_get_rate_limit": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Rate limit key"},
+            },
+            required=["key"],
+        ),
+        "redis_set_rate_limit": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Rate limit key"},
+                "count": {"type": "integer", "description": "Count value to set"},
+                "ttl_seconds": {"type": "integer", "description": "TTL in seconds"},
+            },
+            required=["key", "count"],
+        ),
+        "redis_increment_rate_limit": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Rate limit key"},
+                "amount": {"type": "integer", "description": "Amount to increment"},
+            },
+            required=["key"],
+        ),
+        "redis_decrement_rate_limit": ToolSchema(
+            type="object",
+            properties={
+                "key": {"type": "string", "description": "Rate limit key"},
+                "amount": {"type": "integer", "description": "Amount to decrement"},
+            },
+            required=["key"],
+        ),
+        # Memory Advanced (GMP-32 Batch 8)
+        "memory_get_checkpoint": ToolSchema(
+            type="object",
+            properties={
+                "agent_id": {"type": "string", "description": "Agent ID"},
+            },
+            required=[],
+        ),
+        "memory_trigger_world_model_update": ToolSchema(
+            type="object",
+            properties={
+                "insights": {"type": "array", "description": "List of insight dicts"},
+            },
+            required=["insights"],
+        ),
+        "memory_health_check": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        # Tool Graph Analysis (GMP-32 Batch 9)
+        "tools_get_api_dependents": ToolSchema(
+            type="object",
+            properties={
+                "api_name": {"type": "string", "description": "API name (e.g., GitHub, OpenAI)"},
+            },
+            required=["api_name"],
+        ),
+        "tools_get_dependencies": ToolSchema(
+            type="object",
+            properties={
+                "tool_name": {"type": "string", "description": "Tool name"},
+            },
+            required=["tool_name"],
+        ),
+        "tools_get_blast_radius": ToolSchema(
+            type="object",
+            properties={
+                "api_name": {"type": "string", "description": "API name"},
+            },
+            required=["api_name"],
+        ),
+        "tools_detect_circular_deps": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        "tools_get_catalog": ToolSchema(
+            type="object",
+            properties={},
+            required=[],
+        ),
+        # World Model Advanced (GMP-32 Batch 10)
+        "world_model_restore": ToolSchema(
+            type="object",
+            properties={
+                "snapshot_id": {"type": "string", "description": "Snapshot ID to restore"},
+            },
+            required=["snapshot_id"],
+        ),
+        "world_model_list_updates": ToolSchema(
+            type="object",
+            properties={
+                "limit": {"type": "integer", "description": "Max updates to return"},
+            },
+            required=[],
+        ),
+    }
+    
+    return schemas.get(tool_name)
+
+
 async def register_l_tools() -> int:
     """
     Register all L-CTO tools in the tool registry with governance metadata.
@@ -639,7 +1873,7 @@ async def register_l_tools() -> int:
     Each tool gets:
       - Execution function from runtime.l_tools
       - Governance metadata (scope, risk_level, requires_approval)
-      - Input schema for validation
+      - Input schema for validation and LLM function calling
       - Registration in base registry for dispatch
 
     Returns:
@@ -649,21 +1883,8 @@ async def register_l_tools() -> int:
         Exception: If registration fails
     """
     from core.tools.tool_graph import ToolGraph, ToolDefinition
-    from runtime.l_tools import (
-        memory_search,
-        memory_write,
-        gmp_run,
-        git_commit,
-        mac_agent_exec_task,
-        mcp_call_tool,
-        world_model_query,
-        kernel_read,
-    )
-    from runtime.long_plan_tool import (
-        long_plan_execute_tool,
-        long_plan_simulate_tool,
-    )
-    from services.research.tools.tool_registry import (
+    from runtime.l_tools import TOOL_EXECUTORS
+    from core.tools.base_registry import (
         get_tool_registry,
         ToolMetadata,
         ToolType,
@@ -671,38 +1892,6 @@ async def register_l_tools() -> int:
 
     # Get base registry for executor registration
     base_registry = get_tool_registry()
-
-    # =========================================================================
-    # SymPy Symbolic Computation Tools (GMP-SYMPY-TASK4)
-    # =========================================================================
-    sympy_tool = None
-    try:
-        from services.symbolic_computation.tools.symbolic_tool import SymPyTool
-
-        sympy_tool = SymPyTool()
-        logger.info("SymPyTool initialized for registration")
-    except ImportError as e:
-        logger.debug(f"SymPyTool not available: {e}")
-
-    # Map tool names to their executor functions
-    TOOL_EXECUTORS = {
-        "memory_search": memory_search,
-        "memory_write": memory_write,
-        "gmp_run": gmp_run,
-        "git_commit": git_commit,
-        "mac_agent_exec_task": mac_agent_exec_task,
-        "mcp_call_tool": mcp_call_tool,
-        "world_model_query": world_model_query,
-        "kernel_read": kernel_read,
-        "long_plan.execute": long_plan_execute_tool,
-        "long_plan.simulate": long_plan_simulate_tool,
-    }
-
-    # Add SymPy tools if available
-    if sympy_tool:
-        TOOL_EXECUTORS["symbolic_evaluate"] = sympy_tool.evaluate
-        TOOL_EXECUTORS["symbolic_codegen"] = sympy_tool.generate_code
-        TOOL_EXECUTORS["symbolic_optimize"] = sympy_tool.optimize
 
     logger.info("Registering L-CTO tools...")
 
@@ -725,6 +1914,173 @@ async def register_l_tools() -> int:
             category="memory",
             scope="internal",
             risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Memory Substrate Direct Access (GMP-31 Batch 1)
+        ToolDefinition(
+            name="memory_get_packet",
+            description="Get a specific packet by ID from memory substrate",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_query_packets",
+            description="Query packets with complex filters",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_search_by_thread",
+            description="Search packets by conversation thread ID",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_search_by_type",
+            description="Search packets by type (REASONING, TOOL_CALL, etc.)",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_get_events",
+            description="Get memory audit events (tool calls, decisions)",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_get_reasoning_traces",
+            description="Get L's reasoning traces from memory",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_get_facts",
+            description="Get knowledge facts by subject from memory graph",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_write_insight",
+            description="Write an insight to memory substrate",
+            category="memory",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_embed_text",
+            description="Generate embedding vector for text",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Memory Client API (GMP-31 Batch 2)
+        ToolDefinition(
+            name="memory_hybrid_search",
+            description="Hybrid search combining semantic + keyword matching",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_fetch_lineage",
+            description="Fetch packet lineage (ancestors or descendants)",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_fetch_thread",
+            description="Fetch all packets in a conversation thread",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_fetch_facts_api",
+            description="Fetch knowledge facts from memory API",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_fetch_insights",
+            description="Fetch insights from memory",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_gc_stats",
+            description="Get garbage collection statistics from memory",
+            category="memory",
+            scope="internal",
+            risk_level="low",
             requires_igor_approval=False,
             requires_confirmation=False,
             is_destructive=False,
@@ -764,11 +2120,44 @@ async def register_l_tools() -> int:
             agent_id="L",
         ),
         ToolDefinition(
+            name="mcp_list_servers",
+            description="List all configured MCP servers and their status",
+            category="integration",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mcp_list_tools",
+            description="List available tools from an MCP server (dynamic discovery)",
+            category="integration",
+            scope="external",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
             name="mcp_call_tool",
-            description="Call a tool via MCP (Model Context Protocol)",
-            category="external",
+            description="Call any tool on any MCP server (GitHub, Notion, Filesystem, etc.)",
+            category="integration",
             scope="external",
             risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mcp_discover_and_register",
+            description="Auto-discover all MCP tools and register them in Neo4j graph",
+            category="integration",
+            scope="internal",
+            risk_level="low",
             requires_igor_approval=False,
             requires_confirmation=False,
             is_destructive=False,
@@ -818,45 +2207,492 @@ async def register_l_tools() -> int:
             is_destructive=False,
             agent_id="L",
         ),
+        # Neo4j Graph Database tools
+        ToolDefinition(
+            name="neo4j_query",
+            description="Run Cypher queries against Neo4j graph (tool deps, events, knowledge)",
+            category="knowledge",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Redis Cache tools
+        ToolDefinition(
+            name="redis_get",
+            description="Get value from Redis cache",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_set",
+            description="Set value in Redis cache with optional TTL",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=True,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_keys",
+            description="List Redis keys matching a pattern",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Redis State Management (GMP-31 Batch 3)
+        ToolDefinition(
+            name="redis_delete",
+            description="Delete a key from Redis",
+            category="cache",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=True,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_enqueue_task",
+            description="Enqueue a task to Redis queue",
+            category="cache",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_dequeue_task",
+            description="Dequeue task from Redis queue",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_queue_size",
+            description="Get size of a Redis task queue",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_get_task_context",
+            description="Get cached task context from Redis",
+            category="cache",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_set_task_context",
+            description="Set task context in Redis cache",
+            category="cache",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Tool Graph Introspection (GMP-31 Batch 4)
+        ToolDefinition(
+            name="tools_list_all",
+            description="List all registered tools",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_list_enabled",
+            description="List only enabled tools",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_metadata",
+            description="Get detailed metadata for a tool",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_schema",
+            description="Get OpenAI function schema for a tool",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_by_type",
+            description="Get all tools of a specific type",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_for_role",
+            description="Get all tools available for a role",
+            category="introspection",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # World Model Operations (GMP-31 Batch 5)
+        ToolDefinition(
+            name="world_model_get_entity",
+            description="Get entity from world model by ID",
+            category="knowledge",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_list_entities",
+            description="List entities from world model",
+            category="knowledge",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_snapshot",
+            description="Create snapshot of world model state",
+            category="knowledge",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_list_snapshots",
+            description="List recent world model snapshots",
+            category="knowledge",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_send_insights",
+            description="Send insights for world model update",
+            category="knowledge",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_get_state_version",
+            description="Get current world model state version",
+            category="knowledge",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Symbolic computation tools (Quantum AI Factory) - always available via lazy loading
+        ToolDefinition(
+            name="symbolic_compute",
+            description="Evaluate symbolic mathematical expressions numerically",
+            category="computation",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="symbolic_codegen",
+            description="Generate compilable C/Fortran/Python code from symbolic expressions",
+            category="computation",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="symbolic_optimize",
+            description="Optimize and simplify symbolic expressions using CSE",
+            category="computation",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Simulation tools (IR graph evaluation)
+        ToolDefinition(
+            name="simulation",
+            description="Execute IR graph simulation for agent reasoning traces",
+            category="simulation",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # MCP Server Control (GMP-32 Batch 6)
+        ToolDefinition(
+            name="mcp_start_server",
+            description="Start an MCP server process",
+            category="mcp",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mcp_stop_server",
+            description="Stop an MCP server process",
+            category="mcp",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="mcp_stop_all_servers",
+            description="Stop all running MCP server processes",
+            category="mcp",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Rate Limiting (GMP-32 Batch 7)
+        ToolDefinition(
+            name="redis_get_rate_limit",
+            description="Get current rate limit count for a key",
+            category="redis",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_set_rate_limit",
+            description="Set rate limit count with TTL",
+            category="redis",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_increment_rate_limit",
+            description="Increment rate limit counter",
+            category="redis",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="redis_decrement_rate_limit",
+            description="Decrement rate limit counter",
+            category="redis",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Memory Advanced (GMP-32 Batch 8)
+        ToolDefinition(
+            name="memory_get_checkpoint",
+            description="Get the latest checkpoint state for an agent",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_trigger_world_model_update",
+            description="Trigger world model update from insights",
+            category="memory",
+            scope="internal",
+            risk_level="medium",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="memory_health_check",
+            description="Check health of all memory substrate components",
+            category="memory",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # Tool Graph Analysis (GMP-32 Batch 9)
+        ToolDefinition(
+            name="tools_get_api_dependents",
+            description="Get all tools that depend on an API",
+            category="tools",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_dependencies",
+            description="Get all dependencies of a tool",
+            category="tools",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_blast_radius",
+            description="Calculate full blast radius if an API goes down",
+            category="tools",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_detect_circular_deps",
+            description="Detect circular dependencies in the tool graph",
+            category="tools",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="tools_get_catalog",
+            description="Get L's complete tool catalog with metadata",
+            category="tools",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
+        # World Model Advanced (GMP-32 Batch 10)
+        ToolDefinition(
+            name="world_model_restore",
+            description="Restore world model from a snapshot",
+            category="world_model",
+            scope="internal",
+            risk_level="high",
+            requires_igor_approval=True,
+            requires_confirmation=True,
+            is_destructive=True,
+            agent_id="L",
+        ),
+        ToolDefinition(
+            name="world_model_list_updates",
+            description="List recent world model updates",
+            category="world_model",
+            scope="internal",
+            risk_level="low",
+            requires_igor_approval=False,
+            requires_confirmation=False,
+            is_destructive=False,
+            agent_id="L",
+        ),
     ]
-
-    # Add SymPy tool definitions if available (GMP-SYMPY-TASK4)
-    if sympy_tool:
-        tools_to_register.extend([
-            ToolDefinition(
-                name="symbolic_evaluate",
-                description="Evaluate symbolic mathematical expressions numerically",
-                category="computation",
-                scope="internal",
-                risk_level="low",
-                requires_igor_approval=False,
-                requires_confirmation=False,
-                is_destructive=False,
-                agent_id="L",
-            ),
-            ToolDefinition(
-                name="symbolic_codegen",
-                description="Generate compilable C/Fortran/Python code from symbolic expressions",
-                category="computation",
-                scope="internal",
-                risk_level="low",
-                requires_igor_approval=False,
-                requires_confirmation=False,
-                is_destructive=False,
-                agent_id="L",
-            ),
-            ToolDefinition(
-                name="symbolic_optimize",
-                description="Optimize and simplify symbolic expressions using CSE",
-                category="computation",
-                scope="internal",
-                risk_level="low",
-                requires_igor_approval=False,
-                requires_confirmation=False,
-                is_destructive=False,
-                agent_id="L",
-            ),
-        ])
 
     # Register each tool in BOTH Neo4j AND base registry
     registered_count = 0
@@ -872,6 +2708,9 @@ async def register_l_tools() -> int:
             # 2. Register in base registry (for dispatch execution)
             executor_func = TOOL_EXECUTORS.get(tool_def.name)
             if executor_func:
+                # Get input schema for LLM function calling
+                tool_schema = _get_l_tool_schema_for_registry(tool_def.name)
+                
                 metadata = ToolMetadata(
                     id=tool_def.name,
                     name=tool_def.name,
@@ -884,11 +2723,11 @@ async def register_l_tools() -> int:
                     else 30,
                     enabled=True,
                     requires_api_key=False,
-                    input_schema=None,  # Schemas are in core/schemas/l_tools.py
+                    input_schema=tool_schema,  # LLM function calling schema
                 )
                 base_registry.register(metadata, executor_func)
                 logger.info(
-                    f"✓ Registered tool: {tool_def.name} (risk={tool_def.risk_level})"
+                    f"✓ Registered tool: {tool_def.name} (risk={tool_def.risk_level}, schema={'yes' if tool_schema else 'no'})"
                 )
             else:
                 logger.warning(f"No executor found for tool: {tool_def.name}")
