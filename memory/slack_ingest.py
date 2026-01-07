@@ -4,9 +4,18 @@ Slack Event Ingestion: Core handler for Slack messages.
 This module implements the orchestration layer:
   1. Dedupe check (prevent double-processing)
   2. Memory context retrieval (fetch thread history + semantic hits)
-  3. AIOS /chat call (get AI response)
-  4. Slack API response delivery (post message in thread)
-  5. Packet persistence (store inbound + outbound in substrate)
+  3. L-CTO agent routing via AgentExecutorService (when legacy flag is False)
+  4. AIOS /chat call fallback (when legacy flag is True)
+  5. Slack API response delivery (post message in thread)
+  6. Packet persistence (store inbound + outbound in substrate)
+
+Features ported from legacy webhook_slack.py (v2.0):
+  - L-CTO agent routing via AgentExecutorService
+  - DM (direct message) detection and handling
+  - File attachment processing (OCR, PDF, transcription)
+  - !mac command routing to Mac agent
+  - Email command detection and routing
+  - Task routing via slack_task_router
 
 Thread model:
   - All Slack messages belong to a thread (identified by deterministic UUID)
@@ -20,21 +29,336 @@ Deduplication:
   - Prevents double-replies if Slack retries delivery
 
 Error handling:
-  - AIOS call fails: Log error, store error packet, don't crash
+  - Agent/AIOS call fails: Log error, store error packet, don't crash
   - Slack API call fails: Log error, store error packet, return 200 to Slack
   - Memory persistence fails: Log error, still return 200 to Slack
 """
 
 import httpx
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 import structlog
 
 from api.slack_adapter import SlackRequestNormalizer
 from api.slack_client import SlackAPIClient, SlackClientError
 from memory.substrate_models import PacketEnvelopeIn, PacketMetadata, PacketProvenance
 from memory.substrate_service import MemorySubstrateService
+from config.settings import settings
 
 logger = structlog.get_logger(__name__)
+
+# Feature flag for legacy Slack routing
+# When False, route Slack messages through AgentTask + AgentExecutorService
+# When True, use legacy AIOS /chat endpoint
+L9_ENABLE_LEGACY_SLACK_ROUTER = getattr(settings, "l9_enable_legacy_slack_router", True)
+
+
+# =============================================================================
+# L-CTO Agent Handler (ported from webhook_slack.py)
+# =============================================================================
+
+
+async def handle_slack_with_l_agent(
+    app,
+    text: str,
+    thread_uuid: str,
+    team_id: str,
+    channel_id: str,
+    user_id: str,
+) -> Tuple[str, str]:
+    """
+    Route a Slack message through the L-CTO agent via AgentExecutorService.
+
+    This helper constructs an AgentTask and executes it via the kernel-aware
+    agent stack. It does NOT call OpenAI directly.
+
+    Args:
+        app: FastAPI app instance (for accessing app.state.agent_executor)
+        text: Message text from Slack
+        thread_uuid: Slack thread UUID for conversation grouping
+        team_id: Slack workspace/team ID
+        channel_id: Slack channel ID
+        user_id: Slack user ID
+
+    Returns:
+        Tuple of (reply_text, status) where:
+        - reply_text: The agent's response formatted for Slack
+        - status: One of "completed", "duplicate", "failed", "error"
+    """
+    try:
+        # Import here to avoid circular imports
+        from core.agents.schemas import (
+            AgentTask,
+            TaskKind,
+            ExecutionResult,
+            DuplicateTaskResponse,
+        )
+
+        # Check if agent executor is available
+        agent_executor = getattr(app.state, "agent_executor", None)
+        if agent_executor is None:
+            logger.error("handle_slack_with_l_agent: agent_executor not available")
+            return ("L9 agent executor not available. Please try again later.", "error")
+
+        # Construct AgentTask for L-CTO
+        task = AgentTask(
+            agent_id="l-cto",
+            kind=TaskKind.CONVERSATION,
+            source_id="slack",
+            thread_identifier=thread_uuid,
+            payload={
+                "message": text,
+                "channel": "slack",
+                "slack": {
+                    "team_id": team_id,
+                    "channel_id": channel_id,
+                    "user_id": user_id,
+                },
+            },
+        )
+
+        logger.info(
+            "handle_slack_with_l_agent: task_id=%s, thread=%s, user=%s",
+            str(task.id),
+            thread_uuid,
+            user_id,
+        )
+
+        # Execute task via AgentExecutorService
+        result = await agent_executor.start_agent_task(task)
+
+        # Handle duplicate detection
+        if isinstance(result, DuplicateTaskResponse):
+            logger.info(
+                "handle_slack_with_l_agent: duplicate task: %s", str(result.task_id)
+            )
+            return ("This message has already been processed.", "duplicate")
+
+        # Handle ExecutionResult
+        if isinstance(result, ExecutionResult):
+            reply = result.result or result.error or "No response from agent."
+            return (reply, result.status)
+
+        # Fallback (should not happen)
+        logger.warning(
+            "handle_slack_with_l_agent: unexpected result type: %s", type(result)
+        )
+        return ("Unexpected result format.", "error")
+
+    except Exception as e:
+        logger.exception("handle_slack_with_l_agent: error: %s", str(e))
+        return (f"Error processing message: {str(e)}", "error")
+
+
+# =============================================================================
+# File Attachment Processing (ported from webhook_slack.py)
+# =============================================================================
+
+
+def _process_file_attachments(files: list) -> list:
+    """
+    Process Slack file attachments (download, OCR, PDF parsing).
+    
+    Returns list of file artifact dicts with name, type, path, content.
+    """
+    if not files:
+        return []
+    
+    try:
+        from services.slack_files import process_file_attachments
+        return process_file_attachments(files)
+    except ImportError:
+        logger.debug("slack_files service not available")
+        return []
+    except Exception as e:
+        logger.error("_process_file_attachments error", error=str(e))
+        return []
+
+
+# =============================================================================
+# !mac Command Handler (ported from webhook_slack.py)
+# =============================================================================
+
+
+async def _handle_mac_command(
+    text: str,
+    channel_id: str,
+    user_id: str,
+    file_artifacts: list,
+    slack_client: SlackAPIClient,
+    thread_ts: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Handle !mac commands - route to Mac agent task queue.
+    
+    Returns response dict if handled, None if not a !mac command.
+    """
+    if not text.strip().lower().startswith("!mac"):
+        return None
+    
+    command = text.replace("!mac", "", 1).replace("!MAC", "", 1).strip()
+    if not command:
+        await slack_client.post_message(
+            channel=channel_id,
+            text="❌ Please provide a command after `!mac` (e.g., `!mac echo hello`)",
+            thread_ts=thread_ts,
+        )
+        return {"ok": True, "handled": "mac_empty"}
+    
+    try:
+        from services.mac_tasks import enqueue_mac_task
+        
+        # Enhance command context with file artifacts if present
+        enhanced_command = command
+        if file_artifacts:
+            file_context = "\n\n[File attachments available:"
+            for artifact in file_artifacts:
+                file_context += f"\n- {artifact['name']} ({artifact['type']}) at {artifact['path']}"
+            file_context += "]"
+            enhanced_command = command + file_context
+        
+        task_id = enqueue_mac_task(
+            source="slack",
+            channel=channel_id,
+            user=user_id,
+            command=enhanced_command,
+            attachments=file_artifacts if file_artifacts else None,
+        )
+        
+        file_msg = (
+            f" ({len(file_artifacts)} file{'s' if len(file_artifacts) != 1 else ''})"
+            if file_artifacts
+            else ""
+        )
+        await slack_client.post_message(
+            channel=channel_id,
+            text=f"📨 Mac task queued (id={task_id}){file_msg}. I'll post the result here when it's done.",
+            thread_ts=thread_ts,
+        )
+        
+        logger.info(
+            "slack_mac_command_queued",
+            task_id=task_id,
+            user_id=user_id,
+            channel_id=channel_id,
+        )
+        return {"ok": True, "handled": "mac", "task_id": task_id}
+        
+    except ImportError:
+        logger.debug("mac_tasks service not available")
+        await slack_client.post_message(
+            channel=channel_id,
+            text="❌ Mac agent is not available on this server.",
+            thread_ts=thread_ts,
+        )
+        return {"ok": True, "handled": "mac_unavailable"}
+    except Exception as e:
+        logger.error("_handle_mac_command error", error=str(e))
+        await slack_client.post_message(
+            channel=channel_id,
+            text=f"❌ Mac command error: {str(e)}",
+            thread_ts=thread_ts,
+        )
+        return {"ok": True, "handled": "mac_error"}
+
+
+# =============================================================================
+# Email Command Detection (ported from webhook_slack.py)
+# =============================================================================
+
+
+def _is_email_command(text: str) -> bool:
+    """
+    Detect if text is an email-related command.
+    """
+    email_keywords = [
+        "email:",
+        "mail:",
+        "send email",
+        "reply to",
+        "draft email",
+        "search email",
+        "forward email",
+    ]
+    text_lower = text.strip().lower()
+    
+    # Check if text starts with any email keyword
+    if any(text_lower.startswith(kw.lower()) for kw in email_keywords):
+        return True
+    
+    # Check for email action phrases
+    if any(kw in text_lower for kw in ["send email to", "reply to", "forward to"]):
+        return True
+    
+    return False
+
+
+# =============================================================================
+# Task Routing (ported from webhook_slack.py)
+# =============================================================================
+
+
+async def _route_to_task_planner(
+    text: str,
+    channel_id: str,
+    user_id: str,
+    file_artifacts: list,
+    slack_client: SlackAPIClient,
+    is_email: bool = False,
+    thread_ts: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Route message to task planner for structured execution.
+    
+    Returns response dict if routed, None if routing not applicable/failed.
+    """
+    try:
+        from orchestration.slack_task_router import route_slack_message
+        from services.mac_tasks import enqueue_task
+        
+        # If email command, prepend "email:" to ensure routing
+        routing_text = text
+        if is_email and not text.lower().startswith("email:"):
+            routing_text = f"email: {text}"
+        
+        # Route message + artifacts to task structure
+        task_dict = route_slack_message(routing_text, file_artifacts, user_id)
+        
+        # Store channel in metadata for result posting
+        if "metadata" not in task_dict:
+            task_dict["metadata"] = {}
+        task_dict["metadata"]["channel"] = channel_id
+        
+        # Enqueue task
+        task_id = enqueue_task(task_dict)
+        
+        # Respond in Slack
+        task_type = task_dict.get("type", "task")
+        if task_type == "email_task":
+            response_msg = f"📧 Email task recognized and queued (ID: {task_id})."
+        else:
+            response_msg = f"Task accepted and queued (ID: {task_id}). I'll let you know when it's done."
+        
+        await slack_client.post_message(
+            channel=channel_id,
+            text=response_msg,
+            thread_ts=thread_ts,
+        )
+        
+        logger.info(
+            "slack_task_routed",
+            task_id=task_id,
+            task_type=task_type,
+            user_id=user_id,
+            channel_id=channel_id,
+        )
+        return {"ok": True, "handled": "task_routed", "task_id": task_id}
+        
+    except ImportError as e:
+        logger.debug("task routing services not available", error=str(e))
+        return None
+    except Exception as e:
+        logger.error("_route_to_task_planner error", error=str(e))
+        return None
 
 
 async def handle_slack_events(
@@ -43,6 +367,7 @@ async def handle_slack_events(
     substrate_service: MemorySubstrateService,
     slack_client: SlackAPIClient,
     aios_base_url: str,
+    app: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Handle Slack event callback.
@@ -53,6 +378,7 @@ async def handle_slack_events(
         substrate_service: Memory substrate for packet persistence
         slack_client: Slack API client for posting replies
         aios_base_url: Base URL for AIOS service (e.g., http://localhost:8000)
+        app: FastAPI app instance (for L-CTO agent routing via app.state.agent_executor)
 
     Returns:
         HTTP response dict (always 200 if we make it this far)
@@ -80,6 +406,22 @@ async def handle_slack_events(
         thread_uuid=thread_uuid,
         user_id=user_id,
     )
+
+    # =========================================================================
+    # CRITICAL: Ignore bot messages to prevent infinite response loops
+    # =========================================================================
+    event = payload.get("event", {})
+    event_subtype = event.get("subtype")
+    bot_id = event.get("bot_id")
+    
+    if event_subtype == "bot_message" or bot_id:
+        logger.debug(
+            "slack_ignoring_bot_message",
+            event_id=event_id,
+            bot_id=bot_id,
+            subtype=event_subtype,
+        )
+        return {"ok": True, "ignored": "bot_message"}
 
     # Dedupe check: look for event_id in recent packets
     try:
@@ -307,6 +649,146 @@ async def handle_slack_events(
 
         return {"ok": True, "l_command": True}
 
+    # =========================================================================
+    # Feature Flag: L-CTO AgentTask Routing (from legacy webhook_slack.py)
+    # =========================================================================
+    # When L9_ENABLE_LEGACY_SLACK_ROUTER=False, route through L-CTO agent
+    # This provides: DM handling, file attachments, !mac commands, email routing
+    
+    # Extract additional event details for enhanced handling
+    files = payload.get("event", {}).get("files", [])
+    channel_type = payload.get("event", {}).get("channel_type", "")
+    is_dm = channel_type == "im" or (channel_id and channel_id.startswith("D"))
+    
+    # Process file attachments if present
+    file_artifacts = _process_file_attachments(files) if files else []
+    if file_artifacts:
+        logger.info(
+            "slack_file_attachments_processed",
+            count=len(file_artifacts),
+            channel_id=channel_id,
+            user_id=user_id,
+        )
+    
+    # Detect email commands
+    is_email_command = _is_email_command(text)
+    
+    # === !mac Command Handling ===
+    if text.strip().lower().startswith("!mac"):
+        mac_result = await _handle_mac_command(
+            text=text,
+            channel_id=channel_id,
+            user_id=user_id,
+            file_artifacts=file_artifacts,
+            slack_client=slack_client,
+            thread_ts=thread_ts,
+        )
+        if mac_result:
+            return mac_result
+    
+    # === L-CTO Agent Routing (when legacy flag is False) ===
+    should_use_l_agent = is_dm or "l9" in text.lower() or event_type == "app_mention"
+    
+    if not L9_ENABLE_LEGACY_SLACK_ROUTER and should_use_l_agent and text.strip():
+        try:
+            # Use app reference passed from router
+            if app is not None:
+                reply, status = await handle_slack_with_l_agent(
+                    app=app,
+                    text=text,
+                    thread_uuid=str(thread_uuid),
+                    team_id=team_id,
+                    channel_id=channel_id,
+                    user_id=user_id,
+                )
+                
+                # Post reply to Slack
+                if status in ("completed", "duplicate"):
+                    await slack_client.post_message(
+                        channel=channel_id,
+                        text=reply,
+                        thread_ts=thread_ts,
+                    )
+                else:
+                    await slack_client.post_message(
+                        channel=channel_id,
+                        text=f"⚠️ {reply}",
+                        thread_ts=thread_ts,
+                    )
+                
+                logger.info(
+                    "slack_l_agent_response",
+                    status=status,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                )
+                
+                # Store outbound packet for L-CTO response
+                try:
+                    outbound_packet_in = PacketEnvelopeIn(
+                        packet_type="slack.l_agent.out",
+                        payload={
+                            "event_id": event_id,
+                            "thread_uuid": thread_uuid,
+                            "thread_string": thread_string,
+                            "team_id": team_id,
+                            "channel_id": channel_id,
+                            "user_id": user_id,
+                            "reply_text": reply,
+                            "status": status,
+                            "is_dm": is_dm,
+                        },
+                        metadata=PacketMetadata(
+                            schema_version="1.0.1",
+                            agent="l-cto",
+                        ),
+                        provenance=PacketProvenance(
+                            source="l9",
+                        ),
+                    )
+                    await substrate_service.write_packet(outbound_packet_in)
+                except Exception as e:
+                    logger.error("slack_l_agent_packet_storage_error", error=str(e))
+                
+                return {"ok": True, "l_agent": True, "status": status}
+            else:
+                logger.warning("slack_l_agent_no_app_reference")
+        except Exception as e:
+            logger.error("slack_l_agent_routing_error", error=str(e))
+            # Fall through to legacy AIOS flow
+    
+    # === Task Routing (files or email commands) ===
+    if file_artifacts or is_email_command:
+        route_result = await _route_to_task_planner(
+            text=text,
+            channel_id=channel_id,
+            user_id=user_id,
+            file_artifacts=file_artifacts,
+            slack_client=slack_client,
+            is_email=is_email_command,
+            thread_ts=thread_ts,
+        )
+        if route_result:
+            return route_result
+    
+    # === Simple DM Response (when no special handling needed) ===
+    if is_dm and not file_artifacts and not is_email_command and not text.strip().startswith("!mac"):
+        # For simple DMs, provide a helpful response about available commands
+        await slack_client.post_message(
+            channel=channel_id,
+            text=(
+                f'👋 Hey! L9 here. You said: "{text[:100]}{"..." if len(text) > 100 else ""}"\n\n'
+                "Try:\n"
+                "• `!mac <command>` - Run a Mac automation\n"
+                "• `email: <request>` - Email operations\n"
+                "• Attach a file for processing\n"
+                "• Or just chat with me!"
+            ),
+            thread_ts=thread_ts,
+        )
+        logger.info("slack_simple_dm_response", user_id=user_id, channel_id=channel_id)
+        return {"ok": True, "simple_dm": True}
+    
     # =========================================================================
     # Regular AIOS Flow (non-command messages)
     # =========================================================================

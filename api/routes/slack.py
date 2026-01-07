@@ -161,6 +161,18 @@ async def slack_events(
             # Log but don't block - permission check is advisory in dev mode
             logger.debug("slack_permission_check_failed", error=str(e))
 
+    # =========================================================================
+    # CRITICAL: Ignore bot messages early to prevent infinite response loops
+    # =========================================================================
+    event = payload.get("event", {})
+    if event.get("subtype") == "bot_message" or event.get("bot_id"):
+        logger.debug(
+            "slack_ignoring_bot_message",
+            event_id=payload.get("event_id"),
+            bot_id=event.get("bot_id"),
+        )
+        return {"ok": True, "ignored": "bot_message"}
+
     # Log event to Neo4j (non-blocking)
     neo4j_client = getattr(request.app.state, "neo4j_client", None)
     if neo4j_client:
@@ -195,6 +207,7 @@ async def slack_events(
             substrate_service=substrate_service,
             slack_client=slack_client,
             aios_base_url=aios_base_url,
+            app=request.app,  # Pass app for L-CTO agent routing
         )
 
         elapsed_ms = (current_time() - start_time) * 1000

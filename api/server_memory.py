@@ -134,10 +134,12 @@ if settings.slack_app_enabled:
         )
     else:
         try:
-            from api.webhook_slack import router as slack_router
+            # Use new Slack router (v2.0+) from api/routes/slack.py
+            # Legacy webhook_slack.py archived to _archived/legacy_slack/
+            from api.routes.slack import router as slack_router
 
             app.include_router(slack_router)
-            logger.info("Slack router mounted successfully")
+            logger.info("Slack router mounted successfully (v2.0+)")
         except Exception as e:
             logger.error(f"WARNING: Failed to load Slack router: {e}")
 
