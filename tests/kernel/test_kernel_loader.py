@@ -113,3 +113,45 @@ def test_load_invalid_yaml_kernel():
             or "parse" in str(e).lower()
             or "invalid" in str(e).lower()
         )
+
+
+def test_packet_protocol_validation_matches_runtime_order():
+    """
+    Contract: Kernel load order matches 10_packet_protocol_kernel.yaml specification.
+
+    Validates that KERNEL_ORDER in kernel_loader.py matches the authoritative
+    load_sequence.order defined in the packet protocol kernel.
+    """
+    from runtime.kernel_loader import validate_packet_protocol_rules
+
+    result = validate_packet_protocol_rules()
+
+    # Core validation: orders must match
+    assert result["valid"] is True, f"Kernel order validation failed: {result['mismatches']}"
+    assert result["expected_order"] == result["actual_order"]
+    assert result["mismatches"] == []
+
+
+def test_packet_protocol_validation_returns_expected_structure():
+    """
+    Contract: validate_packet_protocol_rules returns well-formed result dict.
+    """
+    from runtime.kernel_loader import validate_packet_protocol_rules
+
+    result = validate_packet_protocol_rules()
+
+    # Required keys
+    assert "valid" in result
+    assert "expected_order" in result
+    assert "actual_order" in result
+    assert "mismatches" in result
+
+    # Type checks
+    assert isinstance(result["valid"], bool)
+    assert isinstance(result["expected_order"], list)
+    assert isinstance(result["actual_order"], list)
+    assert isinstance(result["mismatches"], list)
+
+    # Both orders should have 10 kernels
+    assert len(result["expected_order"]) == 10
+    assert len(result["actual_order"]) == 10

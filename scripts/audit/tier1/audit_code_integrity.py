@@ -823,7 +823,7 @@ async def main():
                 all_content += f.read_text(encoding="utf-8", errors="ignore") + "\n"
             except Exception:
                 pass
-        
+
         # Save to cache for next run
         if cache_mgr:
             cache_mgr.save_content_index(all_files, all_content)
@@ -852,12 +852,12 @@ async def main():
             except Exception as e:
                 logger.warning(f"Error analyzing {filepath}: {e}")
 
-        # Circular imports
-        circular = []
-        if not args.no_circular:
-            logger.info("Detecting circular imports...")
-            circular = detect_circular_imports(REPO_ROOT)
-        
+    # Circular imports
+    circular = []
+    if not args.no_circular:
+        logger.info("Detecting circular imports...")
+        circular = detect_circular_imports(REPO_ROOT)
+
         # Save results to cache for next run
         if cache_mgr:
             cache_mgr.save_results(uncalled, orphans, circular)

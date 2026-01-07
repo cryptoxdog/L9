@@ -43,13 +43,17 @@ def get_memory_orchestrator(request: Request) -> MemoryOrchestrator:
 
 
 class PacketRequest(BaseModel):
-    """Request model for packet ingestion."""
+    """Request model for packet ingestion (PacketEnvelope v2.0 compatible)."""
 
     packet_type: str
     payload: dict
     metadata: Optional[dict] = None
     provenance: Optional[dict] = None
     confidence: Optional[dict] = None
+    # v2.0 additions
+    thread_id: Optional[str] = None
+    tags: Optional[List[str]] = None
+    ttl: Optional[int] = None  # seconds until expiration
 
 
 class PacketResponse(BaseModel):
@@ -83,13 +87,25 @@ async def create_packet(
     All packets pass through ingest_packet() which runs the full DAG pipeline.
     """
     try:
-        # Convert request to PacketEnvelopeIn
+        # Convert thread_id string to UUID if provided
+        thread_uuid = None
+        if request.thread_id:
+            from uuid import UUID as UUIDType
+            try:
+                thread_uuid = UUIDType(request.thread_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid thread_id: {request.thread_id}")
+        
+        # Convert request to PacketEnvelopeIn (v2.0 compatible)
         packet_in = PacketEnvelopeIn(
             packet_type=request.packet_type,
             payload=request.payload,
             metadata=request.metadata,
             provenance=request.provenance,
             confidence=request.confidence,
+            thread_id=thread_uuid,
+            tags=request.tags,
+            ttl=request.ttl,
         )
 
         # Canonical ingestion entrypoint

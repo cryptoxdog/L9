@@ -1,3 +1,6 @@
+.audit_cache/analysis_results.json
+.audit_cache/manifest.json
+.github/workflows/ci.yml
 .github/workflows/terminology-guard.yml
 .mypy_cache/3.12/PIL/ExifTags.data.json
 .mypy_cache/3.12/PIL/ExifTags.meta.json
@@ -2571,6 +2574,11 @@ codegen/schemas/domain_adapter.yaml
 codegen/schemas/dora-contract.yaml
 codegen/schemas/glue_layer.yaml
 codegen/schemas/orchestrator.yaml
+codegen/schemas/samples/domain_adapter.yaml
+codegen/schemas/samples/glue_layer.yaml
+codegen/schemas/samples/orchestrator.yaml
+codegen/schemas/samples/simple_agent.yaml
+codegen/schemas/samples/sympy_schema_v6.yaml
 codegen/schemas/simple_agent.yaml
 codegen/schemas/sympy_schema_v6.yaml
 codegen/specs/L9_Canonical_v4.1_Unified.yaml
@@ -2582,68 +2590,19 @@ config/boot_overlay.yaml
 config/policies/defaults.yaml
 config/policies/tool_usage.yaml
 config/settings.yaml
+docker-compose.local.dev.yml
 docker-compose.override.yml.example
 docker-compose.yml
 docker/prometheus.yml
-docs/Roadmap-Upgrades/CA Coding Agent/L-CTO.yaml
-docs/Roadmap-Upgrades/CA Coding Agent/Module-Prompt-CURSOR-v2.0.yaml
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/schema/rule-registry-v2-schema.json
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.yaml
-docs/Roadmap-Upgrades/L-CTO (Agent)/Docs-L Key Files/INITIALIZATION_KERNEL_UNIFIED.yaml
-docs/Roadmap-Upgrades/L-CTO (Agent)/Docs-L Key Files/l9_operator_handbook_v2.yaml
-docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/INITIALIZATION_KERNEL_UNIFIED.yaml
-docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/L9 AGENT MANIFEST — L-CTO v1.0.yaml
-docs/Roadmap-Upgrades/L-CTO (Agent)/YAML FILES/personality_kernel.yaml
-docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_Capsule_Handoff_v3.3.yaml
-docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_Session_Capsule_v3.0.yaml
-docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_v4.1_GodMode_Prompt.yaml
-docs/Roadmap-Upgrades/L9 Learning & Adaptation Layer/L9_v4.1_Manifest_GodMode.yaml
-docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/strategy_governance_policy.yaml
-docs/Roadmap-Upgrades/Quantum Factory (YAML->Code)/example-L9_Tensor_MainAgent_Schema_v6.yaml
-docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/Module-Spec-v2.5.yaml
-docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/outputs/01_config_loader_spec.yaml
-docs/Roadmap-Upgrades/Quantum Research Factory/PERPLEXITY-Module-Spec-v2.5/research_factory_schema.yaml
-docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/FILE_MANIFEST.json
-docs/Roadmap-Upgrades/Research - God Research Agent/Research - god_research_agent_aios/comprehensive_research_foundation.json
-docs/Roadmap-Upgrades/emma_agent_ready/Emma_v5.3.yaml
-docs/Roadmap-Upgrades/emma_agent_ready/Emma_v6.0.yaml
-docs/Roadmap-Upgrades/emma_agent_ready/Emma_v7.0.yaml
-docs/Roadmap-Upgrades/emma_agent_ready/Emma_v8.0.yaml
-docs/Roadmap-Upgrades/emma_agent_ready/Emma_v8.1_Canonical.yaml
-docs/Roadmap-Upgrades/emma_agent_ready/emma_manifest.json
-docs/Roadmap-Upgrades/research_factory_schema.yaml
-docs/_Context-L9-Repo/YAML/PacketEnvelope.yaml
-docs/_Context-L9-Repo/docker/Dockerfile
-docs/_Context-L9-Repo/docker/Dockerfile.api
-docs/_Context-L9-Repo/docker/docker-compose-VPS.yaml
-docs/_Context-L9-Repo/docker/docker-compose.yml
-docs/_Context-L9-Repo/docker/root-docker-compose.yml
-docs/_Context-L9-Repo/docker/runtime-Dockerfile
-docs/_VPS/VPS-12-19-25/docker-compose.txt
-docs/_VPS/docker-compose.yaml
-docs/__01-04-2026/Governance Audit/Active Files/foundation/logic/rule-registry.json
-docs/__01-04-2026/Governance Audit/Active Files/setup-new-workspace.yaml
-docs/__01-04-2026/Governance Audit/Active Files/startup/REASONING_STACK.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/ci-cd.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/docker-compose.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/feedback_loop_config.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/gmp-todo.schema.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/metrics.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/pre-commit-config.yaml
-docs/__01-04-2026/Governance Audit/Orphaned Files/yaml/state.yaml
-docs/__01-05-2026/plasticos_memory_substrate_module_schema_v1.0.0.yaml.yaml
-docs/_archive/mcp-memory-deprecated/mcp-api.json
 generated/specs/config_loader.yaml
 grafana/dashboards/l9-tool-observability.json
+grafana/provisioning/dashboards/l9-tool-observability.json
 igor/audit-tools/Current Config/07_execution_kernel.yaml
 igor/audit-tools/Current Config/10_packet_protocol_kernel.yaml
 igor/l-cto-Setup/l-cto-yaml-files/INITIALIZATION_KERNEL_UNIFIED.yaml
 igor/l-cto-Setup/l-cto-yaml-files/L-CTO.yaml
 igor/l-cto-Setup/l-cto-yaml-files/L9 AGENT MANIFEST — L-CTO v1.0.yaml
 igor/l-cto-Setup/l-cto-yaml-files/personality_kernel.yaml
-l-cto-phase-2/config/core_values.yaml
-l-cto-phase-2/config/desire_profile.yaml
-l-cto-phase-2/config/trust_config.yaml
 mac_agent/config.yaml
 memory/memory-yaml2.0.yaml
 openapi.json
@@ -2676,7 +2635,19 @@ private/kernels/bootstrap/kernel_manifest.yaml
 private/security/l9_security_kernel.yaml
 pyproject.toml
 pytest.ini
+reports/audit_infrastructure_health.json
+reports/audit_run_audit_run_20260106_185009_61c6ec09.json
+reports/audit_run_audit_run_20260106_185743_d10c38c1.json
+reports/audit_run_audit_run_20260106_192337_4c29281f.json
+reports/audit_run_audit_run_20260106_193241_0c979f9c.json
+reports/audit_run_audit_run_20260106_195658_cf97d356.json
+reports/audit_run_audit_run_20260106_195956_316d174c.json
+reports/audit_run_audit_run_20260106_200021_4401ad50.json
+reports/audit_run_audit_run_20260106_203324_ce365722.json
+reports/audit_run_audit_run_20260106_221652_9a004d6c.json
 runtime/Dockerfile
+scripts/audit/audit.yaml
+scripts/reports/audit_infrastructure_health.json
 services/symbolic_computation/Dockerfile
 services/symbolic_computation/docker-compose.yml
 specs/MODULE_REGISTRY.yaml

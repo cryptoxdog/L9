@@ -219,7 +219,7 @@ class AuditOrchestrator:
                     circular = cached_results.get("circular", [])
                     total_items = uncalled_count + len(orphans) + len(circular)
                     
-                    logger.info(f"Using cached code integrity results")
+                    logger.info("Using cached code integrity results")
                     return AuditResult(
                         audit_type=AuditType.CODE_INTEGRITY,
                         status="success",
@@ -300,7 +300,7 @@ class AuditOrchestrator:
                 items_medium=0,
                 items_low=0,
                 errors=[str(e)],
-            )
+        )
 
     def _run_infrastructure_audit(self) -> AuditResult:
         """Run infrastructure health audit."""
@@ -458,7 +458,7 @@ class AuditOrchestrator:
                 items_medium=0,
                 items_low=0,
                 errors=[str(e)],
-            )
+        )
 
     def run_all(self, tier: int = 1, only: Optional[str] = None) -> AuditRun:
         """Run all audits for given tier."""

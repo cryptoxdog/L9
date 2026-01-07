@@ -16,6 +16,7 @@
 | `0008_memory_substrate_10x.sql` | ============================================================ |
 | `0009_feedback_and_effectiveness.sql` | ============================================================ |
 | `0011_tool_audit_log.sql` | Migration: Add tool audit log table |
+| `0012_fix_graph_checkpoints_unique.sql` | Migration: 0012_fix_graph_checkpoints_unique |
 
 ## Key Tables Created
 

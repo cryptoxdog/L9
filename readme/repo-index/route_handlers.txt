@@ -4,10 +4,10 @@
 # Load into Neo4j as (Route)-[:HANDLED_BY]->(Function) relationships
 
 GET / → index() @ local_dashboard/app.py
+GET / → root() @ _archived/archived_mcp_memory/src/main.py
 GET / → root() @ api/server.py
 GET / → root() @ api/server_memory.py
 GET / → root() @ igor/audit-memory/mcp_memory_src_main.py
-GET / → root() @ mcp_memory/src/main.py
 GET /agent/health → agent_health() @ api/vps_executor.py
 GET /agent/{agent_id}/capabilities → get_agent_capabilities() @ api/routes/worldmodel.py
 GET /api/health → health() @ local_dashboard/app.py
@@ -27,6 +27,8 @@ GET /health → factory_health() @ api/routes/factory.py
 GET /health → health() @ api/server.py
 GET /health → health() @ api/server_memory.py
 GET /health → health() @ tests/orchestrators/test_kernel_injection.py
+GET /health → health_check() @ _archived/archived_mcp_memory/src/main.py
+GET /health → health_check() @ _archived/archived_mcp_memory/src/routes/health.py
 GET /health → health_check() @ api/adapters/calendar_adapter/routes/calendar_adapter.py
 GET /health → health_check() @ api/adapters/email_adapter/routes/email_adapter.py
 GET /health → health_check() @ api/adapters/twilio_adapter/routes/twilio_adapter.py
@@ -40,10 +42,7 @@ GET /health → health_check() @ igor/audit-memory/api_memory_router.py
 GET /health → health_check() @ igor/audit-memory/mcp_memory_src_main.py
 GET /health → health_check() @ igor/audit-memory/mcp_memory_src_routes_health.py
 GET /health → health_check() @ ir_engine/ir_to_python.py
-GET /health → health_check() @ mcp_memory/src/main.py
-GET /health → health_check() @ mcp_memory/src/routes/health.py
 GET /health → health_check() @ services/symbolic_computation/api/routes.py
-GET /health → healthcheck() @ docs/_archive/mcp-memory-deprecated/routes/health.py
 GET /health → os_health() @ api/os_routes.py
 GET /health → simulation_health() @ api/routes/simulation.py
 GET /health → tool_graph_health() @ api/tools/router.py
@@ -58,9 +57,8 @@ GET /integrations → get_integrations() @ api/routes/worldmodel.py
 GET /kernel → get_kernel() @ tests/orchestrators/test_kernel_injection.py
 GET /lineage/{packet_id} → get_lineage() @ api/memory/router.py
 GET /lineage/{packet_id} → get_lineage() @ igor/audit-memory/api_memory_router.py
+GET /mcp/tools → list_tools() @ _archived/archived_mcp_memory/src/main.py
 GET /mcp/tools → list_tools() @ igor/audit-memory/mcp_memory_src_main.py
-GET /mcp/tools → list_tools() @ mcp_memory/src/main.py
-GET /mcp/tools → mcp_list_tools() @ docs/_archive/mcp-memory-deprecated/main.py
 GET /metrics → get_metrics_summary() @ services/symbolic_computation/api/routes.py
 GET /modes → get_reasoning_modes() @ api/routes/reasoning.py
 GET /packet-envelope/features → get_enabled_features() @ api/routes/upgrades.py
@@ -72,11 +70,10 @@ GET /report → get_compliance_report() @ api/routes/compliance.py
 GET /report/daily → get_daily_compliance_report() @ api/routes/compliance.py
 GET /snapshots → list_snapshots() @ api/world_model_api.py
 GET /state-version → get_state_version() @ api/world_model_api.py
+GET /stats → get_memory_stats() @ _archived/archived_mcp_memory/src/routes/memory.py
 GET /stats → get_memory_stats() @ igor/audit-memory/mcp_memory_src_routes_memory.py
-GET /stats → get_memory_stats() @ mcp_memory/src/routes/memory.py
 GET /stats → get_stats() @ api/memory/router.py
 GET /stats → get_stats() @ igor/audit-memory/api_memory_router.py
-GET /stats → stats_endpoint() @ docs/_archive/mcp-memory-deprecated/routes/memory.py
 GET /status → agent_status() @ api/agent_routes.py
 GET /status → os_status() @ api/os_routes.py
 GET /status → research_status() @ api/routes/research.py
@@ -127,9 +124,8 @@ POST /hybrid/search → hybrid_search() @ igor/audit-memory/api_memory_router.py
 POST /insights → submit_insights() @ api/world_model_api.py
 POST /intent → extract_intent_endpoint() @ api/routes/commands.py
 POST /lchat → lchat() @ api/server.py
+POST /mcp/call → call_tool() @ _archived/archived_mcp_memory/src/main.py
 POST /mcp/call → call_tool() @ igor/audit-memory/mcp_memory_src_main.py
-POST /mcp/call → call_tool() @ mcp_memory/src/main.py
-POST /mcp/call → mcp_call() @ docs/_archive/mcp-memory-deprecated/main.py
 POST /optimize → optimize_expression() @ services/symbolic_computation/api/routes.py
 POST /packet → create_packet() @ api/memory/router.py
 POST /packet → create_packet() @ igor/audit-memory/api_memory_router.py
@@ -144,12 +140,10 @@ POST /reply → reply_email() @ email_agent/router.py
 POST /restore → restore_from_snapshot() @ api/world_model_api.py
 POST /resume/{thread_id} → resume_research() @ services/research/research_api.py
 POST /run → run_simulation() @ api/routes/simulation.py
+POST /save → save_memory() @ _archived/archived_mcp_memory/src/routes/memory.py
 POST /save → save_memory() @ igor/audit-memory/mcp_memory_src_routes_memory.py
-POST /save → save_memory() @ mcp_memory/src/routes/memory.py
-POST /save → save_memory_endpoint() @ docs/_archive/mcp-memory-deprecated/routes/memory.py
+POST /search → search_memory() @ _archived/archived_mcp_memory/src/routes/memory.py
 POST /search → search_memory() @ igor/audit-memory/mcp_memory_src_routes_memory.py
-POST /search → search_memory() @ mcp_memory/src/routes/memory.py
-POST /search → search_memory_endpoint() @ docs/_archive/mcp-memory-deprecated/routes/memory.py
 POST /semantic/search → semantic_search() @ api/memory/router.py
 POST /semantic/search → semantic_search() @ igor/audit-memory/api_memory_router.py
 POST /send → send_email() @ email_agent/router.py
@@ -176,4 +170,4 @@ POST /webhook → handle_twilio_adapter() @ api/adapters/twilio_adapter/routes/t
 WEBSOCKET /lws → l_ws() @ api/server.py
 WEBSOCKET /ws/agent → agent_ws_endpoint() @ api/server.py
 
-# Total: 172 route handlers
+# Total: 166 route handlers

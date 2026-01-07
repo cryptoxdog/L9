@@ -1,7 +1,10 @@
 import os
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import PlainTextResponse
 import httpx
+import hmac
+import hashlib
+import base64
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
@@ -19,8 +22,36 @@ router = APIRouter()
 CHAT_URL = "http://127.0.0.1:8000/chat"
 
 
+def verify_twilio_signature(url: str, params: dict, signature: str, auth_token: str | None) -> bool:
+    """
+    Verify Twilio request signature using HMAC-SHA1 base64.
+    
+    Twilio signs requests by:
+    1. Taking the full URL
+    2. Sorting POST params alphabetically and appending key=value pairs
+    3. Computing HMAC-SHA1 with auth token and base64 encoding
+    """
+    if not auth_token:
+        return False
+    
+    # Build the signature base string: URL + sorted params
+    s = url
+    for key in sorted(params.keys()):
+        s += f"{key}{params[key]}"
+    
+    # Compute HMAC-SHA1 and base64 encode
+    computed = base64.b64encode(
+        hmac.new(auth_token.encode(), s.encode(), hashlib.sha1).digest()
+    ).decode()
+    
+    return hmac.compare_digest(computed, signature)
+
+
 @router.post("/twilio/webhook", response_class=PlainTextResponse)
-async def twilio_webhook(request: Request):
+async def twilio_webhook(
+    request: Request,
+    x_twilio_signature: str = Header(None, alias="X-Twilio-Signature"),
+):
     """
     Minimal Twilio SMS/WhatsApp webhook:
     - Reads incoming message body and from number
@@ -28,6 +59,10 @@ async def twilio_webhook(request: Request):
     - Returns plain text reply in TwiML-compatible form
     """
     form = await request.form()
+    if not x_twilio_signature:
+        raise HTTPException(status_code=401, detail="Missing Twilio signature")
+    if not verify_twilio_signature(str(request.url), dict(form), x_twilio_signature, TWILIO_AUTH_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid Twilio signature")
     from_number = form.get("From")
     body = form.get("Body")
 

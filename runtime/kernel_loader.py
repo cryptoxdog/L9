@@ -1001,6 +1001,61 @@ def validate_all_kernels(base_path: str = DEFAULT_KERNEL_PATH) -> Dict[str, List
     return results
 
 
+def validate_packet_protocol_rules() -> Dict[str, Any]:
+    """
+    Validate kernel load order against 10_packet_protocol_kernel.yaml.
+
+    Returns:
+        dict with keys: valid (bool), expected_order (list), actual_order (list), mismatches (list)
+    """
+    kernel_path = Path(DEFAULT_KERNEL_PATH) / "kernels" / "00_system" / "10_packet_protocol_kernel.yaml"
+
+    if not kernel_path.exists():
+        return {
+            "valid": False,
+            "error": f"Packet protocol kernel not found at {kernel_path}",
+            "expected_order": [],
+            "actual_order": list(KERNEL_ORDER),
+            "mismatches": []
+        }
+
+    with open(kernel_path, "r") as f:
+        protocol_data = yaml.safe_load(f)
+
+    # Extract ordered filenames from load_sequence.order (dict with numeric keys)
+    order_dict = protocol_data.get("load_sequence", {}).get("order", {})
+    expected_files = []
+    for key in sorted(order_dict.keys(), key=lambda x: int(x)):
+        entry = order_dict[key]
+        if isinstance(entry, dict) and "file" in entry:
+            expected_files.append(entry["file"])
+        else:
+            expected_files.append(str(entry))
+
+    # Extract just filenames from KERNEL_ORDER paths
+    actual_files = [Path(p).name for p in KERNEL_ORDER]
+
+    mismatches = []
+    for i, (expected, actual) in enumerate(zip(expected_files, actual_files)):
+        if expected != actual:
+            mismatches.append({"position": i, "expected": expected, "actual": actual})
+
+    # Check length mismatch
+    if len(expected_files) != len(actual_files):
+        mismatches.append({
+            "position": -1,
+            "expected": f"{len(expected_files)} kernels",
+            "actual": f"{len(actual_files)} kernels"
+        })
+
+    return {
+        "valid": len(mismatches) == 0,
+        "expected_order": expected_files,
+        "actual_order": actual_files,
+        "mismatches": mismatches
+    }
+
+
 # =============================================================================
 # Public API
 # =============================================================================
@@ -1026,6 +1081,7 @@ __all__ = [
     # Validation
     "validate_kernel_structure",
     "validate_all_kernels",
+    "validate_packet_protocol_rules",
     # Enforcement
     "guarded_execute",
     "verify_kernel_activation",

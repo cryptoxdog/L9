@@ -1,3 +1,11 @@
+_archived/archived_mcp_memory/src/main.py::__init__(self, caller_id, user_id) - 
+_archived/archived_mcp_memory/src/main.py::check_auth_block(ip) - Check if IP is blocked due to failed aut
+_archived/archived_mcp_memory/src/main.py::check_rate_limit(ip) - Check if IP has exceeded rate limit. Rai
+_archived/archived_mcp_memory/src/main.py::creator(self) - Metadata creator value for this caller.
+_archived/archived_mcp_memory/src/main.py::get_client_ip(request) - Get client IP, respecting X-Forwarded-Fo
+_archived/archived_mcp_memory/src/main.py::record_failed_auth(ip) - Record a failed authentication attempt.
+_archived/archived_mcp_memory/src/main.py::source(self) - Metadata source value for this caller.
+_archived/archived_mcp_memory/src/mcp_server.py::get_mcp_tools() - 
 agents/architect_agent_a.py::__init__(self, agent_id, config) - Initialize Architect Agent A.
 agents/architect_agent_a.py::get_system_prompt(self) - Get the system prompt.
 agents/architect_agent_b.py::__init__(self, agent_id, config) - Initialize Architect Agent B.
@@ -94,6 +102,20 @@ agents/reflection_agent.py::__init__(self, agent_id, config) - Initialize Reflec
 agents/reflection_agent.py::clear_lessons(self) - Clear lessons learned.
 agents/reflection_agent.py::get_lessons_learned(self) - Get accumulated lessons learned.
 agents/reflection_agent.py::get_system_prompt(self) - Get the system prompt.
+agents/research_agent.py::__init__(self, api_key) - 
+agents/research_agent.py::__init__(self, api_key, prompt_variations) - Initialize research agent.
+agents/research_agent.py::__init__(self, responses) - 
+agents/research_agent.py::_extract_module_id(self, yaml_content) - Extract module_id from YAML content.
+agents/research_agent.py::_extract_yaml(self, response) - Extract YAML content from response.
+agents/research_agent.py::_generate_summary(self, result) - Generate research summary.
+agents/research_agent.py::_validate_spec(self, yaml_content) - Validate Module-Spec-v2.4 structure.
+agents/research_agent.py::build_semantic_graph(self) - Build relationships between concepts acr
+agents/research_agent.py::compute_consensus_patterns(self) - Find consensus across variations.
+agents/research_agent.py::extract_architectural_insights(response) - Extract architectural recommendations.
+agents/research_agent.py::extract_code_snippets(response) - Extract code blocks from response.
+agents/research_agent.py::extract_concepts(response) - Extract key concepts using heuristics.
+agents/research_agent.py::extract_unique_insights(self) - Find novel insights unique to fewer vari
+agents/research_agent.py::generate_synthesis_result(self) - Generate comprehensive synthesis result.
 aios/bootstrap.py::__init__(self, config_path) - 
 aios/bootstrap.py::bootstrap(self) - Complete bootstrap sequence.
 aios/bootstrap.py::init_controller(self) - Initialize the controller.
@@ -240,131 +262,11 @@ api/vps_executor.py::run_shell(command, cwd) -
 api/webhook_mac_agent.py::get_next_mac_task() - Get the next queued Mac task.
 api/webhook_mac_agent.py::list_mac_tasks() - List all Mac tasks (for debugging).
 api/webhook_slack.py::verify_slack_signature(body, timestamp, signature, signing_secret) - Verify Slack request signature.
+api/webhook_twilio.py::verify_twilio_signature(url, params, signature, auth_token) - Verify Twilio request signature using HM
 api/webhook_waba.py::verify_webhook_signature(request_body, x_hub_signature) - Verify Meta's webhook signature.
 api/whatsapp.py::load_twilio_client() - 
 api/whatsapp.py::send_whatsapp_message(body, to) - 
 api/world_model_api.py::_get_service() - Get WorldModelService instance.
-archive/deprecated/l-cto-legacy/engine.py::__init__(self) - 
-archive/deprecated/l-cto-legacy/engine.py::_analyze(self, context) - Analyze the request and context.
-archive/deprecated/l-cto-legacy/engine.py::_calculate_drift(self, last_sig, current_sig) - Calculate drift score between signatures
-archive/deprecated/l-cto-legacy/engine.py::_check_historical_consistency(self, current_eval, recent_outputs) - Check consistency with recent executions
-archive/deprecated/l-cto-legacy/engine.py::_evaluate(self, reasoning) - Evaluate the reasoning output.
-archive/deprecated/l-cto-legacy/engine.py::_final_output(self, evaluation) - Generate final output.
-archive/deprecated/l-cto-legacy/engine.py::_get_directive_signature(self, evaluation) - Generate signature of directive for drif
-archive/deprecated/l-cto-legacy/engine.py::_infer_intent(self, directive) - Infer intent from directive.
-archive/deprecated/l-cto-legacy/engine.py::_interpret_request(self, directive) - Interpret and parse the request.
-archive/deprecated/l-cto-legacy/engine.py::_load_roadmap(self) - Load roadmap for alignment checking.
-archive/deprecated/l-cto-legacy/engine.py::_load_thinking_framework(self) - Load MASTER THINKING FRAMEWORK configura
-archive/deprecated/l-cto-legacy/engine.py::_reason(self, analysis) - Apply reasoning to the analysis.
-archive/deprecated/l-cto-legacy/engine.py::_recursion_governance_check(self, evaluation) - Perform recursive governance check (Pre-
-archive/deprecated/l-cto-legacy/engine.py::_retrieve_context(self, interpreted) - Retrieve relevant context for execution.
-archive/deprecated/l-cto-legacy/engine.py::execute(self, directive) - Execute directive through cognitive pipe
-archive/deprecated/l-cto-legacy/guardrails.py::_audit_log(directive, output) - Log execution for audit trail with struc
-archive/deprecated/l-cto-legacy/guardrails.py::_detect_drift(directive, output) - Detect behavioral drift from established
-archive/deprecated/l-cto-legacy/guardrails.py::_validate_authority(directive) - Validate agent has authority for action.
-archive/deprecated/l-cto-legacy/guardrails.py::_validate_constraints(directive) - Validate directive within operational co
-archive/deprecated/l-cto-legacy/guardrails.py::_validate_output(output) - Validate execution output.
-archive/deprecated/l-cto-legacy/guardrails.py::_validate_safety(directive) - Validate action is safe to execute.
-archive/deprecated/l-cto-legacy/guardrails.py::governance_post(directive, output) - Post-execution governance check.
-archive/deprecated/l-cto-legacy/guardrails.py::governance_pre(directive) - Pre-execution governance check.
-archive/deprecated/l-cto-legacy/l_cto_core/identity.py::__init__(self) - 
-archive/deprecated/l-cto-legacy/l_cto_core/identity.py::get_identity(self) - Return complete identity as dict.
-archive/deprecated/l-cto-legacy/l_cto_core/identity.py::has_authority(self, action) - Check if L has authority for given actio
-archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::__init__(self, base_url) - Initialize runtime client.
-archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::execute_directive(self, directive) - Execute a directive on L9 Runtime.
-archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::get_introspection(self) - Get runtime introspection data.
-archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::health_check(self) - Check L9 Runtime health.
-archive/deprecated/l-cto-legacy/l_cto_interface/runtime_client.py::list_modules(self) - Get list of loaded modules.
-archive/deprecated/l-cto-legacy/mission.py::__init__(self) - Initialize L mission with identity and e
-archive/deprecated/l-cto-legacy/mission.py::get_status(self) - Get L mission status.
-archive/deprecated/l-cto-legacy/mission.py::handle(self, directive) - Handle directive with FULL governance en
-archive/deprecated/l-cto-legacy/startup.py::__init__(self, neo4j_client) - Initialize startup components.
-archive/deprecated/l-cto-memory-supabase/memory/l1/diagnostics.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/diagnostics.py::recent_errors(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/diagnostics.py::table_counts(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::count(self, table, filters) - Count records matching filters.
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::filter(self, table) - Filter records by arbitrary criteria.
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::get_recent(self, table, limit) - Get most recent records from a table.
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_query.py::search(self, table, field, pattern) - Search for pattern in a specific field.
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::get_decisions(self, limit) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::get_drift_events(self, severity_min) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::get_recent_directives(self, limit) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_reader.py::get_recent_trace(self, limit) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_router.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_router.py::read(self, table, filters) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_router.py::write(self, table, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_validators.py::sanitize_payload(payload) - Hard filter that strips dangerous or for
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_validators.py::validate_payload(payload) - Reject payloads that violate safety cons
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_autonomy_change(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_buffer(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_decision(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_directive(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_drift(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_evaluation(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_reasoning(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/l1_writer.py::write_trace(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/retention_processor.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/l1/retention_processor.py::run(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/mac/mac_router.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/mac/mac_router.py::log_message(self, payload) - Convenience method for logging MAC messa
-archive/deprecated/l-cto-memory-supabase/memory/mac/mac_router.py::read(self, table, filters) - 
-archive/deprecated/l-cto-memory-supabase/memory/mac/mac_router.py::write(self, table, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::_apply_enrichment(self, payload, tier) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::_resolve_tier(self, table) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::delete(self, table, filters) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::query(self, table) - Query passthrough to L1 query layer.
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::read(self, table, filters) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v3.py::write(self, table, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v4.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v4.py::read(self, table, filters) - DEPRECATED: Use MemorySubstrateService.s
-archive/deprecated/l-cto-memory-supabase/memory/memory_router_v4.py::write(self, table, payload) - DEPRECATED: Use MemorySubstrateService.w
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::audit(self, payload) - Convenience method for logging audit eve
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::incident(self, payload) - Convenience method for logging incidents
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::read(self, table, filters) - 
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_router.py::write(self, table, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_versioning.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/meta/meta_versioning.py::snapshot_schema(self, schema) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/cold_start_loader.py::load_initial_state() - Load L's long-term memories into working
-archive/deprecated/l-cto-memory-supabase/memory/shared/concurrency_manager.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/concurrency_manager.py::_get_lock(self, key) - Get or create a lock for the given key.
-archive/deprecated/l-cto-memory-supabase/memory/shared/concurrency_manager.py::lock(self, key) - Context manager for acquiring a lock.
-archive/deprecated/l-cto-memory-supabase/memory/shared/connection_validator.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/connection_validator.py::validate_env(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/connection_validator.py::validate_tables(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/error_translator.py::translate_supabase_error(error_obj) - Translate raw Supabase errors into clean
-archive/deprecated/l-cto-memory-supabase/memory/shared/governance_filter.py::validate(self, payload) - Validate payload against governance rule
-archive/deprecated/l-cto-memory-supabase/memory/shared/hashing.py::hash_payload(payload) - Generate deterministic hash for any payl
-archive/deprecated/l-cto-memory-supabase/memory/shared/kg_sync.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/kg_sync.py::sync_decisions_to_neo4j(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/locks.py::get_lock(name) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/logging_hooks.py::log_decision(decision) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/logging_hooks.py::log_reasoning(mode, signature, directive) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/logging_hooks.py::log_trace(entry) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/normalizer.py::normalize_payload(payload) - Ensures all memory writes are JSON-seria
-archive/deprecated/l-cto-memory-supabase/memory/shared/rate_limiter.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/rate_limiter.py::wait(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/sanitizer.py::sanitize(obj) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/schema_cache.py::get_schema_cache() - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/supabase_client.py::get_supabase() - Returns initialized Supabase client.
-archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::__init__(self) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::insert(self, payload) - 
-archive/deprecated/l-cto-memory-supabase/memory/shared/test_fixtures.py::table(self, name) - 
-archive/deprecated/l-cto-memory/kg_client.py::__init__(self) - Initialize Neo4j driver.
-archive/deprecated/l-cto-memory/kg_client.py::close(self) - Close Neo4j driver connection.
-archive/deprecated/l-cto-memory/kg_client.py::init(self) - Initialize KG client and verify connecti
-archive/deprecated/l-cto-memory/kg_client.py::query(self, cypher, params) - Execute Cypher query.
-archive/deprecated/l-cto-memory/kg_client.py::upsert(self, node_type, data) - Upsert node in knowledge graph.
-archive/deprecated/l-cto-memory/memory_client.py::__init__(self) - Initialize Supabase client.
-archive/deprecated/l-cto-memory/memory_client.py::fetch(self, query) - Fetch entries from memory.
-archive/deprecated/l-cto-memory/memory_client.py::init(self) - Initialize memory client and verify conn
-archive/deprecated/l-cto-memory/memory_client.py::search(self, term) - Search memory entries.
-archive/deprecated/l-cto-memory/memory_client.py::write(self, entry) - Write entry to long-term memory.
 ci/check_no_deprecated_services.py::check_no_deprecated_services() - Check that no deprecated services are re
 ci/check_no_deprecated_services.py::main() - Main entry point.
 ci/check_no_deprecated_services.py::scan_file(file_path) - Scan a single file for forbidden pattern
@@ -1367,851 +1269,6 @@ dev/tools/global_state_audit.py::generic_visit(self, node) -
 dev/tools/global_state_audit.py::iter_python_files() - 
 dev/tools/global_state_audit.py::main() - 
 dev/tools/global_state_audit.py::visit_Assign(self, node) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::__init__(self) - Initialize Subjective Logic adapter.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::combine_opinions(self, opinion1, opinion2) - Combine two subjective logic opinions.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::from_beta(self, alpha, beta) - Convert Beta distribution parameters to 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::from_probability(self, probability, uncertainty) - Convert probability + uncertainty to sub
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::opinion_to_confidence(self, opinion) - Convert opinion to confidence score.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::subjective_logic_enabled() - Check if Subjective Logic is enabled via
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/subjective_logic.py::to_probability(self, belief, disbelief, uncertainty, base_rate) - Convert subjective logic opinion to prob
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::__init__(self) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::__init__(self, n_models) - Initialize ensemble.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::__init__(self, n_samples, ood_threshold, temperature) - Initialize Bayesian uncertainty engine.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::_compute_aleatoric(self, model, x) - Compute aleatoric uncertainty.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::_compute_confidence(self, epistemic, aleatoric) - Compute calibrated confidence score.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::_compute_epistemic(self, model, x) - Compute epistemic uncertainty via MC dro
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::_temperature_scale(self, logits) - Apply temperature scaling for calibratio
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::add_model(self, model) - Add trained model to ensemble.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::compute_ece(self, n_bins) - Compute Expected Calibration Error.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::forward(self, x) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::predict_with_uncertainty(self, x) - Ensemble prediction with epistemic uncer
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::quantify(self, model, x, return_samples) - Compute full Bayesian posterior for pred
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::set_ood_threshold(self, validation_epistemic, percentile) - Set OOD threshold based on validation se
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/core/bayesian/uncertainty.py::update_calibration(self, prediction, actual) - Update calibration history for ECE compu
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::__init__(self, registry_path) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_assess_command_risk(self, context) - Assess risk of command execution
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_assess_escalation_need(self, context) - Assess whether to escalate to user
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_assess_file_edit_risk(self, context) - Assess risk of file edit using probabili
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_check_deterministic_rules(self, action_type, context) - Check if any deterministic FOL rules app
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_default_assessment(self, context) - Default assessment when specific model n
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::_load_registry(self) - Load governance rules from registry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::evaluate_governance_action(self, action_type, context) - Main entry point for governance decision
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/hybrid_kernel.py::evaluate_rule_with_probabilistic_predicate(self, rule_fol, context) - Evaluate hybrid rules containing probabi
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::__init__(self, registry_path, telemetry_path) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::__post_init__(self) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_apply_temperature_scaling(self, raw_prob, temperature) - Apply temperature scaling for calibratio
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_build_reasoning(self, evidence, raw_prob, calibrated_prob, subjective) - Build human-readable reasoning explanati
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_cascading_risk(self, references) - Calculate risk from cascading impact
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_confidence(self, evidence) - Calculate confidence based on evidence q
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_correction_adjustment(self, correction_count) - Calculate trust adjustment from user cor
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_ece_for_decisions(self, decisions) - Helper to calculate ECE for a list of de
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_file_type_risk(self, file_type) - Calculate risk based on file type
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_frequency_risk(self, frequency) - Calculate risk from edit frequency
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_calculate_location_risk(self, file_path) - Calculate risk based on file location
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_classify_risk(self, probability, subjective) - Classify risk level and determine action
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_decompose_subjective_logic(self, evidence) - Decompose into trust/disbelief/uncertain
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_ensure_telemetry_dir(self) - Ensure telemetry directory exists
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_get_default_calibration(self) - Default calibration parameters
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_get_default_registry(self) - Default configuration if registry not fo
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_get_default_thresholds(self) - Default threshold configuration
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_infer_file_type(self, file_path) - Infer file type from path and extension
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_load_registry(self) - Load probabilistic models from rule regi
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_log_decision(self, assessment, evidence, file_path) - Log decision to telemetry for learning
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::_weighted_combination(self, evidence) - Calculate weighted average of evidence
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::assess_file_compliance_risk(self, file_path, file_type, edit_frequency, user_correction_count, references_count) - Assess file compliance risk using weight
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::calculate_ece(self, decisions) - Calculate Expected Calibration Error.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::get_threshold(self, threshold_name) - Get current threshold value
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::optimize_temperature(self, target_ece) - Optimize temperature parameter to minimi
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/foundation/probabilistic_engine.py::record_outcome(self, decision_id, outcome, feedback) - Record outcome of a decision for learnin
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::__init__(self, registry_path, telemetry_path, meta_learning_log) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_adjust_thresholds(self, decisions) - Adjust thresholds to maintain target pre
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_apply_correlation_penalty(self, name1, name2, correlation) - Apply PAC-Bayesian correlation penalty t
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_calculate_correlation(self, values1, values2) - Calculate Pearson correlation coefficien
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_calculate_ece(self, decisions, use_new_params) - Calculate ECE for a set of decisions
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_detect_evidence_correlations(self, decisions) - Detect correlations between evidence sou
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_load_decisions(self, hours) - Load recent decisions from telemetry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_load_registry(self) - Load current rule registry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_log_to_meta_learning(self, ece_before, ece_after, temp_before, temp_after, threshold_adjustments, weight_updates) - Log calibration to meta-learning log
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_normalize_weights(self) - Ensure all weights sum to 1.0 in each mo
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_optimize_temperature(self, decisions) - Optimize temperature to minimize ECE
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_save_registry(self) - Save updated registry back to file
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::_update_evidence_weights(self, decisions) - Update evidence source weights based on 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::run_calibration(self) - Main calibration routine - fully autonom
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/auto_calibrator.py::run_nightly_calibration() - Entry point for scheduled nightly calibr
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::__init__(self, registry_path, telemetry_path, feedback_log_path) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_detect_systematic_pattern(self, event) - Detect if this feedback is part of a sys
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_infer_feedback_from_behavior(self, user_action, context) - Infer feedback from user behavior
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_load_feedback_history(self) - Load recent feedback history
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_load_registry(self) - Load current registry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_log_feedback(self, event) - Log feedback event to telemetry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_log_pattern_to_meta_learning(self, pattern, event) - Log detected pattern to meta-learning lo
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_micro_adjust_temperature(self, direction, magnitude) - Make small immediate temperature adjustm
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_micro_adjust_thresholds(self, direction, magnitude) - Make small immediate threshold adjustmen
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_parse_feedback(self, feedback_text) - Parse user feedback text into type
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_process_feedback(self, event) - Process feedback and make immediate micr
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_save_registry(self) - Save updated registry
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::_update_decision_outcome(self, decision_id, outcome) - Update outcome in original decision log
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::get_feedback_summary(self, days) - Generate summary of recent feedback.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::record_explicit_feedback(self, decision_id, feedback, context) - Record explicit user feedback.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/learning/feedback_collector.py::record_implicit_feedback(self, decision_id, user_action, decision_context) - Infer feedback from user behavior.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::__init__(self, telemetry_path, report_dir) - 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_analyze_thresholds(self, decisions) - Analyze threshold performance
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_breakdown_by_model(self, decisions) - Performance breakdown by model type
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_calculate_ece(self, decisions) - Calculate Expected Calibration Error
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_calculate_mce(self, decisions) - Calculate Maximum Calibration Error
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_calculate_metrics(self, decisions) - Calculate all calibration metrics
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_generate_recommendations(self, metrics, decisions) - Generate actionable recommendations
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_generate_reliability_diagram(self, decisions) - Generate ASCII reliability diagram
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_insufficient_data_report(self) - Report when insufficient data available
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::_load_decisions(self, days) - Load recent decisions
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::detect_calibration_drift(self) - Detect if calibration has drifted signif
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::generate_weekly_report() - Entry point for scheduled weekly report 
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian Upgrade/telemetry/calibration_dashboard.py::generate_weekly_report(self) - Generate comprehensive weekly calibratio
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::__init__(self) - Initialize kernel.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::_build_system_prompt(self) - Build system prompt section for Bayesian
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::_calculate_confidence(distribution) - Calculate confidence from probability di
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::_timestamp() - Get current ISO timestamp.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::add_evidence(self, variable, description, strength, source) - Add evidence to a belief state.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::create_belief_state(self, variable, prior, metadata) - Create new belief state for a variable.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::get_bayesian_kernel() - Get or create global Bayesian kernel ins
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::get_belief_state(self, variable) - Get belief state for a variable.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::is_enabled(self) - Check if Bayesian reasoning is enabled.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::reset_bayesian_kernel() - Reset kernel instance (for testing).
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/bayesian_kernel.py::update_posterior(self, variable, new_posterior) - Update posterior belief using Bayes rule
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::__post_init__(self) - Set node type to BAYESIAN.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::__post_init__(self) - Set node type to REASONING.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::add_evidence(self, description, strength, source) - Add evidence to this belief node.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::add_input_edge(self, source_node_id) - Add dependency edge from source node.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::add_output_edge(self, target_node_id) - Add edge to target node.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::create_node(self) - Create a node from this template.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::is_ready(self) - Check if all dependencies are completed.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::to_dict(self) - Convert node to dictionary.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/hypergraph.py::update_posterior(self, new_posterior, uncertainty) - Update posterior belief distribution.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_add_evidence() - Add evidence to belief state.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_agent_execution_works_without_bayesian() - Agent execution succeeds when Bayesian i
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_kernel_disabled_by_default() - Feature flag defaults to false (safe).
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_kernel_enabled_provides_system_prompt() - When enabled, kernel provides system pro
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_node_add_evidence() - Add evidence to Bayesian node.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_node_properties() - BayesianNode has correct properties.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_node_template_exists() - BAYESIAN_NODE_TEMPLATE is defined and us
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_bayesian_node_update_posterior() - Update posterior belief in node.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_confidence_from_distribution() - Confidence calculated correctly from dis
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_create_bayesian_node_from_template() - Create Bayesian node using template.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_create_belief_state_when_disabled() - Creating belief state when disabled rais
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_create_belief_state_when_enabled() - Creating belief state when enabled works
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_feature_flag_environment_variable() - Feature flag responds to environment var
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_get_bayesian_kernel_singleton() - get_bayesian_kernel() returns same insta
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_reasoning_node_template_exists() - REASONING_NODE_TEMPLATE is defined.
-docs/Roadmap-Upgrades/Core Bayesian layer/Bayesian layer/test_bayesian_kernel.py::test_update_posterior() - Update posterior belief.
-docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py::forward(self, task_embedding) - 
-docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py::learn_from_execution(self, strategy_id, outcome) - 
-docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/rafa_adapter_interface.py::adapt_strategy(strategy_graph, current_context, adaptation_budget) - 
-docs/Roadmap-Upgrades/Memory - Strategic Memory/Harvested Files/strategy_feedback_updater.py::update_strategy_after_execution(strategy_id, outcome, execution_time) - 
-docs/Roadmap-Upgrades/MortgageOS/Tensor-Git-einsum-n-dimension-main/einsum_scratch.py::my_einsum(expr) - A scratch implementation of numpy.einsum
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::__init__(self, project_root, language, verbose) - 
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_analyze_python(self) - Analyze Python codebase
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_analyze_typescript(self) - Analyze TypeScript codebase
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_create_directories(self) - Create configuration and report director
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_setup_java_analysis(self) - Configure Java static analysis
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_setup_python_analysis(self) - Configure Python linters and type checke
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_setup_typescript_analysis(self) - Configure TypeScript linters and formatt
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::_validate_project(self) - Verify project structure is valid
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::bootstrap(self) - Execute complete bootstrap sequence
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::create_refactoring_backlog(self) - Generate prioritized refactoring candida
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::generate_ai_workflow_config(self) - Create AI-assisted refactoring workflow 
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::generate_baseline_metrics(self) - Capture current codebase metrics
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::main() - 
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::setup_ci_validation(self) - Create CI/CD validation pipeline
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::setup_pre_commit_hooks(self) - Configure pre-commit hooks for automatic
-docs/Roadmap-Upgrades/Refactoring Suite/bootstrap_refactor.py::setup_static_analysis(self) - Deploy language-specific static analysis
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::call_perplexity_api(prompt, api_key) - Call Perplexity Research API to generate
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::customize_for_ethical_layer() - Customize prompt for ethical governance 
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::customize_for_learning_layer() - Customize prompt for learning & adaptati
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::customize_for_risk_layer() - Customize prompt for risk management lay
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::example_usage() - Example showing how to use this programm
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::extract_documentation(response_text) - Extract markdown documentation from API 
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::extract_python_files(response_text) - Extract Python code blocks from API resp
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::generate_ai_os_layer_complete(api_key, layer_type) - Complete workflow: customize, call API, 
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/HOW_TO_USE_SUPER_PROMPT.py::main() - Command-line interface for layer generat
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::__init__(self, api_key) - 
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::__init__(self, responses) - 
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::build_semantic_graph(self) - Build relationships between concepts acr
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::compute_consensus_patterns(self) - Find consensus across variations
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::extract_architectural_insights(response) - Extract architectural recommendations
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::extract_code_snippets(response) - Extract Python code blocks
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::extract_concepts(response) - Extract key concepts using simple heuris
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::extract_unique_insights(self) - Find novel insights unique to fewer vari
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::generate(synthesis, code_snippets) - Generate production README
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::generate_core_architecture(synthesis) - Generate core architecture implementatio
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::generate_integration_hook(synthesis) - Generate agent integration hook
-docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py::generate_synthesis_report(self) - Generate comprehensive synthesis report
-docs/Roadmap-Upgrades/emma_agent_ready/emma_controller.py::__init__(self, db_pool, cache_manager, memory_manager, governance_handler, escalation_manager, metrics_collector, health_checker) - Initialize Emma controller.
-docs/Roadmap-Upgrades/emma_agent_ready/emma_controller.py::__post_init__(self) - Initialize derived fields.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::__init__(self, window_size) - Initialize KPI tracker.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::compute_agent_kpis(spans, agent_name, period) - Compute agent-specific KPIs.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::compute_cost_breakdown(spans) - Compute cost breakdown by service.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::compute_sre_metrics(spans) - Compute SRE-level metrics from spans.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::detect_regressions(current_metrics, baseline_metrics, threshold_percent) - Detect metric regressions vs baseline.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::get_alerts(self, thresholds) - Get alerts for KPIs exceeding thresholds
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::get_trend(self, kpi_name) - Get trend (up, down, stable) for a KPI.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_aggregation.py::record_kpi(self, kpi) - Record a KPI measurement.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_config.py::load_config() - Load observability configuration from en
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_context_strategies.py::__init__(self, rag_percent, summary_percent, recent_percent) - Initialize hybrid strategy.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_context_strategies.py::__init__(self, recent_percent) - Initialize strategy.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_context_strategies.py::__init__(self, summary_ratio) - Initialize strategy.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_context_strategies.py::__init__(self, top_k, min_relevance) - Initialize RAG strategy.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::__init__(self, exporters) - Initialize composite exporter.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::__init__(self, file_path) - Initialize file exporter.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::__init__(self, substrate_service) - Initialize substrate exporter.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::export(self, spans) - Export spans to all backends.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::export(self, spans) - Print spans to console.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::export(self, spans) - Synchronously export spans.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_exporters.py::export(self, spans) - Write spans as JSONL.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_failures.py::__init__(self, max_retries, circuit_breaker_threshold) - Initialize recovery executor.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_failures.py::detect_from_span(span) - Check if a span represents a failure.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_failures.py::get_recovery_actions(failure_class) - Get recommended recovery actions for a f
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::decorator(func) - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::decorator(func) - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::decorator(func) - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::decorator(func) - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::sync_wrapper() - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::sync_wrapper() - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::sync_wrapper() - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::sync_wrapper() - 
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::trace_governance_check(policy_name) - Decorator to trace governance policy che
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::trace_llm_call(model) - Decorator to trace LLM generation calls.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::trace_span(name, kind) - Decorator to automatically create and ex
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py::trace_tool_call(tool_name) - Decorator to trace tool invocations.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_models.py::child_context(self) - Create a child context with new span_id.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_models.py::finish(self, status, error) - Mark span as finished.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_models.py::start(cls, name, trace_id, parent_span_id, kind) - Create and start a new span.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_models.py::to_headers(self) - Convert to W3C traceparent header.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::__init__(self, config, substrate_service) - Initialize observability service.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::_setup_logging(self) - Configure logging.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::current_trace_context(self) - Get current trace context (create if nee
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::export_span(self, span) - Export a span to all configured exporter
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::get(cls) - Get global instance.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::set_global(cls, service) - Set global instance.
-docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_service.py::set_trace_context(self, ctx) - Set trace context (e.g., from incoming r
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::__init__(self) - Initialize with default secret patterns.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::_generate_recommendations(self, violations) - Generate recommendations based on violat
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::_load_default_patterns(self) - Load default secret detection patterns.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::add_pattern(self, pattern) - Add a custom secret pattern.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::create_credentials_policy() - Create a CredentialsPolicy instance with
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::get_audit_report(self, content) - Generate security audit report for conte
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::patterns(self) - Get all loaded patterns.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::redact(self, content) - Redact all detected secrets from content
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::scan(self, content) - Scan content for exposed secrets.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/credentials_policy.py::validate_env_file(self, env_content) - Validate .env file format and content.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::__init__(self) - Initialize with default L9 mistake rules
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::_load_default_rules(self) - Load default mistake prevention rules fr
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::add_rule(self, rule) - Add a custom rule.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::check(self, content) - Check content for mistake patterns.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::create_mistake_prevention() - Create a MistakePrevention instance with
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::enforce(self, content) - Enforce rules on content. Returns (allow
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::get_stats(self) - Get statistics about rule triggers.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::reset_stats(self) - Reset occurrence counters.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/mistake_prevention.py::rules(self) - Get all loaded rules.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::__init__(self) - Initialize with default L9 quick fixes.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::_load_default_fixes(self) - Load default quick fixes from quick-fixe
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::add_fix(self, fix) - Add a custom quick fix.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::auto_fix(self, content) - Apply all auto-applicable fixes to conte
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::create_quick_fix_engine() - Create a QuickFixEngine instance with de
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::diagnose(self, content) - Find applicable quick fixes for content.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::fixes(self) - Get all loaded fixes.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::get_stats(self) - Get statistics about fix applications.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/quick_fixes.py::get_suggestions(self, content) - Get fix suggestions without applying the
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::__init__(self, workspace_root) - Initialize startup protocol.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::_calc_duration_ms(self, start_time) - Calculate duration in milliseconds.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::create_session_startup(workspace_root) - Create a SessionStartup instance.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::execute(self) - Execute full startup protocol.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::load_mandatory_files(self) - Load all mandatory startup files.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::mandatory_files(self) - Get list of mandatory startup files.
-docs/__01-04-2026/Governance Audit/Active Files/L9-project/core/governance/session_startup.py::run_preflight(self) - Execute preflight checks.
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::__init__(self, suite6_root) - 
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_check_api_available(self) - Check if governance API is available
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_check_layers_accessible(self) - Check if all Suite 6 layers are accessib
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_check_missing_dependencies(self) - Check for missing Python dependencies
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_get_last_validation_time(self) - Get timestamp of last validation
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_get_python_version(self) - Get Python version
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_load_requirements(self) - Load requirements from requirements.txt
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::_log_environment_action(self, action, data) - Log environment management actions
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::get_environment_status(self) - Get current environment status
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::initialize_environment(self) - Initialize Suite 6 environment configura
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::install_dependencies(self, force) - Install Python dependencies for Suite 6
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::main() - Main environment management CLI
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::sync_workspace_config(self, workspace_path) - Sync Suite 6 configuration to workspace
-docs/__01-04-2026/Governance Audit/Active Files/environment/env-manager.py::validate_environment(self) - Validate Suite 6 environment configurati
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_calculate_content_hash(self, content) - Calculate hash of content for deduplicat
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_determine_learning_location(self, lesson_type, content) - Determine where in learning folder this 
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_load_audit_log(self) - Load existing audit log
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_save_audit_entry(self, entry) - Append audit entry to log
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_scan_quick_fixes(self, file_path) - Scan quick-fixes.md for patterns
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::_scan_repeated_mistakes(self, file_path) - Scan repeated-mistakes.md for lessons
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::get_audit_report(self, start_date, end_date, lesson_type) - Generate audit report
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::get_global_commands_path() - Get GlobalCommands path
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::log_lesson_addition(self, lesson_type, content, source_file, source_type, metadata) - Log addition of lesson/mistake to learni
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/intelligence_audit_logger.py::scan_existing_learning_files(self) - Scan learning folder and log any unlogge
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::__init__(self, workspace_root) - 
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_calculate_reasoning_confidence(self) - Calculate reasoning confidence from rece
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_check_alerts(self) - Check for active alerts
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_check_workflow_readiness(self) - Check if workflow system is ready
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_count_memory_insights(self) - Count available memory insights
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_get_last_anomaly(self) - Get timestamp of last detected anomaly
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_run_verification(self) - Run verification script
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::_trigger_learning_processor(self) - Trigger learning processor manually
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::collect_health_metrics(self) - Collect current operational health metri
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::detect_anomalies(self, health) - Detect anomalies from health metrics
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::log(self, message, level) - Log message to file and stdout
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::respond_to_anomalies(self, anomalies) - Respond to detected anomalies
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::run(self) - Execute complete operational oversight c
-docs/__01-04-2026/Governance Audit/Active Files/ops/scripts/operational-oversight.py::save_dashboard_state(self, health) - Save dashboard state to JSON
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py::determine_depth(confidence, complexity) - Determine reasoning depth based on confi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py::get_depth_config(depth) - Get configuration for a reasoning depth 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py::main() - CLI interface for testing
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py::should_decrease_depth(current_depth, confidence, recent_successes) - Determine if reasoning depth should be d
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/adaptive_reasoning.py::should_increase_depth(current_depth, confidence, recent_failures) - Determine if reasoning depth should be i
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::_determine_escalation_path(self, header) - Determine escalation path based on compo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::_extract_applicable_rules(self, header) - Extract applicable governance rules base
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::_extract_component_id(self, file_path) - Extract component ID from canonical head
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::_get_recommended_action(self, issues) - Determine recommended action based on va
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::_has_canonical_header(self, file_path) - Check if file has Suite 6 canonical head
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::create_stub_from_component(self, component_path, component_id) - Generate agent stub from Suite 6 compone
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::generate_stubs_for_suite6(self) - Generate stubs for all Suite 6 component
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::get_governance_coverage(self) - Analyze governance coverage across Suite
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::main() - CLI interface for agent stub management
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/agent-stub-manager.py::validate_stub(self, stub_path) - Validate agent stub against governance r
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::__init__(self, registry_path, telemetry_path, meta_learning_log) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_adjust_thresholds(self, decisions) - Adjust thresholds to maintain target pre
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_apply_correlation_penalty(self, name1, name2, correlation) - Apply PAC-Bayesian correlation penalty t
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_calculate_correlation(self, values1, values2) - Calculate Pearson correlation coefficien
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_calculate_ece(self, decisions, use_new_params) - Calculate ECE for a set of decisions
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_detect_evidence_correlations(self, decisions) - Detect correlations between evidence sou
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_load_decisions(self, hours) - Load recent decisions from telemetry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_load_registry(self) - Load current rule registry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_log_to_meta_learning(self, ece_before, ece_after, temp_before, temp_after, threshold_adjustments, weight_updates) - Log calibration to meta-learning log
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_normalize_weights(self) - Ensure all weights sum to 1.0 in each mo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_optimize_temperature(self, decisions) - Optimize temperature to minimize ECE
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_save_registry(self) - Save updated registry back to file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::_update_evidence_weights(self, decisions) - Update evidence source weights based on 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::run_calibration(self) - Main calibration routine - fully autonom
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/auto_calibrator.py::run_nightly_calibration() - Entry point for scheduled nightly calibr
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/backwards_compatibility_processor.py::get_global_commands_path() - Get GlobalCommands path
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/backwards_compatibility_processor.py::main() - Re-process older exports with enhanced e
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::__init__(self, telemetry_path, report_dir) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_analyze_thresholds(self, decisions) - Analyze threshold performance
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_breakdown_by_model(self, decisions) - Performance breakdown by model type
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_calculate_ece(self, decisions) - Calculate Expected Calibration Error
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_calculate_mce(self, decisions) - Calculate Maximum Calibration Error
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_calculate_metrics(self, decisions) - Calculate all calibration metrics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_generate_recommendations(self, metrics, decisions) - Generate actionable recommendations
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_generate_reliability_diagram(self, decisions) - Generate ASCII reliability diagram
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_identify_coverage_gaps(self, lessons) - Identify error patterns that don't have 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_insufficient_data_report(self) - Report when insufficient data available
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_load_decisions(self, days) - Load recent decisions
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_query_mcp_lessons(self) - Query all lessons from MCP-Memory.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::_query_mcp_stats(self) - Query MCP-Memory stats endpoint.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::detect_calibration_drift(self) - Detect if calibration has drifted signif
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::generate_mcp_memory_section(self) - Generate MCP-Memory section for weekly r
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::generate_weekly_report() - Entry point for scheduled weekly report 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::generate_weekly_report(self) - Generate comprehensive weekly calibratio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/calibration_dashboard.py::get_mcp_memory_metrics(self) - Fetch learning metrics from MCP-Memory.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_detect_patterns_in_message(self, message, index, all_messages) - Detect learning patterns in a single mes
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_format_meta_learning_entry(self, pattern) - Format a learning pattern as a meta-lear
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_generate_implications(self, detection) - Generate implications based on detection
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_generate_learning_pattern(self, detection, conversation_id) - Generate a structured learning pattern f
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_generate_learning_summary(self, detection) - Generate learning summary based on detec
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_generate_rule_candidates(self, detection) - Generate formal logic rule candidates
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::_parse_conversation(self, conversation_text) - Parse conversation into structured messa
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::extract_from_conversation(self, conversation_text, conversation_id) - Extract learning patterns from a convers
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::main() - Test the chat learning extractor
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::process_current_conversation(self, conversation_text) - Process the current conversation for lea
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/chat-learning-extractor.py::update_meta_learning_log(self, patterns) - Update the meta-learning log with new pa
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::__init__(self, export_dir, output_dir) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_analyze_conversations_for_context(self, conversations) - Analyze conversations to extract context
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_detect_project(self, text) - Detect which project we're working on
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_actions(self, text) - Extract key actions taken
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_completion_summary(self, text) - Extract what was completed
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_context_signals(self, text) - Extract context signals for better under
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_creation_summary(self, text) - Extract what was created
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_decisions(self, text) - Extract key decisions made
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_files(self, text) - Extract files that were modified
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_extract_next_steps(self, text) - Extract mentioned next steps
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_generate_summary(self, text) - Generate brief summary of what was done
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_is_meaningful_context(self, context) - Determine if context is worth saving usi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::_update_index(self, context) - Update session index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::extract_context_from_export(self) - Extract context from latest chat export
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::main() - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/context-extractor.py::save_context(self, context) - Save context to session file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-main.py::main() - Main entry point for the application.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-test_example.py::_example_helper(self, a, b) - Helper method for tests.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-test_example.py::test_example_function(self) - Example test method.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-test_example.py::test_imports_work(self) - Verify basic imports don't fail.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-test_example.py::test_placeholder(self) - Placeholder test - replace with real tes
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/do-templates-test_example.py::test_python_version(self) - Verify Python 3.11+ is being used.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::__init__(self, rules_dir) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::_add_enforcement_section(self, content) - Add enforcement section if missing
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::_add_verification_checklist(self, content) - Add verification checklist for actionabl
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::_convert_to_mandates(self, content) - Convert suggestions to mandatory require
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::_strengthen_language(self, content) - Strengthen weak language to enforceable 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::enhance_all(self) - Enhance all .mdc files in rules director
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/enhance_project_rules_enforceability.py::enhance_file(self, file_path) - Enhance a single rule file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_attempt_auto_fix(self, escalation_record) - Attempt automatic fix for common issues
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_block_component_operations(self, escalation_record) - Block component operations for critical 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_create_tracking_ticket(self, escalation_record) - Create tracking ticket for manual resolu
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_generate_reasoning_snapshot(self, escalation_record) - Generate reasoning snapshot for escalati
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_load_agent_stubs(self) - Load agent stubs to get component-specif
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_log_escalation_issue(self, escalation_record) - Log escalation issue for tracking
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_notify_stakeholder(self, stakeholder_type, escalation_record) - Notify stakeholders about escalation
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::_schedule_team_review(self, escalation_record) - Schedule team review for complex issues
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::create_escalation_record(self, failure_type, component_id, failure_details, escalation_path) - Create escalation record for governance 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::determine_escalation_path(self, failure_type, component_id, severity) - Determine appropriate escalation path ba
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::execute_auto_actions(self, escalation_record) - Execute automatic actions for escalation
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::get_escalation_status(self, escalation_id) - Get status of specific escalation
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::list_active_escalations(self) - List all active escalations
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::main() - CLI interface for escalation router
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::route_failure(self, failure_type, component_id, failure_details) - Main entry point for routing governance 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/escalation-router.py::save_escalation(self, escalation_record) - Save escalation record to file system
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::__init__(self, registry_path, telemetry_path, feedback_log_path) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_detect_systematic_pattern(self, event) - Detect if this feedback is part of a sys
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_infer_feedback_from_behavior(self, user_action, context) - Infer feedback from user behavior
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_load_feedback_history(self) - Load recent feedback history
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_load_registry(self) - Load current registry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_log_feedback(self, event) - Log feedback event to telemetry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_log_pattern_to_meta_learning(self, pattern, event) - Log detected pattern to meta-learning lo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_micro_adjust_temperature(self, direction, magnitude) - Make small immediate temperature adjustm
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_micro_adjust_thresholds(self, direction, magnitude) - Make small immediate threshold adjustmen
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_parse_feedback(self, feedback_text) - Parse user feedback text into type
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_process_feedback(self, event) - Process feedback and make immediate micr
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_save_registry(self) - Save updated registry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::_update_decision_outcome(self, decision_id, outcome) - Update outcome in original decision log
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::get_feedback_summary(self, days) - Generate summary of recent feedback.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::record_explicit_feedback(self, decision_id, feedback, context) - Record explicit user feedback.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/feedback_collector.py::record_implicit_feedback(self, decision_id, user_action, decision_context) - Infer feedback from user behavior.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::__init__(self, autonomous, weekly_review) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::__init__(self, patterns, context_data) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_append_to_repeated_mistakes(self) - Append lessons to repeated-mistakes.md f
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_check_actionability(lesson) - Check if prevention steps are actionable
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_check_completeness(lesson) - Check if all required fields are populat
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_check_existing_lessons(self) - Check for similar existing lessons
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_check_impact_quantification(lesson) - Check if impact includes quantifiable in
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_check_specificity(lesson) - Check if mistake description is specific
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_extract_pattern_context(self, patterns) - Extract context from patterns (ENHANCED:
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_extract_themes(self, content_samples) - Extract common themes from content sampl
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_format_lesson_entry(self, lesson_num, lesson) - Format lesson as markdown entry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_generate_enforcement_rule(self, strategy) - Generate enforcement rule
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_generate_impact_analysis(self, context, decomposition) - Generate impact analysis
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_generate_lesson(self, group_key, patterns) - Generate a formal lesson using Reasoning
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_generate_mistake_description(self) - Generate mistake description from patter
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_generate_prevention_protocol(self, decomposition, strategy) - Generate prevention protocol
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_group_patterns(self, learnings) - Group similar patterns together (REASONI
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_load_memory_index(self) - Load memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_log_to_audit(self, lesson) - Log rejected lesson to audit file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_log_to_review(self, lesson) - Log lesson to review file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_pattern_matches_lesson(self, pattern, lesson_title, lesson_content) - Check if pattern matches an existing les
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_save_memory_index(self) - Save memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::_update_tracking_table(self, content) - Update tracking table with new lessons
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::analyze_patterns(self) - Analyze patterns and generate formal les
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::assess_quality(lesson) - Assess lesson quality and return score +
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block1_define_objective(self) - BLOCK 1: Define the Objective
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block2_understand_context(self) - BLOCK 2: Understand the Context
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block3_decompose_challenge(self) - BLOCK 3: Decompose the Challenge
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block4_leverage_prior_work(self) - BLOCK 4: Leverage Prior Work
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block5_map_strategy(self) - BLOCK 5: Map Strategy
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block6_execute_reasoning(self) - BLOCK 6: Execute Reasoning - Generate le
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::block7_synthesize(self) - BLOCK 7: Synthesize - Create prevention 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::generate_complete_lesson(self) - Run all blocks and generate complete les
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::generate_daily_insights(self, meta_analysis) - Generate daily reasoning insights
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::generate_weekly_meta_insights(self) - Generate weekly meta-insights review
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::integrate_lessons(self) - Integrate accepted lessons into repeated
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::process_lessons(self, lessons) - Process lessons through quality gates
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/formal_lesson_extractor.py::run_meta_analysis(self) - Run meta-analysis on repeated-mistakes.m
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::add_rule() - Add new governance rule (Suite 6 enhance
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::auto_process_current() - Automatically process current conversati
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::extract_learning() - Extract learning patterns from conversat
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::get_metrics() - Get detailed governance metrics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::get_rules() - Get current governance rules from rule r
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::get_status() - Get current governance system status
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::health_check() - Suite 6 health check endpoint
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py::validate_governance() - Run governance validation
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::_is_governance_file(self, file_path) - Check if file is a governance file that 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::create_signature_record(self, file_path, signer_id) - Create digital signature record for a go
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::generate_file_hash(self, file_path) - Generate SHA256 hash for a file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::get_signature_status(self, file_path) - Get signature status for a specific file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::main() - CLI interface for governance integrity m
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::save_signature(self, file_path, signature_record) - Save signature record to signatures dire
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::sign_all_governance_files(self, signer_id) - Sign all governance files in Suite 6
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::sign_governance_file(self, file_path, signer_id) - Complete signing process for a governanc
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::verify_all_signatures(self) - Verify integrity of all signed governanc
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-integrity.py::verify_file_integrity(self, file_path) - Verify file integrity against stored sig
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::__init__(self, suite6_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::_check_file_compliance(self, file_path) - Check if file has Suite 6 canonical head
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::_store_metrics(self, metrics) - Store metrics in database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::collect_metrics(self) - Collect current governance metrics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::get_compliance_report(self) - Generate comprehensive compliance report
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::get_detailed_metrics(self) - Get detailed metrics for Suite 6 dashboa
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::init_database(self) - Initialize SQLite database for metrics s
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-monitor.py::log_performance(self, component_id, operation, duration_ms, success, error_message) - Log performance metrics for Suite 6 comp
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::run_test_suite() - Run the complete Suite 6 test suite
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::setUp(self) - Set up integration test environment
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::setUp(self) - Set up performance test environment
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::setUp(self) - Set up test environment
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_api_integration(self) - Test API integration and endpoints
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_canonical_header_compliance(self) - Test that all governance files have Suit
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_component_id_format(self) - Test component ID format compliance
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_kebab_case_naming(self) - Test that files follow kebab-case naming
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_monitoring_performance(self) - Test monitoring system performance
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_no_hardcoded_secrets(self) - Test that no hardcoded secrets exist in 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_suite6_header_format(self) - Test Suite 6 canonical header format
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_symlink_structure(self) - Test that symlink structure works correc
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_validation_integration(self) - Test validation system integration
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-test-suite.py::test_validation_performance(self) - Test validation performance meets target
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::__init__(self, suite6_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::_check_header_fields(self, header, filepath) - Check required header fields
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::_has_canonical_header(self, content, filepath) - Check if file has Suite 6 canonical head
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::_is_kebab_case(self, filename) - Check if filename follows kebab-case con
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::_log_violations(self, filepath, violations) - Log violations to file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::_validate_header_content(self, content, filepath) - Validate canonical header content
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::enforce_compliance(self) - Enforce governance compliance across Sui
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::get_compliance_report(self) - Generate detailed compliance report
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::validate_all_files(self) - Validate all Suite 6 governance files fo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::validate_file(self, filepath) - Validate a single file for Suite 6 gover
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-validator.py::validate_workspace(self, workspace_path) - Validate workspace governance setup
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::__init__(self, registry_path) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_assess_command_risk(self, context) - Assess risk of command execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_assess_escalation_need(self, context) - Assess whether to escalate to user
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_assess_file_edit_risk(self, context) - Assess risk of file edit using probabili
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_check_deterministic_rules(self, action_type, context) - Check if any deterministic FOL rules app
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_default_assessment(self, context) - Default assessment when specific model n
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::_load_registry(self) - Load governance rules from registry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::evaluate_governance_action(self, action_type, context) - Main entry point for governance decision
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/hybrid_kernel.py::evaluate_rule_with_probabilistic_predicate(self, rule_fol, context) - Evaluate hybrid rules containing probabi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::__init__(self, mcp_url, user_id, dry_run) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_content_hash(self) - Generate content hash for deduplication.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_extract_field(self, text, field_name) - Extract a field value from lesson text.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_infer_tags(self, learning) - Infer tags from learning pattern type.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_load_migration_log(self) - Load previously migrated lesson hashes.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_log_migration(self, lesson, status, mcp_response) - Log migration attempt for idempotency.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_parse_lesson_section(self, section) - Parse a single lesson section.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::_submit_to_mcp(self, lesson) - Submit lesson to MCP-Memory API.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::full_sync(self) - Full sync: gold lessons + extracted patt
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::ingest_extracted(self) - Ingest extracted patterns from memory_ag
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::main() - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::migrate_gold_lessons(self) - Migrate gold lessons from repeated-mista
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::migrate_to_mcp(self, lessons) - Migrate lessons to MCP-Memory.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::parse_extracted_patterns(self, min_confidence) - Parse patterns from memory_aggregator ou
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::parse_gold_lessons(self) - Parse curated lessons from repeated-mist
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_to_mcp_bridge.py::to_mcp_payload(self, user_id) - Convert to MCP-Memory SaveMemoryWithConf
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::_load_memory_index(self) - Load memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::_log_to_audit(self, learnings, lesson_type) - Log additions to learning audit system
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::_save_memory_index(self) - Save memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::_update_mistakes_file(self, mistakes) - Update repeated mistakes file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::_update_quick_fixes(self, solutions) - Update quick fixes file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::apply_pending_learnings(self) - Apply learnings that haven't been added 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::generate_insights_report(self) - Generate insights from learnings
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/learning_updater.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::__init__(self, pattern_type, content, context, timestamp, enhanced_context) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_add_learning(self, learning) - Add learning to index (with deduplicatio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_analyze_conversations(self, conversations) - Analyze conversations for learning patte
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_assess_context_quality(self, message_window) - Assess quality of context for pattern va
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_assess_pattern_specificity(self, pattern, mistake_type) - Assess pattern specificity for generaliz
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_check_solution_proof(self, message_window) - Check if solution has proof (command out
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_detect_corrections(self, conv, message_window) - L9-Enhanced: Multi-modal correction dete
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_detect_lesson_trigger(self, conv, conversations, index) - Detect 'LESSON' trigger and extract 10 p
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_detect_mistakes(self, conv, message_window) - L9-Enhanced: Multi-modal mistake detecti
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_detect_solutions(self, conv, message_window) - L9-Enhanced: Solution detection with pat
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_extract_conversations(self, state_db) - Extract conversations from state databas
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_extract_leveldb_conversations(self, chat_data_dir) - Extract conversations from LevelDB chat 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_extract_message_window(self, conversations, index, window_size) - Extract message window around current co
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_extract_solution_pattern(self, message_window) - Extract reusable solution pattern from c
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_extract_structured_snippets(self, message_window) - Extract structured snippets from message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_generate_hash(self) - Generate unique hash for deduplication
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_load_memory_index(self) - Load existing memory index or create new
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_process_export(self, export_dir) - Process a single export directory
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::_save_memory_index(self) - Save memory index to disk
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::generate_report(self) - Generate summary report
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::process_all_exports(self) - Process all chat exports
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_aggregator.py::to_dict(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::_calculate_confidence(self, pattern_data) - Calculate confidence score for a pattern
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::_find_pattern_in_memory(self, pattern_hash) - Find pattern information in memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::_load_memory_index(self) - Load memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::_load_pattern_weights(self) - Load pattern weights
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::_save_pattern_weights(self) - Save pattern weights
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::evolve_patterns(self) - Evolve patterns: improve weights, decay 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::get_auto_apply_patterns(self) - Get list of patterns that should be auto
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::get_pattern_weight(self, pattern_hash) - Get current weight for a pattern
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::get_statistics(self) - Get compounding statistics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::initialize_weights_from_memory(self) - Initialize weights for existing patterns
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::log_auto_apply(self, pattern_hash, context, outcome) - Log auto-applied pattern
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::prune_patterns(self) - Prune patterns with weight below thresho
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::should_auto_apply(self, pattern_hash) - Check if pattern should be auto-applied
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/memory_compounding.py::update_weight(self, pattern_hash, outcome, confidence) - Update pattern weight based on outcome
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::__init__(self, workspace_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::_extract_purpose(self, content) - Extract purpose from content
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::_generate_related_rules(self, title) - Generate related rules references
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::create_index_file(self, rules) - Create index.mdc file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::create_rule_file(self, section, category, filename, enforceability_enhancements) - Create a Project Rules .mdc file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::enhance_content(self, content, enhancements) - Enhance content with enforceable languag
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::enhance_enforceability(self, content, enhancements) - Enhance content with enforceable languag
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::migrate(self) - Execute migration
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::parse_sections(self, content) - Parse content into rule sections
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/migrate_to_project_rules.py::read_template(self) - Read the .cursorrules template file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::_build_pattern_cache(self) - Build pattern cache for fast matching
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::_extract_keywords(self, text) - Extract keywords from text for pattern m
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::_load_lessons(self) - Load lessons from repeated-mistakes.md
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::_log_to_audit(self, action_description, lesson, confidence, allowed) - Log check result to audit file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::check_action(self, action_description) - Check action against mistake database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::get_statistics(self) - Get checker statistics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::main() - CLI interface for testing
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker.py::refresh_cache(self) - Refresh pattern cache (call when lessons
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker_daemon.py::__init__(self, checker) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker_daemon.py::on_modified(self, event) - Handle file modification
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/pre_execution_checker_daemon.py::run_daemon() - Run pre-execution checker daemon
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::__init__(self, registry_path, telemetry_path) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::__post_init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_apply_temperature_scaling(self, raw_prob, temperature) - Apply temperature scaling for calibratio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_build_reasoning(self, evidence, raw_prob, calibrated_prob, subjective) - Build human-readable reasoning explanati
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_cascading_risk(self, references) - Calculate risk from cascading impact
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_confidence(self, evidence) - Calculate confidence based on evidence q
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_correction_adjustment(self, correction_count) - Calculate trust adjustment from user cor
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_ece_for_decisions(self, decisions) - Helper to calculate ECE for a list of de
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_file_type_risk(self, file_type) - Calculate risk based on file type
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_frequency_risk(self, frequency) - Calculate risk from edit frequency
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_calculate_location_risk(self, file_path) - Calculate risk based on file location
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_classify_risk(self, probability, subjective) - Classify risk level and determine action
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_decompose_subjective_logic(self, evidence) - Decompose into trust/disbelief/uncertain
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_ensure_telemetry_dir(self) - Ensure telemetry directory exists
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_get_default_calibration(self) - Default calibration parameters
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_get_default_registry(self) - Default configuration if registry not fo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_get_default_thresholds(self) - Default threshold configuration
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_infer_file_type(self, file_path) - Infer file type from path and extension
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_load_registry(self) - Load probabilistic models from rule regi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_log_decision(self, assessment, evidence, file_path) - Log decision to telemetry for learning
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::_weighted_combination(self, evidence) - Calculate weighted average of evidence
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::assess_file_compliance_risk(self, file_path, file_type, edit_frequency, user_correction_count, references_count) - Assess file compliance risk using weight
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::calculate_ece(self, decisions) - Calculate Expected Calibration Error.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::get_threshold(self, threshold_name) - Get current threshold value
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::optimize_temperature(self, target_ece) - Optimize temperature parameter to minimi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/probabilistic_engine.py::record_outcome(self, decision_id, outcome, feedback) - Record outcome of a decision for learnin
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::_determine_confidence_level(self, verdict, evidence) - Determine confidence level based on verd
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::_determine_escalation_path(self, verdict, priority_level) - Determine appropriate escalation path
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::_determine_next_actions(self, verdict, escalation_path) - Determine next actions based on verdict 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::_generate_markdown_content(self, snapshot) - Generate markdown content from snapshot 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::_setup_snapshot_directories(self) - Create directory structure for snapshots
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::create_escalation_snapshot(self, component_id, component_name, failure_type, escalation_target) - Create snapshot for escalation routing d
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::create_governance_snapshot(self, component_id, component_name, decision_type, rule_applied, rule_id, observation, conclusion, verdict, reasoning_steps, evidence, initiated_by, priority_level) - Create a structured governance reasoning
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::create_validation_snapshot(self, component_id, component_name, validation_result) - Create snapshot for governance validatio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::generate_snapshot_id(self, component_id, decision_type) - Generate unique snapshot ID
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::list_snapshots(self, component_id, days) - List recent snapshots, optionally filter
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::main() - CLI interface for reasoning snapshot gen
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/reasoning-snapshot-generator.py::save_snapshot(self, snapshot) - Save snapshot to file system
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::_log_recovery(self, message) - Log recovery attempt
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::auto_recover_component(self, component_name, agent_name) - Attempt to auto-recover a failed compone
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::check_all_components(self) - Check health of all components
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::check_launchagent_status(self, agent_name) - Check if LaunchAgent is running
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::check_log_freshness(self, log_file, max_age_hours) - Check if log file is fresh (recently upd
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::get_log_dir() - Get log directory using $HOME-based path
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_health_monitor.py::run_health_check(self) - Run health check and auto-recover if nee
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::_load_status(self) - Load system status
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::_save_status(self) - Save system status
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::check_all_components(self) - Check health of all components
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::check_component_health(self, component_name) - Check health of a component
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::coordinate_components(self) - Coordinate execution of all components
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/recursive_learning_orchestrator.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::__init__(self, suite_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::_load_agent_stubs(self) - Load all agent stubs
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::_load_rule_registry(self) - Load governance rule registry
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::execute_query(self, query) - Execute natural language query against g
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::get_governance_summary(self) - Get overall governance summary
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::main() - CLI interface for registry viewer intell
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::parse_natural_language_query(self, query) - Parse natural language query and determi
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_agents_by_kernel_version(self, kernel_version) - Find agents using specific kernel versio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_agents_by_layer(self, layer_name) - Find agents in specific layer
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_agents_enforcing_rule(self, rule_id) - Find agents that enforce a specific rule
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_escalation_paths(self, escalation_target) - Analyze escalation paths across agents
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_rule_coverage(self) - Analyze rule coverage across all agents
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/registry-viewer-intelligence.py::query_stale_agents(self, days_threshold) - Find agents with stale validation dates
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_activate_intelligence(self) - Phase 7: Activate learning and context-m
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_check_pending_lessons(self) - Phase 6: Display pending lessons inline
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_check_yaml_module(self) - Check if yaml module is available
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_exit_with_errors(self) - Exit with beautiful error display
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_install_suite6(self) - Phase 2: Install Suite 6 configuration a
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_load_learning_files(self) - Phase 4: Load 12 learning files recursiv
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_load_mandatory_files(self) - Phase 3: Load all 23 mandatory files wit
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_load_n8n_kit(self) - Phase 5: Load 7 n8n start-up kit files
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_preflight_checks(self) - Phase 1: Verify prerequisites
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_print_banner(self) - Print gorgeous startup banner
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_print_success(self) - Print gorgeous success message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::_verify_setup(self) - Phase 8: Comprehensive verification
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::main() - Main entry point with gorgeous execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_error(text) - Print error message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_header(text) - Print beautiful section header
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_info(text) - Print info message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_progress(current, total, item) - Print progress with beautiful formatting
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_success(text) - Print success message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::print_warning(text) - Print warning message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/setup-new-workspace.py::run(self) - Execute complete setup with gorgeous UI
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_mistakes_to_cursorrules.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_mistakes_to_cursorrules.py::sync_mistakes_to_cursorrules() - Embed repeated mistakes directly into .c
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_append_to_meta_learning_log(self, entries) - Append entries to meta-learning log
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_extract_synced_hashes(self) - Extract hashes of learnings already sync
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_generate_mistake_entry(self, mistakes) - Generate meta-learning entry for mistake
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_generate_solution_entry(self, solutions) - Generate meta-learning entry for solutio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_load_memory_index(self) - Load memory index
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::_save_memory_index(self) - Save memory index with sync tracking
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::get_global_commands_path() - Get GlobalCommands path, preferring Drop
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::main() - Main execution
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/sync_to_meta_learning.py::sync_new_learnings(self) - Sync new learnings to meta-learning log
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::__init__(self, suite6_root) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::_collection_worker(self) - Background worker for processing telemet
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::_get_database_size(self) - Get database size in MB
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::_store_data(self, item_type, data) - Store telemetry data in database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::_system_metrics_worker(self) - Background worker for collecting system 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::cleanup_old_data(self, days) - Clean up telemetry data older than speci
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::collect_event(self, component_id, event_type, event_data, severity) - Collect an event from a Suite 6 componen
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::collect_metric(self, component_id, metric_name, value, unit, tags, metadata) - Collect a metric from a Suite 6 componen
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::collect_performance(self, component_id, operation, duration_ms, success, error_message) - Collect performance metrics from a Suite
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::get_events(self, component_id, event_type, severity, limit) - Retrieve events from the database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::get_metrics(self, component_id, metric_name, start_time, end_time, limit) - Retrieve metrics from the database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::get_performance_summary(self, component_id, hours) - Get performance summary for the last N h
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::get_system_health(self) - Get current system health metrics
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::init_database(self) - Initialize telemetry database
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::main() - Main telemetry collector CLI
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::start_collection(self) - Start continuous telemetry collection
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/telemetry-collector.py::stop_collection(self) - Stop telemetry collection
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::__init__(self) - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_calculate_success_rates(self) - Calculate success rates for all patterns
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_classify_request(self, request) - Classify request into type
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_count_corrections(self, messages) - Count number of corrections in conversat
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_determine_outcome(self, messages, user_request) - Determine if conversation was successful
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_leveldb_conversations(self, chat_data_dir) - Extract conversations from LevelDB (reus
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_messages(self, conversation) - Extract messages from conversation struc
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_sqlite_conversations(self, state_db) - Extract conversations from SQLite databa
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_text(self, message) - Extract text content from message
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_tool_calls(self, message) - Extract tool calls from assistant messag
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_extract_tool_patterns(self, conversation) - Extract tool call patterns from a single
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_hash_sequence(self, tools) - Create hash for tool sequence
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_process_export(self, export_dir) - Process a single export directory
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::_save_patterns(self) - Save tool patterns to JSON file
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::extract_all_patterns(self) - Extract tool patterns from all chat expo
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/tool_pattern_extractor.py::main() - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/update-suite6-references.py::main() - Main function to update all files
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/update-suite6-references.py::should_skip_file(file_path) - Check if file should be skipped
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/update-suite6-references.py::update_file(file_path) - Update a single file and return list of 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::detect_violations(text) - Auto-detect potential violations in text
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::get_stats() - Get violation statistics.
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::list_violations(limit) - List recent violations from the violatio
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::log_violation(lesson_id, context, severity, trigger_source) - Log a lesson violation to local files an
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::main() - 
-docs/__01-04-2026/Governance Audit/Orphaned Files/python/violation_tracker.py::sync_to_mcp_memory(entry) - Sync a violation entry to MCP Memory for
-docs/__01-05-2026/packetEnvelope - Phase 2-5/integration.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/integration.py::__init__(self, upgrade_engine) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/integration.py::_register_standard_schemas(self) - Register standard L9 event schemas
-docs/__01-05-2026/packetEnvelope - Phase 2-5/integration.py::get_upgrade_status(self) - Get current upgrade status
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::__init__(self, config) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::__init__(self, observability) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::_init_metrics(self) - Initialize Prometheus metrics
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::attach_to_frame(self, frame_data) - Attach W3C trace context to WebSocket fr
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::create_observability(enabled) - Factory function for observability
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::decorator(func) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::extract_from_frame(self, frame_data) - Extract trace context from received WebS
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::extract_trace_context(self, headers) - Extract W3C Trace Context from HTTP head
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::inject_trace_context(self, headers) - Inject W3C Trace Context into headers fo
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::record_packet_metrics(self, packet_id, size_bytes, lineage_depth, operation) - Record packet-specific metrics
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::sync_wrapper() - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::to_json(self) - Serialize to JSON for centralized loggin
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py::trace_operation(self, operation_name, attributes, should_trace) - Decorator for tracing operations
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::create_packet_ingested_event(packet_id, source, packet_data, trace_id, user_id) - Factory for packet ingested events
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::deserialize(self, data) - Deserialize event from protocol format
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::deserialize(self, headers, body) - Deserialize from HTTP binary mode
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::deserialize(self, headers, body) - Deserialize from HTTP structured mode
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::from_dict(cls, data) - Deserialize from dict
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::from_json(cls, json_str) - Deserialize batch from JSON
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::from_json(cls, json_str) - Deserialize from JSON
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::get_schema(self, event_type, version) - Get schema (latest version if not specif
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::register_schema(self, event_type, version, schema) - Register event schema
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::serialize(self, event) - Serialize event to protocol format
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::serialize(self, event) - Serialize to HTTP binary mode
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::serialize(self, event) - Serialize to HTTP structured mode
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::to_dict(self) - Convert to CloudEvents dict representati
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::to_json(self) - Serialize batch to JSON array
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::to_json(self) - Serialize to JSON
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::validate(self) - Validate CloudEvents compliance
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_3_standardization.py::validate_event(self, event) - Validate event against registered schema
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::__init__(self, batch_size, max_concurrent_batches, db_pool_size) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::__init__(self, consumer_group, event_handlers) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::__init__(self, snapshot_interval) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_4_scalability.py::_validate_packet(self, packet) - Validate individual packet
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::__init__(self, audit_log) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::__init__(self, config) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::__init__(self, config) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::_sign_proof(self, data_hash) - HMAC sign proof
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::get_expiration_date(self, aggregate_id, created_at) - Get expiration date
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::get_retention_policy(self, aggregate_id) - Get retention policy for aggregate
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::is_expired(self, aggregate_id, created_at) - Check if aggregate has expired
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::register_rule(self, rule) - Register anonymization rule
-docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_5_governance.py::set_retention_policy(self, aggregate_id, policy) - Set retention policy for aggregate
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::obs_config(self) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::observability(self, obs_config) - 
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_anonymization(self) - Test data anonymization
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_cloudevent_creation(self) - Test CloudEvent object creation
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_cloudevent_deserialization(self) - Test CloudEvent JSON deserialization
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_cloudevent_serialization(self) - Test CloudEvent JSON serialization
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_cloudevent_to_dict(self) - Test CloudEvent serialization to dict
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_cloudevent_validation(self) - Test CloudEvent validation
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_disabled_observability(self) - Test disabled observability mode
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_expiration_calculation(self) - Test expiration date calculation
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_http_binary_binding(self) - Test HTTP Binary Protocol Binding
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_http_structured_binding(self) - Test HTTP Structured Protocol Binding
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_metrics_creation(self, observability) - Test metrics are created
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_observability_initialization(self, observability) - Test observability engine initializes
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_retention_manager(self) - Test retention policy management
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_schema_registry(self) - Test schema registry
-docs/__01-05-2026/packetEnvelope - Phase 2-5/test_suite.py::test_trace_context_extraction(self, observability) - Test W3C Trace Context extraction
-docs/__01-05-2026/packetEnvelope - RollOut/deployment_automation.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::__init__(self) - 
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::_get_bool(self, key, default) - Get boolean environment variable
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::_get_float(self, key, default) - Get float environment variable
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::_load_from_env(self) - Load flags from environment variables
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::disable_phase(self, phase) - Disable entire phase
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::enable_phase(self, phase) - Enable entire phase
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::get_flags() - Get global feature flag manager
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::get_percentage(self, flag) - Get percentage value (0-100)
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::is_enabled(flag) - Check if feature is enabled
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::is_enabled(self, flag) - Check if feature is enabled
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::should_use_batch_ingestion() - Determine if batch ingestion should be u
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::to_dict(self) - Convert to dictionary
-docs/__01-05-2026/packetEnvelope - RollOut/feature_flags.py::to_json(self) - Export as JSON
-docs/_archive/mcp-memory-deprecated/mcpserver.py::get_mcp_tools() - Define all tools exposed over MCP to Cur
 email_agent/client.py::execute_email_task(task) - Execute an email task from Mac Agent run
 email_agent/config.py::ensure_dirs() - Ensure all required directories exist.
 email_agent/credentials.py::create_flow(redirect_uri) - Create OAuth2 flow for Gmail authenticat
@@ -2734,59 +1791,6 @@ ir_engine/simulation_router.py::get_result(self, request_id) - Get a simulation 
 ir_engine/simulation_router.py::get_results_for_graph(self, graph_id) - Get all results for a specific graph.
 ir_engine/simulation_router.py::set_engine(self, engine) - Set the simulation engine.
 ir_engine/simulation_router.py::to_dict(self) - 
-l-cto-phase-2/l9_agent/desire_engine.py::__init__(self, config_path) - 
-l-cto-phase-2/l9_agent/desire_engine.py::_load_config(self, path) - 
-l-cto-phase-2/l9_agent/desire_engine.py::decay(self) - 
-l-cto-phase-2/l9_agent/desire_engine.py::get_desire(self, goal_id) - 
-l-cto-phase-2/l9_agent/desire_engine.py::register_goal(self, goal_id) - 
-l-cto-phase-2/l9_agent/desire_engine.py::reinforce(self, goal_id, amount) - 
-l-cto-phase-2/l9_agent/desire_tests.py::run_desire_tests() - 
-l-cto-phase-2/l9_agent/goal_commitment.py::__init__(self, desire_engine, will_engine, persistence_engine) - 
-l-cto-phase-2/l9_agent/goal_commitment.py::update_goal(self, goal_id) - 
-l-cto-phase-2/l9_agent/persistence_engine.py::__init__(self, thresholds) - 
-l-cto-phase-2/l9_agent/persistence_engine.py::should_persist(self, desire, will) - 
-l-cto-phase-2/l9_agent/trust_engine.py::__init__(self, state, config) - 
-l-cto-phase-2/l9_agent/trust_engine.py::on_clarification(self) - 
-l-cto-phase-2/l9_agent/trust_engine.py::on_conflict(self) - 
-l-cto-phase-2/l9_agent/trust_engine.py::on_failure(self) - 
-l-cto-phase-2/l9_agent/trust_engine.py::on_success(self) - 
-l-cto-phase-2/l9_agent/trust_hooks.py::after_task_feedback(task_id, outcome, user_feedback, trust_engine) - Called after user responds to agent prop
-l-cto-phase-2/l9_agent/trust_hooks.py::on_conflict_detected(context, trust_engine) - 
-l-cto-phase-2/l9_agent/trust_model.py::__init__(self, initial, decay) - 
-l-cto-phase-2/l9_agent/trust_model.py::as_scalar(self) - 
-l-cto-phase-2/l9_agent/trust_model.py::decay(self) - Slowly decay trust toward neutral (0.5) 
-l-cto-phase-2/l9_agent/trust_model.py::log(self, event) - 
-l-cto-phase-2/l9_agent/trust_model.py::penalize(self, amount) - 
-l-cto-phase-2/l9_agent/trust_model.py::reinforce(self, amount) - 
-l-cto-phase-2/l9_agent/trust_tests.py::run_trust_tests() - 
-l-cto-phase-2/l9_agent/trust_tests.py::test_initial_trust() - 
-l-cto-phase-2/l9_agent/trust_tests.py::test_penalty() - 
-l-cto-phase-2/l9_agent/trust_tests.py::test_reinforcement() - 
-l-cto-phase-2/l9_agent/trust_visualization.py::scalar_to_color(score) - Map trust score to a color scale for UI/
-l-cto-phase-2/l9_agent/value_alignment.py::__init__(self, config_path) - 
-l-cto-phase-2/l9_agent/value_alignment.py::_load_values(self) - 
-l-cto-phase-2/l9_agent/value_alignment.py::_validate_values(self) - 
-l-cto-phase-2/l9_agent/value_alignment.py::explain_score(self, action_tags) - 
-l-cto-phase-2/l9_agent/value_alignment.py::score_action(self, action_tags) - Deterministic weighted alignment score ∈
-l-cto-phase-2/l9_agent/value_tests.py::run_value_alignment_tests() - 
-l-cto-phase-2/l9_agent/will_engine.py::__init__(self) - 
-l-cto-phase-2/l9_agent/will_engine.py::commit(self, goal_id, desire_level) - 
-l-cto-phase-2/l9_agent/will_engine.py::get_will(self, goal_id) - 
-l9/agents/research_agent.py::__init__(self, api_key) - 
-l9/agents/research_agent.py::__init__(self, api_key, prompt_variations) - Initialize research agent.
-l9/agents/research_agent.py::__init__(self, responses) - 
-l9/agents/research_agent.py::_extract_module_id(self, yaml_content) - Extract module_id from YAML content.
-l9/agents/research_agent.py::_extract_yaml(self, response) - Extract YAML content from response.
-l9/agents/research_agent.py::_generate_summary(self, result) - Generate research summary.
-l9/agents/research_agent.py::_validate_spec(self, yaml_content) - Validate Module-Spec-v2.4 structure.
-l9/agents/research_agent.py::build_semantic_graph(self) - Build relationships between concepts acr
-l9/agents/research_agent.py::compute_consensus_patterns(self) - Find consensus across variations.
-l9/agents/research_agent.py::extract_architectural_insights(response) - Extract architectural recommendations.
-l9/agents/research_agent.py::extract_code_snippets(response) - Extract code blocks from response.
-l9/agents/research_agent.py::extract_concepts(response) - Extract key concepts using heuristics.
-l9/agents/research_agent.py::extract_unique_insights(self) - Find novel insights unique to fewer vari
-l9/agents/research_agent.py::generate_synthesis_result(self) - Generate comprehensive synthesis result.
-l9/orchestration/strategymemory.py::__init__(self) - Initialize the stub service.
 mac_agent/config.py::__init__(self) - 
 mac_agent/config.py::get_config() - Get or create config singleton.
 mac_agent/executor.py::__init__(self) - 
@@ -2809,14 +1813,6 @@ mac_agent/websocket_client.py::on_connect(self, callback) - Register callback fo
 mac_agent/websocket_client.py::on_disconnect(self, callback) - Register callback for disconnection even
 mac_agent/websocket_client.py::on_task(self, callback) - Register callback for task events.
 mac_agent/websocket_client.py::running_count(self) - Number of currently running tasks.
-mcp_memory/src/main.py::__init__(self, caller_id, user_id) - 
-mcp_memory/src/main.py::check_auth_block(ip) - Check if IP is blocked due to failed aut
-mcp_memory/src/main.py::check_rate_limit(ip) - Check if IP has exceeded rate limit. Rai
-mcp_memory/src/main.py::creator(self) - Metadata creator value for this caller.
-mcp_memory/src/main.py::get_client_ip(request) - Get client IP, respecting X-Forwarded-Fo
-mcp_memory/src/main.py::record_failed_auth(ip) - Record a failed authentication attempt.
-mcp_memory/src/main.py::source(self) - Metadata source value for this caller.
-mcp_memory/src/mcp_server.py::get_mcp_tools() - 
 memory/checkpoint_manager.py::__init__(self, service) - 
 memory/extractor/agent_config_extractor.py::extract(self, input_path, output_root) - Extract agent configuration from input.
 memory/extractor/agent_config_extractor.py::extract_config(self, content, mode) - Extract configuration based on mode.
@@ -2898,6 +1894,7 @@ memory/retrieval.py::set_semantic_service(self, service) - Set or update the sem
 memory/slack_ingest.py::_build_system_prompt(thread_context, semantic_hits, user_id, channel_id) - Build system prompt that includes thread
 memory/state_manager.py::__init__(self, service, agent_id) - 
 memory/state_manager.py::agent_id(self) - 
+memory/strategymemory.py::__init__(self) - Initialize the stub service.
 memory/substrate_graph.py::__init__(self, repository, semantic_service, world_model_service) - Initialize DAG with dependencies.
 memory/substrate_graph.py::_default_state() - Create default state.
 memory/substrate_graph.py::build_substrate_graph() - Build the LangGraph DAG for memory subst
@@ -3117,6 +2114,7 @@ runtime/kernel_loader.py::require_kernel_activation(agent) - Assert that kernels
 runtime/kernel_loader.py::set_system_context(self, context) - Set the agent's system context after ker
 runtime/kernel_loader.py::validate_all_kernels(base_path) - Validate all kernels in a directory.
 runtime/kernel_loader.py::validate_kernel_structure(kernel) - Validate kernel structure against expect
+runtime/kernel_loader.py::validate_packet_protocol_rules() - Validate kernel load order against 10_pa
 runtime/kernel_loader.py::verify_kernel_activation(agent) - Verify that an agent has properly activa
 runtime/l_tools.py::_get_symbolic_codegen() - Lazy import symbolic_codegen to avoid st
 runtime/l_tools.py::_get_symbolic_compute() - Lazy import symbolic_compute to avoid st
@@ -3165,44 +2163,78 @@ runtime/websocket_orchestrator.py::__init__(self) -
 runtime/websocket_orchestrator.py::get_connected_agents(self) - Get list of currently connected agent ID
 runtime/websocket_orchestrator.py::get_metadata(self, agent_id) - Get metadata for a connected agent.
 runtime/websocket_orchestrator.py::is_connected(self, agent_id) - Check if an agent is currently connected
-scripts/audit_hidden_capabilities.py::get_async_methods(filepath) - Extract async method definitions from a 
-scripts/audit_hidden_capabilities.py::get_exposed_tools(root) - Extract tool names from TOOL_EXECUTORS d
-scripts/audit_hidden_capabilities.py::main() - 
-scripts/audit_orphan_classes.py::__init__(self, file_path) - 
-scripts/audit_orphan_classes.py::__init__(self, file_path, source_code) - 
-scripts/audit_orphan_classes.py::__init__(self, file_path, source_code) - 
-scripts/audit_orphan_classes.py::_check_decorators(self, node) - 
-scripts/audit_orphan_classes.py::_check_handler_stub(self, node) - Check if route handler is a stub.
-scripts/audit_orphan_classes.py::_check_if_stub(self, node) - Check if a class is a stub implementatio
-scripts/audit_orphan_classes.py::_get_full_attr(self, node) - 
-scripts/audit_orphan_classes.py::_parse_route_decorator(self, decorator, func_node) - Parse @router.get/post/etc decorators.
-scripts/audit_orphan_classes.py::analyze_file(file_path) - Analyze a single Python file.
-scripts/audit_orphan_classes.py::find_class_usages(all_classes, all_files) - Count how many times each class is refer
-scripts/audit_orphan_classes.py::find_duplicate_classes(all_classes) - Find classes with the same name in diffe
-scripts/audit_orphan_classes.py::find_feature_flags(server_file) - Find disabled feature flags in server.py
-scripts/audit_orphan_classes.py::find_python_files(root) - Find all Python files in scan directorie
-scripts/audit_orphan_classes.py::generate_report(all_classes, all_imports, all_routes, usage_counts, disabled_flags, duplicates) - Generate the complete orphan report.
-scripts/audit_orphan_classes.py::main() - 
-scripts/audit_orphan_classes.py::print_json(report) - Print JSON report.
-scripts/audit_orphan_classes.py::print_report(report, show_suggestions) - Print human-readable report.
-scripts/audit_orphan_classes.py::visit_AsyncFunctionDef(self, node) - 
-scripts/audit_orphan_classes.py::visit_ClassDef(self, node) - 
-scripts/audit_orphan_classes.py::visit_FunctionDef(self, node) - 
-scripts/audit_orphan_classes.py::visit_Import(self, node) - 
-scripts/audit_orphan_classes.py::visit_ImportFrom(self, node) - 
-scripts/audit_uncalled_functions.py::analyze_file(filepath, all_content, include_private, verbose) - Analyze a file for truly uncalled parame
-scripts/audit_uncalled_functions.py::find_python_files(root, include_tests) - Find all Python files to scan.
-scripts/audit_uncalled_functions.py::has_framework_decorator(lines, func_line_idx) - Check if function has a framework decora
-scripts/audit_uncalled_functions.py::is_dict_registered(func_name, content) - Check if function is registered in a dic
-scripts/audit_uncalled_functions.py::is_function_referenced(func_name, all_content) - Check if function is called OR reference
-scripts/audit_uncalled_functions.py::is_in_docstring(lines, func_line_idx) - Check if function definition is inside a
-scripts/audit_uncalled_functions.py::main() - 
-scripts/audit_uncalled_functions.py::should_skip_file(filepath, root) - Check if file should be skipped based on
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::__init__(self, filepath) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::__init__(self, repo_root) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::__init__(self, repo_root) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::_check_stub(self, node, content) - Check if class is a stub implementation.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::_get_base_name(self, base_node) - Extract base class name.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::_get_call_target(self, func_node) - Extract function name being called.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::_has_framework_decorator(self, lines, func_idx) - Check for framework decorators above fun
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::_is_referenced(self, func_name) - Check if function is called/referenced.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::analyze_file(self, filepath) - Extract classes from file.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::analyze_file(self, filepath) - Extract functions from file.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::build_index(self, files) - Build searchable index of all code.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::find_python_files(repo_root) - Find all Python files to audit.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::main() - Run complete code integrity audit.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::visit_AsyncFunctionDef(self, node) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::visit_Call(self, node) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py::visit_FunctionDef(self, node) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::__init__(self) - 
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::_calculate_overall_status(self) - Determine overall system health.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::_check_dependencies(self) - Check dependency graph for violations.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::_generate_recommendations(self) - Generate actionable recommendations.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::_topological_sort(self) - Generate startup order using topological
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::_validate_config(self) - Validate environment configuration.
+scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py::visit(node_name) - 
+scripts/audit/audit_shared_core.py::__init__(self) - 
+scripts/audit/audit_shared_core.py::__init__(self, audit_name) - 
+scripts/audit/audit_shared_core.py::__init__(self, audit_name, repo_root) - 
+scripts/audit/audit_shared_core.py::__init__(self, cache_dir) - 
+scripts/audit/audit_shared_core.py::__init__(self, filepath) - 
+scripts/audit/audit_shared_core.py::__init__(self, substrate_enabled) - 
+scripts/audit/audit_shared_core.py::add_rule(self, rule) - Add validation rule.
+scripts/audit/audit_shared_core.py::add_todo(self, file_path, line_start, line_end, action, target, behavior, imports) - Add a TODO item.
+scripts/audit/audit_shared_core.py::export_spans(self, output_file) - Export spans to file.
+scripts/audit/audit_shared_core.py::generate_html_template(self, title, summary, content) - Generate basic HTML template.
+scripts/audit/audit_shared_core.py::generate_plan(self) - Generate GMP TODO plan markdown.
+scripts/audit/audit_shared_core.py::get_file_hash(self, filepath) - Calculate SHA256 hash of file content.
+scripts/audit/audit_shared_core.py::get_modified_files(self, all_files, audit_type, repo_root) - Return only modified files since last ru
+scripts/audit/audit_shared_core.py::invalidate(self, pattern) - Invalidate cache entries matching patter
+scripts/audit/audit_shared_core.py::load_manifest(self) - Load cache manifest.
+scripts/audit/audit_shared_core.py::record_span(self, name, operation, status, duration_ms, attributes) - Record a span for observability.
+scripts/audit/audit_shared_core.py::save_manifest(self, manifest) - Save cache manifest.
+scripts/audit/audit_shared_core.py::setup_logger(name) - Get a structlog logger for the given nam
+scripts/audit/audit_shared_core.py::to_html(self, html_content, filename) - Export as HTML.
+scripts/audit/audit_shared_core.py::to_json(self, data, filename) - Export data as JSON.
+scripts/audit/audit_shared_core.py::to_jsonl(self, records, filename) - Export records as JSONL.
+scripts/audit/audit_shared_core.py::to_markdown(self, markdown_content, filename) - Export as Markdown.
+scripts/audit/audit_shared_core.py::update_manifest(self, all_files, audit_type, repo_root) - Update manifest with current file hashes
+scripts/audit/audit_shared_core.py::validate(self, config) - Validate config, return errors by variab
+scripts/audit/audit_shared_core.py::visit_AsyncFunctionDef(self, node) - 
+scripts/audit/audit_shared_core.py::visit_Call(self, node) - 
+scripts/audit/audit_shared_core.py::visit_ClassDef(self, node) - 
+scripts/audit/audit_shared_core.py::visit_FunctionDef(self, node) - 
+scripts/audit/tier1/audit_capability_inventory.py::assess_capability(method) - Assess capability for impact/risk/effort
+scripts/audit/tier1/audit_capability_inventory.py::build_parameters_from_signature(func) - Extract parameters from function signatu
+scripts/audit/tier1/audit_capability_inventory.py::extract_type_hint(annotation) - Convert type annotation to string.
+scripts/audit/tier1/audit_capability_inventory.py::generate_mcp_schema(method) - Generate MCP schema from method.
+scripts/audit/tier1/audit_capability_inventory.py::get_async_methods(filepath) - Extract async method definitions from fi
+scripts/audit/tier1/audit_capability_inventory.py::get_exposed_tools(root) - Extract tool names from TOOL_EXECUTORS d
+scripts/audit/tier1/audit_capability_inventory.py::main() - Run capability inventory audit.
+scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, base_url, endpoints, timeout) - 
+scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, host, port, timeout) - 
+scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, module, function, timeout) - 
+scripts/audit/tier1/audit_infrastructure_health.py::compute_startup_order(dependency_checks) - Compute valid startup order using topolo
+scripts/audit/tier1/audit_infrastructure_health.py::generate_report(health_checks, config_validations, dependency_checks, startup_sequence) - Generate complete infrastructure report.
+scripts/audit/tier1/audit_infrastructure_health.py::validate_config() - Validate environment configuration.
+scripts/audit/tier1/audit_infrastructure_health.py::verify_dependency_dag() - Verify dependency graph and startup orde
 scripts/batch_generate_specs.py::__init__(self, config) - 
 scripts/batch_generate_specs.py::__init__(self, config) - 
 scripts/batch_generate_specs.py::__init__(self, rate_per_minute) - 
 scripts/batch_generate_specs.py::parse_modules_file(path) - Parse modules file (format: module_name 
 scripts/batch_generate_specs.py::save_spec(self, module_name, content) - Extract and save YAML spec from response
+scripts/cursor_check_mistakes.py::format_violation(v) - Format a violation for display.
+scripts/cursor_check_mistakes.py::main() - 
 scripts/delegate_deep_research.py::extract_prompt_from_payload(payload_path) - Extract the prompt section from a payloa
 scripts/delegate_deep_research.py::extract_yaml_from_response(response) - Extract YAML spec from API response.
 scripts/extract_perplexity_pack.py::extract_files(content, output_dir) - Extract files from Perplexity multi-file
@@ -3982,6 +3014,8 @@ tests/kernel/test_kernel_loader.py::test_loader_returns_agent_capabilities() - C
 tests/kernel/test_kernel_loader.py::test_loader_returns_governance_rules() - Contract: Loaded kernel contains governa
 tests/kernel/test_kernel_loader.py::test_loader_runs() - Contract: Kernel loader runs and returns
 tests/kernel/test_kernel_loader.py::test_merged_contains_both() - Contract: Merged kernel contains data fr
+tests/kernel/test_kernel_loader.py::test_packet_protocol_validation_matches_runtime_order() - Contract: Kernel load order matches 10_p
+tests/kernel/test_kernel_loader.py::test_packet_protocol_validation_returns_expected_structure() - Contract: validate_packet_protocol_rules
 tests/kernel/test_kernel_merge.py::test_governance_overrides_agent() - Test that governance values override age
 tests/kernel/test_kernel_merge.py::test_merge_both_empty() - Test merging two empty dicts.
 tests/kernel/test_kernel_merge.py::test_merge_complex_structure() - Test merging complex nested structures.

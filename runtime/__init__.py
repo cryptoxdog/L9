@@ -47,6 +47,7 @@ from runtime.kernel_loader import (
     # Validation
     validate_kernel_structure,
     validate_all_kernels,
+    validate_packet_protocol_rules,
     # Enforcement
     guarded_execute,
     verify_kernel_activation,
@@ -100,6 +101,7 @@ __all__ = [
     # Kernel Loader - Validation
     "validate_kernel_structure",
     "validate_all_kernels",
+    "validate_packet_protocol_rules",
     # Kernel Loader - Enforcement
     "guarded_execute",
     "verify_kernel_activation",

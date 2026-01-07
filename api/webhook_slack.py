@@ -307,12 +307,14 @@ async def slack_commands(request: Request):
 
 
 def verify_slack_signature(
-    body: str, timestamp: str, signature: str, signing_secret: str
+    body: str, timestamp: str, signature: str, signing_secret: str | None = SLACK_SIGNING_SECRET,
 ) -> bool:
     """
     Verify Slack request signature.
     Rejects replay attacks (>5 minutes skew).
     """
+    if not signing_secret:
+        return False
     if not timestamp or not signature:
         return False
 

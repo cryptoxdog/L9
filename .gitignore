@@ -103,3 +103,4 @@ docs/
 
 # CodeGen folder (specs, schemas, templates - not production)
 codegen/
+.tmp.driveupload/

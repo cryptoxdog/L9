@@ -276,7 +276,7 @@ class HealthChecker:
     async def _probe_http(self, service: ServiceProbe):
         """HTTP health endpoint probe."""
         import httpx
-        
+
         async with httpx.AsyncClient(timeout=service.timeout) as client:
             resp = await client.get(service.endpoint)
             if resp.status_code != 200:

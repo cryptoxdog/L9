@@ -5,37 +5,35 @@
 
 | Decorator | Count | Example Files |
 |-----------|-------|---------------|
-| `@abstractmethod` | 33 | agents/base_agent.py, collaborative_cells/base_cell.py, core/observability/context_strategies.py |
-| `@asynccontextmanager` | 7 | api/server.py, archive/deprecated/l-cto-memory-supabase/memory/shared/locks.py, docs/_archive/mcp-memory-deprecated/main.py |
-| `@asyncio` | 559 | api/adapters/calendar_adapter/tests/test_calendar_adapter.py, api/adapters/email_adapter/tests/test_email_adapter.py, api/adapters/twilio_adapter/tests/test_twilio_adapter.py |
-| `@classmethod` | 44 | api/adapters/calendar_adapter/config.py, api/adapters/email_adapter/config.py, api/adapters/twilio_adapter/config.py |
-| `@contextmanager` | 1 | archive/deprecated/l-cto-memory-supabase/memory/shared/concurrency_manager.py |
-| `@dataclass` | 315 | agents/base_agent.py, agents/codegenagent/codegen_agent.py, agents/codegenagent/readme_generator.py |
-| `@exception_handler(...)` | 3 | api/server.py, igor/audit-memory/mcp_memory_src_main.py, mcp_memory/src/main.py |
+| `@abstractmethod` | 25 | agents/base_agent.py, collaborative_cells/base_cell.py, core/observability/context_strategies.py |
+| `@asynccontextmanager` | 5 | _archived/archived_mcp_memory/src/main.py, api/server.py, igor/audit-memory/mcp_memory_src_main.py |
+| `@asyncio` | 549 | _archived/archived_mcp_memory/tests/test_embeddings.py, _archived/archived_mcp_memory/tests/test_memory.py, _archived/archived_mcp_memory/tests/test_search.py |
+| `@classmethod` | 38 | api/adapters/calendar_adapter/config.py, api/adapters/email_adapter/config.py, api/adapters/twilio_adapter/config.py |
+| `@dataclass` | 273 | agents/base_agent.py, agents/codegenagent/codegen_agent.py, agents/codegenagent/readme_generator.py |
+| `@exception_handler(...)` | 3 | _archived/archived_mcp_memory/src/main.py, api/server.py, igor/audit-memory/mcp_memory_src_main.py |
 | `@field_validator(...)` | 6 | codegen/code-gen-files/schema_parser.py, core/schemas/research_factory_models.py, tools/Phased Upgrades/Stage 1 - Phase 1-6/segments.py |
-| `@fixture` | 212 | api/adapters/calendar_adapter/tests/conftest.py, api/adapters/calendar_adapter/tests/test_calendar_adapter.py, api/adapters/calendar_adapter/tests/test_calendar_adapter_integration.py |
+| `@fixture` | 210 | api/adapters/calendar_adapter/tests/conftest.py, api/adapters/calendar_adapter/tests/test_calendar_adapter.py, api/adapters/calendar_adapter/tests/test_calendar_adapter_integration.py |
 | `@fixture(...)` | 7 | igor/audit-memory/tests_memory_test_substrate_api.py, igor/audit-memory/tests_memory_test_vector_search.py, tests/docker/test_stack_smoke.py |
-| `@get(...)` | 88 | api/adapters/calendar_adapter/routes/calendar_adapter.py, api/adapters/email_adapter/routes/email_adapter.py, api/adapters/twilio_adapter/routes/twilio_adapter.py |
+| `@get(...)` | 85 | _archived/archived_mcp_memory/src/main.py, _archived/archived_mcp_memory/src/routes/health.py, _archived/archived_mcp_memory/src/routes/memory.py |
 | `@l9_traced(...)` | 1 | codegen/templates/python/dora-template.py |
-| `@lru_cache(...)` | 3 | archive/deprecated/l-cto-memory-supabase/memory/shared/schema_cache.py, core/schemas/schema_registry.py, services/symbolic_computation/core.py |
+| `@lru_cache(...)` | 2 | core/schemas/schema_registry.py, services/symbolic_computation/core.py |
 | `@model_validator(...)` | 3 | core/observability/config.py, ir_engine/meta_ir.py |
 | `@on_event(...)` | 2 | api/server.py |
 | `@parametrize(...)` | 4 | tests/docker/test_env_validation.py, tests/test_imports.py |
 | `@patch(...)` | 7 | tests/test_research_graph.py |
-| `@post(...)` | 81 | api/adapters/calendar_adapter/routes/calendar_adapter.py, api/adapters/email_adapter/routes/email_adapter.py, api/adapters/twilio_adapter/routes/twilio_adapter.py |
-| `@property` | 98 | agents/base_agent.py, agents/codegenagent/codegen_agent.py, agents/codegenagent/file_emitter.py |
+| `@post(...)` | 78 | _archived/archived_mcp_memory/src/main.py, _archived/archived_mcp_memory/src/routes/memory.py, api/adapters/calendar_adapter/routes/calendar_adapter.py |
+| `@property` | 94 | _archived/archived_mcp_memory/src/main.py, agents/base_agent.py, agents/codegenagent/codegen_agent.py |
 | `@recurrence_memo(...)` | 1 | services/symbolic_computation/utils.py |
 | `@register(...)` | 4 | core/schemas/schema_registry.py |
-| `@retry(...)` | 3 | codegen/scripts/generate_spec.py, docs/Roadmap-Upgrades/Research - Perplexity Super-Prompt Pack/autonomous-research-agent.py, l9/agents/research_agent.py |
-| `@route(...)` | 8 | docs/__01-04-2026/Governance Audit/Orphaned Files/python/governance-api.py |
+| `@retry(...)` | 2 | agents/research_agent.py, codegen/scripts/generate_spec.py |
 | `@skip(...)` | 3 | tests/integration/test_graph_state_integration.py, tests/integration/test_l_bootstrap.py |
 | `@skipif(...)` | 1 | tests/runtime/test_websocket_orchestrator_basic.py |
-| `@staticmethod` | 85 | api/slack_adapter.py, archive/deprecated/l-cto-memory-supabase/memory/shared/logging_hooks.py, codegen/code-gen-files/extractor.py |
-| `@trace_governance_check(...)` | 2 | core/observability/l9_integration.py, docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_l9_integration.py |
-| `@trace_span(...)` | 11 | core/observability/l9_integration.py, docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_l9_integration.py, tests/core/observability/test_observability_integration.py |
-| `@trace_tool_call(...)` | 2 | core/observability/l9_integration.py, docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_l9_integration.py |
+| `@staticmethod` | 60 | agents/research_agent.py, api/slack_adapter.py, codegen/code-gen-files/extractor.py |
+| `@trace_governance_check(...)` | 1 | core/observability/l9_integration.py |
+| `@trace_span(...)` | 8 | core/observability/l9_integration.py, tests/core/observability/test_observability_integration.py |
+| `@trace_tool_call(...)` | 1 | core/observability/l9_integration.py |
 | `@validator(...)` | 2 | services/symbolic_computation/models.py |
 | `@websocket(...)` | 2 | api/server.py |
-| `@wraps(...)` | 22 | core/observability/instrumentation.py, docs/Roadmap-Upgrades/five-tier-observability-architecture/observability_instrumentation.py, docs/__01-05-2026/packetEnvelope - Phase 2-5/phase_2_observability.py |
+| `@wraps(...)` | 12 | core/observability/instrumentation.py, runtime/dora.py, upgrades/packet_envelope/observability.py |
 
-# Total: 32 unique decorators
+# Total: 30 unique decorators

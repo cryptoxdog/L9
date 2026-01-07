@@ -5,9 +5,6 @@
   ..adapters.email_adapter_adapter
   ..adapters.twilio_adapter_adapter
   ..config
-  ..db
-  ..embeddings
-  ..models
   ..schemas
   ..tools.cursor_client
   .action_tool.orchestrator
@@ -31,7 +28,6 @@
   .convergence
   .core
   .credentials_policy
-  .db
   .decision_synthesizer
   .evaluator
   .event_queue
@@ -44,21 +40,14 @@
   .governance_bridge
   .graph_hydrator
   .graph_to_wm_sync
-  .guardrails
-  .health
   .housekeeping
-  .identity
   .instrumentation
   .interface
-  .kg_client
   .l9_integration
   .local_api
   .logger
-  .mcpserver
-  .memory
   .memory.orchestrator
   .memory_bridge
-  .memory_client
   .memory_extractor
   .meta.orchestrator
   .meta_loader
@@ -82,9 +71,6 @@
   .reasoning_engine
   .research_swarm.orchestrator
   .router
-  .routes
-  .routes.memory
-  .runtime_client
   .scheduler
   .schema
   .schemas
@@ -92,14 +78,11 @@
   .session_startup
   .tool_pattern_extractor
   .validator
-  .value_alignment
   .websocket_client
   .world_model.orchestrator
   .ws_bridge
 # 2020
   2020
-# SUPER_PROMPT_TEMPLATE
-  SUPER_PROMPT_TEMPLATE
 # YAML
   YAML
 # __future__
@@ -124,6 +107,7 @@
   agents.l_cto
   agents.qa_agent
   agents.reflection_agent
+  agents.research_agent
 # api
   api.
   api.adapters.calendar_adapter.adapters.calendar_adapter_adapter
@@ -153,6 +137,14 @@
   asyncio
 # asyncpg
   asyncpg
+# audit_capability_inventory
+  audit_capability_inventory
+# audit_code_integrity
+  audit_code_integrity
+# audit_infrastructure_health
+  audit_infrastructure_health
+# audit_shared_core
+  audit_shared_core
 # base64
   base64
 # chat
@@ -169,6 +161,8 @@
   collections
 # compile_module_spec
   compile_module_spec
+# concurrent
+  concurrent.futures
 # config
   config.memory_substrate_settings
   config.research_settings
@@ -188,19 +182,17 @@
   core.commands.schemas
   core.compliance.audit_log
   core.compliance.audit_reporter
-  core.config
   core.governance.approvals
   core.governance.engine
   core.governance.loader
+  core.governance.mistake_prevention
   core.governance.schemas
   core.governance.validation
   core.kernel_wiring.packet_protocol_wiring
-  core.kernels.bayesian_kernel
   core.kernels.integrity
   core.retrievers.substrate_retriever
   core.schemas.capabilities
   core.schemas.event_stream
-  core.schemas.hypergraph
   core.schemas.packet_envelope
   core.schemas.packet_envelope_v2
   core.schemas.research_factory_models
@@ -222,8 +214,6 @@
   dataclasses
 # datetime
   datetime
-# deepseek_sdk
-  deepseek_sdk
 # domain_tensor_bridge
   domain_tensor_bridge.agent_controller
   domain_tensor_bridge.context_enricher
@@ -248,37 +238,18 @@
   email_agent.credentials
   email_agent.gmail_client
   email_agent.triage
-# emma_agent
-  emma_agent.controller
-  emma_agent.infra.cache
-  emma_agent.infra.database
-  emma_agent.infra.health
-  emma_agent.infra.metrics
-  emma_agent.modules.escalation_manager
-  emma_agent.modules.governance_handler
-  emma_agent.modules.memory_manager
 # enum
   enum
 # fastapi
   fastapi
-  fastapi.middleware.cors
   fastapi.responses
-  fastapi.security
   fastapi.testclient
-# flask
-  flask
-# flask_cors
-  flask_cors
 # fnmatch
   fnmatch
 # functools
   functools
 # generate_module_code
   generate_module_code
-# governance_monitor
-  governance_monitor
-# governance_validator
-  governance_validator
 # graph_adapter
   graph_adapter.packet_node_adapter
 # hashlib
@@ -294,8 +265,6 @@
   importlib.util
 # inspect
   inspect
-# integration
-  integration
 # ir_engine
   ir_engine.compile_meta_to_ir
   ir_engine.constraint_challenger
@@ -309,19 +278,11 @@
   ir_engine.schema_validator
   ir_engine.semantic_compiler
   ir_engine.simulation_router
-# itertools
-  itertools
 # jinja2
   jinja2
 # json
   json
-# l
-  l.l_core.engine
-  l.l_core.identity
-  l.l_governance.guardrails
 # l9
-  l9.agents
-  l9.agents.research_agent
   l9.core.governance
   l9.core.memory
   l9.core.schemas
@@ -329,26 +290,6 @@
   l9.core.utils
   l9.governance.approvals
   l9.memory.substrate_service
-  l9.orchestration.strategymemory
-# l9_agent
-  l9_agent.desire_engine
-  l9_agent.persistence_engine
-  l9_agent.trust_model
-  l9_agent.value_alignment
-  l9_agent.will_engine
-# l_cto
-  l_cto.l_cto_core.identity
-  l_cto.l_cto_interface.runtime_client
-  l_cto.memory.l1.l1_query
-  l_cto.memory.l1.l1_reader
-  l_cto.memory.l1.l1_writer
-  l_cto.memory.shared.concurrency_manager
-  l_cto.memory.shared.constants
-  l_cto.memory.shared.governance_filter
-  l_cto.memory.shared.hashing
-  l_cto.memory.shared.supabase_client
-# langchain
-  langchain.tools
 # langchain_core
   langchain_core.documents
   langchain_core.retrievers
@@ -360,8 +301,6 @@
   mac_agent.config
   mac_agent.executor
   mac_agent.helpers.logging
-# math
-  math
 # memory
   memory.governance_patterns
   memory.graph_client
@@ -373,6 +312,7 @@
   memory.packet_serializer
   memory.retrieval
   memory.slack_ingest
+  memory.strategymemory
   memory.substrate_graph
   memory.substrate_models
   memory.substrate_repository
@@ -380,17 +320,11 @@
   memory.substrate_service
   memory.tool_audit
   memory.validators.packet_validator
-# memory_aggregator
-  memory_aggregator
 # mocks
   mocks.kernel_mocks
   mocks.memory_mocks
   mocks.orchestrator_mocks
   mocks.world_model_mocks
-# neo4j
-  neo4j
-# numpy
-  numpy
 # openai
   openai
 # opentelemetry
@@ -423,28 +357,12 @@
   orchestrators.research_swarm.orchestrator
 # os
   os
-# pandas
-  pandas
 # pathlib
   pathlib
-# phase_2_observability
-  phase_2_observability
-# phase_3_standardization
-  phase_3_standardization
-# phase_4_scalability
-  phase_4_scalability
-# phase_5_governance
-  phase_5_governance
 # pickle
   pickle
 # platform
   platform
-# plotly
-  plotly.graph_objects
-# pre_execution_checker
-  pre_execution_checker
-# psutil
-  psutil
 # psycopg
   psycopg
 # pydantic
@@ -455,18 +373,12 @@
   pytest
 # pythonjsonlogger
   pythonjsonlogger
-# queue
-  queue
 # random
   random
-# ray
-  ray
 # re
   re
 # redis
   redis.asyncio
-# requests
-  requests
 # routes
   routes.
   routes.calendar_adapter
@@ -484,8 +396,6 @@
   runtime.task_queue
   runtime.tool_call_wrapper
   runtime.websocket_orchestrator
-# secrets
-  secrets
 # services
   services.mac_tasks
   services.research.agents
@@ -532,26 +442,19 @@
   simulation.simulation_engine
 # socket
   socket
-# sqlite3
-  sqlite3
 # src
-  src.agent_integration
-  src.architecture
   src.config
   src.db
   src.embeddings
   src.mcp_server
   src.models
   src.routes
-  src.semantic_kernel
 # statistics
   statistics
 # structlog
   structlog
 # subprocess
   subprocess
-# supabase
-  supabase
 # symbolic_computation
   symbolic_computation
   symbolic_computation.core
@@ -574,8 +477,6 @@
   tempfile
 # tenacity
   tenacity
-# tensorflow
-  tensorflow
 # tests
   tests.core.agents.test_executor
   tests.ir_engine.conftest
@@ -589,10 +490,6 @@
   threading
 # time
   time
-# torch
-  torch
-  torch.nn
-  torch.nn.functional
 # traceback
   traceback
 # twilio
@@ -602,7 +499,6 @@
 # typing
   typing
 # unittest
-  unittest
   unittest.mock
 # upgrades
   upgrades.packet_envelope
@@ -612,9 +508,7 @@
   upgrades.packet_envelope.scalability
   upgrades.packet_envelope.standardization
 # urllib
-  urllib.error
   urllib.parse
-  urllib.request
 # uuid
   uuid
 # uvicorn
