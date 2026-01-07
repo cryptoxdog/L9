@@ -97,15 +97,21 @@ class SubstrateRepository:
         content_hash = metadata_dict.get("content_hash")
         session_id = metadata_dict.get("session_id")
         scope = metadata_dict.get("scope", "shared")
+        trace_id = metadata_dict.get("trace_id")
+        # importance_score: prefer metadata, fallback to confidence.score
+        importance_score = metadata_dict.get("importance")
+        if importance_score is None and envelope.confidence:
+            importance_score = envelope.confidence.score
         
         async with self.acquire() as conn:
             await conn.execute(
                 """
                 INSERT INTO packet_store (
                     packet_id, packet_type, envelope, timestamp, routing, provenance,
-                    thread_id, parent_ids, tags, ttl, content_hash, session_id, scope
+                    thread_id, parent_ids, tags, ttl, content_hash, session_id, scope,
+                    trace_id, importance_score
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                 ON CONFLICT (packet_id) DO UPDATE SET
                     envelope = EXCLUDED.envelope,
                     timestamp = EXCLUDED.timestamp,
@@ -115,7 +121,9 @@ class SubstrateRepository:
                     ttl = COALESCE(EXCLUDED.ttl, packet_store.ttl),
                     content_hash = COALESCE(EXCLUDED.content_hash, packet_store.content_hash),
                     session_id = COALESCE(EXCLUDED.session_id, packet_store.session_id),
-                    scope = COALESCE(EXCLUDED.scope, packet_store.scope)
+                    scope = COALESCE(EXCLUDED.scope, packet_store.scope),
+                    trace_id = COALESCE(EXCLUDED.trace_id, packet_store.trace_id),
+                    importance_score = COALESCE(EXCLUDED.importance_score, packet_store.importance_score)
                 """,
                 envelope.packet_id,
                 envelope.packet_type,
@@ -136,8 +144,10 @@ class SubstrateRepository:
                 content_hash,
                 session_id,
                 scope,
+                trace_id,
+                importance_score,
             )
-            logger.debug(f"Inserted packet {envelope.packet_id} with thread_id={thread_id}, parent_ids={parent_ids}, tags={tags}")
+            logger.debug(f"Inserted packet {envelope.packet_id} with thread_id={thread_id}, parent_ids={parent_ids}, importance={importance_score}")
             return envelope.packet_id
 
     async def get_packet(self, packet_id: UUID) -> Optional[PacketStoreRow]:
