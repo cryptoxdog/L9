@@ -86,14 +86,33 @@ class SubstrateRepository:
         Returns:
             The packet_id of the inserted record.
         """
+        # Extract fields from envelope for dedicated columns (v2.0 support)
+        thread_id = envelope.thread_id
+        tags = envelope.tags if envelope.tags else []
+        ttl = envelope.ttl
+        # Extra fields may be in metadata dict (extra="allow" in PacketMetadata)
+        metadata_dict = envelope.metadata.model_dump() if envelope.metadata else {}
+        content_hash = metadata_dict.get("content_hash")
+        session_id = metadata_dict.get("session_id")
+        scope = metadata_dict.get("scope", "shared")
+        
         async with self.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO packet_store (packet_id, packet_type, envelope, timestamp, routing, provenance)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO packet_store (
+                    packet_id, packet_type, envelope, timestamp, routing, provenance,
+                    thread_id, tags, ttl, content_hash, session_id, scope
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 ON CONFLICT (packet_id) DO UPDATE SET
                     envelope = EXCLUDED.envelope,
-                    timestamp = EXCLUDED.timestamp
+                    timestamp = EXCLUDED.timestamp,
+                    thread_id = COALESCE(EXCLUDED.thread_id, packet_store.thread_id),
+                    tags = COALESCE(EXCLUDED.tags, packet_store.tags),
+                    ttl = COALESCE(EXCLUDED.ttl, packet_store.ttl),
+                    content_hash = COALESCE(EXCLUDED.content_hash, packet_store.content_hash),
+                    session_id = COALESCE(EXCLUDED.session_id, packet_store.session_id),
+                    scope = COALESCE(EXCLUDED.scope, packet_store.scope)
                 """,
                 envelope.packet_id,
                 envelope.packet_type,
@@ -107,8 +126,14 @@ class SubstrateRepository:
                     if envelope.provenance
                     else None
                 ),
+                thread_id,
+                tags,
+                ttl,
+                content_hash,
+                session_id,
+                scope,
             )
-            logger.debug(f"Inserted packet {envelope.packet_id}")
+            logger.debug(f"Inserted packet {envelope.packet_id} with thread_id={thread_id}, tags={tags}")
             return envelope.packet_id
 
     async def get_packet(self, packet_id: UUID) -> Optional[PacketStoreRow]:
