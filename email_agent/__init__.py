@@ -8,7 +8,7 @@ from email_agent.credentials import (
     create_flow,
     exchange_code_for_tokens,
     save_tokens,
-    load_tokens
+    load_tokens,
 )
 
 __all__ = [

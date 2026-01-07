@@ -3,4 +3,3 @@
 from core.retrievers.substrate_retriever import SubstrateRetriever
 
 __all__ = ["SubstrateRetriever"]
-

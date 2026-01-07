@@ -106,4 +106,3 @@ class MemoryStateManager:
             packet_type="reasoning_trace",
             payload=payload,
         )
-

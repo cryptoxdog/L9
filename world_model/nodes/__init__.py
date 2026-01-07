@@ -48,4 +48,3 @@ __all__ = [
     "WorldModelGraphState",
     "create_insights_from_facts",
 ]
-

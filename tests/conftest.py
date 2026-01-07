@@ -24,9 +24,7 @@ if str(TESTS_ROOT) not in sys.path:
 # Import mocks
 from mocks.kernel_mocks import (
     KernelState,
-    KernelViolationError,
     load_kernels,
-    merge_dicts,
 )
 from mocks.memory_mocks import (
     MockMemoryAdapter,
@@ -34,7 +32,6 @@ from mocks.memory_mocks import (
 )
 from mocks.world_model_mocks import (
     MockWorldModel,
-    get_wm_status,
 )
 from mocks.orchestrator_mocks import (
     MockRedis,
@@ -45,6 +42,7 @@ from mocks.orchestrator_mocks import (
 # =============================================================================
 # Kernel Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def kernel_state() -> KernelState:
@@ -75,6 +73,7 @@ def agent_kernel() -> dict:
 # Memory Fixtures (Sync)
 # =============================================================================
 
+
 @pytest.fixture
 def memory_adapter() -> MockMemoryAdapter:
     """Provide a mock memory adapter."""
@@ -100,9 +99,11 @@ def adapter(memory_adapter) -> MockMemoryAdapter:
 # Memory Fixtures (Async)
 # =============================================================================
 
+
 @pytest.fixture
 async def async_redis():
     """Async Redis mock with in-memory store."""
+
     class AsyncMockRedis:
         def __init__(self):
             self.store = {}  # Instance-level to prevent test pollution
@@ -123,6 +124,7 @@ async def async_redis():
 @pytest.fixture
 def async_postgres_cursor():
     """Postgres cursor mock returning ivfflat index DDL."""
+
     class AsyncMockCursor:
         def __init__(self):
             self.q = None
@@ -139,11 +141,12 @@ def async_postgres_cursor():
 @pytest.fixture
 async def async_memory_adapter():
     """Async memory adapter with blob storage and packet management."""
+
     class AsyncMockMemory:
         def __init__(self):
-            self.blobs = {}    # Instance-level
+            self.blobs = {}  # Instance-level
             self.packets = {}  # Instance-level
-            self.idx = 0       # Instance-level
+            self.idx = 0  # Instance-level
 
         async def store_blob(self, content):
             k = f"blob-{len(self.blobs)}"
@@ -170,6 +173,7 @@ async def async_memory_adapter():
 # World Model Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def world_model() -> MockWorldModel:
     """Provide a mock world model."""
@@ -179,6 +183,7 @@ def world_model() -> MockWorldModel:
 @pytest.fixture
 async def async_world_model():
     """Async world model mock with node/edge graph operations."""
+
     class AsyncMockWM:
         def __init__(self):
             self.nodes = {}  # Instance-level
@@ -198,7 +203,8 @@ async def async_world_model():
         async def get_edges(self, nid):
             return [
                 {"type": rel, "src": a, "dst": b}
-                for (a, b, rel) in self.edges if a == nid
+                for (a, b, rel) in self.edges
+                if a == nid
             ]
 
     return AsyncMockWM()
@@ -207,6 +213,7 @@ async def async_world_model():
 # =============================================================================
 # Orchestrator Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def redis() -> MockRedis:
@@ -218,12 +225,12 @@ def redis() -> MockRedis:
 def tool_registry(redis) -> MockToolRegistry:
     """Provide a mock tool registry."""
     registry = MockToolRegistry(redis=redis)
-    
+
     # Register some default tools
     registry.register_tool("echo", lambda x: x, rate_limit=1000)
     registry.register_tool("google", lambda q: {"results": []}, rate_limit=100)
     registry.register_tool("openai", lambda p: {"completion": ""}, rate_limit=500)
-    
+
     return registry
 
 
@@ -231,10 +238,12 @@ def tool_registry(redis) -> MockToolRegistry:
 # Async Support
 # =============================================================================
 
+
 @pytest.fixture
 def event_loop():
     """Create event loop for async tests."""
     import asyncio
+
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
@@ -243,6 +252,7 @@ def event_loop():
 # =============================================================================
 # Test Data Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_packet() -> dict:
@@ -274,15 +284,16 @@ def sample_checkpoint() -> dict:
 # Shared Mock Fixtures (from test_executor.py)
 # =============================================================================
 
+
 @pytest.fixture
 def mock_substrate_service():
     """
     Shared mock substrate service for memory tests.
-    
+
     Provides a MagicMock that simulates SubstrateService behavior.
     """
-    from typing import Generator
     from tests.core.agents.test_executor import MockSubstrateService
+
     return MockSubstrateService()
 
 
@@ -290,9 +301,9 @@ def mock_substrate_service():
 def mock_tool_registry():
     """
     Shared mock tool registry for orchestrator tests.
-    
+
     Provides a MagicMock that simulates ToolRegistry behavior.
     """
-    from typing import Generator
     from tests.core.agents.test_executor import MockToolRegistry
+
     return MockToolRegistry()

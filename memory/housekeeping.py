@@ -10,12 +10,12 @@ Implements automated memory hygiene operations:
 
 All operations are async-safe and use logging (no print statements).
 """
+
 from __future__ import annotations
 
 import structlog
 from datetime import datetime, timedelta
 from typing import Any, Optional
-from uuid import UUID
 
 logger = structlog.get_logger(__name__)
 
@@ -23,15 +23,15 @@ logger = structlog.get_logger(__name__)
 class HousekeepingEngine:
     """
     Memory housekeeping engine for garbage collection and hygiene.
-    
+
     Provides async methods for cleaning up expired, orphaned,
     and unreferenced memory artifacts.
     """
-    
+
     def __init__(self, repository=None):
         """
         Initialize housekeeping engine.
-        
+
         Args:
             repository: SubstrateRepository instance (injected)
         """
@@ -44,36 +44,36 @@ class HousekeepingEngine:
             "artifacts_cleaned": 0,
         }
         logger.info("HousekeepingEngine initialized")
-    
+
     def set_repository(self, repository) -> None:
         """Set or update the repository reference."""
         self._repository = repository
-    
+
     @property
     def stats(self) -> dict[str, int]:
         """Return current housekeeping statistics."""
         return self._stats.copy()
-    
+
     async def run_full_gc(self) -> dict[str, Any]:
         """
         Run full garbage collection cycle.
-        
+
         Executes all housekeeping operations in order:
         1. TTL eviction
         2. Orphan packet cleanup
         3. Parentless packet cleanup
         4. Artifact orphan cleanup
         5. Tag garbage collection
-        
+
         Returns:
             Summary dict with counts of cleaned items
         """
         logger.info("Starting full garbage collection cycle")
-        
+
         if self._repository is None:
             logger.warning("No repository set, skipping GC")
             return {"status": "skipped", "reason": "no_repository"}
-        
+
         results = {
             "ttl_evicted": 0,
             "orphans_cleaned": 0,
@@ -82,7 +82,7 @@ class HousekeepingEngine:
             "tags_gc": 0,
             "errors": [],
         }
-        
+
         # TTL eviction
         try:
             count = await self.evict_expired_ttl()
@@ -90,7 +90,7 @@ class HousekeepingEngine:
         except Exception as e:
             logger.error(f"TTL eviction failed: {e}")
             results["errors"].append(f"ttl_eviction: {str(e)}")
-        
+
         # Orphan cleanup
         try:
             count = await self.cleanup_orphan_packets()
@@ -98,7 +98,7 @@ class HousekeepingEngine:
         except Exception as e:
             logger.error(f"Orphan cleanup failed: {e}")
             results["errors"].append(f"orphan_cleanup: {str(e)}")
-        
+
         # Parentless cleanup
         try:
             count = await self.cleanup_parentless_packets()
@@ -106,7 +106,7 @@ class HousekeepingEngine:
         except Exception as e:
             logger.error(f"Parentless cleanup failed: {e}")
             results["errors"].append(f"parentless_cleanup: {str(e)}")
-        
+
         # Artifact cleanup
         try:
             count = await self.cleanup_orphan_artifacts()
@@ -114,7 +114,7 @@ class HousekeepingEngine:
         except Exception as e:
             logger.error(f"Artifact cleanup failed: {e}")
             results["errors"].append(f"artifact_cleanup: {str(e)}")
-        
+
         # Tag GC
         try:
             count = await self.gc_unused_tags()
@@ -122,34 +122,36 @@ class HousekeepingEngine:
         except Exception as e:
             logger.error(f"Tag GC failed: {e}")
             results["errors"].append(f"tag_gc: {str(e)}")
-        
+
         # Update stats
         self._stats["ttl_evicted"] += results["ttl_evicted"]
-        self._stats["orphans_cleaned"] += results["orphans_cleaned"] + results["parentless_cleaned"]
+        self._stats["orphans_cleaned"] += (
+            results["orphans_cleaned"] + results["parentless_cleaned"]
+        )
         self._stats["tags_gc"] += results["tags_gc"]
         self._stats["artifacts_cleaned"] += results["artifacts_cleaned"]
         self._last_run = datetime.utcnow()
-        
+
         total_cleaned = sum(v for k, v in results.items() if isinstance(v, int))
         logger.info(f"GC cycle complete: {total_cleaned} items cleaned")
-        
+
         return {
             "status": "ok" if not results["errors"] else "partial",
             "cleaned": results,
             "timestamp": datetime.utcnow().isoformat(),
         }
-    
+
     async def evict_expired_ttl(self) -> int:
         """
         Evict packets with expired TTL.
-        
+
         Deletes packets where ttl < now().
-        
+
         Returns:
             Count of evicted packets
         """
         logger.debug("Running TTL eviction")
-        
+
         async with self._repository.acquire() as conn:
             # Delete expired packets
             result = await conn.execute(
@@ -158,27 +160,27 @@ class HousekeepingEngine:
                 WHERE ttl IS NOT NULL AND ttl < NOW()
                 """
             )
-            
+
             # Parse count from result
             count = int(result.split()[-1]) if result else 0
-            
+
             if count > 0:
                 logger.info(f"TTL eviction: removed {count} expired packets")
-            
+
             return count
-    
+
     async def cleanup_orphan_packets(self) -> int:
         """
         Clean up orphan packets with invalid references.
-        
+
         Identifies packets referencing non-existent parent packets
         and either removes them or clears their parent references.
-        
+
         Returns:
             Count of cleaned packets
         """
         logger.debug("Running orphan packet cleanup")
-        
+
         async with self._repository.acquire() as conn:
             # Find packets with parent_ids referencing non-existent packets
             # Clear orphan references rather than deleting packets
@@ -198,14 +200,16 @@ class HousekeepingEngine:
                 )
                 """
             )
-            
+
             count = int(result.split()[-1]) if result else 0
-            
+
             if count > 0:
-                logger.info(f"Orphan cleanup: fixed {count} packets with invalid parent refs")
-            
+                logger.info(
+                    f"Orphan cleanup: fixed {count} packets with invalid parent refs"
+                )
+
             return count
-    
+
     async def cleanup_parentless_packets(
         self,
         max_age_hours: int = 72,
@@ -213,26 +217,26 @@ class HousekeepingEngine:
     ) -> int:
         """
         Clean up old parentless packets that appear abandoned.
-        
+
         Removes packets that:
         - Have no parent_ids
         - Are older than max_age_hours
         - Are not root packets (packet_type not in exclude_types)
-        
+
         Args:
             max_age_hours: Age threshold in hours
             exclude_types: Packet types to exclude (roots)
-            
+
         Returns:
             Count of cleaned packets
         """
         logger.debug(f"Running parentless cleanup (max_age={max_age_hours}h)")
-        
+
         exclude_types = exclude_types or ["root", "session_start", "thread_start"]
-        
+
         async with self._repository.acquire() as conn:
             cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
-            
+
             result = await conn.execute(
                 """
                 DELETE FROM packet_store
@@ -244,29 +248,29 @@ class HousekeepingEngine:
                 cutoff,
                 exclude_types,
             )
-            
+
             count = int(result.split()[-1]) if result else 0
-            
+
             if count > 0:
                 logger.info(f"Parentless cleanup: removed {count} abandoned packets")
-            
+
             return count
-    
+
     async def cleanup_orphan_artifacts(self) -> int:
         """
         Clean up orphan artifacts (embeddings, events) with no source packet.
-        
+
         Removes:
         - Semantic embeddings with no matching packet
         - Memory events with invalid packet references
-        
+
         Returns:
             Count of cleaned artifacts
         """
         logger.debug("Running artifact orphan cleanup")
-        
+
         total_cleaned = 0
-        
+
         async with self._repository.acquire() as conn:
             # Clean orphan semantic embeddings
             result = await conn.execute(
@@ -281,7 +285,7 @@ class HousekeepingEngine:
             )
             embed_count = int(result.split()[-1]) if result else 0
             total_cleaned += embed_count
-            
+
             # Clean orphan memory events
             result = await conn.execute(
                 """
@@ -292,7 +296,7 @@ class HousekeepingEngine:
             )
             event_count = int(result.split()[-1]) if result else 0
             total_cleaned += event_count
-            
+
             # Clean orphan knowledge facts
             result = await conn.execute(
                 """
@@ -303,26 +307,26 @@ class HousekeepingEngine:
             )
             fact_count = int(result.split()[-1]) if result else 0
             total_cleaned += fact_count
-        
+
         if total_cleaned > 0:
             logger.info(f"Artifact cleanup: removed {total_cleaned} orphan artifacts")
-        
+
         return total_cleaned
-    
+
     async def gc_unused_tags(self, min_usage: int = 1) -> int:
         """
         Garbage collect unused or low-usage tags.
-        
+
         Removes tags that appear on fewer than min_usage packets.
-        
+
         Args:
             min_usage: Minimum usage count to keep a tag
-            
+
         Returns:
             Count of tags removed from packets
         """
         logger.debug(f"Running tag GC (min_usage={min_usage})")
-        
+
         async with self._repository.acquire() as conn:
             # Get tag usage counts
             rows = await conn.fetch(
@@ -334,12 +338,12 @@ class HousekeepingEngine:
                 """,
                 min_usage,
             )
-            
+
             if not rows:
                 return 0
-            
+
             low_usage_tags = [r["tag"] for r in rows]
-            
+
             # Remove low-usage tags from packets
             result = await conn.execute(
                 """
@@ -349,30 +353,32 @@ class HousekeepingEngine:
                 """,
                 low_usage_tags,
             )
-            
+
             count = int(result.split()[-1]) if result else 0
-            
+
             if count > 0:
-                logger.info(f"Tag GC: cleaned {len(low_usage_tags)} low-usage tags from {count} packets")
-            
+                logger.info(
+                    f"Tag GC: cleaned {len(low_usage_tags)} low-usage tags from {count} packets"
+                )
+
             return count
-    
+
     async def get_gc_stats(self) -> dict[str, Any]:
         """
         Get garbage collection statistics.
-        
+
         Returns:
             Dict with GC stats and counts of cleanable items
         """
         if self._repository is None:
             return {"status": "no_repository"}
-        
+
         async with self._repository.acquire() as conn:
             # Count expired TTL packets
             expired_ttl = await conn.fetchval(
                 "SELECT COUNT(*) FROM packet_store WHERE ttl IS NOT NULL AND ttl < NOW()"
             )
-            
+
             # Count orphan references
             orphan_refs = await conn.fetchval(
                 """
@@ -385,13 +391,15 @@ class HousekeepingEngine:
                 )
                 """
             )
-            
+
             # Count total packets
             total_packets = await conn.fetchval("SELECT COUNT(*) FROM packet_store")
-            
+
             # Count total embeddings
-            total_embeddings = await conn.fetchval("SELECT COUNT(*) FROM semantic_memory")
-        
+            total_embeddings = await conn.fetchval(
+                "SELECT COUNT(*) FROM semantic_memory"
+            )
+
         return {
             "last_run": self._last_run.isoformat() if self._last_run else None,
             "lifetime_stats": self._stats,
@@ -426,4 +434,3 @@ def init_housekeeping_engine(repository) -> HousekeepingEngine:
     engine = get_housekeeping_engine()
     engine.set_repository(repository)
     return engine
-

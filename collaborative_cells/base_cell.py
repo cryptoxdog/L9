@@ -25,15 +25,17 @@ logger = structlog.get_logger(__name__)
 
 class ConsensusStrategy(str, Enum):
     """Strategy for reaching consensus."""
-    UNANIMOUS = "unanimous"      # All agents must agree
-    MAJORITY = "majority"        # Majority vote
-    THRESHOLD = "threshold"      # Score threshold met
-    LEADER = "leader"            # Primary agent decides after feedback
+
+    UNANIMOUS = "unanimous"  # All agents must agree
+    MAJORITY = "majority"  # Majority vote
+    THRESHOLD = "threshold"  # Score threshold met
+    LEADER = "leader"  # Primary agent decides after feedback
 
 
 @dataclass
 class CellConfig:
     """Configuration for a cell."""
+
     max_rounds: int = 5
     consensus_threshold: float = 0.85
     consensus_strategy: ConsensusStrategy = ConsensusStrategy.THRESHOLD
@@ -47,6 +49,7 @@ class CellConfig:
 @dataclass
 class AgentMessage:
     """Message exchanged between agents in a cell."""
+
     agent_id: str
     role: str  # "producer", "critic", "validator"
     content: dict[str, Any]
@@ -57,6 +60,7 @@ class AgentMessage:
 @dataclass
 class CellRound:
     """Record of a single cell round."""
+
     round_number: int
     messages: list[AgentMessage] = field(default_factory=list)
     consensus_score: float = 0.0
@@ -71,6 +75,7 @@ T = TypeVar("T")
 @dataclass
 class CellResult(Generic[T]):
     """Result of cell execution."""
+
     cell_id: UUID
     cell_type: str
     success: bool
@@ -82,7 +87,7 @@ class CellResult(Generic[T]):
     duration_ms: int
     errors: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "cell_id": str(self.cell_id),
@@ -99,20 +104,20 @@ class CellResult(Generic[T]):
 class BaseCell(ABC):
     """
     Abstract base class for collaborative cells.
-    
+
     Subclasses must implement:
     - _run_producer(): Primary agent produces output
     - _run_critic(): Secondary agent critiques
     - _apply_revisions(): Apply critique to output
     - _validate_output(): Final validation
     """
-    
+
     cell_type: str = "base"
-    
+
     def __init__(self, config: Optional[CellConfig] = None):
         """
         Initialize the cell.
-        
+
         Args:
             config: Cell configuration
         """
@@ -120,23 +125,23 @@ class BaseCell(ABC):
         self._cell_id = uuid4()
         self._initialized = False
         self._agents: dict[str, Any] = {}
-        
+
         logger.info(f"{self.cell_type}Cell initialized with id={self._cell_id}")
-    
+
     @property
     def cell_id(self) -> UUID:
         """Get cell ID."""
         return self._cell_id
-    
+
     @property
     def config(self) -> CellConfig:
         """Get cell configuration."""
         return self._config
-    
+
     # ==========================================================================
     # Abstract Methods
     # ==========================================================================
-    
+
     @abstractmethod
     async def _run_producer(
         self,
@@ -146,17 +151,17 @@ class BaseCell(ABC):
     ) -> dict[str, Any]:
         """
         Run the producer agent.
-        
+
         Args:
             task: Task specification
             context: Execution context
             previous_critique: Critique from previous round
-            
+
         Returns:
             Producer output
         """
         pass
-    
+
     @abstractmethod
     async def _run_critic(
         self,
@@ -166,17 +171,17 @@ class BaseCell(ABC):
     ) -> dict[str, Any]:
         """
         Run the critic agent.
-        
+
         Args:
             output: Producer output to critique
             task: Original task
             context: Execution context
-            
+
         Returns:
             Critique with score and suggestions
         """
         pass
-    
+
     @abstractmethod
     def _apply_revisions(
         self,
@@ -185,16 +190,16 @@ class BaseCell(ABC):
     ) -> tuple[dict[str, Any], list[str]]:
         """
         Apply critique revisions to output.
-        
+
         Args:
             output: Current output
             critique: Critique to apply
-            
+
         Returns:
             Tuple of (revised_output, list_of_revisions_made)
         """
         pass
-    
+
     @abstractmethod
     async def _validate_output(
         self,
@@ -203,20 +208,20 @@ class BaseCell(ABC):
     ) -> tuple[bool, list[str]]:
         """
         Validate final output.
-        
+
         Args:
             output: Output to validate
             task: Original task
-            
+
         Returns:
             Tuple of (is_valid, list_of_errors)
         """
         pass
-    
+
     # ==========================================================================
     # Main Execution
     # ==========================================================================
-    
+
     async def execute(
         self,
         task: dict[str, Any],
@@ -224,11 +229,11 @@ class BaseCell(ABC):
     ) -> CellResult:
         """
         Execute the cell on a task.
-        
+
         Args:
             task: Task specification
             context: Optional execution context
-            
+
         Returns:
             CellResult with output and metadata
         """
@@ -239,73 +244,81 @@ class BaseCell(ABC):
         last_score = 0.0
         consensus_reached = False
         errors: list[str] = []
-        
+
         logger.info(f"Cell {self._cell_id} executing task")
-        
+
         try:
             # Initial production
             current_output = await self._run_producer(task, context, None)
-            
+
             for round_num in range(1, self._config.max_rounds + 1):
                 logger.debug(f"Cell round {round_num}/{self._config.max_rounds}")
-                
+
                 round_messages: list[AgentMessage] = []
-                
+
                 # Producer message
-                round_messages.append(AgentMessage(
-                    agent_id="producer",
-                    role="producer",
-                    content=current_output,
-                    round_number=round_num,
-                ))
-                
+                round_messages.append(
+                    AgentMessage(
+                        agent_id="producer",
+                        role="producer",
+                        content=current_output,
+                        round_number=round_num,
+                    )
+                )
+
                 # Get critique
                 critique = await self._run_critic(current_output, task, context)
                 last_score = critique.get("score", 0.0)
-                
-                round_messages.append(AgentMessage(
-                    agent_id="critic",
-                    role="critic",
-                    content=critique,
-                    round_number=round_num,
-                ))
-                
+
+                round_messages.append(
+                    AgentMessage(
+                        agent_id="critic",
+                        role="critic",
+                        content=critique,
+                        round_number=round_num,
+                    )
+                )
+
                 # Check for consensus
                 consensus_reached = self._check_consensus(critique, last_score)
-                
+
                 cell_round = CellRound(
                     round_number=round_num,
                     messages=round_messages,
                     consensus_score=last_score,
                     consensus_reached=consensus_reached,
                 )
-                
+
                 if consensus_reached:
                     rounds.append(cell_round)
                     logger.info(f"Consensus reached at round {round_num}")
                     break
-                
+
                 # Apply revisions
-                current_output, revisions = self._apply_revisions(current_output, critique)
+                current_output, revisions = self._apply_revisions(
+                    current_output, critique
+                )
                 cell_round.revisions = revisions
                 rounds.append(cell_round)
-                
+
                 # Re-produce with critique context
                 if round_num < self._config.max_rounds:
                     current_output = await self._run_producer(task, context, critique)
-            
+
             # Final validation
             if self._config.require_validation and current_output:
-                is_valid, validation_errors = await self._validate_output(current_output, task)
+                is_valid, validation_errors = await self._validate_output(
+                    current_output, task
+                )
                 if not is_valid:
                     errors.extend(validation_errors)
-            
+
         except Exception as e:
             logger.error(f"Cell execution failed: {e}")
             errors.append(str(e))
-        
+
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
         return CellResult(
             cell_id=self._cell_id,
             cell_type=self.cell_type,
@@ -318,7 +331,7 @@ class BaseCell(ABC):
             duration_ms=duration_ms,
             errors=errors,
         )
-    
+
     def _check_consensus(
         self,
         critique: dict[str, Any],
@@ -327,29 +340,29 @@ class BaseCell(ABC):
         """Check if consensus is reached based on strategy."""
         if self._config.consensus_strategy == ConsensusStrategy.THRESHOLD:
             return score >= self._config.consensus_threshold
-        
+
         elif self._config.consensus_strategy == ConsensusStrategy.UNANIMOUS:
             return critique.get("consensus", False)
-        
+
         elif self._config.consensus_strategy == ConsensusStrategy.LEADER:
             # Leader decides - always accept if score is reasonable
             return score >= 0.7
-        
+
         else:
             # Default to threshold
             return score >= self._config.consensus_threshold
-    
+
     # ==========================================================================
     # Memory Integration
     # ==========================================================================
-    
+
     def to_packet_payload(self, result: CellResult) -> dict[str, Any]:
         """
         Convert result to memory packet payload.
-        
+
         Args:
             result: Cell result
-            
+
         Returns:
             Payload for PacketEnvelopeIn
         """
@@ -364,17 +377,16 @@ class BaseCell(ABC):
             "duration_ms": result.duration_ms,
             "error_count": len(result.errors),
         }
-    
+
     # ==========================================================================
     # Utility Methods
     # ==========================================================================
-    
+
     def get_agent(self, agent_id: str) -> Optional[Any]:
         """Get a registered agent by ID."""
         return self._agents.get(agent_id)
-    
+
     def register_agent(self, agent_id: str, agent: Any) -> None:
         """Register an agent with the cell."""
         self._agents[agent_id] = agent
         logger.debug(f"Registered agent {agent_id} with cell {self._cell_id}")
-

@@ -1,0 +1,40 @@
+# =============================================================================
+# L9 Cursor Ignore — Exclude Prototype/Roadmap Code from AI Indexing
+# =============================================================================
+# These folders contain future features, experiments, and archived code.
+# Cursor should NOT read or index them to avoid "drift" into non-production code.
+# =============================================================================
+
+# --- Roadmap & Prototype Code ---
+docs/Roadmap-Upgrades/
+docs/__01-04-2026/
+docs/__01-05-2026/
+docs/_archive/
+docs/_GMP-Active/
+docs/_GMP-Complete/
+docs/_GMP Execute + Audit/
+docs/cursor-briefs/
+docs/_Context-L9-Repo/
+docs/_VPS/
+
+# --- Archived/Deprecated Code ---
+archive/
+
+# --- CodeGen Specs (not production code) ---
+agents/codegenagent/specs/
+codegen/codegenAgent Spec/
+codegen/specs/
+
+# --- Private/Secrets ---
+private/
+secrets/
+
+# --- Build artifacts & caches (also in .gitignore) ---
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+l9.egg-info/
+

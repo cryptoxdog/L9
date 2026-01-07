@@ -65,4 +65,3 @@ class IndexSyncer:
         ok_ext = await self.verify_pgvector_extension()
         ok_sem = await self.smoke_test_semantic_memory()
         return ok_ext and ok_sem
-

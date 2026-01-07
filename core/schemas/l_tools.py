@@ -14,7 +14,7 @@ from typing import Any
 
 class MemorySearchInput(BaseModel):
     """Input schema for memory search tool."""
-    
+
     query: str = Field(
         ...,
         description="Natural language search query",
@@ -45,7 +45,7 @@ class MemorySearchInput(BaseModel):
 
 class MemoryWriteInput(BaseModel):
     """Input schema for memory write tool."""
-    
+
     packet: dict[str, Any] = Field(
         ...,
         description="Packet data to write",
@@ -71,7 +71,7 @@ class MemoryWriteInput(BaseModel):
 
 class GMPRunInput(BaseModel):
     """Input schema for GMP run tool (high-risk, requires approval)."""
-    
+
     gmp_id: str = Field(
         ...,
         description="GMP identifier",
@@ -94,7 +94,7 @@ class GMPRunInput(BaseModel):
 
 class GitCommitInput(BaseModel):
     """Input schema for git commit tool (high-risk, requires approval)."""
-    
+
     message: str = Field(
         ...,
         description="Commit message",
@@ -118,7 +118,7 @@ class GitCommitInput(BaseModel):
 
 class MacAgentExecInput(BaseModel):
     """Input schema for Mac agent execution (high-risk, requires approval)."""
-    
+
     command: str = Field(
         ...,
         description="Shell command to execute",
@@ -143,7 +143,7 @@ class MacAgentExecInput(BaseModel):
 
 class MCPCallToolInput(BaseModel):
     """Input schema for MCP tool call."""
-    
+
     tool_name: str = Field(
         ...,
         description="Tool name in MCP catalog",
@@ -166,7 +166,7 @@ class MCPCallToolInput(BaseModel):
 
 class WorldModelQueryInput(BaseModel):
     """Input schema for world model query."""
-    
+
     query_type: str = Field(
         ...,
         description="Query type: 'get_entity', 'list_entities', 'state_version'",
@@ -189,7 +189,7 @@ class WorldModelQueryInput(BaseModel):
 
 class KernelReadInput(BaseModel):
     """Input schema for kernel read."""
-    
+
     kernel_name: str = Field(
         ...,
         description="Kernel identifier: 'identity', 'safety', 'execution', etc.",
@@ -225,4 +225,3 @@ __all__ = [
     "WorldModelQueryInput",
     "KernelReadInput",
 ]
-

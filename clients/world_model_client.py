@@ -7,23 +7,23 @@ the World Model API.
 
 Usage:
     from clients.world_model_client import get_world_model_client
-    
+
     client = get_world_model_client()
-    
+
     # Get entity
     entity = await client.get_entity("entity-123")
-    
+
     # List entities
     entities = await client.list_entities(entity_type="user", limit=50)
-    
+
     # Submit insights
     result = await client.send_insights_for_update([
         {"insight_type": "conclusion", "content": "...", "entities": ["user-1"]}
     ])
-    
+
     # Create snapshot
     snapshot = await client.snapshot(description="manual backup")
-    
+
     # Close when done
     await client.close()
 
@@ -34,12 +34,10 @@ from __future__ import annotations
 
 import structlog
 import os
-from datetime import datetime
 from typing import Any, Optional
-from uuid import UUID
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = structlog.get_logger(__name__)
 
@@ -54,8 +52,10 @@ DEFAULT_TIMEOUT = 30.0
 # Response Models
 # =============================================================================
 
+
 class EntityData(BaseModel):
     """Entity data from API."""
+
     entity_id: str
     entity_type: str
     attributes: dict[str, Any]
@@ -67,12 +67,14 @@ class EntityData(BaseModel):
 
 class StateVersion(BaseModel):
     """State version data."""
+
     state_version: int
     entity_count: int
 
 
 class SnapshotData(BaseModel):
     """Snapshot data from API."""
+
     snapshot_id: str
     state_version: int
     entity_count: int
@@ -82,6 +84,7 @@ class SnapshotData(BaseModel):
 
 class RestoreResult(BaseModel):
     """Restore operation result."""
+
     status: str
     snapshot_id: str
     entities_restored: int
@@ -90,6 +93,7 @@ class RestoreResult(BaseModel):
 
 class InsightsResult(BaseModel):
     """Insights submission result."""
+
     status: str
     updates_applied: int = 0
     entities_affected: int = 0
@@ -98,6 +102,7 @@ class InsightsResult(BaseModel):
 
 class UpdateRecord(BaseModel):
     """Update record from API."""
+
     update_id: str
     insight_id: Optional[str] = None
     insight_type: Optional[str] = None
@@ -110,13 +115,14 @@ class UpdateRecord(BaseModel):
 # World Model Client
 # =============================================================================
 
+
 class WorldModelClient:
     """
     Async HTTP client for L9 World Model API.
-    
+
     Uses httpx for async HTTP operations.
     """
-    
+
     def __init__(
         self,
         base_url: Optional[str] = None,
@@ -124,7 +130,7 @@ class WorldModelClient:
     ):
         """
         Initialize World Model client.
-        
+
         Args:
             base_url: API base URL (default from env or http://l9-api:8000)
             timeout: Request timeout in seconds
@@ -133,7 +139,7 @@ class WorldModelClient:
         self.timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
         logger.info(f"WorldModelClient initialized: {self.base_url}")
-    
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client."""
         if self._client is None or self._client.is_closed:
@@ -143,28 +149,28 @@ class WorldModelClient:
                 headers={"Content-Type": "application/json"},
             )
         return self._client
-    
+
     async def close(self) -> None:
         """Close the HTTP client."""
         if self._client is not None and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
             logger.debug("WorldModelClient closed")
-    
+
     async def __aenter__(self) -> "WorldModelClient":
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.close()
-    
+
     # =========================================================================
     # Health Check
     # =========================================================================
-    
+
     async def health_check(self) -> dict[str, Any]:
         """
         Check World Model API health.
-        
+
         Returns:
             Health status dict
         """
@@ -176,24 +182,24 @@ class WorldModelClient:
         except Exception as e:
             logger.warning(f"World model health check failed: {e}")
             return {"status": "error", "error": str(e)}
-    
+
     # =========================================================================
     # Entity Operations
     # =========================================================================
-    
+
     async def get_entity(self, entity_id: str) -> Optional[EntityData]:
         """
         Get entity by ID.
-        
+
         Args:
             entity_id: Entity identifier
-            
+
         Returns:
             EntityData if found, None otherwise
         """
         client = await self._get_client()
         logger.debug(f"Getting entity: {entity_id}")
-        
+
         try:
             response = await client.get(f"/world-model/entities/{entity_id}")
             if response.status_code == 404:
@@ -204,7 +210,7 @@ class WorldModelClient:
             if e.response.status_code == 404:
                 return None
             raise
-    
+
     async def list_entities(
         self,
         entity_type: Optional[str] = None,
@@ -214,39 +220,39 @@ class WorldModelClient:
     ) -> list[EntityData]:
         """
         List entities with optional filtering.
-        
+
         Args:
             entity_type: Filter by type
             min_confidence: Minimum confidence
             limit: Maximum results
             offset: Pagination offset
-            
+
         Returns:
             List of entities
         """
         client = await self._get_client()
         logger.debug(f"Listing entities: type={entity_type}, limit={limit}")
-        
+
         params = {"limit": limit, "offset": offset}
         if entity_type:
             params["entity_type"] = entity_type
         if min_confidence is not None:
             params["min_confidence"] = min_confidence
-        
+
         response = await client.get("/world-model/entities", params=params)
         response.raise_for_status()
-        
+
         data = response.json()
         return [EntityData.model_validate(e) for e in data.get("entities", [])]
-    
+
     # =========================================================================
     # State Version
     # =========================================================================
-    
+
     async def get_state_version(self) -> StateVersion:
         """
         Get current state version.
-        
+
         Returns:
             State version and entity count
         """
@@ -254,11 +260,11 @@ class WorldModelClient:
         response = await client.get("/world-model/state-version")
         response.raise_for_status()
         return StateVersion.model_validate(response.json())
-    
+
     # =========================================================================
     # Snapshot Operations
     # =========================================================================
-    
+
     async def snapshot(
         self,
         description: Optional[str] = None,
@@ -266,17 +272,17 @@ class WorldModelClient:
     ) -> SnapshotData:
         """
         Create a snapshot of current state.
-        
+
         Args:
             description: Optional description
             created_by: Creator identifier
-            
+
         Returns:
             Created snapshot data
         """
         client = await self._get_client()
         logger.info("Creating world model snapshot")
-        
+
         response = await client.post(
             "/world-model/snapshot",
             json={
@@ -285,43 +291,43 @@ class WorldModelClient:
             },
         )
         response.raise_for_status()
-        
+
         result = SnapshotData.model_validate(response.json())
         logger.info(f"Snapshot created: {result.snapshot_id}")
         return result
-    
+
     async def restore(self, snapshot_id: str) -> RestoreResult:
         """
         Restore from a snapshot.
-        
+
         WARNING: This replaces all current entities!
-        
+
         Args:
             snapshot_id: Snapshot UUID to restore from
-            
+
         Returns:
             Restore result
         """
         client = await self._get_client()
         logger.info(f"Restoring from snapshot: {snapshot_id}")
-        
+
         response = await client.post(
             "/world-model/restore",
             json={"snapshot_id": snapshot_id},
         )
         response.raise_for_status()
-        
+
         result = RestoreResult.model_validate(response.json())
         logger.info(f"Restored: {result.entities_restored} entities")
         return result
-    
+
     async def list_snapshots(self, limit: int = 20) -> list[dict[str, Any]]:
         """
         List recent snapshots.
-        
+
         Args:
             limit: Maximum results
-            
+
         Returns:
             List of snapshot records
         """
@@ -332,18 +338,18 @@ class WorldModelClient:
         )
         response.raise_for_status()
         return response.json().get("snapshots", [])
-    
+
     # =========================================================================
     # Insight Integration
     # =========================================================================
-    
+
     async def send_insights_for_update(
         self,
         insights: list[dict[str, Any]],
     ) -> InsightsResult:
         """
         Submit insights for world model update.
-        
+
         Args:
             insights: List of insight dicts with:
                 - insight_type: str
@@ -351,13 +357,13 @@ class WorldModelClient:
                 - entities: list[str]
                 - confidence: float (optional)
                 - trigger_world_model: bool (optional, default True)
-                
+
         Returns:
             Update result
         """
         client = await self._get_client()
         logger.debug(f"Submitting {len(insights)} insights for update")
-        
+
         # Ensure required fields
         normalized = []
         for i in insights:
@@ -375,24 +381,24 @@ class WorldModelClient:
             if "facts" in i:
                 insight["facts"] = i["facts"]
             normalized.append(insight)
-        
+
         response = await client.post(
             "/world-model/insights",
             json={"insights": normalized},
         )
         response.raise_for_status()
-        
+
         result = InsightsResult.model_validate(response.json())
         logger.info(
             f"Insights processed: {result.updates_applied} updates, "
             f"{result.entities_affected} entities"
         )
         return result
-    
+
     # =========================================================================
     # Updates History
     # =========================================================================
-    
+
     async def list_updates(
         self,
         insight_type: Optional[str] = None,
@@ -401,26 +407,26 @@ class WorldModelClient:
     ) -> list[UpdateRecord]:
         """
         List recent world model updates.
-        
+
         Args:
             insight_type: Filter by type
             min_confidence: Minimum confidence
             limit: Maximum results
-            
+
         Returns:
             List of update records
         """
         client = await self._get_client()
-        
+
         params = {"limit": limit}
         if insight_type:
             params["insight_type"] = insight_type
         if min_confidence is not None:
             params["min_confidence"] = min_confidence
-        
+
         response = await client.get("/world-model/updates", params=params)
         response.raise_for_status()
-        
+
         data = response.json()
         return [UpdateRecord.model_validate(u) for u in data.get("updates", [])]
 
@@ -446,4 +452,3 @@ async def close_world_model_client() -> None:
     if _client is not None:
         await _client.close()
         _client = None
-

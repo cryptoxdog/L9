@@ -29,25 +29,28 @@ except ImportError as e:
 # Test: Route email to correct handler
 # =============================================================================
 
+
 def test_route_email_to_correct_handler():
     """
     Contract: Email router routes requests to correct endpoints.
     """
     from fastapi import FastAPI
-    
+
     app = FastAPI()
     app.include_router(router)
-    
+
     client = TestClient(app)
-    
+
     # Test query endpoint exists
-    with patch('email_agent.router.GmailClient') as mock_gmail:
+    with patch("email_agent.router.GmailClient") as mock_gmail:
         mock_client = MagicMock()
         mock_gmail.return_value = mock_client
         mock_client.query.return_value = []
-        
-        response = client.post("/email/query", json={"query": "test", "max_results": 10})
-        
+
+        response = client.post(
+            "/email/query", json={"query": "test", "max_results": 10}
+        )
+
         # Should route to query handler (may return 200 or error depending on implementation)
         assert response.status_code in [200, 400, 500]
 
@@ -56,20 +59,21 @@ def test_route_email_to_correct_handler():
 # Test: Unknown sender handling
 # =============================================================================
 
+
 def test_unknown_sender_handling():
     """
     Contract: Router handles unknown senders gracefully.
     """
     from fastapi import FastAPI
-    
+
     app = FastAPI()
     app.include_router(router)
-    
+
     client = TestClient(app)
-    
+
     # Test that router accepts requests (implementation may vary)
     request = QueryRequest(query="from:unknown@example.com", max_results=5)
-    
+
     # Verify request model validation
     assert request.query == "from:unknown@example.com"
     assert request.max_results == 5

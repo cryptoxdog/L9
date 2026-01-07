@@ -11,7 +11,7 @@ The state flows through:
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -29,6 +29,7 @@ from core.schemas.research_factory_models import (
 
 class PassStatus(str, Enum):
     """Status of each pass in the pipeline."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -38,6 +39,7 @@ class PassStatus(str, Enum):
 
 class PassMetadata(BaseModel):
     """Metadata for a single pass execution."""
+
     status: PassStatus = Field(default=PassStatus.PENDING)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -50,39 +52,52 @@ class PassMetadata(BaseModel):
 class ResearchState(BaseModel):
     """
     LangGraph state model for the Research Factory 5-pass pipeline.
-    
+
     This state object is passed through each node and accumulated
     as the pipeline progresses.
-    
+
     Usage:
         async def pass_1_plan_queries(state: ResearchState) -> ResearchState:
             ...
             return state.model_copy(update={"query_plan": new_plan, ...})
     """
+
     # === Identity ===
     state_id: UUID = Field(default_factory=uuid4, description="Unique state identifier")
     thread_id: UUID = Field(default_factory=uuid4, description="Thread/conversation ID")
-    
+
     # === Input ===
-    job_spec: Optional[ResearchJobSpec] = Field(None, description="Input job specification")
-    
+    job_spec: Optional[ResearchJobSpec] = Field(
+        None, description="Input job specification"
+    )
+
     # === Pass 1 Output ===
     query_plan: Optional[QueryPlan] = Field(None, description="Generated query plan")
-    
+
     # === Pass 2 Output ===
-    superprompts: list[Superprompt] = Field(default_factory=list, description="Built superprompts")
-    
+    superprompts: list[Superprompt] = Field(
+        default_factory=list, description="Built superprompts"
+    )
+
     # === Pass 3 Output ===
-    retrieval_batches: list[RetrievalBatch] = Field(default_factory=list, description="Retrieval results")
-    
+    retrieval_batches: list[RetrievalBatch] = Field(
+        default_factory=list, description="Retrieval results"
+    )
+
     # === Pass 4 Output ===
-    parsed_objects: list[ParsedObject] = Field(default_factory=list, description="Extracted objects")
-    
+    parsed_objects: list[ParsedObject] = Field(
+        default_factory=list, description="Extracted objects"
+    )
+
     # === Pass 5 Output ===
-    integration_result: Optional[IntegrationResult] = Field(None, description="Final integration result")
-    
+    integration_result: Optional[IntegrationResult] = Field(
+        None, description="Final integration result"
+    )
+
     # === Execution Tracking ===
-    current_pass: int = Field(default=0, ge=0, le=5, description="Current pass number (0=not started)")
+    current_pass: int = Field(
+        default=0, ge=0, le=5, description="Current pass number (0=not started)"
+    )
     pass_metadata: dict[str, PassMetadata] = Field(
         default_factory=lambda: {
             "pass_1": PassMetadata(),
@@ -91,13 +106,15 @@ class ResearchState(BaseModel):
             "pass_4": PassMetadata(),
             "pass_5": PassMetadata(),
         },
-        description="Metadata for each pass"
+        description="Metadata for each pass",
     )
-    
+
     # === Error Handling ===
     errors: list[str] = Field(default_factory=list, description="Accumulated errors")
-    warnings: list[str] = Field(default_factory=list, description="Accumulated warnings")
-    
+    warnings: list[str] = Field(
+        default_factory=list, description="Accumulated warnings"
+    )
+
     # === Timestamps ===
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -109,90 +126,102 @@ class ResearchState(BaseModel):
         pass_key = f"pass_{pass_num}"
         new_metadata = self.pass_metadata.copy()
         new_metadata[pass_key] = PassMetadata(
-            status=PassStatus.RUNNING,
-            started_at=datetime.utcnow()
+            status=PassStatus.RUNNING, started_at=datetime.utcnow()
         )
-        return self.model_copy(update={
-            "current_pass": pass_num,
-            "pass_metadata": new_metadata,
-            "updated_at": datetime.utcnow()
-        })
+        return self.model_copy(
+            update={
+                "current_pass": pass_num,
+                "pass_metadata": new_metadata,
+                "updated_at": datetime.utcnow(),
+            }
+        )
 
-    def complete_pass(self, pass_num: int, error: Optional[str] = None) -> "ResearchState":
+    def complete_pass(
+        self, pass_num: int, error: Optional[str] = None
+    ) -> "ResearchState":
         """Mark a pass as completed or failed."""
         pass_key = f"pass_{pass_num}"
         current_meta = self.pass_metadata.get(pass_key, PassMetadata())
-        
+
         completed_at = datetime.utcnow()
         duration_ms = None
         if current_meta.started_at:
-            duration_ms = (completed_at - current_meta.started_at).total_seconds() * 1000
-        
+            duration_ms = (
+                completed_at - current_meta.started_at
+            ).total_seconds() * 1000
+
         new_metadata = self.pass_metadata.copy()
         new_metadata[pass_key] = PassMetadata(
             status=PassStatus.FAILED if error else PassStatus.COMPLETED,
             started_at=current_meta.started_at,
             completed_at=completed_at,
             duration_ms=duration_ms,
-            error=error
+            error=error,
         )
-        
+
         errors = self.errors.copy()
         if error:
             errors.append(f"Pass {pass_num}: {error}")
-        
-        return self.model_copy(update={
-            "pass_metadata": new_metadata,
-            "errors": errors,
-            "updated_at": datetime.utcnow()
-        })
+
+        return self.model_copy(
+            update={
+                "pass_metadata": new_metadata,
+                "errors": errors,
+                "updated_at": datetime.utcnow(),
+            }
+        )
 
     def add_error(self, error: str) -> "ResearchState":
         """Add an error to the state."""
-        return self.model_copy(update={
-            "errors": self.errors + [error],
-            "updated_at": datetime.utcnow()
-        })
+        return self.model_copy(
+            update={"errors": self.errors + [error], "updated_at": datetime.utcnow()}
+        )
 
     def add_warning(self, warning: str) -> "ResearchState":
         """Add a warning to the state."""
-        return self.model_copy(update={
-            "warnings": self.warnings + [warning],
-            "updated_at": datetime.utcnow()
-        })
+        return self.model_copy(
+            update={
+                "warnings": self.warnings + [warning],
+                "updated_at": datetime.utcnow(),
+            }
+        )
 
     @property
     def is_complete(self) -> bool:
         """Check if all passes are complete."""
         return all(
-            meta.status == PassStatus.COMPLETED 
-            for meta in self.pass_metadata.values()
+            meta.status == PassStatus.COMPLETED for meta in self.pass_metadata.values()
         )
 
     @property
     def has_errors(self) -> bool:
         """Check if any errors occurred."""
         return len(self.errors) > 0 or any(
-            meta.status == PassStatus.FAILED 
-            for meta in self.pass_metadata.values()
+            meta.status == PassStatus.FAILED for meta in self.pass_metadata.values()
         )
 
     def to_metrics(self) -> ResearchMetrics:
         """Generate metrics from current state."""
-        valid = sum(1 for p in self.parsed_objects if p.validation_status.value == "valid")
-        invalid = sum(1 for p in self.parsed_objects if p.validation_status.value == "invalid")
-        
+        valid = sum(
+            1 for p in self.parsed_objects if p.validation_status.value == "valid"
+        )
+        invalid = sum(
+            1 for p in self.parsed_objects if p.validation_status.value == "invalid"
+        )
+
         avg_conf = 0.0
         if self.parsed_objects:
-            avg_conf = sum(p.confidence for p in self.parsed_objects) / len(self.parsed_objects)
-        
+            avg_conf = sum(p.confidence for p in self.parsed_objects) / len(
+                self.parsed_objects
+            )
+
         pass_durations = {}
         total_latency = 0.0
         for key, meta in self.pass_metadata.items():
             if meta.duration_ms is not None:
                 pass_durations[key] = meta.duration_ms
                 total_latency += meta.duration_ms
-        
+
         return ResearchMetrics(
             total_queries=len(self.query_plan.queries) if self.query_plan else 0,
             total_results=len(self.parsed_objects),
@@ -200,6 +229,5 @@ class ResearchState(BaseModel):
             invalid_results=invalid,
             avg_confidence=avg_conf,
             total_latency_ms=total_latency,
-            pass_durations_ms=pass_durations
+            pass_durations_ms=pass_durations,
         )
-

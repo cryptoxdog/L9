@@ -1,44 +1,107 @@
 # 
+  .
   ..adapters.
   ..adapters.calendar_adapter_adapter
   ..adapters.email_adapter_adapter
   ..adapters.twilio_adapter_adapter
   ..config
+  ..db
+  ..embeddings
+  ..models
   ..schemas
   ..tools.cursor_client
   .action_tool.orchestrator
   .adapter
   .adapter_node
   .agent_config_extractor
+  .agent_controller
+  .agent_graph_loader
+  .aggregation
   .apply_engine
+  .approval_manager
   .base_extractor
   .bootstrap
+  .bootstrap_l_graph
+  .c_gmp_engine
   .code_extractor
+  .codegen_agent
   .config
+  .context_strategies
   .controller
   .convergence
+  .core
+  .credentials_policy
+  .db
+  .decision_synthesizer
+  .evaluator
+  .event_queue
   .evolution.orchestrator
+  .exceptions
   .executor
+  .exporters
+  .failures
+  .file_emitter
+  .governance_bridge
+  .graph_hydrator
+  .graph_to_wm_sync
+  .guardrails
+  .health
   .housekeeping
+  .identity
+  .instrumentation
   .interface
+  .kg_client
+  .l9_integration
   .local_api
+  .logger
+  .mcpserver
+  .memory
   .memory.orchestrator
+  .memory_bridge
+  .memory_client
   .memory_extractor
   .meta.orchestrator
+  .meta_loader
+  .mistake_prevention
+  .models
   .module_schema_extractor
   .orchestrator
+  .packet_router
   .permission_graph
+  .phase_0_validate
+  .phase_1_load_kernels
+  .phase_2_instantiate
+  .phase_3_bind_kernels
+  .phase_4_load_identity
+  .phase_5_bind_tools
+  .phase_6_wire_governance
+  .phase_7_verify_and_lock
+  .quick_fixes
+  .readme_generator
   .reasoning.orchestrator
+  .reasoning_engine
   .research_swarm.orchestrator
   .router
+  .routes
+  .routes.memory
+  .runtime_client
   .scheduler
+  .schema
   .schemas
+  .service
+  .session_startup
+  .tool_pattern_extractor
   .validator
+  .value_alignment
   .websocket_client
   .world_model.orchestrator
   .ws_bridge
+# 2020
+  2020
 # SUPER_PROMPT_TEMPLATE
   SUPER_PROMPT_TEMPLATE
+# YAML
+  YAML
 # __future__
   __future__
 # abc
@@ -52,24 +115,28 @@
   agents.architect_agent_a
   agents.architect_agent_b
   agents.base_agent
+  agents.codegenagent.c_gmp_engine
+  agents.codegenagent.file_emitter
+  agents.codegenagent.meta_loader
+  agents.codegenagent.readme_generator
   agents.coder_agent_a
   agents.coder_agent_b
   agents.l_cto
   agents.qa_agent
   agents.reflection_agent
 # api
+  api.
   api.adapters.calendar_adapter.adapters.calendar_adapter_adapter
   api.adapters.calendar_adapter.routes.calendar_adapter
   api.adapters.email_adapter.adapters.email_adapter_adapter
   api.adapters.email_adapter.routes.email_adapter
-  api.adapters.slack_adapter.adapters.slack_webhook_adapter
-  api.adapters.slack_adapter.routes.slack_webhook
   api.adapters.slack_webhook_adapter
   api.adapters.twilio_adapter.adapters.twilio_adapter_adapter
   api.adapters.twilio_adapter.routes.twilio_adapter
   api.agent_routes
   api.auth
   api.db
+  api.dependencies
   api.memory.router
   api.os_routes
   api.server
@@ -108,17 +175,25 @@
   config.settings
 # contextlib
   contextlib
+# copy
+  copy
 # core
   core.agents.agent_instance
   core.agents.executor
+  core.agents.graph_state.schema
   core.agents.schemas
   core.aios.runtime
   core.boundary.enforcer
+  core.commands.intent_extractor
+  core.commands.schemas
+  core.compliance.audit_log
+  core.compliance.audit_reporter
   core.config
   core.governance.approvals
   core.governance.engine
   core.governance.loader
   core.governance.schemas
+  core.governance.validation
   core.kernel_wiring.packet_protocol_wiring
   core.kernels.bayesian_kernel
   core.kernels.integrity
@@ -127,19 +202,39 @@
   core.schemas.event_stream
   core.schemas.hypergraph
   core.schemas.packet_envelope
+  core.schemas.packet_envelope_v2
   core.schemas.research_factory_models
   core.schemas.research_factory_nodes
   core.schemas.research_factory_state
+  core.schemas.schema_registry
   core.schemas.tasks
   core.schemas.ws_event_stream
+  core.testing.test_agent
+  core.testing.test_executor
+  core.testing.test_generator
+  core.tools.base_registry
   core.tools.registry_adapter
   core.tools.tool_graph
+  core.worldmodel.insight_emitter
+  core.worldmodel.l9_schema
+  core.worldmodel.service
 # dataclasses
   dataclasses
 # datetime
   datetime
 # deepseek_sdk
   deepseek_sdk
+# domain_tensor_bridge
+  domain_tensor_bridge.agent_controller
+  domain_tensor_bridge.context_enricher
+  domain_tensor_bridge.governance_bridge
+  domain_tensor_bridge.memory_bridge
+  domain_tensor_bridge.packet_router
+  domain_tensor_bridge.reasoning_engine
+  domain_tensor_bridge.tensor_coordinator
+  domain_tensor_bridge.world_model_bridge
+# dotenv
+  dotenv
 # email
   email
   email.header
@@ -166,15 +261,26 @@
   enum
 # fastapi
   fastapi
+  fastapi.middleware.cors
   fastapi.responses
-  fastapi.staticfiles
+  fastapi.security
   fastapi.testclient
+# flask
+  flask
+# flask_cors
+  flask_cors
 # fnmatch
   fnmatch
 # functools
   functools
 # generate_module_code
   generate_module_code
+# governance_monitor
+  governance_monitor
+# governance_validator
+  governance_validator
+# graph_adapter
+  graph_adapter.packet_node_adapter
 # hashlib
   hashlib
 # hmac
@@ -186,13 +292,21 @@
 # importlib
   importlib
   importlib.util
+# inspect
+  inspect
+# integration
+  integration
 # ir_engine
+  ir_engine.compile_meta_to_ir
   ir_engine.constraint_challenger
   ir_engine.deliberation_cell
   ir_engine.ir_generator
   ir_engine.ir_schema
   ir_engine.ir_to_plan_adapter
+  ir_engine.ir_to_python
   ir_engine.ir_validator
+  ir_engine.meta_ir
+  ir_engine.schema_validator
   ir_engine.semantic_compiler
   ir_engine.simulation_router
 # itertools
@@ -201,8 +315,38 @@
   jinja2
 # json
   json
-# l9_langgraph
-  l9_langgraph.packet_node_adapter
+# l
+  l.l_core.engine
+  l.l_core.identity
+  l.l_governance.guardrails
+# l9
+  l9.agents
+  l9.agents.research_agent
+  l9.core.governance
+  l9.core.memory
+  l9.core.schemas
+  l9.core.tools
+  l9.core.utils
+  l9.governance.approvals
+  l9.memory.substrate_service
+  l9.orchestration.strategymemory
+# l9_agent
+  l9_agent.desire_engine
+  l9_agent.persistence_engine
+  l9_agent.trust_model
+  l9_agent.value_alignment
+  l9_agent.will_engine
+# l_cto
+  l_cto.l_cto_core.identity
+  l_cto.l_cto_interface.runtime_client
+  l_cto.memory.l1.l1_query
+  l_cto.memory.l1.l1_reader
+  l_cto.memory.l1.l1_writer
+  l_cto.memory.shared.concurrency_manager
+  l_cto.memory.shared.constants
+  l_cto.memory.shared.governance_filter
+  l_cto.memory.shared.hashing
+  l_cto.memory.shared.supabase_client
 # langchain
   langchain.tools
 # langchain_core
@@ -219,11 +363,13 @@
 # math
   math
 # memory
+  memory.governance_patterns
   memory.graph_client
   memory.housekeeping
   memory.ingestion
   memory.insight_extraction
   memory.migration_runner
+  memory.models
   memory.packet_serializer
   memory.retrieval
   memory.slack_ingest
@@ -232,16 +378,32 @@
   memory.substrate_repository
   memory.substrate_semantic
   memory.substrate_service
+  memory.tool_audit
   memory.validators.packet_validator
+# memory_aggregator
+  memory_aggregator
 # mocks
   mocks.kernel_mocks
   mocks.memory_mocks
   mocks.orchestrator_mocks
   mocks.world_model_mocks
+# neo4j
+  neo4j
 # numpy
   numpy
 # openai
   openai
+# opentelemetry
+  opentelemetry
+  opentelemetry.baggage.propagation
+  opentelemetry.exporter.jaeger.thrift
+  opentelemetry.exporter.prometheus
+  opentelemetry.propagators.composite
+  opentelemetry.sdk.metrics
+  opentelemetry.sdk.metrics.export
+  opentelemetry.sdk.trace
+  opentelemetry.sdk.trace.export
+  opentelemetry.trace.propagation.tracecontext
 # orchestration
   orchestration.cell_orchestrator
   orchestration.long_plan_graph
@@ -253,6 +415,8 @@
 # orchestrators
   orchestrators.action_tool.interface
   orchestrators.action_tool.orchestrator
+  orchestrators.memory.interface
+  orchestrators.memory.orchestrator
   orchestrators.reasoning.interface
   orchestrators.reasoning.orchestrator
   orchestrators.research_swarm.interface
@@ -263,25 +427,44 @@
   pandas
 # pathlib
   pathlib
+# phase_2_observability
+  phase_2_observability
+# phase_3_standardization
+  phase_3_standardization
+# phase_4_scalability
+  phase_4_scalability
+# phase_5_governance
+  phase_5_governance
+# pickle
+  pickle
 # platform
   platform
 # plotly
   plotly.graph_objects
+# pre_execution_checker
+  pre_execution_checker
+# psutil
+  psutil
 # psycopg
   psycopg
-  psycopg.rows
 # pydantic
   pydantic
 # pydantic_settings
   pydantic_settings
 # pytest
   pytest
+# pythonjsonlogger
+  pythonjsonlogger
+# queue
+  queue
 # random
   random
 # ray
   ray
 # re
   re
+# redis
+  redis.asyncio
 # requests
   requests
 # routes
@@ -290,14 +473,19 @@
   routes.email_adapter
   routes.twilio_adapter
 # runtime
+  runtime.dora
   runtime.gmp_worker
   runtime.kernel_loader
+  runtime.long_plan_tool
   runtime.mcp_client
   runtime.rate_limiter
   runtime.redis_client
+  runtime.superprompt_emitter
   runtime.task_queue
   runtime.tool_call_wrapper
   runtime.websocket_orchestrator
+# secrets
+  secrets
 # services
   services.mac_tasks
   services.research.agents
@@ -321,6 +509,17 @@
   services.research_factory.glue_resolver
   services.research_factory.schema_parser
   services.research_factory.schema_validator
+  services.symbolic_computation
+  services.symbolic_computation.api.routes
+  services.symbolic_computation.config
+  services.symbolic_computation.core.cache_manager
+  services.symbolic_computation.core.code_generator
+  services.symbolic_computation.core.expression_evaluator
+  services.symbolic_computation.core.metrics
+  services.symbolic_computation.core.models
+  services.symbolic_computation.core.optimizer
+  services.symbolic_computation.core.validator
+  services.symbolic_computation.tools.symbolic_tool
 # shlex
   shlex
 # shutil
@@ -333,16 +532,44 @@
   simulation.simulation_engine
 # socket
   socket
+# sqlite3
+  sqlite3
 # src
   src.agent_integration
   src.architecture
+  src.config
+  src.db
+  src.embeddings
+  src.mcp_server
+  src.models
+  src.routes
   src.semantic_kernel
+# statistics
+  statistics
 # structlog
   structlog
 # subprocess
   subprocess
+# supabase
+  supabase
+# symbolic_computation
+  symbolic_computation
+  symbolic_computation.core
+  symbolic_computation.exceptions
+  symbolic_computation.models
+  symbolic_computation.utils
+# sympy
+  sympy
+  sympy.simplify.cse_main
+  sympy.utilities.autowrap
+  sympy.utilities.codegen
+  sympy.utilities.iterables
+  sympy.utilities.lambdify
+  sympy.utilities.memoization
 # sys
   sys
+# telemetry
+  telemetry.memory_metrics
 # tempfile
   tempfile
 # tenacity
@@ -375,9 +602,19 @@
 # typing
   typing
 # unittest
+  unittest
   unittest.mock
+# upgrades
+  upgrades.packet_envelope
+  upgrades.packet_envelope.governance
+  upgrades.packet_envelope.integration
+  upgrades.packet_envelope.observability
+  upgrades.packet_envelope.scalability
+  upgrades.packet_envelope.standardization
 # urllib
+  urllib.error
   urllib.parse
+  urllib.request
 # uuid
   uuid
 # uvicorn

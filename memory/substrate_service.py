@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Any, Optional
 
 from memory.substrate_models import (
-    PacketEnvelope,
     PacketEnvelopeIn,
     PacketWriteResult,
     SemanticSearchRequest,
@@ -25,7 +24,12 @@ from memory.substrate_semantic import (
     StubEmbeddingProvider,
     create_embedding_provider,
 )
-from memory.substrate_graph import SubstrateDAG, run_substrate_flow
+from memory.substrate_graph import SubstrateDAG
+from telemetry.memory_metrics import (
+    record_memory_write,
+    record_memory_search,
+    set_memory_substrate_health,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -33,14 +37,14 @@ logger = structlog.get_logger(__name__)
 class MemorySubstrateService:
     """
     Main service class for the Memory Substrate.
-    
+
     Coordinates all substrate operations:
     - Packet ingestion and DAG processing
     - Semantic search
     - Memory retrieval
     - Health monitoring
     """
-    
+
     def __init__(
         self,
         repository: SubstrateRepository,
@@ -48,80 +52,157 @@ class MemorySubstrateService:
     ):
         """
         Initialize the substrate service.
-        
+
         Args:
             repository: Database repository instance
             embedding_provider: Embedding provider (defaults to stub if not provided)
         """
         self._repository = repository
-        
+
         # Initialize embedding provider
         if embedding_provider is None:
             logger.warning("No embedding provider specified, using stub provider")
             embedding_provider = StubEmbeddingProvider()
         self._embedding_provider = embedding_provider
-        
+
         # Initialize semantic service
         self._semantic_service = SemanticService(
             embedding_provider=embedding_provider,
             repository=repository,
         )
-        
+
         # Initialize DAG
         self._dag = SubstrateDAG(
             repository=repository,
             semantic_service=self._semantic_service,
         )
-        
+
         logger.info("MemorySubstrateService initialized")
-    
+
+    # =========================================================================
+    # RLS Session Scope
+    # =========================================================================
+
+    async def set_session_scope(
+        self,
+        tenant_id: str,
+        org_id: str,
+        user_id: str,
+        role: str = "end_user",
+    ) -> None:
+        """
+        Set PostgreSQL session variables for RLS (Row-Level Security).
+
+        Calls l9_set_scope() SQL function to set:
+        - app.tenant_id
+        - app.org_id
+        - app.user_id
+        - app.role
+
+        CRITICAL: Must be called before every database query to enforce tenant isolation.
+
+        Args:
+            tenant_id: Tenant UUID for isolation
+            org_id: Organization UUID for isolation
+            user_id: User UUID for isolation
+            role: User role (platform_admin, tenant_admin, org_admin, end_user)
+
+        Raises:
+            RuntimeError: If session scope setting fails
+        """
+        try:
+            async with self._repository.acquire() as conn:
+                await conn.execute(
+                    """SELECT l9_set_scope($1::uuid, $2::uuid, $3::uuid, $4::text)""",
+                    tenant_id,
+                    org_id,
+                    user_id,
+                    role,
+                )
+            logger.debug(
+                "RLS session scope set",
+                tenant_id=tenant_id,
+                org_id=org_id,
+                user_id=user_id,
+                role=role,
+            )
+        except Exception as e:
+            logger.error(f"Failed to set RLS session scope: {e}", exc_info=True)
+            raise RuntimeError(f"RLS scope initialization failed: {e}") from e
+
     # =========================================================================
     # Packet Operations
     # =========================================================================
-    
-    async def write_packet(self, packet_in: PacketEnvelopeIn) -> PacketWriteResult:
+
+    async def write_packet(
+        self,
+        packet_in: PacketEnvelopeIn,
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
+    ) -> PacketWriteResult:
         """
         Submit a packet to the substrate for processing.
-        
+
         Runs the full DAG pipeline:
         1. Intake validation
         2. Reasoning block generation
         3. Memory writes
         4. Semantic embedding
         5. Checkpoint
-        
+
         Args:
             packet_in: Input packet envelope
-            
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
+
         Returns:
             PacketWriteResult with status and written tables
         """
         logger.info(f"Processing packet: type={packet_in.packet_type}")
-        
+
+        # Set RLS scope if provided
+        if tenant_id and org_id and user_id:
+            await self.set_session_scope(tenant_id, org_id, user_id, role)
+        else:
+            logger.warning(
+                "RLS scope not provided for write_packet - queries may be restricted"
+            )
+
         # Convert input to full envelope
         envelope = packet_in.to_envelope()
-        
+
         # Run through DAG
         result = await self._dag.run(envelope)
-        
+
+        # Record Prometheus metrics for memory write
+        record_memory_write(
+            segment=packet_in.packet_type or "unknown",
+            status=result.status,
+        )
+
         logger.info(
             f"Packet {envelope.packet_id} processed: "
             f"status={result.status}, tables={result.written_tables}"
         )
-        
+
         return result
-    
+
     async def get_packet(self, packet_id: str) -> Optional[dict[str, Any]]:
         """
         Retrieve a packet by ID.
-        
+
         Args:
             packet_id: UUID string of the packet
-            
+
         Returns:
             Packet envelope as dict or None if not found
         """
         from uuid import UUID
+
         try:
             row = await self._repository.get_packet(UUID(packet_id))
             if row:
@@ -130,7 +211,7 @@ class MemorySubstrateService:
         except Exception as e:
             logger.error(f"Error retrieving packet {packet_id}: {e}")
             return None
-    
+
     async def search_packets_by_thread(
         self,
         thread_id: str,
@@ -139,27 +220,37 @@ class MemorySubstrateService:
     ) -> list[dict[str, Any]]:
         """
         Search for packets by thread ID.
-        
+
         Args:
             thread_id: Thread UUID string
             packet_type: Optional filter by packet type
             limit: Maximum packets to return
-            
+
         Returns:
             List of packet envelopes as dicts
         """
         from uuid import UUID
+
         try:
             rows = await self._repository.search_packets_by_thread(
                 thread_id=UUID(thread_id),
                 packet_type=packet_type,
                 limit=limit,
             )
-            return [row.envelope for row in rows]
+            results = [row.envelope for row in rows]
+
+            # Record Prometheus metrics for search
+            record_memory_search(
+                segment=packet_type or "all",
+                hit_count=len(results),
+                search_type="thread",
+            )
+
+            return results
         except Exception as e:
             logger.error(f"Error searching packets by thread {thread_id}: {e}")
             return []
-    
+
     async def search_packets_by_type(
         self,
         packet_type: str,
@@ -168,12 +259,12 @@ class MemorySubstrateService:
     ) -> list[dict[str, Any]]:
         """
         Search for packets by type.
-        
+
         Args:
             packet_type: Packet type to search for
             agent_id: Optional filter by agent
             limit: Maximum packets to return
-            
+
         Returns:
             List of packet envelopes as dicts
         """
@@ -183,37 +274,58 @@ class MemorySubstrateService:
                 agent_id=agent_id,
                 limit=limit,
             )
-            return [row.envelope for row in rows]
+            results = [row.envelope for row in rows]
+
+            # Record Prometheus metrics for search
+            record_memory_search(
+                segment=packet_type,
+                hit_count=len(results),
+                search_type="type",
+            )
+
+            return results
         except Exception as e:
             logger.error(f"Error searching packets by type {packet_type}: {e}")
             return []
-    
+
     async def query_packets(
         self,
         packet_types: Optional[list[str]] = None,
         limit: int = 50,
         since: Optional[datetime] = None,
         agent_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
     ) -> dict[str, Any]:
         """
         Query packets for world model ingestion.
-        
+
         Fetches packets matching the specified types, ordered by timestamp.
         Used by WorldModelRuntime.MemorySubstratePacketSource for proactive
         world model updates.
-        
+
         Args:
             packet_types: List of packet types to fetch (None = all)
             limit: Maximum packets to return
             since: Only fetch packets after this timestamp
             agent_id: Optional filter by agent
-            
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
+
         Returns:
             Dict with 'packets' list and metadata
         """
         try:
+            # Set RLS scope if provided
+            if tenant_id and org_id and user_id:
+                await self.set_session_scope(tenant_id, org_id, user_id, role)
+
             all_packets = []
-            
+
             if packet_types:
                 # Fetch each type and combine
                 for ptype in packet_types:
@@ -235,59 +347,70 @@ class MemorySubstrateService:
                         since=since,
                     )
                     all_packets.extend([row.envelope for row in rows])
-            
+
             # Sort by timestamp descending and limit
             all_packets.sort(
-                key=lambda p: p.get("timestamp", p.get("created_at", "")),
-                reverse=True
+                key=lambda p: p.get("timestamp", p.get("created_at", "")), reverse=True
             )
             all_packets = all_packets[:limit]
-            
+
             logger.debug(f"query_packets: fetched {len(all_packets)} packets")
-            
+
             return {
                 "packets": all_packets,
                 "count": len(all_packets),
                 "since": since.isoformat() if since else None,
             }
-            
+
         except Exception as e:
             logger.error(f"Error querying packets: {e}")
             # Log to error telemetry
             try:
                 from core.error_tracking import log_error_to_graph
                 import asyncio
-                asyncio.create_task(log_error_to_graph(
-                    error=e,
-                    context={"packet_types": packet_types, "limit": limit},
-                    source="memory.substrate_service.query_packets",
-                ))
+
+                asyncio.create_task(
+                    log_error_to_graph(
+                        error=e,
+                        context={"packet_types": packet_types, "limit": limit},
+                        source="memory.substrate_service.query_packets",
+                    )
+                )
             except ImportError:
                 pass
             return {"packets": [], "count": 0, "error": str(e)}
-    
+
     # =========================================================================
     # Semantic Search Operations
     # =========================================================================
-    
-    async def semantic_search(self, request: SemanticSearchRequest) -> SemanticSearchResult:
+
+    async def semantic_search(
+        self, request: SemanticSearchRequest
+    ) -> SemanticSearchResult:
         """
         Search semantic memory for similar content.
-        
+
         Args:
             request: Search request with query and parameters
-            
+
         Returns:
             SemanticSearchResult with hits
         """
         logger.info(f"Semantic search: query='{request.query[:50]}...'")
-        
+
         hits = await self._semantic_service.search(
             query=request.query,
             top_k=request.top_k,
             agent_id=request.agent_id,
         )
-        
+
+        # Record Prometheus metrics for semantic search
+        record_memory_search(
+            segment="semantic",
+            hit_count=len(hits),
+            search_type="semantic",
+        )
+
         return SemanticSearchResult(
             query=request.query,
             hits=[
@@ -299,16 +422,18 @@ class MemorySubstrateService:
                 for h in hits
             ],
         )
-    
-    async def embed_text(self, text: str, payload: dict[str, Any], agent_id: Optional[str] = None) -> str:
+
+    async def embed_text(
+        self, text: str, payload: dict[str, Any], agent_id: Optional[str] = None
+    ) -> str:
         """
         Directly embed and store text in semantic memory.
-        
+
         Args:
             text: Text to embed
             payload: Metadata payload
             agent_id: Optional agent identifier
-            
+
         Returns:
             embedding_id
         """
@@ -317,11 +442,11 @@ class MemorySubstrateService:
             payload=payload,
             agent_id=agent_id,
         )
-    
+
     # =========================================================================
     # Memory Event Operations
     # =========================================================================
-    
+
     async def get_memory_events(
         self,
         agent_id: str,
@@ -330,12 +455,12 @@ class MemorySubstrateService:
     ) -> list[dict[str, Any]]:
         """
         Retrieve memory events for an agent.
-        
+
         Args:
             agent_id: Agent identifier
             event_type: Optional event type filter
             limit: Maximum events to return
-            
+
         Returns:
             List of memory events as dicts
         """
@@ -345,11 +470,11 @@ class MemorySubstrateService:
             limit=limit,
         )
         return [row.model_dump(mode="json") for row in rows]
-    
+
     # =========================================================================
     # Reasoning Trace Operations
     # =========================================================================
-    
+
     async def get_reasoning_traces(
         self,
         agent_id: Optional[str] = None,
@@ -358,36 +483,37 @@ class MemorySubstrateService:
     ) -> list[dict[str, Any]]:
         """
         Retrieve reasoning traces.
-        
+
         Args:
             agent_id: Optional agent filter
             packet_id: Optional packet filter
             limit: Maximum traces to return
-            
+
         Returns:
             List of reasoning traces as dicts
         """
         from uuid import UUID
+
         pid = UUID(packet_id) if packet_id else None
-        
+
         rows = await self._repository.get_reasoning_traces(
             agent_id=agent_id,
             packet_id=pid,
             limit=limit,
         )
         return [row.model_dump(mode="json") for row in rows]
-    
+
     # =========================================================================
     # Checkpoint Operations
     # =========================================================================
-    
+
     async def get_checkpoint(self, agent_id: str) -> Optional[dict[str, Any]]:
         """
         Retrieve the latest checkpoint for an agent.
-        
+
         Args:
             agent_id: Agent identifier
-            
+
         Returns:
             Checkpoint state as dict or None
         """
@@ -395,28 +521,28 @@ class MemorySubstrateService:
         if row:
             return row.model_dump(mode="json")
         return None
-    
+
     # =========================================================================
     # Insight & Knowledge Operations (v1.1.0+)
     # =========================================================================
-    
+
     async def write_insights(
         self,
         insights: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """
         Write extracted insights to the substrate.
-        
+
         Persists insights and associated facts to knowledge_facts table.
-        
+
         Args:
             insights: List of ExtractedInsight dicts
-            
+
         Returns:
             Status dict with counts
         """
         facts_written = 0
-        
+
         for insight in insights:
             # Write associated facts
             for fact in insight.get("facts", []):
@@ -428,65 +554,80 @@ class MemorySubstrateService:
                     source_packet=insight.get("source_packet"),
                 )
                 facts_written += 1
-        
+
         return {
             "status": "ok",
             "insights_processed": len(insights),
             "facts_written": facts_written,
         }
-    
+
     async def trigger_world_model_update(
         self,
         insights: list[dict[str, Any]],
+        tenant_id: Optional[str] = None,
+        org_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        role: str = "end_user",
     ) -> dict[str, Any]:
         """
         Trigger world model update from insights.
-        
+
         Calls WorldModelService.update_from_insights() to propagate
         insights to the world model with DB persistence.
-        
+
         Args:
             insights: List of insights to propagate
-            
+            tenant_id: Tenant UUID for RLS isolation
+            org_id: Organization UUID for RLS isolation
+            user_id: User UUID for RLS isolation
+            role: User role for RLS policy enforcement
+
         Returns:
             Status dict with update results
         """
         logger.info(f"World model update triggered with {len(insights)} insights")
-        
+
+        # Set RLS scope for world model operations
+        if tenant_id and org_id and user_id:
+            await self.set_session_scope(tenant_id, org_id, user_id, role)
+
         # Filter to insights that should trigger updates
         triggering = [i for i in insights if i.get("trigger_world_model", False)]
-        
+
         if not triggering:
             return {
                 "status": "skipped",
                 "reason": "no_triggering_insights",
             }
-        
+
         try:
             # Lazy import to avoid circular dependencies
             from world_model.service import get_world_model_service
-            
+
             # Get singleton service instance (DB-backed)
-            if not hasattr(self, '_world_model_service'):
+            if not hasattr(self, "_world_model_service"):
                 self._world_model_service = get_world_model_service()
-            
+
             # Delegate to service
             result = await self._world_model_service.update_from_insights(triggering)
-            
+
             logger.info(f"World model updated: {result}")
             return result
-            
+
         except Exception as e:
             logger.error(f"World model update failed: {e}")
             # Log to error telemetry (non-blocking)
             try:
                 from core.error_tracking import log_error_to_graph
                 import asyncio
-                asyncio.create_task(log_error_to_graph(
-                    error=e,
-                    context={"insights_count": len(triggering)},
-                    source="memory.substrate_service.world_model_update",
-                ))
+
+                asyncio.create_task(
+                    log_error_to_graph(
+                        error=e,
+                        context={"insights_count": len(triggering)},
+                        source="memory.substrate_service.world_model_update",
+                    )
+                )
             except ImportError:
                 pass
             return {
@@ -494,7 +635,7 @@ class MemorySubstrateService:
                 "error": str(e),
                 "insights_attempted": len(triggering),
             }
-    
+
     async def get_facts_by_subject(
         self,
         subject: str,
@@ -503,12 +644,12 @@ class MemorySubstrateService:
     ) -> list[dict[str, Any]]:
         """
         Retrieve knowledge facts by subject.
-        
+
         Args:
             subject: Subject to search for
             predicate: Optional predicate filter
             limit: Maximum facts to return
-            
+
         Returns:
             List of facts as dicts
         """
@@ -518,20 +659,24 @@ class MemorySubstrateService:
             limit=limit,
         )
         return [row.model_dump(mode="json") for row in rows]
-    
+
     # =========================================================================
     # Health & Status
     # =========================================================================
-    
+
     async def health_check(self) -> dict[str, Any]:
         """
         Perform health check on all substrate components.
-        
+
         Returns:
             Health status dict
         """
         db_health = await self._repository.health_check()
-        
+
+        # Update Prometheus health gauge
+        is_healthy = db_health["status"] == "healthy"
+        set_memory_substrate_health(is_healthy)
+
         return {
             "status": db_health["status"],
             "components": {
@@ -551,6 +696,7 @@ class MemorySubstrateService:
 # Factory Function
 # =============================================================================
 
+
 async def create_substrate_service(
     database_url: str,
     embedding_provider_type: str = "stub",
@@ -561,7 +707,7 @@ async def create_substrate_service(
 ) -> MemorySubstrateService:
     """
     Factory function to create a fully configured MemorySubstrateService.
-    
+
     Args:
         database_url: Postgres DSN
         embedding_provider_type: "openai" or "stub"
@@ -569,7 +715,7 @@ async def create_substrate_service(
         openai_api_key: API key for OpenAI
         db_pool_size: Connection pool size
         db_max_overflow: Pool overflow limit
-        
+
     Returns:
         Configured MemorySubstrateService
     """
@@ -580,14 +726,14 @@ async def create_substrate_service(
         max_overflow=db_max_overflow,
     )
     await repository.connect()
-    
+
     # Create embedding provider
     embedding_provider = create_embedding_provider(
         provider_type=embedding_provider_type,
         model=embedding_model,
         api_key=openai_api_key,
     )
-    
+
     # Create and return service
     return MemorySubstrateService(
         repository=repository,
@@ -622,4 +768,3 @@ async def close_service() -> None:
     if _service:
         await _service._repository.disconnect()
         _service = None
-

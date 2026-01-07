@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -47,10 +47,10 @@ class ArchitectAgentB(BaseAgent):
     """
     Challenger architect agent for design validation.
     """
-    
+
     agent_role = AgentRole.ARCHITECT_CHALLENGER
     agent_name = "architect_b"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -58,11 +58,11 @@ class ArchitectAgentB(BaseAgent):
     ):
         """Initialize Architect Agent B."""
         super().__init__(agent_id, config)
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -70,18 +70,18 @@ class ArchitectAgentB(BaseAgent):
     ) -> AgentResponse:
         """
         Execute design challenge task.
-        
+
         Args:
             task: Task with 'design' and 'requirements'
             context: Optional context
-            
+
         Returns:
             AgentResponse with critique
         """
         design = task.get("design", {})
         requirements = task.get("requirements", "")
         focus_areas = task.get("focus_areas", [])
-        
+
         prompt = f"""Critically evaluate this architecture design:
 
 Design:
@@ -129,20 +129,20 @@ Provide thorough critique as JSON:
     "reasoning": "..."
 }}
 """
-        
+
         if context:
             prompt += f"\n\nAdditional context:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         # Add to conversation history
         self.add_message(messages[0])
         if response.success:
             self.add_message(self.format_assistant_message(response.content))
-        
+
         return response
-    
+
     async def challenge_decision(
         self,
         decision: str,
@@ -151,12 +151,12 @@ Provide thorough critique as JSON:
     ) -> dict[str, Any]:
         """
         Challenge a specific design decision.
-        
+
         Args:
             decision: The decision made
             rationale: Why it was made
             alternatives_considered: What else was considered
-            
+
         Returns:
             Challenge analysis
         """
@@ -182,9 +182,9 @@ Analyze and respond:
     "reasoning": "..."
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def validate_interface(
         self,
         interface: dict[str, Any],
@@ -192,11 +192,11 @@ Analyze and respond:
     ) -> dict[str, Any]:
         """
         Validate an interface design.
-        
+
         Args:
             interface: Interface specification
             consumers: Who will consume this interface
-            
+
         Returns:
             Validation result
         """
@@ -222,9 +222,9 @@ Evaluate:
     "recommendations": ["..."]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def stress_test_design(
         self,
         design: dict[str, Any],
@@ -232,11 +232,11 @@ Evaluate:
     ) -> dict[str, Any]:
         """
         Stress test a design against scenarios.
-        
+
         Args:
             design: Design to test
             scenarios: Stress scenarios
-            
+
         Returns:
             Stress test results
         """
@@ -265,19 +265,19 @@ For each scenario, evaluate:
     "design_limits": ["..."]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def security_review(
         self,
         design: dict[str, Any],
     ) -> dict[str, Any]:
         """
         Perform security-focused design review.
-        
+
         Args:
             design: Design to review
-            
+
         Returns:
             Security review results
         """
@@ -308,6 +308,5 @@ Evaluate for:
     "threat_model_summary": "..."
 }}
 """
-        
-        return await self.call_llm_json(prompt)
 
+        return await self.call_llm_json(prompt)

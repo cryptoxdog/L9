@@ -105,23 +105,23 @@ Return JSON:
 class CoderCell(BaseCell):
     """
     Collaborative cell for code implementation.
-    
+
     Coordinates two coder agents to write robust, reviewed code.
     """
-    
+
     cell_type = "coder"
-    
+
     def __init__(self, config: Optional[CellConfig] = None):
         """Initialize the coder cell."""
         super().__init__(config)
         self._client: Optional[AsyncOpenAI] = None
-    
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._config.api_key)
         return self._client
-    
+
     async def _run_producer(
         self,
         task: dict[str, Any],
@@ -130,34 +130,39 @@ class CoderCell(BaseCell):
     ) -> dict[str, Any]:
         """Run Coder A to produce implementation."""
         client = self._ensure_client()
-        
+
         prompt = CODER_A_PROMPT.format(
             task=json.dumps(task, indent=2),
-            critique=json.dumps(previous_critique, indent=2) if previous_critique else "None",
+            critique=json.dumps(previous_critique, indent=2)
+            if previous_critique
+            else "None",
             context=json.dumps(context, indent=2),
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._config.model,
                 messages=[
-                    {"role": "system", "content": "You are Coder A, a senior software engineer. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are Coder A, a senior software engineer. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Coder A failed: {e}")
             return {
                 "files": [],
                 "error": str(e),
             }
-    
+
     async def _run_critic(
         self,
         output: dict[str, Any],
@@ -166,27 +171,30 @@ class CoderCell(BaseCell):
     ) -> dict[str, Any]:
         """Run Coder B to review the implementation."""
         client = self._ensure_client()
-        
+
         prompt = CODER_B_PROMPT.format(
             code=json.dumps(output, indent=2),
             task=json.dumps(task, indent=2),
             context=json.dumps(context, indent=2),
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._config.model,
                 messages=[
-                    {"role": "system", "content": "You are Coder B, a meticulous code reviewer. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are Coder B, a meticulous code reviewer. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.2,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Coder B failed: {e}")
             return {
@@ -194,7 +202,7 @@ class CoderCell(BaseCell):
                 "consensus": False,
                 "error": str(e),
             }
-    
+
     def _apply_revisions(
         self,
         output: dict[str, Any],
@@ -202,38 +210,39 @@ class CoderCell(BaseCell):
     ) -> tuple[dict[str, Any], list[str]]:
         """Apply review revisions to code."""
         revisions: list[str] = []
-        
+
         # Apply improvements
         for improvement in critique.get("improvements", []):
             file_path = improvement.get("file", "")
             suggested = improvement.get("suggested", "")
-            
+
             for file_obj in output.get("files", []):
                 if file_obj.get("path") == file_path and suggested:
                     # Note: In production, would apply more sophisticated patching
-                    file_obj.setdefault("review_notes", []).append({
-                        "suggestion": suggested,
-                        "reason": improvement.get("reason", ""),
-                    })
+                    file_obj.setdefault("review_notes", []).append(
+                        {
+                            "suggestion": suggested,
+                            "reason": improvement.get("reason", ""),
+                        }
+                    )
                     revisions.append(f"Improvement noted for {file_path}")
                     break
-        
+
         # Add security notes
         for concern in critique.get("security_concerns", []):
             output.setdefault("security_notes", []).append(concern)
             revisions.append(f"Added security concern: {concern[:50]}")
-        
+
         # Track issues for reference
         critical_issues = [
-            i for i in critique.get("issues", [])
-            if i.get("severity") == "critical"
+            i for i in critique.get("issues", []) if i.get("severity") == "critical"
         ]
         if critical_issues:
             output["critical_issues"] = critical_issues
             revisions.append(f"Flagged {len(critical_issues)} critical issues")
-        
+
         return output, revisions
-    
+
     async def _validate_output(
         self,
         output: dict[str, Any],
@@ -241,29 +250,31 @@ class CoderCell(BaseCell):
     ) -> tuple[bool, list[str]]:
         """Validate the code implementation."""
         errors: list[str] = []
-        
+
         # Check for files
         if not output.get("files"):
             errors.append("No files generated")
             return False, errors
-        
+
         # Validate each file
         for idx, file_obj in enumerate(output.get("files", [])):
             if not file_obj.get("path"):
                 errors.append(f"File {idx} missing path")
             if not file_obj.get("content"):
                 errors.append(f"File {file_obj.get('path', idx)} has no content")
-        
+
         # Check for critical issues
         if output.get("critical_issues"):
-            errors.append(f"Has {len(output['critical_issues'])} unresolved critical issues")
-        
+            errors.append(
+                f"Has {len(output['critical_issues'])} unresolved critical issues"
+            )
+
         return len(errors) == 0, errors
-    
+
     # ==========================================================================
     # Coder-Specific Methods
     # ==========================================================================
-    
+
     async def implement(
         self,
         specification: str,
@@ -273,13 +284,13 @@ class CoderCell(BaseCell):
     ) -> dict[str, Any]:
         """
         Implement code from specification.
-        
+
         Args:
             specification: What to implement
             language: Programming language
             framework: Optional framework
             existing_code: Existing code to extend
-            
+
         Returns:
             Implementation result
         """
@@ -288,15 +299,15 @@ class CoderCell(BaseCell):
             "language": language,
             "framework": framework,
         }
-        
+
         context = {
             "existing_code": existing_code or {},
             "mode": "extend" if existing_code else "new",
         }
-        
+
         result = await self.execute(task, context)
         return result.output or {}
-    
+
     async def refactor(
         self,
         code: str,
@@ -305,12 +316,12 @@ class CoderCell(BaseCell):
     ) -> dict[str, Any]:
         """
         Refactor existing code.
-        
+
         Args:
             code: Code to refactor
             file_path: File path
             goals: Refactoring goals
-            
+
         Returns:
             Refactored code
         """
@@ -318,15 +329,15 @@ class CoderCell(BaseCell):
             "action": "refactor",
             "goals": goals,
         }
-        
+
         context = {
             "existing_code": {file_path: code},
             "mode": "refactor",
         }
-        
+
         result = await self.execute(task, context)
         return result.output or {}
-    
+
     async def fix_bug(
         self,
         code: str,
@@ -336,13 +347,13 @@ class CoderCell(BaseCell):
     ) -> dict[str, Any]:
         """
         Fix a bug in code.
-        
+
         Args:
             code: Code with bug
             file_path: File path
             bug_description: Description of the bug
             error_message: Optional error message
-            
+
         Returns:
             Fixed code
         """
@@ -351,12 +362,11 @@ class CoderCell(BaseCell):
             "bug_description": bug_description,
             "error_message": error_message,
         }
-        
+
         context = {
             "existing_code": {file_path: code},
             "mode": "bugfix",
         }
-        
+
         result = await self.execute(task, context)
         return result.output or {}
-

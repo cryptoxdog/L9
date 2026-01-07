@@ -30,7 +30,7 @@ logger = structlog.get_logger(__name__)
 # Configuration
 # =============================================================================
 
-DEFAULT_KERNEL_PATH = "l9_private"
+DEFAULT_KERNEL_PATH = "private"
 KERNEL_EXTENSIONS = (".yaml", ".yml")
 
 # =============================================================================
@@ -38,16 +38,16 @@ KERNEL_EXTENSIONS = (".yaml", ".yml")
 # =============================================================================
 
 KERNEL_ORDER = [
-    "l9_private/kernels/00_system/01_master_kernel.yaml",
-    "l9_private/kernels/00_system/02_identity_kernel.yaml",
-    "l9_private/kernels/00_system/03_cognitive_kernel.yaml",
-    "l9_private/kernels/00_system/04_behavioral_kernel.yaml",
-    "l9_private/kernels/00_system/05_memory_kernel.yaml",
-    "l9_private/kernels/00_system/06_worldmodel_kernel.yaml",
-    "l9_private/kernels/00_system/07_execution_kernel.yaml",
-    "l9_private/kernels/00_system/08_safety_kernel.yaml",
-    "l9_private/kernels/00_system/09_developer_kernel.yaml",
-    "l9_private/kernels/00_system/10_packet_protocol_kernel.yaml",
+    "private/kernels/00_system/01_master_kernel.yaml",
+    "private/kernels/00_system/02_identity_kernel.yaml",
+    "private/kernels/00_system/03_cognitive_kernel.yaml",
+    "private/kernels/00_system/04_behavioral_kernel.yaml",
+    "private/kernels/00_system/05_memory_kernel.yaml",
+    "private/kernels/00_system/06_worldmodel_kernel.yaml",
+    "private/kernels/00_system/07_execution_kernel.yaml",
+    "private/kernels/00_system/08_safety_kernel.yaml",
+    "private/kernels/00_system/09_developer_kernel.yaml",
+    "private/kernels/00_system/10_packet_protocol_kernel.yaml",
 ]
 
 
@@ -55,16 +55,17 @@ KERNEL_ORDER = [
 # Kernel-Aware Agent Protocol
 # =============================================================================
 
+
 class KernelAwareAgent(Protocol):
     """Protocol for agents that can absorb kernels."""
-    
+
     kernels: Dict[str, Dict[str, Any]]
     kernel_state: str
-    
+
     def absorb_kernel(self, kernel_data: Dict[str, Any]) -> None:
         """Absorb a kernel into the agent's configuration."""
         ...
-    
+
     def set_system_context(self, context: str) -> None:
         """Set the agent's system context after kernel activation."""
         ...
@@ -74,33 +75,34 @@ class KernelAwareAgent(Protocol):
 # Kernel Loader
 # =============================================================================
 
+
 def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
     """
     Load all kernels into an agent in the correct order.
-    
+
     This is the ONLY entry point for kernel loading.
-    
+
     Args:
         agent: Agent instance with absorb_kernel() method
         base_path: Base path for kernel files (defaults to repo root)
-        
+
     Returns:
         The agent with kernels loaded and activated
-        
+
     Raises:
         RuntimeError: If kernel loading fails
     """
     if base_path is None:
         # Default to repo root (runtime/ is one level down from root)
         base_path = Path(__file__).resolve().parent.parent
-    
+
     # Validate kernel paths exist (fail-fast on missing kernels)
     missing_kernels = []
     for kernel_path in KERNEL_ORDER:
         full_path = base_path / kernel_path
         if not full_path.exists():
             missing_kernels.append(kernel_path)
-    
+
     if missing_kernels:
         logger.error(
             "kernel_loader.missing_kernels: %d kernel files not found: %s",
@@ -109,36 +111,39 @@ def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
         )
         raise RuntimeError(
             f"Required kernel files missing: {missing_kernels}. "
-            f"Verify l9_private/kernels/00_system/ exists and contains all 10 kernels."
+            f"Verify private/kernels/00_system/ exists and contains all 10 kernels."
         )
-    
-    logger.info("kernel_loader.path_validation_passed: all %d kernel files present", len(KERNEL_ORDER))
-    
+
+    logger.info(
+        "kernel_loader.path_validation_passed: all %d kernel files present",
+        len(KERNEL_ORDER),
+    )
+
     # Load boot overlay if exists (BEFORE kernel loading)
     boot_overlay_path = base_path / "config" / "boot_overlay.yaml"
     if boot_overlay_path.exists():
         try:
             boot_overlay = yaml.safe_load(boot_overlay_path.read_text())
-            if boot_overlay and hasattr(agent, 'apply_boot_overlay'):
+            if boot_overlay and hasattr(agent, "apply_boot_overlay"):
                 agent.apply_boot_overlay(boot_overlay)
             logger.info("kernel_loader.boot_overlay_applied")
         except Exception as e:
             logger.warning("kernel_loader.boot_overlay_failed: %s", e)
-    
+
     # Initialize kernel storage
     agent.kernels = {}
     agent.kernel_state = "LOADING"
-    
+
     logger.info("kernel_loader.start: loading %d kernels", len(KERNEL_ORDER))
-    
+
     loaded_count = 0
     for kernel_path in KERNEL_ORDER:
         full_path = base_path / kernel_path
-        
+
         if not full_path.exists():
             logger.warning("kernel_loader.missing: %s", kernel_path)
             continue
-        
+
         try:
             data = yaml.safe_load(full_path.read_text())
             if data:
@@ -149,47 +154,51 @@ def load_kernels(agent: Any, base_path: Optional[Path] = None) -> Any:
         except Exception as e:
             logger.error("kernel_loader.error: %s - %s", kernel_path, e)
             raise RuntimeError(f"Kernel loading failed: {kernel_path}") from e
-    
+
     if loaded_count == 0:
         raise RuntimeError("No kernels loaded - kernel set invalid")
-    
+
     # Mark kernel state as active
     agent.kernel_state = "ACTIVE"
-    
+
     # Inject activation context - this is when L "wakes up"
     _inject_activation_context(agent)
-    
-    # Log kernel influence to Neo4j graph (async, best-effort)
+
+    # Log kernel influence to Neo4j graph and bootstrap memory (async, best-effort)
     import asyncio
+
     try:
         asyncio.get_running_loop()
-        # We're in an async context, schedule the graph sync
+        # We're in an async context, schedule the graph sync and memory bootstrap
         asyncio.create_task(_sync_kernels_to_graph(agent, list(agent.kernels.keys())))
+        asyncio.create_task(_bootstrap_memory(agent))
     except RuntimeError:
-        # No event loop, skip graph sync (will happen at startup)
+        # No event loop, skip async tasks (will happen at startup)
         pass
-    
+
     # Validate kernel loading completion
     if not agent.kernels or agent.kernel_state != "ACTIVE":
         raise RuntimeError(
             f"Kernel loading incomplete: kernels={len(agent.kernels) if agent.kernels else 0}, "
             f"state={agent.kernel_state}"
         )
-    
+
     logger.info(
         "kernel_loader.complete: state=%s, kernels=%d",
         agent.kernel_state,
         loaded_count,
     )
-    logger.info("kernel_loader.validation_passed: %d kernels loaded, state=ACTIVE", loaded_count)
-    
+    logger.info(
+        "kernel_loader.validation_passed: %d kernels loaded, state=ACTIVE", loaded_count
+    )
+
     return agent
 
 
 def _inject_activation_context(agent: Any) -> None:
     """
     Inject the activation context that makes L aware of kernels.
-    
+
     This is the moment L "wakes up" - without this, kernels exist
     but aren't cognitively referenced.
     """
@@ -218,31 +227,103 @@ Core identity:
 
 Igor's word is law. His corrections apply immediately and permanently.
 """
-    
-    if hasattr(agent, 'set_system_context'):
+
+    if hasattr(agent, "set_system_context"):
         agent.set_system_context(activation_context)
-    elif hasattr(agent, 'system_context'):
+    elif hasattr(agent, "system_context"):
         agent.system_context = activation_context
-    elif hasattr(agent, '_system_prompt'):
+    elif hasattr(agent, "_system_prompt"):
         agent._system_prompt = activation_context
     else:
         # Fallback: store as attribute
         agent.activation_context = activation_context
-    
+
     logger.info("kernel_loader.activation_context_injected")
+
+
+async def _bootstrap_memory(agent: Any) -> None:
+    """
+    Bootstrap L's memory from PostgreSQL packet_store.
+    
+    Loads L-specific lessons and corrections at startup.
+    This is what gives L "memory" across sessions - without this, L has amnesia.
+    
+    IMPORTANT: Only loads lessons owned by L (agent = l9-standard-v1, l-cto, or L).
+    Cursor lessons (agent = cursor-ide) are NOT loaded - scope separation.
+    
+    Note: This is async and best-effort. Kernel loading continues if memory fails.
+    """
+    try:
+        from memory.substrate_service import get_service
+        
+        substrate = await get_service()
+        if not substrate:
+            logger.warning("kernel_loader.memory_bootstrap: substrate unavailable")
+            return
+        
+        # Load LESSON packets using the substrate service API
+        all_lessons = await substrate.search_packets_by_type(
+            packet_type="LESSON",
+            limit=50
+        )
+        
+        if not all_lessons:
+            logger.info("kernel_loader.memory_bootstrap: no lessons found")
+            return
+        
+        # Filter for L's lessons only (exclude cursor-ide)
+        l_lessons = []
+        for packet in all_lessons:
+            envelope = packet.get("envelope", {})
+            metadata = envelope.get("metadata", {})
+            agent_id = metadata.get("agent", "")
+            
+            # Include if: owned by L, or no owner (legacy)
+            # Exclude if: owned by cursor-ide
+            if agent_id == "cursor-ide":
+                continue
+            if agent_id in ("l9-standard-v1", "l-cto", "L", "", None):
+                payload = envelope.get("payload", {})
+                l_lessons.append({
+                    "title": payload.get("title", "Untitled"),
+                    "severity": payload.get("severity", "MEDIUM"),
+                    "content": payload.get("content", "")[:200]
+                })
+        
+        if l_lessons:
+            # Inject lessons into agent's memory context
+            lesson_context = "\n## ACTIVE LESSONS FROM MEMORY\n"
+            lesson_context += "These are learned lessons that apply to current work:\n\n"
+            
+            for lesson in l_lessons[:20]:  # Top 20
+                lesson_context += f"- [{lesson['severity']}] {lesson['title']}: {lesson['content']}\n"
+            
+            # Append to agent's context
+            agent._memory_context = lesson_context
+                
+            logger.info(
+                "kernel_loader.memory_bootstrap: loaded %d lessons for L", 
+                len(l_lessons)
+            )
+        else:
+            logger.info("kernel_loader.memory_bootstrap: no L-scoped lessons found")
+            
+    except Exception as e:
+        logger.warning("kernel_loader.memory_bootstrap_failed: %s", str(e))
+        # Don't fail kernel loading - memory is enhancement, not requirement
 
 
 async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
     """
     Sync loaded kernels to Neo4j graph for influence tracking.
-    
+
     Creates:
     - Kernel nodes for each loaded kernel
     - Agent node
     - GOVERNS relationships (Kernel -> Agent)
     - Rule nodes for key kernel rules
     - CONTAINS relationships (Kernel -> Rule)
-    
+
     This enables queries like:
     - "Which kernels govern this agent?"
     - "Show all rules from safety_kernel"
@@ -253,13 +334,13 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
     except ImportError:
         logger.debug("Neo4j client not available - skipping kernel graph sync")
         return
-    
+
     neo4j = await get_neo4j_client()
     if not neo4j:
         return
-    
-    agent_id = getattr(agent, 'agent_id', 'l9-standard-v1')
-    
+
+    agent_id = getattr(agent, "agent_id", "l9-standard-v1")
+
     try:
         # Create agent node
         await neo4j.create_entity(
@@ -267,15 +348,15 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
             entity_id=agent_id,
             properties={
                 "name": agent_id,
-                "kernel_state": getattr(agent, 'kernel_state', 'UNKNOWN'),
+                "kernel_state": getattr(agent, "kernel_state", "UNKNOWN"),
                 "type": "l-cto",
             },
         )
-        
+
         # Create kernel nodes and relationships
         for kernel_path in kernel_paths:
             kernel_name = Path(kernel_path).stem
-            
+
             # Create kernel node
             await neo4j.create_entity(
                 entity_type="Kernel",
@@ -285,7 +366,7 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
                     "path": kernel_path,
                 },
             )
-            
+
             # Link kernel to agent
             await neo4j.create_relationship(
                 from_type="Kernel",
@@ -294,11 +375,11 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
                 to_id=agent_id,
                 rel_type="GOVERNS",
             )
-            
+
             # Extract key rules from kernel data
             kernel_data = agent.kernels.get(kernel_path, {})
             rules = _extract_kernel_rules(kernel_data)
-            
+
             for rule in rules:
                 rule_id = f"{kernel_name}:{rule}"
                 await neo4j.create_entity(
@@ -313,9 +394,11 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
                     to_id=rule_id,
                     rel_type="CONTAINS",
                 )
-        
-        logger.info(f"kernel_loader.graph_sync: synced {len(kernel_paths)} kernels to Neo4j")
-        
+
+        logger.info(
+            f"kernel_loader.graph_sync: synced {len(kernel_paths)} kernels to Neo4j"
+        )
+
     except Exception as e:
         logger.warning(f"kernel_loader.graph_sync_failed: {e}")
 
@@ -323,7 +406,7 @@ async def _sync_kernels_to_graph(agent: Any, kernel_paths: List[str]) -> None:
 def _extract_kernel_rules(kernel_data: Dict[str, Any]) -> List[str]:
     """Extract key rule names from kernel data for graph storage."""
     rules = []
-    
+
     # Look for common kernel structures
     for key in ["prohibitions", "thresholds", "rules", "constraints", "invariants"]:
         if key in kernel_data:
@@ -332,12 +415,12 @@ def _extract_kernel_rules(kernel_data: Dict[str, Any]) -> List[str]:
                 rules.extend([str(v) for v in value[:10]])  # Limit to 10
             elif isinstance(value, dict):
                 rules.extend(list(value.keys())[:10])
-    
+
     # Look for identity/behavioral patterns
     for key in ["identity", "behavioral", "safety"]:
         if key in kernel_data and isinstance(kernel_data[key], dict):
             rules.extend(list(kernel_data[key].keys())[:5])
-    
+
     return rules[:20]  # Cap at 20 rules per kernel
 
 
@@ -345,49 +428,50 @@ def _extract_kernel_rules(kernel_data: Dict[str, Any]) -> List[str]:
 # Guarded Execution (kernel enforcement)
 # =============================================================================
 
+
 def guarded_execute(agent: Any, tool_id: str, payload: Dict[str, Any]) -> Any:
     """
     Execute a tool call with kernel enforcement.
-    
+
     This wraps every tool call to enforce:
     - Kernel activation check
     - Behavioral validation
     - Safety checks
     - Traceability
-    
+
     Args:
         agent: The kernel-aware agent
         tool_id: Tool identifier
         payload: Tool call payload
-        
+
     Returns:
         Tool execution result
-        
+
     Raises:
         RuntimeError: If kernels not active or validation fails
     """
     # Check kernel activation
-    if not hasattr(agent, 'kernel_state') or agent.kernel_state != "ACTIVE":
+    if not hasattr(agent, "kernel_state") or agent.kernel_state != "ACTIVE":
         raise RuntimeError("Kernel set not active. Execution denied.")
-    
+
     # Behavioral validation (if agent has it)
-    if hasattr(agent, 'behavior') and hasattr(agent.behavior, 'validate'):
+    if hasattr(agent, "behavior") and hasattr(agent.behavior, "validate"):
         agent.behavior.validate(payload)
-    
+
     # Safety check (if agent has it)
-    if hasattr(agent, 'safety') and hasattr(agent.safety, 'check'):
+    if hasattr(agent, "safety") and hasattr(agent.safety, "check"):
         agent.safety.check(payload)
-    
+
     # Execute tool
-    if hasattr(agent, 'tools') and hasattr(agent.tools, 'execute'):
+    if hasattr(agent, "tools") and hasattr(agent.tools, "execute"):
         result = agent.tools.execute(tool_id, payload)
     else:
         raise RuntimeError(f"Agent has no tool execution capability for: {tool_id}")
-    
+
     # Record in memory (if agent has it)
-    if hasattr(agent, 'memory') and hasattr(agent.memory, 'record'):
+    if hasattr(agent, "memory") and hasattr(agent.memory, "record"):
         agent.memory.record(result)
-    
+
     return result
 
 
@@ -395,35 +479,35 @@ def guarded_execute(agent: Any, tool_id: str, payload: Dict[str, Any]) -> Any:
 # Verification
 # =============================================================================
 
+
 def verify_kernel_activation(agent: Any) -> bool:
     """
     Verify that an agent has properly activated kernels.
-    
+
     Returns:
         True if kernels are active, False otherwise
     """
-    if not hasattr(agent, 'kernel_state'):
+    if not hasattr(agent, "kernel_state"):
         return False
-    
+
     if agent.kernel_state != "ACTIVE":
         return False
-    
-    if not hasattr(agent, 'kernels') or len(agent.kernels) == 0:
+
+    if not hasattr(agent, "kernels") or len(agent.kernels) == 0:
         return False
-    
+
     return True
 
 
 def require_kernel_activation(agent: Any) -> None:
     """
     Assert that kernels are active. Hard crash if not.
-    
+
     This should be called at agent boot.
     """
     if not verify_kernel_activation(agent):
         raise RuntimeError(
-            "FATAL: Kernel activation failed. "
-            "No tools. No Mac-Agent. No execution."
+            "FATAL: Kernel activation failed. No tools. No Mac-Agent. No execution."
         )
 
 
@@ -431,10 +515,11 @@ def require_kernel_activation(agent: Any) -> None:
 # KernelStack - Compatibility layer for v3 consumers
 # =============================================================================
 
+
 class KernelStack:
     """
     Lightweight context object for the 10-kernel stack.
-    
+
     Provides the same interface as kernel_loader_v3.KernelStack for
     backward compatibility with existing consumers.
 
@@ -517,53 +602,54 @@ def load_kernel_stack(
 ) -> KernelStack:
     """
     Deterministically load the 10 consolidated kernels from 00_system/.
-    
+
     This is the canonical KernelStack loader, replacing kernel_loader_v3.
-    
+
     - Uses explicit KERNEL_ORDER sequence
     - Computes SHA256 for each file for drift detection
     - Optionally verifies against stored hashes
     - Returns KernelStack context
-    
+
     Args:
-        base_dir: Base directory for kernel files (defaults to l9_private/kernels/00_system)
+        base_dir: Base directory for kernel files (defaults to private/kernels/00_system)
         verify_integrity: Whether to check against stored hashes
-        
+
     Returns:
         KernelStack with loaded kernels and hashes
-        
+
     Raises:
         FileNotFoundError: If a kernel file is missing
     """
     if base_dir is None:
         # Default to repo root's kernel directory
         repo_root = Path(__file__).resolve().parent.parent
-        base_dir = repo_root / "l9_private" / "kernels" / "00_system"
-    
+        base_dir = repo_root / "private" / "kernels" / "00_system"
+
     kernels_by_id: Dict[str, Dict[str, Any]] = {}
     kernels_by_file: Dict[str, Dict[str, Any]] = {}
     hashes: Dict[str, str] = {}
-    
+
     for kernel_id, filename in KERNEL_ID_MAP.items():
         full_path = base_dir / filename
-        
+
         if not full_path.exists():
             raise FileNotFoundError(
                 f"Kernel file missing: {full_path} (id={kernel_id})"
             )
-        
+
         data = yaml.safe_load(full_path.read_text())
         digest = _sha256_of_file(full_path)
-        
+
         kernels_by_id[kernel_id] = data
         kernels_by_file[filename] = data
         hashes[filename] = digest
-    
+
     # Optionally verify integrity against stored hashes
     if verify_integrity:
         try:
             from core.kernels.integrity import check_kernel_integrity
-            changes = check_kernel_integrity("l9_private", auto_update=False)
+
+            changes = check_kernel_integrity("private", auto_update=False)
             if changes:
                 modified = [p for p, c in changes.items() if c == "MODIFIED"]
                 if modified:
@@ -574,13 +660,13 @@ def load_kernel_stack(
                     )
         except ImportError:
             logger.debug("kernel_loader.integrity_check_skipped: module not available")
-    
+
     logger.info(
         "kernel_loader.stack_loaded: %d kernels, base_dir=%s",
         len(kernels_by_id),
         base_dir,
     )
-    
+
     return KernelStack(
         kernels_by_id=kernels_by_id,
         kernels_by_file=kernels_by_file,
@@ -593,29 +679,30 @@ def load_kernel_stack(
 # Dynamic Discovery (from private_loader.py)
 # =============================================================================
 
+
 def load_kernel_file(file_path: Path) -> Optional[Dict[str, Any]]:
     """
     Load a single kernel YAML file.
-    
+
     Args:
         file_path: Path to kernel file
-        
+
     Returns:
         Parsed kernel dict, or None on failure
     """
     try:
         with open(file_path, "r") as f:
             content = yaml.safe_load(f)
-            
+
         if content is None:
             logger.warning(f"Empty kernel file: {file_path}")
             return None
-            
+
         # Add file metadata
         content["_source_file"] = str(file_path)
-        
+
         return content
-        
+
     except yaml.YAMLError as e:
         logger.error(f"YAML parse error in {file_path}: {e}")
         return None
@@ -643,7 +730,7 @@ def load_all_private_kernels(
     If layered layout does NOT exist, falls back to rglob all YAMLs.
 
     Args:
-        base_path: Base directory to scan for kernels (e.g. "l9_private")
+        base_path: Base directory to scan for kernels (e.g. "private")
         check_integrity: Whether to verify file integrity
         fail_on_tamper: Whether to raise error on tampered files
 
@@ -660,9 +747,12 @@ def load_all_private_kernels(
     if check_integrity:
         try:
             from core.kernels.integrity import check_kernel_integrity, IntegrityChange
+
             changes = check_kernel_integrity(base_path)
             if changes:
-                modified = [p for p, c in changes.items() if c == IntegrityChange.MODIFIED]
+                modified = [
+                    p for p, c in changes.items() if c == IntegrityChange.MODIFIED
+                ]
                 if modified:
                     logger.warning(f"Kernel integrity changes detected: {changes}")
                     if fail_on_tamper:
@@ -743,16 +833,16 @@ def load_layered_kernels(
 ) -> List[Dict[str, Any]]:
     """
     Convenience alias for load_all_private_kernels.
-    
+
     Loads kernels in deterministic layer order:
         1) 00_system (core system kernels)
         2) 10_cognitive_v2 (v2 cognitive engines)
         3) 90_project (project-specific kernels)
-    
+
     Args:
         base_path: Base directory to scan for kernels
         check_integrity: Whether to verify file integrity
-        
+
     Returns:
         List of kernel dicts with _meta.layer and _meta.source_file attached
     """
@@ -763,27 +853,28 @@ def load_layered_kernels(
 # Query Functions (from private_loader.py)
 # =============================================================================
 
+
 def get_kernel_by_name(
     name: str,
     base_path: str = DEFAULT_KERNEL_PATH,
 ) -> Optional[Dict[str, Any]]:
     """
     Get a specific kernel by name.
-    
+
     Args:
         name: Kernel name to find
         base_path: Base directory to search
-        
+
     Returns:
         Kernel dict if found, None otherwise
     """
     kernels = load_all_private_kernels(base_path, check_integrity=False)
-    
+
     for kernel in kernels:
         kernel_info = kernel.get("kernel", {})
         if kernel_info.get("name") == name:
             return kernel
-    
+
     return None
 
 
@@ -792,23 +883,23 @@ def get_enabled_rules(
 ) -> List[Dict[str, Any]]:
     """
     Get all enabled rules from all kernels.
-    
+
     Rules are returned sorted by kernel priority and rule order.
-    
+
     Args:
         base_path: Base directory to search
-        
+
     Returns:
         List of enabled rule dicts
     """
     kernels = load_all_private_kernels(base_path)
     rules: List[Dict[str, Any]] = []
-    
+
     for kernel in kernels:
         kernel_info = kernel.get("kernel", {})
         kernel_name = kernel_info.get("name", "unknown")
         kernel_priority = kernel_info.get("priority", 100)
-        
+
         for rule in kernel_info.get("rules", []):
             if rule.get("enabled", True):
                 enriched = {
@@ -817,7 +908,7 @@ def get_enabled_rules(
                     "_kernel_priority": kernel_priority,
                 }
                 rules.append(enriched)
-    
+
     return rules
 
 
@@ -827,11 +918,11 @@ def get_rules_by_type(
 ) -> List[Dict[str, Any]]:
     """
     Get all enabled rules of a specific type.
-    
+
     Args:
         rule_type: Type of rules to get (e.g., "capability", "safety")
         base_path: Base directory to search
-        
+
     Returns:
         List of matching rule dicts
     """
@@ -843,31 +934,32 @@ def get_rules_by_type(
 # Validation (from private_loader.py)
 # =============================================================================
 
+
 def validate_kernel_structure(kernel: Dict[str, Any]) -> List[str]:
     """
     Validate kernel structure against expected schema.
-    
+
     Args:
         kernel: Kernel dict to validate
-        
+
     Returns:
         List of validation errors (empty if valid)
     """
     errors: List[str] = []
-    
+
     # Must have kernel key
     if "kernel" not in kernel:
         errors.append("Missing 'kernel' key")
         return errors
-    
+
     kernel_info = kernel["kernel"]
-    
+
     # Required fields
     required = ["name", "version"]
     for field in required:
         if field not in kernel_info:
             errors.append(f"Missing required field: kernel.{field}")
-    
+
     # Validate rules if present
     rules = kernel_info.get("rules", [])
     if not isinstance(rules, list):
@@ -881,23 +973,23 @@ def validate_kernel_structure(kernel: Dict[str, Any]) -> List[str]:
                 errors.append(f"Rule {i} missing 'id' field")
             if "type" not in rule:
                 errors.append(f"Rule {i} missing 'type' field")
-    
+
     return errors
 
 
 def validate_all_kernels(base_path: str = DEFAULT_KERNEL_PATH) -> Dict[str, List[str]]:
     """
     Validate all kernels in a directory.
-    
+
     Args:
         base_path: Base directory to scan
-        
+
     Returns:
         Dict mapping file paths to list of validation errors
     """
     base = Path(base_path)
     results: Dict[str, List[str]] = {}
-    
+
     for ext in KERNEL_EXTENSIONS:
         for file in base.rglob(f"*{ext}"):
             kernel = load_kernel_file(file)
@@ -905,7 +997,7 @@ def validate_all_kernels(base_path: str = DEFAULT_KERNEL_PATH) -> Dict[str, List
                 errors = validate_kernel_structure(kernel)
                 if errors:
                     results[str(file)] = errors
-    
+
     return results
 
 
@@ -939,4 +1031,3 @@ __all__ = [
     "verify_kernel_activation",
     "require_kernel_activation",
 ]
-

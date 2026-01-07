@@ -17,7 +17,7 @@ import json
 import structlog
 from typing import Any, Optional
 
-from agents.base_agent import BaseAgent, AgentConfig, AgentMessage, AgentResponse, AgentRole
+from agents.base_agent import BaseAgent, AgentConfig, AgentResponse, AgentRole
 
 logger = structlog.get_logger(__name__)
 
@@ -47,10 +47,10 @@ class QAAgent(BaseAgent):
     """
     Quality assurance agent.
     """
-    
+
     agent_role = AgentRole.QA
     agent_name = "qa_agent"
-    
+
     def __init__(
         self,
         agent_id: Optional[str] = None,
@@ -58,11 +58,11 @@ class QAAgent(BaseAgent):
     ):
         """Initialize QA Agent."""
         super().__init__(agent_id, config)
-    
+
     def get_system_prompt(self) -> str:
         """Get the system prompt."""
         return self._config.system_prompt_override or SYSTEM_PROMPT
-    
+
     async def run(
         self,
         task: dict[str, Any],
@@ -70,18 +70,18 @@ class QAAgent(BaseAgent):
     ) -> AgentResponse:
         """
         Execute QA task.
-        
+
         Args:
             task: Task with 'code' and 'requirements'
             context: Optional context
-            
+
         Returns:
             AgentResponse with QA results
         """
         code = task.get("code", {})
         requirements = task.get("requirements", [])
         tests = task.get("tests", {})
-        
+
         prompt = f"""Perform quality assurance review:
 
 Code:
@@ -132,19 +132,19 @@ Provide comprehensive QA assessment:
     "summary": "..."
 }}
 """
-        
+
         if context:
             prompt += f"\n\nContext:\n{json.dumps(context, indent=2)}"
-        
+
         messages = [self.format_user_message(prompt)]
         response = await self.call_llm(messages, json_mode=True)
-        
+
         self.add_message(messages[0])
         if response.success:
             self.add_message(self.format_assistant_message(response.content))
-        
+
         return response
-    
+
     async def create_test_plan(
         self,
         feature: str,
@@ -152,11 +152,11 @@ Provide comprehensive QA assessment:
     ) -> dict[str, Any]:
         """
         Create a test plan for a feature.
-        
+
         Args:
             feature: Feature description
             code: Implementation code
-            
+
         Returns:
             Test plan
         """
@@ -194,9 +194,9 @@ Provide:
     "priorities": ["ordered list of what to test first"]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def review_test_results(
         self,
         test_output: str,
@@ -204,11 +204,11 @@ Provide:
     ) -> dict[str, Any]:
         """
         Review test execution results.
-        
+
         Args:
             test_output: Test execution output
             expected_behavior: What was expected
-            
+
         Returns:
             Analysis of results
         """
@@ -245,9 +245,9 @@ Provide:
     "overall_assessment": "..."
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def regression_analysis(
         self,
         old_code: str,
@@ -256,12 +256,12 @@ Provide:
     ) -> dict[str, Any]:
         """
         Analyze potential regressions from changes.
-        
+
         Args:
             old_code: Previous code
             new_code: Updated code
             change_description: What changed
-            
+
         Returns:
             Regression analysis
         """
@@ -301,9 +301,9 @@ Provide:
     "deployment_notes": ["..."]
 }}
 """
-        
+
         return await self.call_llm_json(prompt)
-    
+
     async def assess_production_readiness(
         self,
         code: dict[str, str],
@@ -312,12 +312,12 @@ Provide:
     ) -> dict[str, Any]:
         """
         Assess if code is production-ready.
-        
+
         Args:
             code: Code files
             tests: Test files
             documentation: Optional documentation
-            
+
         Returns:
             Readiness assessment
         """
@@ -351,6 +351,5 @@ Provide:
     "monitoring_recommendations": ["what to monitor post-deployment"]
 }}
 """
-        
-        return await self.call_llm_json(prompt)
 
+        return await self.call_llm_json(prompt)

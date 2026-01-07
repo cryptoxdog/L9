@@ -12,12 +12,8 @@ from typing import Any, Optional
 
 import httpx
 
-from config.research_settings import get_research_settings
 from services.research.tools.perplexity_client import (
     PerplexityClient,
-    PerplexityRequest,
-    PerplexityModel,
-    SearchContextSize,
     get_perplexity_client,
 )
 
@@ -26,15 +22,15 @@ log = structlog.get_logger(__name__)
 
 class BaseTool(ABC):
     """Base class for all tools."""
-    
+
     @abstractmethod
     async def execute(self, args: dict[str, Any]) -> Any:
         """
         Execute the tool.
-        
+
         Args:
             args: Tool arguments
-            
+
         Returns:
             Tool result
         """
@@ -44,41 +40,45 @@ class BaseTool(ABC):
 class PerplexityTool(BaseTool):
     """
     Perplexity AI search tool.
-    
+
     Uses production PerplexityClient with best practices codified:
     - Correct model selection (sonar, sonar-pro, sonar-deep-research)
     - API parameters for search control (not prompt-based)
     - Structured request validation
     - Proper rate limit awareness
-    
+
     Requires PERPLEXITY_API_KEY environment variable.
     """
-    
+
     def __init__(self):
         """Initialize Perplexity tool."""
         self._client: Optional[PerplexityClient] = None
-    
+
     async def execute(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Execute Perplexity search.
-        
+
         Args:
             args: {
                 "query": str - The search query (required)
                 "mode": str - "quick", "research", "analyze", "deep" (default: "research")
                 "domains": list[str] - Domain filter (optional)
             }
-            
+
         Returns:
             {"result": str, "sources": list, "model": str, "cost": float}
         """
         query = args.get("query", "")
         if not query:
-            return {"result": "No query provided", "sources": [], "error": "missing_query"}
-        
+            return {
+                "result": "No query provided",
+                "sources": [],
+                "error": "missing_query",
+            }
+
         mode = args.get("mode", "research")
         domains = args.get("domains", [])
-        
+
         client = get_perplexity_client()
         if not client:
             log.warning("perplexity_not_configured", fallback="mock")
@@ -88,7 +88,7 @@ class PerplexityTool(BaseTool):
                 "model": "mock",
                 "cost": 0.0,
             }
-        
+
         try:
             async with client:
                 # Route to appropriate method based on mode
@@ -99,8 +99,10 @@ class PerplexityTool(BaseTool):
                 elif mode == "deep":
                     response = await client.deep_research(query)
                 else:  # default: research
-                    response = await client.research(query, domains=domains if domains else None)
-                
+                    response = await client.research(
+                        query, domains=domains if domains else None
+                    )
+
                 if response.success:
                     return {
                         "result": response.content,
@@ -116,7 +118,7 @@ class PerplexityTool(BaseTool):
                         "model": response.model,
                         "error": response.error,
                     }
-                
+
         except Exception as e:
             log.error("perplexity_tool_error", error=str(e))
             return {
@@ -129,14 +131,14 @@ class PerplexityTool(BaseTool):
 class HTTPTool(BaseTool):
     """
     Generic HTTP request tool.
-    
+
     Makes HTTP requests to external APIs.
     """
-    
+
     async def execute(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Execute HTTP request.
-        
+
         Args:
             args: {
                 "url": str,
@@ -144,7 +146,7 @@ class HTTPTool(BaseTool):
                 "headers": dict (optional),
                 "body": dict (optional),
             }
-            
+
         Returns:
             {"status": int, "body": str/dict}
         """
@@ -152,10 +154,10 @@ class HTTPTool(BaseTool):
         method = args.get("method", "GET").upper()
         headers = args.get("headers", {})
         body = args.get("body")
-        
+
         if not url:
             return {"status": 400, "body": "No URL provided"}
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
@@ -165,18 +167,18 @@ class HTTPTool(BaseTool):
                     json=body if body else None,
                     timeout=30.0,
                 )
-                
+
                 # Try to parse JSON
                 try:
                     body_data = response.json()
                 except Exception:
                     body_data = response.text
-                
+
                 return {
                     "status": response.status_code,
                     "body": body_data,
                 }
-                
+
         except Exception as e:
             log.error("http_request_failed", error=str(e))
             return {
@@ -189,22 +191,22 @@ class HTTPTool(BaseTool):
 class MockSearchTool(BaseTool):
     """
     Mock search tool for testing.
-    
+
     Returns deterministic mock results without API calls.
     """
-    
+
     async def execute(self, args: dict[str, Any]) -> dict[str, Any]:
         """
         Execute mock search.
-        
+
         Args:
             args: {"query": str}
-            
+
         Returns:
             Mock search results
         """
         query = args.get("query", "unknown query")
-        
+
         # Generate deterministic mock results
         mock_results = {
             "result": (
@@ -221,7 +223,6 @@ class MockSearchTool(BaseTool):
             "confidence": 0.9,
             "is_mock": True,
         }
-        
+
         log.debug("mock_search_executed", query_preview=query[:50])
         return mock_results
-

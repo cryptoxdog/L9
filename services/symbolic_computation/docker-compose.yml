@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  symbolic_computation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symbolic_computation
+    environment:
+      - SYMBOLIC_CACHE_ENABLED=true
+      - SYMBOLIC_CACHE_SIZE=256
+      - SYMBOLIC_DEFAULT_BACKEND=numpy
+      - SYMBOLIC_LOG_LEVEL=INFO
+      - POSTGRES_HOST=postgres
+      - NEO4J_URI=bolt://neo4j:7687
+    volumes:
+      - ./symbolic_computation:/app/symbolic_computation
+      - ./tests:/app/tests
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - neo4j
+    networks:
+      - aios_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import asyncio; from symbolic_computation import SymbolicComputation; asyncio.run(SymbolicComputation().health_check())"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: symbolic_postgres
+    environment:
+      - POSTGRES_DB=aios
+      - POSTGRES_USER=aios_user
+      - POSTGRES_PASSWORD=change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aios_network
+
+  neo4j:
+    image: neo4j:5.14
+    container_name: symbolic_neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/change_me
+      - NEO4J_PLUGINS=["apoc"]
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - aios_network
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+
+networks:
+  aios_network:
+    driver: bridge

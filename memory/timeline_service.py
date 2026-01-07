@@ -52,4 +52,3 @@ class TimelineService:
         """
         events = await self.get_recent_events(agent_id, event_type, limit)
         return [e.model_dump(mode="json") for e in events]
-

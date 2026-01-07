@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from ir_engine.ir_schema import IRGraph, IRStatus
+from ir_engine.ir_schema import IRGraph
 
 logger = structlog.get_logger(__name__)
 
@@ -27,6 +27,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class SimulationRequest:
     """Request to simulate an IR graph."""
+
     request_id: UUID = field(default_factory=uuid4)
     graph_id: UUID = field(default_factory=uuid4)
     graph_snapshot: dict[str, Any] = field(default_factory=dict)
@@ -40,6 +41,7 @@ class SimulationRequest:
 @dataclass
 class SimulationResult:
     """Result from simulation engine."""
+
     request_id: UUID
     graph_id: UUID
     success: bool
@@ -48,7 +50,7 @@ class SimulationResult:
     failure_modes: list[str] = field(default_factory=list)
     execution_time_ms: int = 0
     completed_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "request_id": str(self.request_id),
@@ -65,6 +67,7 @@ class SimulationResult:
 @dataclass
 class RankedCandidate:
     """A ranked IR candidate after simulation."""
+
     graph: IRGraph
     result: SimulationResult
     rank: int
@@ -74,14 +77,14 @@ class RankedCandidate:
 class SimulationRouter:
     """
     Routes IR graphs to simulation engine and manages results.
-    
+
     Supports:
     - Single graph simulation
     - Multi-candidate comparison
     - Scenario-based simulation
     - Result ranking
     """
-    
+
     def __init__(
         self,
         simulation_engine: Optional[Any] = None,
@@ -90,7 +93,7 @@ class SimulationRouter:
     ):
         """
         Initialize the simulation router.
-        
+
         Args:
             simulation_engine: Optional simulation engine instance
             default_timeout_ms: Default simulation timeout
@@ -101,18 +104,18 @@ class SimulationRouter:
         self._max_candidates = max_candidates
         self._pending_requests: dict[UUID, SimulationRequest] = {}
         self._results: dict[UUID, SimulationResult] = {}
-        
+
         logger.info(f"SimulationRouter initialized (max_candidates={max_candidates})")
-    
+
     def set_engine(self, engine: Any) -> None:
         """Set the simulation engine."""
         self._engine = engine
         logger.info("Simulation engine attached")
-    
+
     # ==========================================================================
     # Request Creation
     # ==========================================================================
-    
+
     def create_request(
         self,
         graph: IRGraph,
@@ -123,20 +126,21 @@ class SimulationRouter:
     ) -> SimulationRequest:
         """
         Create a simulation request for a graph.
-        
+
         Args:
             graph: IR graph to simulate
             scenario_type: Type of simulation scenario
             parameters: Simulation parameters
             priority: Request priority (1-10)
             timeout_ms: Timeout override
-            
+
         Returns:
             SimulationRequest ready for submission
         """
         from ir_engine.ir_generator import IRGenerator
+
         generator = IRGenerator(include_metadata=False)
-        
+
         request = SimulationRequest(
             graph_id=graph.graph_id,
             graph_snapshot=generator.to_dict(graph),
@@ -145,30 +149,32 @@ class SimulationRouter:
             priority=max(1, min(10, priority)),
             timeout_ms=timeout_ms or self._default_timeout_ms,
         )
-        
+
         self._pending_requests[request.request_id] = request
-        logger.debug(f"Created simulation request {request.request_id} for graph {graph.graph_id}")
-        
+        logger.debug(
+            f"Created simulation request {request.request_id} for graph {graph.graph_id}"
+        )
+
         return request
-    
+
     # ==========================================================================
     # Routing
     # ==========================================================================
-    
+
     async def route(self, request: SimulationRequest) -> SimulationResult:
         """
         Route a request to the simulation engine.
-        
+
         Args:
             request: Simulation request
-            
+
         Returns:
             SimulationResult
         """
         logger.info(f"Routing simulation request {request.request_id}")
-        
+
         start_time = datetime.utcnow()
-        
+
         try:
             if self._engine is None:
                 # No engine attached - return stub result
@@ -176,12 +182,12 @@ class SimulationRouter:
             else:
                 # Route to actual engine
                 result = await self._engine.simulate(request)
-            
+
             # Calculate execution time
             result.execution_time_ms = int(
                 (datetime.utcnow() - start_time).total_seconds() * 1000
             )
-            
+
         except Exception as e:
             logger.error(f"Simulation failed: {e}")
             result = SimulationResult(
@@ -190,34 +196,34 @@ class SimulationRouter:
                 success=False,
                 failure_modes=[str(e)],
             )
-        
+
         # Store result
         self._results[request.request_id] = result
-        
+
         # Clean up pending
         if request.request_id in self._pending_requests:
             del self._pending_requests[request.request_id]
-        
+
         logger.info(
             f"Simulation complete: request={request.request_id}, "
             f"score={result.score:.2f}, success={result.success}"
         )
-        
+
         return result
-    
+
     def _stub_simulation(self, request: SimulationRequest) -> SimulationResult:
         """
         Stub simulation when no engine is attached.
-        
+
         Provides heuristic scoring based on graph structure.
         """
         snapshot = request.graph_snapshot
-        
+
         # Calculate heuristic score
         intent_count = len(snapshot.get("intents", []))
         action_count = len(snapshot.get("actions", []))
         constraint_count = len(snapshot.get("constraints", []))
-        
+
         # Score based on completeness
         completeness = 0.0
         if intent_count > 0:
@@ -226,17 +232,17 @@ class SimulationRouter:
             completeness += 0.4
         if constraint_count > 0:
             completeness += 0.2
-        
+
         # Penalize if no actions for intents
         if intent_count > 0 and action_count == 0:
             completeness -= 0.2
-        
+
         # Bonus for balanced constraint ratio
         if intent_count > 0:
             constraint_ratio = constraint_count / intent_count
             if 0.5 <= constraint_ratio <= 2.0:
                 completeness += 0.1
-        
+
         return SimulationResult(
             request_id=request.request_id,
             graph_id=request.graph_id,
@@ -250,11 +256,11 @@ class SimulationRouter:
             },
             failure_modes=[],
         )
-    
+
     # ==========================================================================
     # Multi-Candidate Operations
     # ==========================================================================
-    
+
     async def simulate_candidates(
         self,
         candidates: list[IRGraph],
@@ -263,12 +269,12 @@ class SimulationRouter:
     ) -> list[RankedCandidate]:
         """
         Simulate multiple candidates and return ranked results.
-        
+
         Args:
             candidates: List of IR graphs to compare
             scenario_type: Simulation scenario type
             parameters: Simulation parameters
-            
+
         Returns:
             List of RankedCandidate sorted by score (best first)
         """
@@ -277,11 +283,11 @@ class SimulationRouter:
                 f"Too many candidates ({len(candidates)}), "
                 f"truncating to {self._max_candidates}"
             )
-            candidates = candidates[:self._max_candidates]
-        
+            candidates = candidates[: self._max_candidates]
+
         # Create and route requests
         results: list[tuple[IRGraph, SimulationResult]] = []
-        
+
         for graph in candidates:
             request = self.create_request(
                 graph=graph,
@@ -290,23 +296,25 @@ class SimulationRouter:
             )
             result = await self.route(request)
             results.append((graph, result))
-        
+
         # Sort by score
         results.sort(key=lambda x: x[1].score, reverse=True)
-        
+
         # Build ranked candidates
         ranked: list[RankedCandidate] = []
         for rank, (graph, result) in enumerate(results, 1):
             selection_reason = self._determine_selection_reason(result, rank)
-            ranked.append(RankedCandidate(
-                graph=graph,
-                result=result,
-                rank=rank,
-                selection_reason=selection_reason,
-            ))
-        
+            ranked.append(
+                RankedCandidate(
+                    graph=graph,
+                    result=result,
+                    rank=rank,
+                    selection_reason=selection_reason,
+                )
+            )
+
         return ranked
-    
+
     def _determine_selection_reason(
         self,
         result: SimulationResult,
@@ -319,7 +327,7 @@ class SimulationRouter:
             return f"Has failure modes: {', '.join(result.failure_modes[:2])}"
         else:
             return f"Score: {result.score:.2f}"
-    
+
     async def select_best(
         self,
         candidates: list[IRGraph],
@@ -327,16 +335,16 @@ class SimulationRouter:
     ) -> Optional[IRGraph]:
         """
         Select the best candidate from simulation results.
-        
+
         Args:
             candidates: List of IR graphs
             min_score: Minimum acceptable score
-            
+
         Returns:
             Best IRGraph or None if none meet threshold
         """
         ranked = await self.simulate_candidates(candidates)
-        
+
         if ranked and ranked[0].result.score >= min_score:
             best = ranked[0]
             logger.info(
@@ -344,31 +352,27 @@ class SimulationRouter:
                 f"(score={best.result.score:.2f})"
             )
             return best.graph
-        
+
         logger.warning(f"No candidate met minimum score threshold ({min_score})")
         return None
-    
+
     # ==========================================================================
     # Status and Results
     # ==========================================================================
-    
+
     def get_pending_count(self) -> int:
         """Get count of pending requests."""
         return len(self._pending_requests)
-    
+
     def get_result(self, request_id: UUID) -> Optional[SimulationResult]:
         """Get a simulation result by request ID."""
         return self._results.get(request_id)
-    
+
     def get_results_for_graph(self, graph_id: UUID) -> list[SimulationResult]:
         """Get all results for a specific graph."""
-        return [
-            r for r in self._results.values()
-            if r.graph_id == graph_id
-        ]
-    
+        return [r for r in self._results.values() if r.graph_id == graph_id]
+
     def clear_results(self) -> None:
         """Clear all stored results."""
         self._results.clear()
         logger.info("Cleared simulation results")
-

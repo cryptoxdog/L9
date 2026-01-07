@@ -1,0 +1,20 @@
+[Unit]
+Description=L9 MCP Memory Server
+After=network.target postgresql.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/opt/l9/mcp_memory
+Environment="PATH=/opt/l9/venv/bin"
+ExecStart=/opt/l9/venv/bin/python -m src.main
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=l9-mcp
+
+[Install]
+WantedBy=multi-user.target

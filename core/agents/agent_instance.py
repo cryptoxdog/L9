@@ -68,10 +68,10 @@ logger = structlog.get_logger(__name__)
 class AgentInstance:
     """
     Represents a running agent instance.
-    
+
     Manages the agent's configuration, state, and context during task execution.
     This class is instantiated by the AgentExecutorService for each task.
-    
+
     Attributes:
         instance_id: Unique instance identifier
         config: Agent configuration
@@ -82,7 +82,7 @@ class AgentInstance:
         tool_results: Results from tool calls
         created_at: Instance creation timestamp
     """
-    
+
     def __init__(
         self,
         config: AgentConfig,
@@ -90,7 +90,7 @@ class AgentInstance:
     ):
         """
         Initialize a new agent instance.
-        
+
         Args:
             config: Agent configuration with personality and tools
             task: The task to execute
@@ -104,163 +104,200 @@ class AgentInstance:
         self._tool_results: list[dict[str, Any]] = []
         self._created_at = datetime.utcnow()
         self._total_tokens = 0
-        
+
         logger.info(
             "AgentInstance created",
             extra={
                 "instance_id": str(self._instance_id),
                 "agent_id": config.agent_id,
                 "task_id": str(task.id),
-            }
+            },
         )
-    
+
     # =========================================================================
     # Properties
     # =========================================================================
-    
+
     @property
     def instance_id(self) -> UUID:
         """Get instance ID."""
         return self._instance_id
-    
+
     @property
     def config(self) -> AgentConfig:
         """Get agent configuration."""
         return self._config
-    
+
     @property
     def task(self) -> AgentTask:
         """Get the task being executed."""
         return self._task
-    
+
     @property
     def state(self) -> ExecutorState:
         """Get current executor state."""
         return self._state
-    
+
     @property
     def iteration(self) -> int:
         """Get current iteration number."""
         return self._iteration
-    
+
     @property
     def total_tokens(self) -> int:
         """Get total tokens used."""
         return self._total_tokens
-    
+
     @property
     def thread_id(self) -> UUID:
         """Get the thread ID for this task."""
         return self._task.get_thread_id()
-    
+
     # =========================================================================
     # State Management
     # =========================================================================
-    
+
     def transition_to(self, new_state: ExecutorState) -> None:
         """
         Transition to a new state.
-        
+
         Args:
             new_state: Target state
         """
         old_state = self._state
         self._state = new_state
-        
+
         logger.debug(
             f"State transition: {old_state.value} -> {new_state.value}",
             extra={
                 "instance_id": str(self._instance_id),
                 "task_id": str(self._task.id),
-            }
+            },
         )
-    
+
     def increment_iteration(self) -> int:
         """
         Increment iteration counter.
-        
+
         Returns:
             New iteration number
         """
         self._iteration += 1
         return self._iteration
-    
+
     def add_tokens(self, tokens: int) -> None:
         """Add to total token count."""
         self._total_tokens += tokens
-    
+
     # =========================================================================
     # Tool Management
     # =========================================================================
-    
+
     def get_bound_tools(self) -> list[ToolBinding]:
         """
         Get list of tools bound to this agent.
-        
+
         Returns:
             List of enabled tool bindings
         """
         return [t for t in self._config.tools if t.enabled]
-    
+
     def get_tool_definitions(self) -> list[dict[str, Any]]:
         """
         Get tool definitions in OpenAI function calling format.
-        
+
         function.name == tool_id (canonical identity, must match exactly).
-        
+
         Returns:
             List of tool definitions for AIOS
         """
         definitions = []
         for tool in self.get_bound_tools():
-            definitions.append({
-                "type": "function",
-                "function": {
-                    "name": tool.tool_id,  # Canonical identity
-                    "description": tool.description or "",
-                    "parameters": tool.input_schema,
+            definitions.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.tool_id,  # Canonical identity
+                        "description": tool.description or "",
+                        "parameters": tool.input_schema,
+                    },
                 }
-            })
+            )
         return definitions
-    
+
     def has_tool(self, tool_id: str) -> bool:
         """Check if a tool is bound to this agent."""
         return any(t.tool_id == tool_id and t.enabled for t in self._config.tools)
-    
+
     # =========================================================================
     # History Management
     # =========================================================================
-    
-    def add_user_message(self, content: str, metadata: Optional[dict[str, Any]] = None) -> None:
+
+    def add_user_message(
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> None:
         """
         Add a user message to history.
-        
+
         Args:
             content: Message content
             metadata: Optional metadata
         """
-        self._history.append({
-            "role": "user",
-            "content": content,
-            "metadata": metadata or {},
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-    
-    def add_assistant_message(self, content: str, metadata: Optional[dict[str, Any]] = None) -> None:
+        self._history.append(
+            {
+                "role": "user",
+                "content": content,
+                "metadata": metadata or {},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
+    def add_assistant_message(
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> None:
         """
         Add an assistant message to history.
-        
+
         Args:
             content: Message content
             metadata: Optional metadata
         """
-        self._history.append({
-            "role": "assistant",
-            "content": content,
-            "metadata": metadata or {},
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-    
+        self._history.append(
+            {
+                "role": "assistant",
+                "content": content,
+                "metadata": metadata or {},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
+    def add_assistant_message_with_tool_calls(
+        self,
+        tool_calls: list[dict[str, Any]],
+        content: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Add an assistant message with tool_calls to history.
+
+        OpenAI requires assistant messages with tool_calls to precede
+        tool result messages. This method properly formats the message.
+
+        Args:
+            tool_calls: List of tool call dicts with id, type, function
+            content: Optional message content (usually None for tool calls)
+            metadata: Optional metadata
+        """
+        self._history.append(
+            {
+                "role": "assistant",
+                "content": content,
+                "tool_calls": tool_calls,
+                "metadata": metadata or {},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
     def add_tool_result(
         self,
         tool_id: str,
@@ -270,67 +307,85 @@ class AgentInstance:
     ) -> None:
         """
         Add a tool result to history.
-        
+
         Uses tool_id as canonical identity for result tracking.
-        
+
         Args:
             tool_id: Canonical tool identity
             call_id: Call identifier
             result: Tool result
             success: Whether call succeeded
         """
-        self._tool_results.append({
-            "tool_id": tool_id,
-            "call_id": call_id,
-            "result": result,
-            "success": success,
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-        
+        self._tool_results.append(
+            {
+                "tool_id": tool_id,
+                "call_id": call_id,
+                "result": result,
+                "success": success,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
         # Also add to history for context (tool_id tagged for re-entry)
-        self._history.append({
-            "role": "tool",
-            "tool_call_id": call_id,
-            "content": str(result) if success else f"Error: {result}",
-            "metadata": {"tool_id": tool_id, "success": success},
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-    
+        self._history.append(
+            {
+                "role": "tool",
+                "tool_call_id": call_id,
+                "content": str(result) if success else f"Error: {result}",
+                "metadata": {"tool_id": tool_id, "success": success},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
     def get_history(self) -> list[dict[str, Any]]:
         """Get message history."""
         return self._history.copy()
-    
-    def get_messages_for_aios(self) -> list[dict[str, str]]:
+
+    def get_messages_for_aios(self) -> list[dict[str, Any]]:
         """
         Get messages formatted for AIOS call.
-        
+
         Returns:
-            List of message dicts with role and content
+            List of message dicts formatted for OpenAI API
         """
         messages = []
         for msg in self._history:
             if msg["role"] == "tool":
                 # Format tool results for AIOS
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": msg.get("tool_call_id", ""),
-                    "content": msg["content"],
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": msg.get("tool_call_id", ""),
+                        "content": msg["content"],
+                    }
+                )
+            elif msg["role"] == "assistant" and msg.get("tool_calls"):
+                # Assistant message with tool calls - must include tool_calls array
+                # OpenAI requires content to be a string (empty string if no content)
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": msg.get("content") or "",  # Empty string, never None
+                        "tool_calls": msg["tool_calls"],
+                    }
+                )
             else:
-                messages.append({
-                    "role": msg["role"],
-                    "content": msg["content"],
-                })
+                messages.append(
+                    {
+                        "role": msg["role"],
+                        "content": msg["content"],
+                    }
+                )
         return messages
-    
+
     # =========================================================================
     # Context Assembly
     # =========================================================================
-    
+
     def assemble_context(self) -> dict[str, Any]:
         """
         Assemble full context bundle for AIOS call.
-        
+
         Returns:
             Context dict containing:
             - system_prompt: System prompt for the agent
@@ -359,15 +414,15 @@ class AgentInstance:
                 "thread_id": str(self.thread_id),
             },
         }
-    
+
     # =========================================================================
     # Serialization
     # =========================================================================
-    
+
     def to_trace_dict(self) -> dict[str, Any]:
         """
         Serialize instance state for trace logging.
-        
+
         Returns:
             Dict suitable for packet storage
         """
@@ -392,4 +447,3 @@ class AgentInstance:
 __all__ = [
     "AgentInstance",
 ]
-

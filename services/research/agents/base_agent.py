@@ -20,14 +20,14 @@ logger = structlog.get_logger(__name__)
 class BaseAgent(ABC):
     """
     Base class for all research agents.
-    
+
     Provides:
     - LLM client initialization
     - Chat completion wrapper
     - Response parsing utilities
     - Logging integration
     """
-    
+
     def __init__(
         self,
         agent_id: str,
@@ -36,23 +36,25 @@ class BaseAgent(ABC):
     ):
         """
         Initialize base agent.
-        
+
         Args:
             agent_id: Unique identifier for this agent
             model: LLM model to use (defaults to settings)
             temperature: LLM temperature (defaults to settings)
         """
         self.agent_id = agent_id
-        
+
         settings = get_research_settings()
         self.model = model or settings.openai_model
-        self.temperature = temperature if temperature is not None else settings.research_temperature
-        
+        self.temperature = (
+            temperature if temperature is not None else settings.research_temperature
+        )
+
         # Initialize OpenAI client
         self._client = AsyncOpenAI(api_key=settings.openai_api_key)
-        
+
         logger.info(f"Initialized {self.__class__.__name__} with model={self.model}")
-    
+
     async def call_llm(
         self,
         messages: list[dict[str, str]],
@@ -62,13 +64,13 @@ class BaseAgent(ABC):
     ) -> str:
         """
         Call the LLM with messages.
-        
+
         Args:
             messages: List of message dicts with 'role' and 'content'
             temperature: Override temperature for this call
             max_tokens: Maximum tokens in response
             response_format: Optional response format (e.g., {"type": "json_object"})
-            
+
         Returns:
             Generated text response
         """
@@ -76,24 +78,26 @@ class BaseAgent(ABC):
             kwargs: dict[str, Any] = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": temperature if temperature is not None else self.temperature,
+                "temperature": temperature
+                if temperature is not None
+                else self.temperature,
                 "max_tokens": max_tokens,
             }
-            
+
             if response_format:
                 kwargs["response_format"] = response_format
-            
+
             response = await self._client.chat.completions.create(**kwargs)
-            
+
             content = response.choices[0].message.content or ""
-            
+
             logger.debug(f"LLM response for {self.agent_id}: {len(content)} chars")
             return content
-            
+
         except Exception as e:
             logger.error(f"LLM call failed for {self.agent_id}: {e}")
             raise
-    
+
     async def call_llm_json(
         self,
         messages: list[dict[str, str]],
@@ -102,12 +106,12 @@ class BaseAgent(ABC):
     ) -> dict[str, Any]:
         """
         Call LLM and parse JSON response.
-        
+
         Args:
             messages: List of message dicts
             temperature: Override temperature
             max_tokens: Maximum tokens
-            
+
         Returns:
             Parsed JSON dict
         """
@@ -117,21 +121,21 @@ class BaseAgent(ABC):
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
-        
+
         try:
             return json.loads(response)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from {self.agent_id}: {e}")
             # Try to extract JSON from response
             return self._extract_json(response)
-    
+
     def _extract_json(self, text: str) -> dict[str, Any]:
         """
         Attempt to extract JSON from text that may contain extra content.
-        
+
         Args:
             text: Text that may contain JSON
-            
+
         Returns:
             Extracted JSON dict, or empty dict on failure
         """
@@ -140,34 +144,33 @@ class BaseAgent(ABC):
             # Find first { and last }
             start = text.find("{")
             end = text.rfind("}") + 1
-            
+
             if start >= 0 and end > start:
                 json_str = text[start:end]
                 return json.loads(json_str)
         except json.JSONDecodeError:
             pass
-        
-        logger.warning(f"Could not extract JSON from response, returning empty dict")
+
+        logger.warning("Could not extract JSON from response, returning empty dict")
         return {}
-    
+
     @abstractmethod
     async def run(self, *args, **kwargs) -> Any:
         """
         Execute the agent's primary function.
-        
+
         Must be implemented by subclasses.
         """
         pass
-    
+
     def format_system_prompt(self, instructions: str) -> dict[str, str]:
         """Create a system message."""
         return {"role": "system", "content": instructions}
-    
+
     def format_user_prompt(self, content: str) -> dict[str, str]:
         """Create a user message."""
         return {"role": "user", "content": content}
-    
+
     def format_assistant_prompt(self, content: str) -> dict[str, str]:
         """Create an assistant message."""
         return {"role": "assistant", "content": content}
-

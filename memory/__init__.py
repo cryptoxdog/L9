@@ -87,6 +87,15 @@ from memory.insight_extraction import (
     init_insight_pipeline,
 )
 
+# Strategy Memory (Phase 0)
+from memory.strategymemory import (
+    IStrategyMemoryService,
+    StrategyMemoryService,
+    StrategyCandidate,
+    StrategyRetrievalRequest,
+    StrategyFeedback,
+)
+
 __all__ = [
     # Models (always available)
     "PacketEnvelope",
@@ -114,6 +123,12 @@ __all__ = [
     "InsightExtractionPipeline",
     "get_insight_pipeline",
     "init_insight_pipeline",
+    # Strategy Memory
+    "IStrategyMemoryService",
+    "StrategyMemoryService",
+    "StrategyCandidate",
+    "StrategyRetrievalRequest",
+    "StrategyFeedback",
     # NOTE: These are available via direct import to avoid circular deps:
     # from memory.substrate_repository import SubstrateRepository, ...
     # from memory.substrate_graph import SubstrateDAG, ...
@@ -122,4 +137,3 @@ __all__ = [
 ]
 
 __version__ = "1.1.0"
-

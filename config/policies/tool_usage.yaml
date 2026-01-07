@@ -57,6 +57,45 @@ policies:
       - "system_modify"
     enabled: true
 
+  # Allow L (CTO) operational tools - memory, governance, and orchestration
+  - id: "allow-l-cto-operational-tools"
+    name: "Allow L CTO Operational Tools"
+    description: "Permits L (CTO agent) to use memory, governance, and operational tools."
+    effect: "allow"
+    priority: 150
+    subjects:
+      - "l-cto"
+      - "l9-standard-v1"
+      - "l9-cto-v1"
+      - "agent:l-cto:*"
+    actions: ["tool.execute"]
+    resources:
+      - "memory_search"
+      - "memory_write"
+      - "memory_recall"
+      - "memory_ingest"
+      - "kernel_read"
+      - "world_model_query"
+      - "mcp_call_tool"
+    enabled: true
+
+  # Allow elevated agents (L CTO with approval) to use high-risk governance tools
+  - id: "allow-l-cto-governance-tools"
+    name: "Allow L CTO Governance Tools"
+    description: "Permits L (CTO) to use GMP and orchestration tools (requires Igor approval for some)."
+    effect: "allow"
+    priority: 175
+    subjects:
+      - "l-cto"
+      - "l9-cto-v1"
+    actions: ["tool.execute"]
+    resources:
+      - "gmp_run"
+      - "long_plan.execute"
+      - "long_plan.simulate"
+      - "simulation"
+    enabled: true
+
   # Allow elevated agents to use high-risk tools (requires explicit approval)
   - id: "allow-high-risk-tools-elevated"
     name: "Allow High-Risk Tools for Elevated Agents"

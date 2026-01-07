@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 pytest.skip("Legacy memory substrate system — skipping.", allow_module_level=True)
 
 """
@@ -51,4 +52,3 @@ async def test_semantic_search_returns_results(service):
     result = await service.semantic_search(request)
     # We don't assert heavy semantics, just that it runs and returns hits
     assert result.hits is not None
-

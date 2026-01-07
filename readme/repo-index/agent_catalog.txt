@@ -34,12 +34,10 @@
 - **L9 Standard Agent** (id: `l9-standard-v1`)
   - Model: gpt-4o
   - Tools: 3
-  - Tool IDs: ?, ?, ?
 
 - **L9 Research Agent** (id: `research-agent-v1`)
   - Model: gpt-4o
   - Tools: 4
-  - Tool IDs: ?, ?, ?, ?
 
 
 ## Agent Layers
@@ -58,16 +56,8 @@
      │ Research   │ │ Architect  │ │ Coder      │
      │ Agents     │ │ Agents     │ │ Agents     │
      └────────────┘ └────────────┘ └────────────┘
-            │              │              │
-            ▼              ▼              ▼
-     ┌────────────┐ ┌────────────┐ ┌────────────┐
-     │ Mac Agent  │ │ QA Agent   │ │ Reflection │
-     │            │ │            │ │ Agent      │
-     └────────────┘ └────────────┘ └────────────┘
 ```
 
 ## Authority Hierarchy
 
 Igor > L (CTO) > Research agents > Mac agent
-
-High-risk operations require Igor approval before execution.

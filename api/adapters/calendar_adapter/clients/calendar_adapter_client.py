@@ -36,6 +36,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class CalendarAdapterClientConfig:
     """Client configuration."""
+
     base_url: str
     api_key: Optional[str] = None
     timeout: float = 30.0
@@ -95,7 +96,9 @@ class CalendarAdapterClient:
                 return response.json()
             except httpx.HTTPStatusError as e:
                 last_error = e
-                self.logger.warning("request_failed", attempt=attempt + 1, status=e.response.status_code)
+                self.logger.warning(
+                    "request_failed", attempt=attempt + 1, status=e.response.status_code
+                )
                 if e.response.status_code < 500:
                     raise
             except httpx.RequestError as e:
@@ -111,7 +114,7 @@ class CalendarAdapterClient:
     async def aios_runtime_call(self, data: dict) -> dict:
         """
         Call aios_runtime_call endpoint.
-        
+
         Endpoint: /chat
         Method: POST
         Timeout: 30s
@@ -122,7 +125,7 @@ class CalendarAdapterClient:
     async def memory_service_call(self, data: dict) -> dict:
         """
         Call memory_service_call endpoint.
-        
+
         Endpoint: /memory/ingest
         Method: POST
         Timeout: 30s
@@ -133,44 +136,51 @@ class CalendarAdapterClient:
     async def google_calendar_events_list(self, data: dict) -> dict:
         """
         Call google_calendar_events_list endpoint.
-        
+
         Endpoint: https://api.google.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.google.com/...", data, timeout=10)
+        return await self._request(
+            "POST", "https://api.google.com/...", data, timeout=10
+        )
 
     async def google_calendar_events_insert(self, data: dict) -> dict:
         """
         Call google_calendar_events_insert endpoint.
-        
+
         Endpoint: https://api.google.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.google.com/...", data, timeout=10)
+        return await self._request(
+            "POST", "https://api.google.com/...", data, timeout=10
+        )
 
     async def google_calendar_events_update(self, data: dict) -> dict:
         """
         Call google_calendar_events_update endpoint.
-        
+
         Endpoint: https://api.google.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.google.com/...", data, timeout=10)
+        return await self._request(
+            "POST", "https://api.google.com/...", data, timeout=10
+        )
 
     async def google_calendar_events_delete(self, data: dict) -> dict:
         """
         Call google_calendar_events_delete endpoint.
-        
+
         Endpoint: https://api.google.com/...
         Method: POST
         Timeout: 10s
         Retry: True
         """
-        return await self._request("POST", "https://api.google.com/...", data, timeout=10)
-
+        return await self._request(
+            "POST", "https://api.google.com/...", data, timeout=10
+        )

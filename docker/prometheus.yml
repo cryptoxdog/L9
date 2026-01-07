@@ -1,0 +1,51 @@
+# Prometheus configuration for L9 PacketEnvelope Phase 2
+# Collects metrics from L9 API and infrastructure services
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+  # Attach labels to any time series or alerts
+  external_labels:
+    monitor: 'l9-packet-envelope'
+    environment: 'development'
+
+# Alerting configuration (optional)
+alerting:
+  alertmanagers: []
+
+# Rule files (optional)
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # L9 API metrics (PacketEnvelope observability)
+  - job_name: 'l9-api'
+    static_configs:
+      - targets: ['l9-api:8000']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Jaeger metrics (optional - if enabled)
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Redis metrics (if redis_exporter is added later)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # PostgreSQL metrics (if postgres_exporter is added later)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+

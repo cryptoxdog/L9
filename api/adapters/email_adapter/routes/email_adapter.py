@@ -70,7 +70,7 @@ async def handle_email_adapter(
 ) -> EmailAdapterResponse:
     """
     Receives inbound emails via webhook, parses content, and routes to AIOS for processing. Supports Gmail API integration.
-    
+
     Auth: bearer
     """
     # ══════════════════════════════════════════════════════════════════════════

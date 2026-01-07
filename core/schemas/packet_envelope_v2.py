@@ -1,0 +1,411 @@
+"""
+L9 Packet Envelope Schema v2.0.0
+================================
+
+Canonical unified PacketEnvelope schema consolidating:
+- v1.0.1 (core/schemas/packet_envelope.py) - immutable, frozen
+- v1.1.0 (memory/substrate_models.py) - enhanced fields
+
+This is the SINGLE SOURCE OF TRUTH for PacketEnvelope.
+All new code should import from this module.
+
+Features:
+- Immutability enforced (frozen=True)
+- Thread tracking (thread_id)
+- DAG lineage (lineage)
+- Tagging system (tags)
+- TTL for expiration (ttl)
+- with_mutation() for creating derived packets
+
+Contracts:
+- PacketEnvelope is IMMUTABLE once created
+- Modifications use with_mutation() which creates new packet with lineage
+- Schema version is 2.0.0
+"""
+
+import hashlib
+import json
+from datetime import datetime
+from enum import Enum
+from typing import Any, Optional
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
+
+
+# =============================================================================
+# Schema Version Constants
+# =============================================================================
+
+SCHEMA_VERSION = "2.0.0"
+SUPPORTED_VERSIONS = ["1.0.0", "1.0.1", "1.1.0", "1.1.1", "2.0.0"]
+
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+
+class PacketKind(str, Enum):
+    """Kind of packet for routing/classification."""
+
+    EVENT = "event"
+    INSIGHT = "insight"
+    RESULT = "result"
+    ERROR = "error"
+    COMMAND = "command"
+    QUERY = "query"
+    MEMORY_WRITE = "memory_write"
+    REASONING_TRACE = "reasoning_trace"
+    TOOL_AUDIT = "tool_audit"
+
+
+class DerivationType(str, Enum):
+    """How a packet was derived from its parent(s)."""
+
+    MUTATION = "mutation"
+    SPLIT = "split"
+    MERGE = "merge"
+    TRANSFORM = "transform"
+    INFERENCE = "inference"
+
+
+# =============================================================================
+# Supporting Models (all frozen for immutability)
+# =============================================================================
+
+
+class PacketConfidence(BaseModel):
+    """Confidence score and rationale for a packet."""
+
+    score: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Confidence score 0-1"
+    )
+    rationale: Optional[str] = Field(
+        None, description="Explanation of confidence level"
+    )
+
+    model_config = {"frozen": True}
+
+
+class PacketProvenance(BaseModel):
+    """Provenance information for packet traceability."""
+
+    parent_packet: Optional[UUID] = Field(
+        None, description="Parent packet ID if derived"
+    )
+    source: Optional[str] = Field(None, description="Source system or agent")
+    source_agent: Optional[str] = Field(
+        None, description="Source agent identifier (v1.0.1 compat)"
+    )
+    tool: Optional[str] = Field(None, description="Tool that generated this packet")
+
+    model_config = {"frozen": True}
+
+
+class PacketLineage(BaseModel):
+    """
+    Lineage information for packet genealogy tracking.
+
+    Enables tracing the full derivation path of a packet through
+    the system, supporting multi-parent DAG relationships.
+    """
+
+    parent_ids: list[UUID] = Field(
+        default_factory=list, description="Parent packet IDs (multi-parent DAG)"
+    )
+    derivation_type: Optional[str] = Field(
+        None,
+        description="How derived: 'mutation', 'split', 'merge', 'transform', 'inference'",
+    )
+    generation: int = Field(default=0, description="Generation number in lineage chain")
+    root_packet_id: Optional[UUID] = Field(
+        None, description="Original root packet if known"
+    )
+
+    model_config = {"frozen": True}
+
+
+class PacketMetadata(BaseModel):
+    """Metadata attached to a packet envelope."""
+
+    schema_version: str = Field(SCHEMA_VERSION, description="Schema version")
+    reasoning_mode: Optional[str] = Field(None, description="Reasoning mode used")
+    agent: Optional[str] = Field(None, description="Agent identifier")
+    domain: Optional[str] = Field("l9", description="Domain context")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+# =============================================================================
+# Canonical PacketEnvelope v2.0.0
+# =============================================================================
+
+
+class PacketEnvelope(BaseModel):
+    """
+    Canonical PacketEnvelope v2.0.0
+
+    IMMUTABLE event container for the L9 Memory Substrate.
+    This is the unified schema consolidating v1.0.1 and v1.1.0.
+
+    Contracts:
+    - IMMUTABLE once created (frozen=True enforced)
+    - Modifications use with_mutation() which creates new packet with lineage
+    - All new fields are Optional for backward compatibility
+    - Existing v1.x packets upcast transparently via SchemaRegistry
+    """
+
+    # Primary Key
+    packet_id: UUID = Field(
+        default_factory=uuid4, description="Unique packet identifier"
+    )
+
+    # Required Fields
+    packet_type: str = Field(
+        ...,
+        min_length=1,
+        description="Semantic category: 'event', 'memory_write', 'reasoning_trace', etc.",
+    )
+    payload: dict[str, Any] = Field(
+        ...,
+        description="Flexible JSON payload. Schema does not enforce shape.",
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="UTC timestamp (auto-generated if omitted)",
+    )
+
+    # Optional Fields (v1.0.1 compatible)
+    metadata: Optional[PacketMetadata] = Field(default_factory=PacketMetadata)
+    provenance: Optional[PacketProvenance] = Field(None)
+    confidence: Optional[PacketConfidence] = Field(None)
+    reasoning_block: Optional[dict[str, Any]] = Field(
+        None, description="Optional StructuredReasoningBlock inline"
+    )
+
+    # v1.1.0+ Fields (backward compatible - all optional)
+    thread_id: Optional[UUID] = Field(
+        None, description="Logical conversation/task thread identifier"
+    )
+    lineage: Optional[PacketLineage] = Field(
+        None, description="Lineage metadata for DAG-style derivation tracking"
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Lightweight labels for filtering and retrieval",
+    )
+    ttl: Optional[datetime] = Field(
+        None, description="Optional expiry timestamp for memory hygiene/GC"
+    )
+
+    # v2.0.0 Fields
+    content_hash: Optional[str] = Field(
+        None, description="SHA-256 hash of payload+metadata for integrity verification"
+    )
+
+    # IMMUTABILITY ENFORCEMENT
+    model_config = {
+        "frozen": True,  # IMMUTABILITY ENFORCED
+        "validate_assignment": True,
+        "extra": "forbid",
+    }
+
+    def with_mutation(self, **updates) -> "PacketEnvelope":
+        """
+        Create a new PacketEnvelope with updates, linking to this as parent.
+
+        This is the ONLY way to "modify" a packet (immutability preserved).
+        Creates proper lineage chain for audit trail and DAG relationships.
+
+        Args:
+            **updates: Fields to update in the new packet
+
+        Returns:
+            New PacketEnvelope with:
+            - New packet_id
+            - Updated timestamp
+            - Lineage linking to this packet as parent
+            - All other fields preserved or updated
+        """
+        # Build lineage chain
+        current_generation = self.lineage.generation if self.lineage else 0
+        root_id = (
+            self.lineage.root_packet_id
+            if self.lineage and self.lineage.root_packet_id
+            else self.packet_id
+        )
+
+        new_lineage = PacketLineage(
+            parent_ids=[self.packet_id],
+            derivation_type=DerivationType.MUTATION.value,
+            generation=current_generation + 1,
+            root_packet_id=root_id,
+        )
+
+        # Ensure metadata has current schema version
+        new_metadata = PacketMetadata(
+            schema_version=SCHEMA_VERSION,
+            reasoning_mode=self.metadata.reasoning_mode if self.metadata else None,
+            agent=self.metadata.agent if self.metadata else None,
+            domain=self.metadata.domain if self.metadata else "l9",
+        )
+
+        # Create new packet with updates
+        return self.model_copy(
+            update={
+                "packet_id": uuid4(),
+                "timestamp": datetime.utcnow(),
+                "lineage": new_lineage,
+                "metadata": new_metadata,
+                **updates,
+            }
+        )
+
+    def with_update(self, **updates) -> "PacketEnvelope":
+        """
+        Alias for with_mutation() for v1.0.1 compatibility.
+
+        Deprecated: Use with_mutation() in new code.
+        """
+        return self.with_mutation(**updates)
+
+    def compute_content_hash(self) -> str:
+        """
+        Compute SHA-256 hash of payload and metadata for integrity verification.
+
+        The hash covers:
+        - payload (JSON-serialized)
+        - metadata (JSON-serialized)
+        - timestamp (ISO format)
+
+        Returns:
+            64-character hex SHA-256 hash
+        """
+        content = {
+            "payload": self.payload,
+            "metadata": self.metadata.model_dump() if self.metadata else {},
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }
+        content_bytes = json.dumps(content, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(content_bytes).hexdigest()
+
+    def with_content_hash(self) -> "PacketEnvelope":
+        """
+        Create a new PacketEnvelope with computed content_hash.
+
+        Use this when writing to storage to ensure integrity verification
+        is available on read.
+
+        Returns:
+            New PacketEnvelope with content_hash field populated
+        """
+        return self.model_copy(update={"content_hash": self.compute_content_hash()})
+
+    def verify_integrity(self) -> bool:
+        """
+        Verify that the packet's content_hash matches its actual content.
+
+        Returns:
+            True if content_hash matches computed hash, False otherwise.
+            Returns False if no content_hash is set.
+        """
+        if not self.content_hash:
+            return False
+        return self.content_hash == self.compute_content_hash()
+
+
+# =============================================================================
+# Input Model (for API writes)
+# =============================================================================
+
+
+class PacketEnvelopeIn(BaseModel):
+    """
+    Input structure for writes. Converted to PacketEnvelope internally.
+
+    Allows partial fields - packet_id and timestamp auto-generated if omitted.
+    """
+
+    packet_id: Optional[UUID] = Field(None, description="UUID (auto-generated if omitted)")
+    packet_type: str = Field(
+        ..., min_length=1, description="Semantic category of the packet"
+    )
+    payload: dict[str, Any] = Field(..., description="Flexible JSON payload")
+    timestamp: Optional[datetime] = Field(None, description="UTC timestamp (auto-generated)")
+    metadata: Optional[dict[str, Any]] = Field(None)
+    provenance: Optional[dict[str, Any]] = Field(None)
+    confidence: Optional[dict[str, Any]] = Field(None)
+    reasoning_block: Optional[dict[str, Any]] = Field(None)
+
+    # v1.1.0+ fields
+    thread_id: Optional[UUID] = Field(None)
+    lineage: Optional[dict[str, Any]] = Field(None)
+    tags: Optional[list[str]] = Field(None)
+    ttl: Optional[datetime] = Field(None)
+
+    def to_envelope(self) -> PacketEnvelope:
+        """Convert input to full PacketEnvelope with defaults."""
+        return PacketEnvelope(
+            packet_id=self.packet_id or uuid4(),
+            packet_type=self.packet_type,
+            payload=self.payload,
+            timestamp=self.timestamp or datetime.utcnow(),
+            metadata=PacketMetadata(**self.metadata) if self.metadata else PacketMetadata(),
+            provenance=PacketProvenance(**self.provenance) if self.provenance else None,
+            confidence=PacketConfidence(**self.confidence) if self.confidence else None,
+            reasoning_block=self.reasoning_block,
+            thread_id=self.thread_id,
+            lineage=PacketLineage(**self.lineage) if self.lineage else None,
+            tags=self.tags or [],
+            ttl=self.ttl,
+        )
+
+
+# =============================================================================
+# Write Response Model
+# =============================================================================
+
+
+class PacketWriteResult(BaseModel):
+    """Result of writing a PacketEnvelope."""
+
+    status: str = Field(..., description="'ok' or 'error'")
+    packet_id: UUID = Field(..., description="Echoed packet ID")
+    written_tables: list[str] = Field(
+        default_factory=list, description="Tables updated"
+    )
+    error_message: Optional[str] = Field(
+        None, description="Error details if status='error'"
+    )
+
+
+# =============================================================================
+# Semantic Search Models
+# =============================================================================
+
+
+class SemanticSearchRequest(BaseModel):
+    """Request to search semantic memory."""
+
+    query: str = Field(..., min_length=1, description="Natural language query")
+    top_k: int = Field(10, ge=1, le=100, description="Number of neighbors to return")
+    agent_id: Optional[str] = Field(None, description="Filter by agent ID")
+
+
+class SemanticHit(BaseModel):
+    """Single semantic search result."""
+
+    embedding_id: UUID = Field(..., description="Embedding record ID")
+    score: float = Field(..., description="Similarity score")
+    payload: dict[str, Any] = Field(..., description="Stored payload")
+
+
+class SemanticSearchResult(BaseModel):
+    """Top-k semantic hits."""
+
+    query: str = Field(..., description="Original query")
+    hits: list[SemanticHit] = Field(
+        default_factory=list, description="List of matching results"
+    )
+

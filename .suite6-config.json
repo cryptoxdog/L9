@@ -1,14 +1,14 @@
 {
   "suite_version": "6.0.0",
-  "workspace_id": "ws-20251216-231815",
-  "workspace_path": "/Users/ib-mac/Projects/l9",
+  "workspace_id": "ws-20260106-112419",
+  "workspace_path": "/Users/ib-mac/Projects/L9",
   "suite6_root": "/Users/ib-mac/Dropbox/Cursor Governance/Cursor Governance Suite 6 (L9)",
   "governance_enabled": true,
   "intelligence_active": true,
   "monitoring_level": "standard",
   "compliance_required": true,
-  "created": "2025-12-16T23:18:15.891272",
-  "last_validated": "2025-12-16T23:18:15.891274",
+  "created": "2026-01-06T11:24:19.313436",
+  "last_validated": "2026-01-06T11:24:19.313444",
   "features": {
     "meta_learning": true,
     "cursor_native_reasoning": true,

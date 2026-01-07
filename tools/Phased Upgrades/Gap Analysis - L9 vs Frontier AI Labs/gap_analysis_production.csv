@@ -1,0 +1,11 @@
+Feature,L9 Current,Frontier Labs,Gap Impact
+Distributed Tracing,JSON logs only,OpenTelemetry (Google/AWS),🔴 Critical
+Evaluation Framework,No,Yes (Vertex Eval/Bedrock Eval),🔴 Critical
+Testing Sandbox,No,Yes (simulation environments),🔴 Critical
+Prompt Versioning,No,Yes (versioned prompts),🟡 Medium
+Model Routing,No,Yes (multi-LLM routing),🟡 Medium
+Cost Tracking,No,Yes (per-call granularity),🔴 Critical
+Health Checks,substrate.health_check(),Multi-substrate health,🟢 Good
+Deployment Runtime,Docker Compose,Managed runtime (serverless),🟡 Medium
+Session Management,No,Yes (stateful sessions),🔴 Critical
+Example Store/Fine-tuning Loop,No,Yes (closed-loop improvement),🔴 Critical

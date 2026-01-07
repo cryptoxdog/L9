@@ -47,10 +47,10 @@ def test_merged_contains_both():
     Contract: Merged kernel contains data from both governance and agent sources.
     """
     ks = load_kernels()
-    
+
     # Should have governance rules
     assert "rules" in ks.merged
-    
+
     # Should have agent capabilities
     assert "capabilities" in ks.merged
 
@@ -82,7 +82,7 @@ def test_load_missing_kernel_file():
         from pathlib import Path
         import sys
         from mocks.kernel_mocks import load_kernels
-        
+
         # Attempt to load with non-existent path (if supported)
         # In practice, this would test the loader's error handling
         ks = load_kernels()
@@ -101,12 +101,15 @@ def test_load_invalid_yaml_kernel():
     # The actual implementation may raise YAMLError or similar
     try:
         from mocks.kernel_mocks import load_kernels
-        
+
         # Attempt to load kernels (mocks may not have invalid YAML)
         ks = load_kernels()
         # If load_kernels doesn't raise, verify it handles invalid YAML gracefully
         assert ks is not None
     except (ValueError, TypeError, Exception) as e:
         # Expected behavior: invalid YAML should raise appropriate error
-        assert "yaml" in str(e).lower() or "parse" in str(e).lower() or "invalid" in str(e).lower()
-
+        assert (
+            "yaml" in str(e).lower()
+            or "parse" in str(e).lower()
+            or "invalid" in str(e).lower()
+        )

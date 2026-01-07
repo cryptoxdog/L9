@@ -1,0 +1,35 @@
+# Core dependencies
+sympy>=1.12
+numpy>=1.24.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Async support
+asyncio>=3.4.3
+
+# Logging
+python-json-logger>=2.0.7
+
+# Code generation backends
+cython>=3.0.0
+
+# Database (optional - for integration)
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
+neo4j>=5.14.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Type checking
+mypy>=1.7.0
+
+# Linting
+pylint>=3.0.0
+black>=23.11.0
+
+# Documentation
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0

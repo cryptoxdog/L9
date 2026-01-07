@@ -44,7 +44,7 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 
 # Security imports
-from core.schemas.capabilities import ToolName, AgentCapabilities, Capability
+from core.schemas.capabilities import ToolName, AgentCapabilities
 
 logger = structlog.get_logger(__name__)
 
@@ -53,8 +53,10 @@ logger = structlog.get_logger(__name__)
 # Enums
 # =============================================================================
 
+
 class TaskType(str, Enum):
     """Types of tasks for routing decisions."""
+
     DESIGN = "design"
     IMPLEMENT = "implement"
     REVIEW = "review"
@@ -69,6 +71,7 @@ class TaskType(str, Enum):
 
 class ExecutionTarget(str, Enum):
     """Execution targets for routing."""
+
     IR_ENGINE_ONLY = "ir_engine_only"
     IR_WITH_SIMULATION = "ir_with_simulation"
     IR_WITH_CELLS = "ir_with_cells"
@@ -81,28 +84,32 @@ class ExecutionTarget(str, Enum):
 
 class TaskComplexity(str, Enum):
     """Complexity levels for tasks."""
-    TRIVIAL = "trivial"      # Single-step, no dependencies
-    SIMPLE = "simple"        # Few steps, minimal dependencies
-    MODERATE = "moderate"    # Multiple steps, some dependencies
-    COMPLEX = "complex"      # Many steps, cross-cutting concerns
-    CRITICAL = "critical"    # System-wide changes, high coordination
+
+    TRIVIAL = "trivial"  # Single-step, no dependencies
+    SIMPLE = "simple"  # Few steps, minimal dependencies
+    MODERATE = "moderate"  # Multiple steps, some dependencies
+    COMPLEX = "complex"  # Many steps, cross-cutting concerns
+    CRITICAL = "critical"  # System-wide changes, high coordination
 
 
 class TaskRisk(str, Enum):
     """Risk levels for tasks."""
-    LOW = "low"              # No production impact, reversible
-    MEDIUM = "medium"        # Limited impact, mostly reversible
-    HIGH = "high"            # Significant impact, difficult to reverse
-    CRITICAL = "critical"    # Production-critical, requires approval
+
+    LOW = "low"  # No production impact, reversible
+    MEDIUM = "medium"  # Limited impact, mostly reversible
+    HIGH = "high"  # Significant impact, difficult to reverse
+    CRITICAL = "critical"  # Production-critical, requires approval
 
 
 # =============================================================================
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class TaskRoute:
     """A route for task execution."""
+
     target: ExecutionTarget
     priority: int = 5  # 1-10, higher = more urgent
     requires_simulation: bool = True
@@ -111,7 +118,7 @@ class TaskRoute:
     parameters: dict[str, Any] = field(default_factory=dict)
     fallback_target: Optional[ExecutionTarget] = None
     estimated_duration_ms: Optional[int] = None
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "target": self.target.value,
@@ -119,25 +126,30 @@ class TaskRoute:
             "requires_simulation": self.requires_simulation,
             "requires_collaboration": self.requires_collaboration,
             "cell_types": self.cell_types,
-            "fallback_target": self.fallback_target.value if self.fallback_target else None,
+            "fallback_target": self.fallback_target.value
+            if self.fallback_target
+            else None,
         }
 
 
 @dataclass
 class RoutingDecision:
     """Result of routing decision."""
+
     decision_id: UUID = field(default_factory=uuid4)
     task_id: UUID = field(default_factory=uuid4)
     task_type: TaskType = TaskType.GENERAL
     complexity: TaskComplexity = TaskComplexity.MODERATE
     risk: TaskRisk = TaskRisk.MEDIUM
-    primary_route: TaskRoute = field(default_factory=lambda: TaskRoute(ExecutionTarget.IR_WITH_SIMULATION))
+    primary_route: TaskRoute = field(
+        default_factory=lambda: TaskRoute(ExecutionTarget.IR_WITH_SIMULATION)
+    )
     secondary_routes: list[TaskRoute] = field(default_factory=list)
     confidence: float = 0.8
     reasoning: str = ""
     analysis: dict[str, Any] = field(default_factory=dict)
     decided_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "decision_id": str(self.decision_id),
@@ -239,20 +251,21 @@ RISK_INDICATORS = {
 # Task Router
 # =============================================================================
 
+
 class TaskRouter:
     """
     Routes tasks to appropriate execution targets.
-    
+
     Analyzes task requirements using NLP patterns to determine:
     - Task type (design, implement, review, etc.)
     - Complexity level (trivial → critical)
     - Risk level (low → critical)
-    
+
     Then selects the optimal execution path:
     - Simple, low-risk → IR Engine only
     - Standard → IR Engine + Simulation
     - Complex/high-risk → Full pipeline with collaborative cells
-    
+
     Usage:
         router = TaskRouter()
         decision = router.route({
@@ -261,14 +274,14 @@ class TaskRouter:
         })
         # decision.primary_route.target == ExecutionTarget.IR_WITH_CELLS
     """
-    
+
     def __init__(self):
         """Initialize the task router."""
         self._routing_history: list[RoutingDecision] = []
         self._target_load: dict[ExecutionTarget, int] = {
             target: 0 for target in ExecutionTarget
         }
-        
+
         # Compile regex patterns
         self._type_patterns = {
             task_type: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -282,13 +295,13 @@ class TaskRouter:
             level: [re.compile(p, re.IGNORECASE) for p in patterns]
             for level, patterns in RISK_INDICATORS.items()
         }
-        
+
         logger.info("TaskRouter initialized")
-    
+
     # =========================================================================
     # Main Routing
     # =========================================================================
-    
+
     def route(
         self,
         task: dict[str, Any],
@@ -296,23 +309,23 @@ class TaskRouter:
     ) -> RoutingDecision:
         """
         Route a task to appropriate target.
-        
+
         Args:
             task: Task specification with at least 'text' or 'description'
             context: Optional context (project info, user preferences)
-            
+
         Returns:
             RoutingDecision with target and metadata
         """
         task_id = UUID(task.get("task_id", str(uuid4())))
         task_text = task.get("text", task.get("description", ""))
         context = context or {}
-        
+
         # Analyze task
         task_type = self._classify_task_type(task_text, task)
         complexity = self._assess_complexity(task_text, task)
         risk = self._assess_risk(task_text, task)
-        
+
         # Build analysis record
         analysis = {
             "text_length": len(task_text),
@@ -320,19 +333,21 @@ class TaskRouter:
             "complexity_indicators": self._get_complexity_indicators(task_text),
             "risk_indicators": self._get_risk_indicators(task_text),
         }
-        
+
         # Determine primary route
         primary_route = self._select_route(task_type, complexity, risk, task, context)
-        
+
         # Determine fallback routes
-        secondary_routes = self._select_fallback_routes(task_type, complexity, risk, primary_route)
-        
+        secondary_routes = self._select_fallback_routes(
+            task_type, complexity, risk, primary_route
+        )
+
         # Calculate confidence
         confidence = self._calculate_confidence(task_type, complexity, risk, task_text)
-        
+
         # Build reasoning
         reasoning = self._build_reasoning(task_type, complexity, risk, primary_route)
-        
+
         decision = RoutingDecision(
             task_id=task_id,
             task_type=task_type,
@@ -344,20 +359,20 @@ class TaskRouter:
             reasoning=reasoning,
             analysis=analysis,
         )
-        
+
         # Update load tracking
         self._target_load[primary_route.target] += 1
-        
+
         # Store in history
         self._routing_history.append(decision)
-        
+
         logger.info(
             f"Routed task {task_id}: type={task_type.value}, "
             f"complexity={complexity.value}, risk={risk.value} → {primary_route.target.value}"
         )
-        
+
         return decision
-    
+
     # =========================================================================
     # Task Classification
     # =========================================================================
@@ -374,20 +389,20 @@ class TaskRouter:
                 return TaskType(task["type"])
             except ValueError:
                 pass
-        
+
         # Score each type by pattern matches
         scores: dict[TaskType, int] = {t: 0 for t in TaskType}
-        
+
         for task_type, patterns in self._type_patterns.items():
             for pattern in patterns:
                 if pattern.search(task_text):
                     scores[task_type] += 1
-        
+
         # Return highest scoring type, default to GENERAL
         best_type = max(scores.items(), key=lambda x: x[1])
         if best_type[1] > 0:
             return best_type[0]
-        
+
         return TaskType.GENERAL
 
     def _assess_complexity(
@@ -402,27 +417,24 @@ class TaskRouter:
                 return TaskComplexity(task["complexity"])
             except ValueError:
                 pass
-        
+
         # Score complexity levels
         high_score = sum(
-            1 for p in self._complexity_patterns["high"]
-            if p.search(task_text)
+            1 for p in self._complexity_patterns["high"] if p.search(task_text)
         )
         medium_score = sum(
-            1 for p in self._complexity_patterns["medium"]
-            if p.search(task_text)
+            1 for p in self._complexity_patterns["medium"] if p.search(task_text)
         )
         low_score = sum(
-            1 for p in self._complexity_patterns["low"]
-            if p.search(task_text)
+            1 for p in self._complexity_patterns["low"] if p.search(task_text)
         )
-        
+
         # Text length as secondary indicator
         if len(task_text) > 500:
             high_score += 1
         elif len(task_text) < 50:
             low_score += 1
-        
+
         # Determine level
         if high_score >= 2:
             return TaskComplexity.CRITICAL
@@ -432,7 +444,7 @@ class TaskRouter:
             return TaskComplexity.MODERATE
         elif low_score >= 2:
             return TaskComplexity.TRIVIAL
-        
+
         return TaskComplexity.SIMPLE
 
     def _assess_risk(
@@ -447,21 +459,16 @@ class TaskRouter:
                 return TaskRisk(task["risk"])
             except ValueError:
                 pass
-        
+
         # Score risk levels
         critical_score = sum(
-            1 for p in self._risk_patterns["critical"]
-            if p.search(task_text)
+            1 for p in self._risk_patterns["critical"] if p.search(task_text)
         )
-        high_score = sum(
-            1 for p in self._risk_patterns["high"]
-            if p.search(task_text)
-        )
+        high_score = sum(1 for p in self._risk_patterns["high"] if p.search(task_text))
         medium_score = sum(
-            1 for p in self._risk_patterns["medium"]
-            if p.search(task_text)
+            1 for p in self._risk_patterns["medium"] if p.search(task_text)
         )
-        
+
         # Determine level
         if critical_score >= 2:
             return TaskRisk.CRITICAL
@@ -469,13 +476,13 @@ class TaskRouter:
             return TaskRisk.HIGH
         elif high_score >= 1 or medium_score >= 2:
             return TaskRisk.MEDIUM
-        
+
         return TaskRisk.LOW
 
     # =========================================================================
     # Route Selection
     # =========================================================================
-    
+
     def _select_route(
         self,
         task_type: TaskType,
@@ -485,7 +492,7 @@ class TaskRouter:
         context: dict[str, Any],
     ) -> TaskRoute:
         """Select primary route based on analysis."""
-        
+
         # Critical risk or complexity → Full pipeline with cells
         if risk == TaskRisk.CRITICAL or complexity == TaskComplexity.CRITICAL:
             return TaskRoute(
@@ -497,7 +504,7 @@ class TaskRouter:
                 fallback_target=ExecutionTarget.IR_WITH_SIMULATION,
                 estimated_duration_ms=120000,
             )
-        
+
         # High risk/complexity → IR + Simulation + potential cells
         if risk == TaskRisk.HIGH or complexity == TaskComplexity.COMPLEX:
             return TaskRoute(
@@ -505,11 +512,13 @@ class TaskRouter:
                 priority=8,
                 requires_simulation=True,
                 requires_collaboration=task_type in (TaskType.DESIGN, TaskType.REVIEW),
-                cell_types=self._get_cell_types_for_task(task_type) if task_type in (TaskType.DESIGN, TaskType.REVIEW) else [],
+                cell_types=self._get_cell_types_for_task(task_type)
+                if task_type in (TaskType.DESIGN, TaskType.REVIEW)
+                else [],
                 fallback_target=ExecutionTarget.IR_ENGINE_ONLY,
                 estimated_duration_ms=60000,
             )
-        
+
         # Design tasks → Architect cell preferred
         if task_type == TaskType.DESIGN:
             return TaskRoute(
@@ -521,7 +530,7 @@ class TaskRouter:
                 fallback_target=ExecutionTarget.IR_WITH_SIMULATION,
                 estimated_duration_ms=45000,
             )
-        
+
         # Review tasks → Reviewer cell
         if task_type == TaskType.REVIEW:
             return TaskRoute(
@@ -533,7 +542,7 @@ class TaskRouter:
                 fallback_target=ExecutionTarget.IR_ENGINE_ONLY,
                 estimated_duration_ms=30000,
             )
-        
+
         # Implement/Debug → Coder cell for complex, IR for simple
         if task_type in (TaskType.IMPLEMENT, TaskType.DEBUG, TaskType.REFACTOR):
             if complexity in (TaskComplexity.MODERATE, TaskComplexity.COMPLEX):
@@ -546,9 +555,12 @@ class TaskRouter:
                     fallback_target=ExecutionTarget.IR_WITH_SIMULATION,
                     estimated_duration_ms=45000,
                 )
-        
+
         # Trivial/Simple + Low risk → IR Engine only
-        if complexity in (TaskComplexity.TRIVIAL, TaskComplexity.SIMPLE) and risk == TaskRisk.LOW:
+        if (
+            complexity in (TaskComplexity.TRIVIAL, TaskComplexity.SIMPLE)
+            and risk == TaskRisk.LOW
+        ):
             return TaskRoute(
                 target=ExecutionTarget.IR_ENGINE_ONLY,
                 priority=3,
@@ -558,7 +570,7 @@ class TaskRouter:
                 fallback_target=None,
                 estimated_duration_ms=15000,
             )
-        
+
         # Default: IR + Simulation
         return TaskRoute(
             target=ExecutionTarget.IR_WITH_SIMULATION,
@@ -595,38 +607,48 @@ class TaskRouter:
     ) -> list[TaskRoute]:
         """Select fallback routes in case primary fails."""
         fallbacks = []
-        
+
         # Always include IR Engine as ultimate fallback
         if primary_route.target != ExecutionTarget.IR_ENGINE_ONLY:
-            fallbacks.append(TaskRoute(
-                target=ExecutionTarget.IR_ENGINE_ONLY,
-                priority=primary_route.priority - 2,
-                requires_simulation=False,
-                requires_collaboration=False,
-            ))
-        
+            fallbacks.append(
+                TaskRoute(
+                    target=ExecutionTarget.IR_ENGINE_ONLY,
+                    priority=primary_route.priority - 2,
+                    requires_simulation=False,
+                    requires_collaboration=False,
+                )
+            )
+
         # If using cells, fallback to IR + Simulation
         if primary_route.requires_collaboration:
-            if primary_route.target not in (ExecutionTarget.IR_WITH_SIMULATION, ExecutionTarget.IR_ENGINE_ONLY):
-                fallbacks.insert(0, TaskRoute(
-                    target=ExecutionTarget.IR_WITH_SIMULATION,
-                    priority=primary_route.priority - 1,
-                    requires_simulation=True,
-                    requires_collaboration=False,
-                ))
-        
+            if primary_route.target not in (
+                ExecutionTarget.IR_WITH_SIMULATION,
+                ExecutionTarget.IR_ENGINE_ONLY,
+            ):
+                fallbacks.insert(
+                    0,
+                    TaskRoute(
+                        target=ExecutionTarget.IR_WITH_SIMULATION,
+                        priority=primary_route.priority - 1,
+                        requires_simulation=True,
+                        requires_collaboration=False,
+                    ),
+                )
+
         # For analysis/debug, add reflection cell as option
         if task_type in (TaskType.ANALYZE, TaskType.DEBUG):
-            fallbacks.append(TaskRoute(
-                target=ExecutionTarget.REFLECTION_CELL,
-                priority=primary_route.priority - 2,
-                requires_simulation=False,
-                requires_collaboration=True,
-                cell_types=["reflection"],
-            ))
-        
+            fallbacks.append(
+                TaskRoute(
+                    target=ExecutionTarget.REFLECTION_CELL,
+                    priority=primary_route.priority - 2,
+                    requires_simulation=False,
+                    requires_collaboration=True,
+                    cell_types=["reflection"],
+                )
+            )
+
         return fallbacks
-    
+
     # =========================================================================
     # Confidence and Reasoning
     # =========================================================================
@@ -640,21 +662,21 @@ class TaskRouter:
     ) -> float:
         """Calculate confidence in routing decision."""
         confidence = 0.6  # Base
-        
+
         # Higher confidence for clearly typed tasks
         if task_type != TaskType.GENERAL:
             confidence += 0.15
-        
+
         # Higher confidence for longer, more detailed tasks
         if len(task_text) > 100:
             confidence += 0.1
         elif len(task_text) > 50:
             confidence += 0.05
-        
+
         # Slightly lower confidence for critical complexity/risk
         if complexity == TaskComplexity.CRITICAL or risk == TaskRisk.CRITICAL:
             confidence -= 0.05
-        
+
         return min(0.95, max(0.5, confidence))
 
     def _build_reasoning(
@@ -670,15 +692,17 @@ class TaskRouter:
             f"with {complexity.value} complexity",
             f"and {risk.value} risk.",
         ]
-        
+
         if route.requires_collaboration:
-            parts.append(f"Routing to {route.target.value} with collaborative cells: {', '.join(route.cell_types)}.")
+            parts.append(
+                f"Routing to {route.target.value} with collaborative cells: {', '.join(route.cell_types)}."
+            )
         else:
             parts.append(f"Routing to {route.target.value}.")
-        
+
         if route.requires_simulation:
             parts.append("Simulation required.")
-        
+
         return " ".join(parts)
 
     # =========================================================================
@@ -724,7 +748,7 @@ class TaskRouter:
     # =========================================================================
     # Batch Routing
     # =========================================================================
-    
+
     def route_batch(
         self,
         tasks: list[dict[str, Any]],
@@ -732,16 +756,16 @@ class TaskRouter:
     ) -> list[RoutingDecision]:
         """
         Route multiple tasks.
-        
+
         Args:
             tasks: List of task specifications
             context: Shared context
-            
+
         Returns:
             List of routing decisions
         """
         return [self.route(task, context) for task in tasks]
-    
+
     def route_with_dependencies(
         self,
         tasks: list[dict[str, Any]],
@@ -749,21 +773,21 @@ class TaskRouter:
     ) -> list[RoutingDecision]:
         """
         Route tasks considering dependencies.
-        
+
         Args:
             tasks: List of tasks with 'id' field
             dependencies: Map of task_id → list of dependency task_ids
-            
+
         Returns:
             Ordered list of routing decisions
         """
         # Build task map
         task_map = {t.get("id", str(uuid4())): t for t in tasks}
-        
+
         # Topological sort
         ordered_ids: list[str] = []
         visited: set[str] = set()
-        
+
         def visit(task_id: str) -> None:
             if task_id in visited:
                 return
@@ -772,10 +796,10 @@ class TaskRouter:
                 if dep_id in task_map:
                     visit(dep_id)
             ordered_ids.append(task_id)
-        
+
         for task_id in task_map:
             visit(task_id)
-        
+
         # Route in order
         decisions = []
         for task_id in ordered_ids:
@@ -783,22 +807,22 @@ class TaskRouter:
             task["task_id"] = task_id
             decision = self.route(task)
             decisions.append(decision)
-        
+
         return decisions
-    
+
     # =========================================================================
     # Load Management
     # =========================================================================
-    
+
     def get_load(self, target: ExecutionTarget) -> int:
         """Get current load for a target."""
         return self._target_load.get(target, 0)
-    
+
     def release_load(self, target: ExecutionTarget) -> None:
         """Release load from a target after task completion."""
         if target in self._target_load:
             self._target_load[target] = max(0, self._target_load[target] - 1)
-    
+
     def get_load_summary(self) -> dict[str, int]:
         """Get load summary for all targets."""
         return {target.value: load for target, load in self._target_load.items()}
@@ -810,7 +834,7 @@ class TaskRouter:
     def get_routing_history(self, limit: int = 100) -> list[RoutingDecision]:
         """Get recent routing history."""
         return self._routing_history[-limit:]
-    
+
     def clear_history(self) -> None:
         """Clear routing history and reset loads."""
         self._routing_history.clear()
@@ -821,20 +845,21 @@ class TaskRouter:
 # Capability Enforcement (Security Layer)
 # =============================================================================
 
+
 def is_tool_allowed(agent_caps: AgentCapabilities, tool: ToolName) -> bool:
     """
     Check if a tool is allowed for an agent based on capabilities.
-    
+
     This is the primary entry point for capability enforcement.
     Should be called before dispatching any tool task.
-    
+
     Args:
         agent_caps: Agent's capability set
         tool: Tool being requested
-        
+
     Returns:
         True if allowed, False otherwise
-        
+
     Usage:
         caps = AgentCapabilities(
             agent_id="coder-1",
@@ -846,7 +871,7 @@ def is_tool_allowed(agent_caps: AgentCapabilities, tool: ToolName) -> bool:
     for cap in agent_caps.capabilities:
         if cap.tool == tool:
             return cap.allowed
-    
+
     # Fall back to default
     return agent_caps.default_allowed
 
@@ -858,23 +883,23 @@ def check_tool_rate_limit(
 ) -> bool:
     """
     Check if tool invocation is within rate limit.
-    
+
     Args:
         agent_caps: Agent's capability set
         tool: Tool being requested
         current_invocations: Current invocation count this minute
-        
+
     Returns:
         True if within limit, False if rate limited
     """
     cap = agent_caps.get_capability(tool)
-    
+
     if cap is None:
         return True  # No capability defined, no rate limit
-    
+
     if cap.rate_limit is None:
         return True  # No rate limit set
-    
+
     return current_invocations < cap.rate_limit
 
 
@@ -884,30 +909,30 @@ def validate_agent_capabilities(
 ) -> tuple[bool, list[ToolName]]:
     """
     Validate that an agent has all required capabilities.
-    
+
     Args:
         agent_caps: Agent's capability set
         required_tools: List of tools required for a task
-        
+
     Returns:
         Tuple of (all_allowed, missing_tools)
     """
     missing = []
-    
+
     for tool in required_tools:
         if not is_tool_allowed(agent_caps, tool):
             missing.append(tool)
-    
+
     return len(missing) == 0, missing
 
 
 def get_tools_for_target(target: ExecutionTarget) -> list[ToolName]:
     """
     Get the tools typically required for an execution target.
-    
+
     Args:
         target: Execution target
-        
+
     Returns:
         List of typically required tools
     """
@@ -957,19 +982,19 @@ def get_tools_for_target(target: ExecutionTarget) -> list[ToolName]:
 class CapabilityEnforcedRouter(TaskRouter):
     """
     TaskRouter with capability enforcement.
-    
+
     Extends TaskRouter to validate agent capabilities before routing.
-    
+
     Usage:
         router = CapabilityEnforcedRouter()
-        
+
         # Set agent capabilities
         caps = AgentCapabilities(agent_id="coder-1", ...)
-        
+
         # Route with enforcement
         decision = router.route_with_capabilities(task, caps)
     """
-    
+
     def route_with_capabilities(
         self,
         task: dict[str, Any],
@@ -978,26 +1003,26 @@ class CapabilityEnforcedRouter(TaskRouter):
     ) -> RoutingDecision:
         """
         Route a task with capability enforcement.
-        
+
         Validates that the agent has required capabilities for the
         selected route. If not, attempts to find an alternative route
         that the agent can execute.
-        
+
         Args:
             task: Task specification
             agent_caps: Agent's capability set
             context: Optional context
-            
+
         Returns:
             RoutingDecision (may have modified target if capabilities insufficient)
         """
         # Get initial routing decision
         decision = self.route(task, context)
-        
+
         # Check capabilities for primary route
         required_tools = get_tools_for_target(decision.primary_route.target)
         all_allowed, missing = validate_agent_capabilities(agent_caps, required_tools)
-        
+
         if all_allowed:
             # Agent can execute primary route
             logger.info(
@@ -1005,36 +1030,37 @@ class CapabilityEnforcedRouter(TaskRouter):
                 f"{decision.primary_route.target.value}"
             )
             return decision
-        
+
         # Try secondary routes
         logger.warning(
             f"Agent {agent_caps.agent_id} missing capabilities {missing} "
             f"for {decision.primary_route.target.value}"
         )
-        
+
         for secondary in decision.secondary_routes:
             sec_tools = get_tools_for_target(secondary.target)
-            sec_allowed, sec_missing = validate_agent_capabilities(agent_caps, sec_tools)
-            
+            sec_allowed, sec_missing = validate_agent_capabilities(
+                agent_caps, sec_tools
+            )
+
             if sec_allowed:
                 # Found viable alternative
                 logger.info(
                     f"Rerouting {agent_caps.agent_id} to {secondary.target.value} "
                     f"(original: {decision.primary_route.target.value})"
                 )
-                
+
                 # Update decision
                 decision.primary_route = secondary
-                decision.reasoning += f" [Rerouted due to capability restrictions]"
+                decision.reasoning += " [Rerouted due to capability restrictions]"
                 decision.confidence *= 0.9  # Slight confidence reduction
-                
+
                 return decision
-        
+
         # No viable route found - return original with warning
-        decision.warnings = getattr(decision, 'warnings', []) or []
+        decision.warnings = getattr(decision, "warnings", []) or []
         decision.warnings.append(
-            f"Agent {agent_caps.agent_id} lacks capabilities {missing}. "
-            f"Task may fail."
+            f"Agent {agent_caps.agent_id} lacks capabilities {missing}. Task may fail."
         )
-        
+
         return decision

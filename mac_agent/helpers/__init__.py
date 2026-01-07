@@ -1,2 +1,1 @@
 """Mac Agent helper utilities."""
-

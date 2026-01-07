@@ -33,16 +33,16 @@ async def git_commit_tool(
 ) -> Dict[str, Any]:
     """
     Git commit tool implementation.
-    
+
     Enqueues a pending git commit task that requires Igor's approval before execution.
-    
+
     Args:
         message: Commit message
         repo_root: Repository root path
         files: Optional list of files to commit (None = all changes)
         caller: Caller identifier (default: "L")
         metadata: Additional metadata dictionary
-        
+
     Returns:
         Dictionary with:
             - task_id: Task identifier
@@ -56,7 +56,7 @@ async def git_commit_tool(
             "message": "message is required",
             "error": "Missing message parameter",
         }
-    
+
     if not repo_root:
         return {
             "task_id": None,
@@ -64,7 +64,7 @@ async def git_commit_tool(
             "message": "repo_root is required",
             "error": "Missing repo_root parameter",
         }
-    
+
     # Create task payload
     payload = {
         "type": "git_commit",
@@ -76,7 +76,7 @@ async def git_commit_tool(
         "approved_by_igor": False,  # Must be False - requires approval
         "status": "pending_igor_approval",
     }
-    
+
     # Create task and enqueue as pending
     try:
         task_id = str(uuid4())
@@ -90,7 +90,7 @@ async def git_commit_tool(
             tags=["git", "pending_approval"],
             status="pending_igor_approval",
         )
-        
+
         # Enqueue to git queue (will remain pending until approved)
         await GIT_QUEUE.enqueue(
             name="Git Commit",
@@ -100,15 +100,15 @@ async def git_commit_tool(
             priority=5,
             tags=["git", "pending_approval"],
         )
-        
+
         logger.info(
             f"Created pending git commit task {task_id}: repo={repo_root}, caller={caller}"
         )
-        
+
         # Log tool call via ToolGraph
         try:
             from core.tools.tool_graph import ToolGraph
-            
+
             await ToolGraph.log_tool_call(
                 tool_name="git_commit",
                 agent_id=caller,
@@ -116,11 +116,11 @@ async def git_commit_tool(
                 duration_ms=0,  # Enqueue is fast
                 error=None,
             )
-            
+
             # Also write to tool_audit memory segment
             try:
                 from runtime.memory_helpers import memory_write
-                
+
                 await memory_write(
                     segment="tool_audit",
                     payload={
@@ -134,23 +134,23 @@ async def git_commit_tool(
                 )
             except Exception as mem_err:
                 logger.warning(f"Failed to write git tool audit to memory: {mem_err}")
-                
+
         except Exception as log_err:
             logger.warning(f"Failed to log git tool call: {log_err}")
-        
+
         return {
             "task_id": task_id,
             "status": "pending_igor_approval",
             "message": f"Git commit task {task_id} created and pending Igor's approval",
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to create git commit task: {e}", exc_info=True)
-        
+
         # Log failed tool call
         try:
             from core.tools.tool_graph import ToolGraph
-            
+
             await ToolGraph.log_tool_call(
                 tool_name="git_commit",
                 agent_id=caller,
@@ -160,7 +160,7 @@ async def git_commit_tool(
             )
         except Exception:
             pass
-        
+
         return {
             "task_id": None,
             "status": "error",
@@ -170,4 +170,3 @@ async def git_commit_tool(
 
 
 __all__ = ["git_commit_tool"]
-

@@ -70,7 +70,7 @@ async def handle_calendar_adapter(
 ) -> CalendarAdapterResponse:
     """
     Syncs with Google/Outlook calendars, creates/updates events, and notifies AIOS of scheduling changes.
-    
+
     Auth: bearer
     """
     # ══════════════════════════════════════════════════════════════════════════

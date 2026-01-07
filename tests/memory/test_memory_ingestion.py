@@ -24,9 +24,11 @@ async def test_ingestion_assigns_packet_id(memory_adapter):
     Contract: Ingestion assigns a unique packet_id to each packet.
     """
     packet = await memory_adapter.ingest({"content": "test"})
-    
+
     assert "packet_id" in packet, "Packet should have packet_id field"
-    assert packet["packet_id"] is not None, f"packet_id should not be None, got {packet.get('packet_id')}"
+    assert packet["packet_id"] is not None, (
+        f"packet_id should not be None, got {packet.get('packet_id')}"
+    )
 
 
 @pytest.mark.asyncio
@@ -35,7 +37,7 @@ async def test_ingestion_assigns_timestamp(memory_adapter):
     Contract: Ingestion assigns a timestamp to each packet.
     """
     packet = await memory_adapter.ingest({"content": "test"})
-    
+
     assert "timestamp" in packet
 
 
@@ -45,11 +47,11 @@ async def test_ingest_multiple_packets(memory_adapter):
     Contract: Multiple packets can be ingested and each receives a unique packet_id.
     """
     packets = []
-    
+
     for i in range(10):
         packet = await memory_adapter.ingest({"content": f"message {i}"})
         packets.append(packet)
-    
+
     # All should have unique IDs
     ids = [p["packet_id"] for p in packets]
     assert len(set(ids)) == 10, f"Expected 10 unique packet IDs, got {len(set(ids))}"
@@ -69,11 +71,13 @@ async def test_ingest_with_metadata(memory_adapter):
     """
     Contract: Packets with metadata preserve metadata on retrieval.
     """
-    packet = await memory_adapter.ingest({
-        "content": "test",
-        "metadata": {"source": "test", "priority": "high"},
-    })
-    
+    packet = await memory_adapter.ingest(
+        {
+            "content": "test",
+            "metadata": {"source": "test", "priority": "high"},
+        }
+    )
+
     retrieved = await memory_adapter.retrieve(packet["packet_id"])
     assert retrieved["metadata"]["source"] == "test"
 
@@ -88,10 +92,10 @@ async def test_ingest_preserves_data(memory_adapter):
         "tags": ["tag1", "tag2"],
         "nested": {"key": "value"},
     }
-    
+
     packet = await memory_adapter.ingest(original)
     retrieved = await memory_adapter.retrieve(packet["packet_id"])
-    
+
     assert retrieved["content"] == original["content"]
     assert retrieved["tags"] == original["tags"]
     assert retrieved["nested"] == original["nested"]
@@ -103,7 +107,7 @@ async def test_ingest_empty_payload(memory_adapter):
     Contract: Empty payload is handled gracefully.
     """
     packet = await memory_adapter.ingest({})
-    
+
     assert "packet_id" in packet
     retrieved = await memory_adapter.retrieve(packet["packet_id"])
     assert retrieved is not None
@@ -116,9 +120,9 @@ async def test_ingest_oversized_payload(memory_adapter):
     """
     # Create a large payload (simulate oversized)
     large_content = "x" * (10 * 1024 * 1024)  # 10MB
-    
+
     packet = await memory_adapter.ingest({"content": large_content})
-    
+
     assert "packet_id" in packet
     retrieved = await memory_adapter.retrieve(packet["packet_id"])
     assert retrieved is not None
@@ -130,14 +134,15 @@ async def test_ingest_null_fields(memory_adapter):
     """
     Contract: Null fields in payload handled correctly.
     """
-    packet = await memory_adapter.ingest({
-        "content": "test",
-        "optional_field": None,
-        "nested": {"key": None},
-    })
-    
+    packet = await memory_adapter.ingest(
+        {
+            "content": "test",
+            "optional_field": None,
+            "nested": {"key": None},
+        }
+    )
+
     retrieved = await memory_adapter.retrieve(packet["packet_id"])
     assert retrieved["content"] == "test"
     assert retrieved["optional_field"] is None
     assert retrieved["nested"]["key"] is None
-

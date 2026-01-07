@@ -1,2 +1,1 @@
 """Memory extractor ingestion module."""
-

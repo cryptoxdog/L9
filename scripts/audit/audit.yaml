@@ -1,0 +1,310 @@
+# L9 Audit Suite v2.0 — Master Configuration
+# Frontier-grade audit framework for code integrity, infrastructure health, and capability inventory
+
+version: "2.0"
+description: "L9 comprehensive audit suite with incremental caching, GMP integration, and multi-format output"
+
+# =============================================================================
+# EXECUTION TIERS
+# =============================================================================
+
+tiers:
+  # Tier 1: Core audits (TIER_1_ENABLED=true by default)
+  tier1:
+    enabled: true
+    description: "Core audits — replace/enhance your 4 existing scripts"
+    
+    # Replaces: audit_uncalled_functions.py + audit_orphan_classes.py
+    code_integrity:
+      enabled: true
+      description: "Call graph analysis + uncalled function detection + orphan classes"
+      cache: true
+      incremental: true
+      html_report: true
+      circular_imports: true
+    
+    # Replaces: audit_wiring.py
+    infrastructure_health:
+      enabled: true
+      description: "Health probes + dependency DAG + config validation"
+      tcp_probes: true
+      http_probes: true
+      config_validation: true
+      startup_dag: true
+      health_timeout_sec: 5.0
+    
+    # Replaces: audit_hidden_capabilities.py
+    capability_inventory:
+      enabled: true
+      description: "Tool discovery + MCP schema generation + capability matrix"
+      mcp_schema_generation: true
+      capability_matrix: true
+      exposure_recommendations: true
+      version_tracking: true
+
+  # Tier 2: Governance audits (TIER_2_ENABLED=false by default, opt-in)
+  tier2:
+    enabled: false
+    description: "Governance enforcement and compliance audits"
+    
+    governance_compliance:
+      enabled: false
+      description: "Layer enforcement + feature flag compliance + policy validation"
+      layer_enforcement: true
+      feature_flag_validation: true
+      policy_checks: true
+    
+    configuration_drift:
+      enabled: false
+      description: "Config validation + secret scanning + deprecation tracking"
+      type_validation: true
+      range_constraints: true
+      secret_detection: true
+      deprecation_tracking: true
+
+  # Tier 3: Optimization audits (TIER_3_ENABLED=false by default)
+  tier3:
+    enabled: false
+    description: "Performance and quality optimization audits"
+    
+    performance_baselines:
+      enabled: false
+      description: "Function timing profiles + memory substrate efficiency"
+      function_profiling: true
+      query_performance: true
+      tool_latency: true
+    
+    documentation_completeness:
+      enabled: false
+      description: "Docstring + type hint + API schema coverage"
+      docstring_coverage: true
+      type_hint_coverage: true
+      openapi_coverage: true
+
+# =============================================================================
+# OUTPUT OPTIONS
+# =============================================================================
+
+output:
+  # Output formats (any combination)
+  formats: [json, html, jsonl]
+  
+  # HTML report template customization
+  html:
+    enabled: true
+    template: templates/report.html.j2
+    include_summary: true
+    include_details: true
+    include_recommendations: true
+  
+  # JSON output (machine-readable)
+  json:
+    enabled: true
+    pretty_print: true
+    schema_validation: true
+  
+  # JSONL output (streaming format for large audits)
+  jsonl:
+    enabled: false
+    one_issue_per_line: true
+  
+  # Markdown output for documentation
+  markdown:
+    enabled: false
+    include_tables: true
+  
+  # External exports
+  exports:
+    datadog:
+      enabled: false
+      api_key_env: "DATADOG_API_KEY"
+      tags: ["l9", "audit"]
+    
+    substrate:
+      enabled: false
+      endpoint_env: "L9_MEMORY_SUBSTRATE"
+      memory_kind: "audit_report"
+    
+    slack:
+      enabled: false
+      webhook_env: "SLACK_AUDIT_WEBHOOK"
+      notify_on: ["errors", "warnings"]
+
+# =============================================================================
+# CACHING & PERFORMANCE
+# =============================================================================
+
+performance:
+  # Incremental mode (skip unchanged files)
+  incremental_mode: true
+  cache_dir: .audit_cache
+  cache_ttl_hours: 24
+  
+  # Parallelization
+  parallel_jobs: 4
+  max_parallel_io: 8
+  
+  # Memory management
+  max_file_size_mb: 50
+  batch_size: 100
+
+# =============================================================================
+# INTEGRATION POINTS
+# =============================================================================
+
+integration:
+  # GMP (God-Mode Prompt) compatibility
+  gmp:
+    enabled: true
+    generate_todo_plan: false  # Only if execution mode
+    output_file: reports/gmp_audit_plan.md
+  
+  # Pre-commit hook integration
+  pre_commit:
+    enabled: false
+    hook_file: .git/hooks/pre-commit
+    run_tier1_only: true
+    fail_on: [errors]
+  
+  # CI/CD integration
+  ci_cd:
+    enabled: false
+    github_actions: false
+    webhook_url_env: "AUDIT_CI_WEBHOOK"
+    post_results: false
+  
+  # Observability/tracing
+  observability:
+    enabled: false
+    export_spans: false
+    substrate_export: false
+    trace_spans: ["code_integrity", "infrastructure_health"]
+
+# =============================================================================
+# RULES & POLICIES
+# =============================================================================
+
+rules:
+  # Load rules from external file
+  file: audit.rules.yaml
+  
+  # Skip patterns (relative to repo root)
+  skip_dirs:
+    - .git
+    - __pycache__
+    - .pytest_cache
+    - node_modules
+    - .venv
+    - venv
+    - env
+    - .cursor
+    - docs
+    - reports
+    - archive
+    - deprecated
+    - templates
+    - .dora
+  
+  skip_path_patterns:
+    - "template"
+    - "example"
+    - "/archive/"
+    - "/deprecated/"
+    - "/.dora/"
+  
+  # Framework/annotation filters
+  framework_decorators:
+    - "@router."
+    - "@app."
+    - "@pytest."
+    - "@fixture"
+    - "@mark."
+    - "@dataclass"
+  
+  # Feature flags
+  feature_flags:
+    - "L9_ENABLE_MEMORY"
+    - "L9_ENABLE_GRAPH"
+    - "L9_OBSERVABILITY"
+    - "L9_ENABLE_GOVERNANCE"
+
+# =============================================================================
+# LOGGING & DEBUG
+# =============================================================================
+
+logging:
+  level: INFO
+  format: json  # json or text
+  
+  # Log outputs
+  console:
+    enabled: true
+    level: INFO
+  
+  file:
+    enabled: false
+    path: reports/audit.log
+    level: DEBUG
+    rotate_mb: 100
+    keep_files: 5
+
+# =============================================================================
+# REPORTING STANDARDS
+# =============================================================================
+
+reporting:
+  # Result severity levels
+  severity_levels:
+    critical: "Must fix before deployment"
+    high: "Should fix in current sprint"
+    medium: "Fix in backlog"
+    low: "Nice to have"
+  
+  # Include recommendations
+  include_recommendations: true
+  
+  # Auto-remediation suggestions
+  remediation_suggestions: true
+  
+  # Trend reporting (if historical data available)
+  trend_analysis: false
+  trend_baseline_days: 30
+
+# =============================================================================
+# SCHEDULE (Optional for recurring audits)
+# =============================================================================
+
+schedule:
+  # Run on pull requests
+  on_pull_request: false
+  
+  # Run on push to main
+  on_push_main: false
+  
+  # Cron schedule (if background job)
+  cron: "0 2 * * *"  # Daily at 2 AM UTC
+  
+  # Manual trigger only (default)
+  manual_only: true
+
+# =============================================================================
+# NOTIFICATIONS
+# =============================================================================
+
+notifications:
+  enabled: false
+  
+  # Who to notify
+  email:
+    enabled: false
+    recipients: ["team@example.com"]
+    on: ["critical", "high"]
+  
+  slack:
+    enabled: false
+    webhook: "${SLACK_AUDIT_WEBHOOK}"
+    channel: "#alerts"
+    on: ["critical"]
+  
+  # Only notify on failures
+  only_on_failure: true

@@ -29,8 +29,10 @@ from pydantic import BaseModel, Field
 # Enums
 # =============================================================================
 
+
 class TaskStatus(str, Enum):
     """Lifecycle status of a task."""
+
     PENDING = "pending"
     ASSIGNED = "assigned"
     RUNNING = "running"
@@ -41,6 +43,7 @@ class TaskStatus(str, Enum):
 
 class TaskKind(str, Enum):
     """Kind of task for routing decisions."""
+
     RESULT = "result"
     ERROR = "error"
     COMMAND = "command"
@@ -53,10 +56,11 @@ class TaskKind(str, Enum):
 # Agent Task
 # =============================================================================
 
+
 class AgentTask(BaseModel):
     """
     Core task model representing work to be executed.
-    
+
     Attributes:
         id: Unique task identifier
         kind: Task kind for routing
@@ -65,7 +69,7 @@ class AgentTask(BaseModel):
         priority: Task priority (1=highest, 10=lowest)
         trace_id: Distributed tracing identifier
         timeout_ms: Execution timeout in milliseconds
-        
+
     Usage:
         task = AgentTask(
             kind="execution",
@@ -73,16 +77,21 @@ class AgentTask(BaseModel):
             priority=3
         )
     """
+
     id: UUID = Field(default_factory=uuid4, description="Unique task identifier")
     kind: str = Field(..., description="Task kind for routing")
-    payload: Dict[str, Any] = Field(default_factory=dict, description="Task-specific data")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    payload: Dict[str, Any] = Field(
+        default_factory=dict, description="Task-specific data"
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Creation timestamp"
+    )
     priority: int = Field(default=5, ge=1, le=10, description="Priority (1=highest)")
     trace_id: Optional[str] = Field(None, description="Distributed trace ID")
     timeout_ms: Optional[int] = Field(None, ge=0, description="Execution timeout (ms)")
-    
+
     model_config = {"extra": "allow"}
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
         return {
@@ -100,10 +109,11 @@ class AgentTask(BaseModel):
 # Task Result
 # =============================================================================
 
+
 class TaskResult(BaseModel):
     """
     Result of task execution.
-    
+
     Attributes:
         id: Task ID this result belongs to
         status: Final execution status
@@ -111,7 +121,7 @@ class TaskResult(BaseModel):
         error: Error message if failed
         completed_at: Completion timestamp
         duration_ms: Execution duration in milliseconds
-        
+
     Usage:
         result = TaskResult(
             id=task.id,
@@ -120,15 +130,20 @@ class TaskResult(BaseModel):
             duration_ms=1500
         )
     """
+
     id: UUID = Field(..., description="Task ID")
     status: TaskStatus = Field(..., description="Final execution status")
     output: Dict[str, Any] = Field(default_factory=dict, description="Execution output")
     error: Optional[str] = Field(None, description="Error message if failed")
-    completed_at: datetime = Field(default_factory=datetime.utcnow, description="Completion timestamp")
-    duration_ms: Optional[int] = Field(None, ge=0, description="Execution duration (ms)")
-    
+    completed_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Completion timestamp"
+    )
+    duration_ms: Optional[int] = Field(
+        None, ge=0, description="Execution duration (ms)"
+    )
+
     model_config = {"extra": "allow"}
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
         return {
@@ -145,55 +160,59 @@ class TaskResult(BaseModel):
 # Task Envelope
 # =============================================================================
 
+
 class TaskEnvelope(BaseModel):
     """
     Wrapper for routing tasks to agents.
-    
+
     Contains a task and routing metadata for the orchestrator
     to dispatch to the appropriate agent.
-    
+
     Attributes:
         task: The enclosed AgentTask
         agent_id: Target agent identifier (optional for broadcast)
         assigned_at: When the task was assigned
         source_event_id: Originating event ID
         retry_count: Number of delivery retries
-        
+
     Usage:
         envelope = TaskEnvelope(
             task=my_task,
             agent_id="coder-agent-1"
         )
     """
+
     task: AgentTask = Field(..., description="The enclosed task")
     agent_id: Optional[str] = Field(None, description="Target agent ID")
     assigned_at: Optional[datetime] = Field(None, description="Assignment timestamp")
     source_event_id: Optional[UUID] = Field(None, description="Originating event ID")
     retry_count: int = Field(default=0, ge=0, description="Delivery retry count")
-    
+
     model_config = {"extra": "allow"}
-    
+
     def assign_to(self, agent_id: str) -> "TaskEnvelope":
         """
         Assign this envelope to a specific agent.
-        
+
         Args:
             agent_id: Target agent identifier
-            
+
         Returns:
             Self with updated assignment
         """
         self.agent_id = agent_id
         self.assigned_at = datetime.utcnow()
         return self
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
         return {
             "task": self.task.to_dict(),
             "agent_id": self.agent_id,
             "assigned_at": self.assigned_at.isoformat() if self.assigned_at else None,
-            "source_event_id": str(self.source_event_id) if self.source_event_id else None,
+            "source_event_id": str(self.source_event_id)
+            if self.source_event_id
+            else None,
             "retry_count": self.retry_count,
         }
 
@@ -202,19 +221,21 @@ class TaskEnvelope(BaseModel):
 # Task Graph and Batch (Phase 3)
 # =============================================================================
 
+
 class TaskGraph(BaseModel):
     """
     DAG of dependent tasks with LangGraph state machine integration.
-    
+
     Supports:
     - Parallel execution with dependency awareness
     - LangGraph StateGraph reference for routing
     - Execution state tracking
     """
+
     graph_id: UUID = Field(default_factory=uuid4)
     tasks: list[AgentTask] = Field(default_factory=list)
     dependencies: Dict[str, list[str]] = Field(default_factory=dict)
-    
+
     # LangGraph integration
     state_graph_id: Optional[str] = Field(
         default=None,
@@ -224,7 +245,7 @@ class TaskGraph(BaseModel):
         default_factory=dict,
         description="Current state of the LangGraph execution",
     )
-    
+
     # Execution tracking
     completed_task_ids: list[str] = Field(
         default_factory=list,
@@ -234,41 +255,42 @@ class TaskGraph(BaseModel):
         default_factory=list,
         description="IDs of tasks that have failed",
     )
-    
+
     def get_ready_tasks(self) -> list[AgentTask]:
         """Get tasks whose dependencies have all completed."""
         ready = []
         completed_set = set(self.completed_task_ids)
         failed_set = set(self.failed_task_ids)
-        
+
         for task in self.tasks:
             task_id = str(task.task_id)
-            
+
             # Skip already completed or failed
             if task_id in completed_set or task_id in failed_set:
                 continue
-            
+
             # Check dependencies
             deps = self.dependencies.get(task_id, [])
             if all(d in completed_set for d in deps):
                 ready.append(task)
-        
+
         return ready
 
 
 class TaskBatch(BaseModel):
     """
     Batch of tasks for bulk processing with transaction support.
-    
+
     Supports:
     - Atomic batch operations (all-or-nothing)
     - Transaction ID for rollback tracking
     - Partial success reporting
     """
+
     batch_id: UUID = Field(default_factory=uuid4)
     envelopes: list[TaskEnvelope] = Field(default_factory=list)
     atomic: bool = Field(default=False)
-    
+
     # Transaction support
     transaction_id: Optional[UUID] = Field(
         default=None,
@@ -278,24 +300,24 @@ class TaskBatch(BaseModel):
         default=True,
         description="Whether to rollback all changes on any task failure",
     )
-    
+
     # Execution tracking
     completed_count: int = Field(default=0)
     failed_count: int = Field(default=0)
-    
+
     def mark_completed(self, envelope_id: UUID) -> None:
         """Mark an envelope as completed."""
         self.completed_count += 1
-    
+
     def mark_failed(self, envelope_id: UUID) -> None:
         """Mark an envelope as failed."""
         self.failed_count += 1
-    
+
     @property
     def all_succeeded(self) -> bool:
         """Check if all tasks in batch succeeded."""
         return self.completed_count == len(self.envelopes) and self.failed_count == 0
-    
+
     @property
     def any_failed(self) -> bool:
         """Check if any task in batch failed."""
@@ -318,4 +340,3 @@ __all__ = [
     "TaskGraph",
     "TaskBatch",
 ]
-

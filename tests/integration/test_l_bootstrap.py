@@ -14,15 +14,14 @@ Version: 1.0.0
 """
 
 import pytest
-import asyncio
 import sys
 import os
-from typing import Any, Dict, List
 from uuid import uuid4
-from unittest.mock import AsyncMock
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -40,9 +39,8 @@ from core.agents.executor import AgentExecutorService, _generate_tasks_from_quer
 from core.agents.schemas import AgentTask, TaskKind, AIOSResult, AIOSResultType
 from core.governance.approvals import ApprovalManager
 from core.tools.tool_graph import ToolGraph, ToolDefinition
-from runtime.task_queue import TaskQueue, QueuedTask, dispatch_task_immediate
-from orchestration.long_plan_graph import extract_tasks_from_plan, execute_long_plan
-from services.research.tools.tool_registry import recall_task_history, get_l_memory_state
+from orchestration.long_plan_graph import extract_tasks_from_plan
+from core.tools.base_registry import recall_task_history
 from tests.core.agents.test_executor import (
     MockAIOSRuntime,
     MockToolRegistry,
@@ -55,6 +53,7 @@ from tests.core.agents.test_executor import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_aios() -> MockAIOSRuntime:
     """Create mock AIOS runtime."""
@@ -65,33 +64,35 @@ def mock_aios() -> MockAIOSRuntime:
 def mock_tool_registry() -> MockToolRegistry:
     """Create mock tool registry."""
     from core.agents.schemas import ToolBinding
-    
+
     registry = MockToolRegistry()
-    
+
     # Register test tools as approved tools
-    registry.set_approved_tools([
-        ToolBinding(
-            tool_id="test_tool_1",
-            name="Test Tool 1",
-            description="Non-destructive test tool",
-        ),
-        ToolBinding(
-            tool_id="test_tool_2",
-            name="Test Tool 2",
-            description="Non-destructive test tool",
-        ),
-        ToolBinding(
-            tool_id="test_tool_3",
-            name="Test Tool 3",
-            description="Non-destructive test tool",
-        ),
-        ToolBinding(
-            tool_id="gmp_run",
-            name="GMP Run",
-            description="Destructive GMP execution tool",
-        ),
-    ])
-    
+    registry.set_approved_tools(
+        [
+            ToolBinding(
+                tool_id="test_tool_1",
+                name="Test Tool 1",
+                description="Non-destructive test tool",
+            ),
+            ToolBinding(
+                tool_id="test_tool_2",
+                name="Test Tool 2",
+                description="Non-destructive test tool",
+            ),
+            ToolBinding(
+                tool_id="test_tool_3",
+                name="Test Tool 3",
+                description="Non-destructive test tool",
+            ),
+            ToolBinding(
+                tool_id="gmp_run",
+                name="GMP Run",
+                description="Destructive GMP execution tool",
+            ),
+        ]
+    )
+
     return registry
 
 
@@ -100,10 +101,12 @@ def mock_substrate() -> MockSubstrateService:
     """Create mock substrate service."""
     substrate = MockSubstrateService()
     # Set up search results for memory context
-    substrate.set_search_results([
-        {"payload": {"task_id": "test-1", "status": "completed"}},
-        {"payload": {"task_id": "test-2", "status": "completed"}},
-    ])
+    substrate.set_search_results(
+        [
+            {"payload": {"task_id": "test-1", "status": "completed"}},
+            {"payload": {"task_id": "test-2", "status": "completed"}},
+        ]
+    )
     return substrate
 
 
@@ -111,14 +114,16 @@ def mock_substrate() -> MockSubstrateService:
 def mock_agent_registry() -> MockAgentRegistry:
     """Create mock agent registry."""
     from core.agents.schemas import AgentConfig
-    
+
     registry = MockAgentRegistry()
-    registry.register_agent(AgentConfig(
-        agent_id="l9-standard-v1",
-        personality_id="l9-standard-v1",
-        model="gpt-4o",
-        system_prompt="You are a helpful assistant.",
-    ))
+    registry.register_agent(
+        AgentConfig(
+            agent_id="l9-standard-v1",
+            personality_id="l9-standard-v1",
+            model="gpt-4o",
+            system_prompt="You are a helpful assistant.",
+        )
+    )
     return registry
 
 
@@ -144,11 +149,14 @@ def executor(
 # Test 1: Tool Execution
 # =============================================================================
 
+
 @pytest.mark.asyncio
-async def test_tool_execution(executor: AgentExecutorService, mock_tool_registry: MockToolRegistry):
+async def test_tool_execution(
+    executor: AgentExecutorService, mock_tool_registry: MockToolRegistry
+):
     """
     Test 1: Execute 3+ non-destructive tools successfully.
-    
+
     Validates that the executor can execute multiple tools in sequence.
     """
     # Create task that will trigger tool calls
@@ -158,11 +166,11 @@ async def test_tool_execution(executor: AgentExecutorService, mock_tool_registry
         source_id="test-principal",
         payload={"message": "Execute test tools"},
     )
-    
+
     # Set up AIOS to return tool calls
     from core.agents.schemas import ToolCallRequest
     from uuid import uuid4
-    
+
     tool_calls = [
         ToolCallRequest(
             call_id=uuid4(),
@@ -186,26 +194,28 @@ async def test_tool_execution(executor: AgentExecutorService, mock_tool_registry
             iteration=2,
         ),
     ]
-    
+
     # Mock AIOS to return tool calls then final response
     mock_aios = executor._aios_runtime
-    mock_aios.set_responses([
-        AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[0]),
-        AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[1]),
-        AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[2]),
-        AIOSResult.response("All tools executed successfully", tokens_used=50),
-    ])
-    
+    mock_aios.set_responses(
+        [
+            AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[0]),
+            AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[1]),
+            AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_calls[2]),
+            AIOSResult.response("All tools executed successfully", tokens_used=50),
+        ]
+    )
+
     # Execute task
     result = await executor.start_agent_task(task)
-    
+
     # Verify execution succeeded
     assert result.status == "completed"
     assert result.iterations >= 3  # At least 3 iterations for 3 tool calls
-    
+
     # Verify all 3 tools were dispatched
     assert len(mock_tool_registry.dispatch_calls) >= 3
-    
+
     # Verify each tool was called
     tool_ids_called = [call["tool_id"] for call in mock_tool_registry.dispatch_calls]
     assert "test_tool_1" in tool_ids_called
@@ -217,24 +227,29 @@ async def test_tool_execution(executor: AgentExecutorService, mock_tool_registry
 # Test 2: Approval Gate (Block Without Approval)
 # =============================================================================
 
+
 @pytest.mark.asyncio
-async def test_approval_gate_block(executor: AgentExecutorService, mock_substrate: MockSubstrateService):
+async def test_approval_gate_block(
+    executor: AgentExecutorService, mock_substrate: MockSubstrateService
+):
     """
     Test 2: Block destructive tool without Igor approval.
-    
+
     Validates that high-risk tools are blocked when not approved.
     """
     # Register gmp_run tool with requires_igor_approval=True
-    await ToolGraph.register_tool(ToolDefinition(
-        name="gmp_run",
-        description="GMP execution tool",
-        category="governance",
-        scope="internal",
-        risk_level="high",
-        requires_igor_approval=True,
-        agent_id="L",
-    ))
-    
+    await ToolGraph.register_tool(
+        ToolDefinition(
+            name="gmp_run",
+            description="GMP execution tool",
+            category="governance",
+            scope="internal",
+            risk_level="high",
+            requires_igor_approval=True,
+            agent_id="L",
+        )
+    )
+
     # Create task that will trigger gmp_run tool call
     task = AgentTask(
         kind=TaskKind.QUERY,
@@ -242,11 +257,11 @@ async def test_approval_gate_block(executor: AgentExecutorService, mock_substrat
         source_id="test-principal",
         payload={"message": "Run GMP"},
     )
-    
+
     # Set up AIOS to return gmp_run tool call
     from core.agents.schemas import ToolCallRequest
     from uuid import uuid4
-    
+
     tool_call = ToolCallRequest(
         call_id=uuid4(),
         tool_id="gmp_run",
@@ -254,16 +269,18 @@ async def test_approval_gate_block(executor: AgentExecutorService, mock_substrat
         task_id=task.id,
         iteration=0,
     )
-    
+
     mock_aios = executor._aios_runtime
-    mock_aios.set_responses([
-        AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_call),
-        AIOSResult.response("Tool call blocked", tokens_used=20),
-    ])
-    
+    mock_aios.set_responses(
+        [
+            AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_call),
+            AIOSResult.response("Tool call blocked", tokens_used=20),
+        ]
+    )
+
     # Execute task (should block gmp_run)
     result = await executor.start_agent_task(task)
-    
+
     # Verify tool was blocked
     # The executor should have attempted the tool call but it should be blocked
     # Check that approval check was performed
@@ -276,25 +293,32 @@ async def test_approval_gate_block(executor: AgentExecutorService, mock_substrat
 # Test 3: Approval Gate (Execute With Approval)
 # =============================================================================
 
+
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Requires full approval manager integration - mock substrate search doesn't track written packets correctly")
-async def test_approval_gate_allow(executor: AgentExecutorService, mock_substrate: MockSubstrateService):
+@pytest.mark.skip(
+    reason="Requires full approval manager integration - mock substrate search doesn't track written packets correctly"
+)
+async def test_approval_gate_allow(
+    executor: AgentExecutorService, mock_substrate: MockSubstrateService
+):
     """
     Test 3: Execute destructive tool with Igor approval.
-    
+
     Validates that high-risk tools execute when approved by Igor.
     """
     # Register gmp_run tool
-    await ToolGraph.register_tool(ToolDefinition(
-        name="gmp_run",
-        description="GMP execution tool",
-        category="governance",
-        scope="internal",
-        risk_level="high",
-        requires_igor_approval=True,
-        agent_id="L",
-    ))
-    
+    await ToolGraph.register_tool(
+        ToolDefinition(
+            name="gmp_run",
+            description="GMP execution tool",
+            category="governance",
+            scope="internal",
+            risk_level="high",
+            requires_igor_approval=True,
+            agent_id="L",
+        )
+    )
+
     # Create task
     task = AgentTask(
         kind=TaskKind.QUERY,
@@ -302,11 +326,11 @@ async def test_approval_gate_allow(executor: AgentExecutorService, mock_substrat
         source_id="test-principal",
         payload={"message": "Run approved GMP"},
     )
-    
+
     # Set up AIOS to return gmp_run tool call
     from core.agents.schemas import ToolCallRequest
     from uuid import uuid4
-    
+
     tool_call = ToolCallRequest(
         call_id=uuid4(),
         tool_id="gmp_run",
@@ -314,7 +338,7 @@ async def test_approval_gate_allow(executor: AgentExecutorService, mock_substrat
         task_id=task.id,
         iteration=0,
     )
-    
+
     # Approve the task via ApprovalManager
     approval_manager = ApprovalManager(mock_substrate)
     await approval_manager.approve_task(
@@ -322,21 +346,23 @@ async def test_approval_gate_allow(executor: AgentExecutorService, mock_substrat
         approved_by="Igor",
         reason="Test approval",
     )
-    
+
     # Verify approval
     is_approved = await approval_manager.is_approved(str(tool_call.call_id))
     assert is_approved is True, "Tool should be approved"
-    
+
     # Set up AIOS responses
     mock_aios = executor._aios_runtime
-    mock_aios.set_responses([
-        AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_call),
-        AIOSResult.response("GMP executed successfully", tokens_used=30),
-    ])
-    
+    mock_aios.set_responses(
+        [
+            AIOSResult(result_type=AIOSResultType.TOOL_CALL, tool_call=tool_call),
+            AIOSResult.response("GMP executed successfully", tokens_used=30),
+        ]
+    )
+
     # Execute task (should allow gmp_run)
     result = await executor.start_agent_task(task)
-    
+
     # Verify execution succeeded
     assert result.status == "completed"
 
@@ -345,20 +371,23 @@ async def test_approval_gate_allow(executor: AgentExecutorService, mock_substrat
 # Test 4: Long-Plan Execution
 # =============================================================================
 
+
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Requires initialized memory substrate service - uses global get_service()")
+@pytest.mark.skip(
+    reason="Requires initialized memory substrate service - uses global get_service()"
+)
 async def test_long_plan_execution(mock_substrate: MockSubstrateService):
     """
     Test 4: Extract and execute 5+ tasks from valid plan.
-    
+
     Validates long-plan task extraction and enqueueing.
     """
     # Create a mock plan state in memory substrate
     plan_id = str(uuid4())
-    
+
     # Simulate plan state with pending tasks
     from memory.substrate_models import PacketEnvelopeIn
-    
+
     # Write plan state packet
     await mock_substrate.write_packet(
         PacketEnvelopeIn(
@@ -370,19 +399,18 @@ async def test_long_plan_execution(mock_substrate: MockSubstrateService):
                     for i in range(3)
                 ],
                 "pending_git_commits": [
-                    {"message": f"Commit {i}", "files": []}
-                    for i in range(2)
+                    {"message": f"Commit {i}", "files": []} for i in range(2)
                 ],
             },
         )
     )
-    
+
     # Extract tasks from plan
     task_specs = await extract_tasks_from_plan(plan_id)
-    
+
     # Verify 5+ tasks extracted (3 GMP + 2 git = 5)
     assert len(task_specs) >= 5, f"Expected 5+ tasks, got {len(task_specs)}"
-    
+
     # Verify task specs have required fields
     for spec in task_specs:
         assert "name" in spec
@@ -397,55 +425,61 @@ async def test_long_plan_execution(mock_substrate: MockSubstrateService):
 # Test 5: Reactive Dispatch
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_reactive_dispatch():
     """
     Test 5: Generate tasks from user query and execute without errors.
-    
+
     Validates reactive task generation and immediate dispatch.
     """
     # Test query that should generate tasks
     query = "Run a GMP task and create a git commit"
-    
+
     # Generate tasks from query
     task_specs = await _generate_tasks_from_query(query)
-    
+
     # Verify tasks generated
     assert len(task_specs) > 0, "Should generate at least 1 task from query"
-    
+
     # Verify task specs are valid
     for spec in task_specs:
         assert "name" in spec
         assert "payload" in spec
         assert "handler" in spec
-    
+
     # Test immediate dispatch (would require handler registration)
     # For now, verify task generation works
-    assert any("gmp" in spec["payload"].get("type", "").lower() or 
-               "git" in spec["payload"].get("type", "").lower() 
-               for spec in task_specs), "Should generate GMP or git tasks"
+    assert any(
+        "gmp" in spec["payload"].get("type", "").lower()
+        or "git" in spec["payload"].get("type", "").lower()
+        for spec in task_specs
+    ), "Should generate GMP or git tasks"
 
 
 # =============================================================================
 # Test 6: Memory Binding
 # =============================================================================
 
+
 @pytest.mark.asyncio
-async def test_memory_binding(executor: AgentExecutorService, mock_substrate: MockSubstrateService):
+async def test_memory_binding(
+    executor: AgentExecutorService, mock_substrate: MockSubstrateService
+):
     """
     Test 6: Task context loaded, result persisted, and queryable.
-    
+
     Validates memory substrate integration for task execution.
     """
     task_id = str(uuid4())
     agent_id = "l9-standard-v1"
-    
+
     # Test memory context binding
     context = await executor._bind_memory_context(task_id, agent_id)
-    
+
     # Verify context is a dict (may be empty if no memory available)
     assert isinstance(context, dict)
-    
+
     # Test task result persistence
     result = {
         "agent_id": agent_id,
@@ -455,12 +489,12 @@ async def test_memory_binding(executor: AgentExecutorService, mock_substrate: Mo
         "error": None,
         "completed_at": "2024-01-01T00:00:00Z",
     }
-    
+
     persisted = await executor._persist_task_result(task_id, result)
-    
+
     # Verify persistence succeeded (or gracefully failed if substrate unavailable)
     assert isinstance(persisted, bool)
-    
+
     # Verify result is queryable (if substrate available)
     # Note: This may return empty if using mocks, but should not crash
     try:
@@ -475,16 +509,17 @@ async def test_memory_binding(executor: AgentExecutorService, mock_substrate: Mo
 # Test 7: Task History
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_task_history(mock_substrate: MockSubstrateService):
     """
     Test 7: Recall last 10 tasks with correct order and state.
-    
+
     Validates task history retrieval from memory substrate.
     """
     # Create multiple task result packets
     from memory.substrate_models import PacketEnvelopeIn
-    
+
     task_results = []
     for i in range(10):
         task_id = f"task-{i}"
@@ -503,29 +538,31 @@ async def test_task_history(mock_substrate: MockSubstrateService):
             )
         )
         task_results.append(task_id)
-    
+
     # Set up substrate search to return these results
-    mock_substrate.set_search_results([
-        {
-            "payload": {
-                "task_id": f"task-{i}",
-                "status": "completed" if i % 2 == 0 else "failed",
-                "iterations": i + 1,
-                "duration_ms": (i + 1) * 100,
-                "error": None if i % 2 == 0 else "Test error",
-                "completed_at": f"2024-01-01T00:00:{i:02d}Z",
+    mock_substrate.set_search_results(
+        [
+            {
+                "payload": {
+                    "task_id": f"task-{i}",
+                    "status": "completed" if i % 2 == 0 else "failed",
+                    "iterations": i + 1,
+                    "duration_ms": (i + 1) * 100,
+                    "error": None if i % 2 == 0 else "Test error",
+                    "completed_at": f"2024-01-01T00:00:{i:02d}Z",
+                }
             }
-        }
-        for i in range(9, -1, -1)  # Reverse order (newest first)
-    ])
-    
+            for i in range(9, -1, -1)  # Reverse order (newest first)
+        ]
+    )
+
     # Recall task history
     history = await recall_task_history(num_tasks=10)
-    
+
     # Verify history returned
     assert isinstance(history, list)
     assert len(history) <= 10  # Should not exceed requested number
-    
+
     # Verify each entry has required fields
     for entry in history:
         assert "task_id" in entry
@@ -537,11 +574,12 @@ async def test_task_history(mock_substrate: MockSubstrateService):
 # Test 8: Error Handling
 # =============================================================================
 
+
 @pytest.mark.asyncio
 async def test_error_handling(executor: AgentExecutorService):
     """
     Test 8: Invalid task fails gracefully, logs correctly, doesn't crash L.
-    
+
     Validates error handling and graceful degradation.
     """
     # Create invalid task (missing required fields)
@@ -551,17 +589,17 @@ async def test_error_handling(executor: AgentExecutorService):
         source_id="test-principal",
         payload={"message": "Invalid task"},
     )
-    
+
     # Execute invalid task
     result = await executor.start_agent_task(invalid_task)
-    
+
     # Verify task failed gracefully
     assert result.status in ["failed", "terminated"]
-    
+
     # Verify error message present
     assert result.error is not None
     assert len(result.error) > 0
-    
+
     # Verify executor still functional (can execute another task)
     valid_task = AgentTask(
         kind=TaskKind.QUERY,
@@ -569,16 +607,17 @@ async def test_error_handling(executor: AgentExecutorService):
         source_id="test-principal",
         payload={"message": "Valid task"},
     )
-    
+
     # Set up AIOS for valid task
     mock_aios = executor._aios_runtime
-    mock_aios.set_responses([
-        AIOSResult.response("Valid task executed", tokens_used=10),
-    ])
-    
+    mock_aios.set_responses(
+        [
+            AIOSResult.response("Valid task executed", tokens_used=10),
+        ]
+    )
+
     # Execute valid task (should succeed)
     valid_result = await executor.start_agent_task(valid_task)
-    
+
     # Verify executor still works
     assert valid_result.status == "completed", "Executor should still work after error"
-

@@ -26,7 +26,7 @@ from fastapi import APIRouter, Request, Header, HTTPException, Depends
 import structlog
 from time import time as current_time
 
-from api.slack_adapter import SlackRequestValidator, SlackRequestNormalizer
+from api.slack_adapter import SlackRequestValidator
 from memory.slack_ingest import handle_slack_events, handle_slack_commands
 
 logger = structlog.get_logger(__name__)
@@ -52,11 +52,11 @@ async def slack_events(
 ) -> Dict[str, Any]:
     """
     Slack Events API webhook handler.
-    
+
     Handles:
       - url_verification: Echoes challenge (Slack handshake)
       - event_callback: Processes app_mention and message events
-    
+
     Flow:
       1. Validate Slack signature
       2. Check rate limit
@@ -67,18 +67,18 @@ async def slack_events(
       7. Call AIOS /chat endpoint
       8. Post reply back to Slack in thread
       9. Store inbound/outbound packets in memory substrate
-    
+
     Security:
       - Signature verification is mandatory (fail-closed)
       - Invalid signatures return 401, no further processing
       - Timestamp freshness validated (300s tolerance)
       - Rate limiting per team (100 events/minute)
-    
+
     Idempotency:
       - Primary key: event_id
       - Fallback: team_id + channel_id + ts + user_id
       - Duplicate events: return 200 ack, no re-processing
-    
+
     Error handling:
       - Invalid signature: 401 Unauthorized
       - Rate limited: 429 Too Many Requests
@@ -86,10 +86,10 @@ async def slack_events(
       - Internal errors: 200 OK (swallow Slack-side to prevent redelivery loop)
     """
     start_time = current_time()
-    
+
     # Get raw request body
     request_body = await request.body()
-    
+
     # Validate Slack signature
     try:
         is_valid, error_reason = validator.verify(
@@ -109,27 +109,29 @@ async def slack_events(
     except Exception as e:
         logger.error("slack_signature_verification_error", error=str(e))
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
     # Parse JSON payload
     try:
         payload = json.loads(request_body)
     except json.JSONDecodeError as e:
         logger.warning("slack_invalid_json", error=str(e))
         raise HTTPException(status_code=400, detail="Invalid JSON")
-    
+
     # Validate Slack event schema
-    VALID_SLACK_EVENT_TYPES = {'url_verification', 'event_callback', 'app_rate_limited'}
-    event_type = payload.get('type')
+    VALID_SLACK_EVENT_TYPES = {"url_verification", "event_callback", "app_rate_limited"}
+    event_type = payload.get("type")
     if event_type and event_type not in VALID_SLACK_EVENT_TYPES:
         logger.warning("slack_invalid_event_type", event_type=event_type)
-        raise HTTPException(status_code=400, detail=f"Invalid Slack event type: {event_type}")
-    
+        raise HTTPException(
+            status_code=400, detail=f"Invalid Slack event type: {event_type}"
+        )
+
     # Handle url_verification (Slack handshake during setup) - skip rate limit
     if payload.get("type") == "url_verification":
         challenge = payload.get("challenge", "")
         logger.info("slack_url_verification_challenge", challenge=challenge[:20])
         return {"challenge": challenge}
-    
+
     # Rate limit check (100 events per minute per team)
     rate_limiter = getattr(request.app.state, "rate_limiter", None)
     if rate_limiter:
@@ -145,7 +147,7 @@ async def slack_events(
         except Exception as e:
             # Log but don't fail - rate limiting is protective, not blocking
             logger.warning("slack_rate_limit_check_failed", error=str(e))
-    
+
     # Permission check (if Permission Graph available)
     permission_graph = getattr(request.app.state, "permission_graph", None)
     if permission_graph:
@@ -158,13 +160,14 @@ async def slack_events(
         except Exception as e:
             # Log but don't block - permission check is advisory in dev mode
             logger.debug("slack_permission_check_failed", error=str(e))
-    
+
     # Log event to Neo4j (non-blocking)
     neo4j_client = getattr(request.app.state, "neo4j_client", None)
     if neo4j_client:
         try:
             from uuid import uuid4
             from datetime import datetime
+
             await neo4j_client.create_event(
                 event_id=f"slack:{payload.get('event_id', uuid4())}",
                 event_type="slack_event",
@@ -178,14 +181,14 @@ async def slack_events(
             )
         except Exception as e:
             logger.debug("slack_neo4j_log_failed", error=str(e))
-    
+
     # Route to handler
     try:
         # Inject dependencies
         substrate_service = request.app.state.substrate_service
         slack_client = request.app.state.slack_client
         aios_base_url = request.app.state.aios_base_url
-        
+
         result = await handle_slack_events(
             request_body=request_body,
             payload=payload,
@@ -193,7 +196,7 @@ async def slack_events(
             slack_client=slack_client,
             aios_base_url=aios_base_url,
         )
-        
+
         elapsed_ms = (current_time() - start_time) * 1000
         logger.info(
             "slack_events_processed",
@@ -223,12 +226,12 @@ async def slack_commands(
 ) -> Dict[str, Any]:
     """
     Slack slash command handler.
-    
+
     Handles custom /l9 commands:
       - /l9 do <task> - Execute a task
       - /l9 email <instruction> - Email operation
       - /l9 extract <artifact> - Extract data from artifact
-    
+
     Flow:
       1. Validate Slack signature
       2. Parse form-encoded command payload
@@ -237,20 +240,20 @@ async def slack_commands(
       5. Async: Call AIOS /chat endpoint
       6. Async: Post reply to response_url or Slack API
       7. Async: Store inbound/outbound packets
-    
+
     Note: Commands have a response_url which is valid for 3 seconds.
           We return immediately with 200 ACK, then async reply.
-    
+
     Error handling:
       - Invalid signature: 401
       - Invalid command: 200 with error message
       - AIOS failure: 200 with temporary failure message
     """
     start_time = current_time()
-    
+
     # Get raw request body
     request_body = await request.body()
-    
+
     # Validate Slack signature
     try:
         is_valid, error_reason = validator.verify(
@@ -270,7 +273,7 @@ async def slack_commands(
     except Exception as e:
         logger.error("slack_signature_verification_error", error=str(e))
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
     # Parse form-encoded payload
     try:
         form_data = await request.form()
@@ -278,7 +281,7 @@ async def slack_commands(
     except Exception as e:
         logger.warning("slack_invalid_form_data", error=str(e))
         raise HTTPException(status_code=400, detail="Invalid form data")
-    
+
     # Rate limit check (50 commands per minute per user)
     rate_limiter = getattr(request.app.state, "rate_limiter", None)
     if rate_limiter:
@@ -294,15 +297,15 @@ async def slack_commands(
                 }
         except Exception as e:
             logger.warning("slack_command_rate_limit_check_failed", error=str(e))
-    
+
     # Inject dependencies
     substrate_service = request.app.state.substrate_service
     slack_client = request.app.state.slack_client
     aios_base_url = request.app.state.aios_base_url
-    
+
     # Return 200 ACK immediately (Slack requires response < 3 seconds)
     # Then process async in background
-    
+
     async def process_command_async():
         """Process command asynchronously after returning ACK."""
         try:
@@ -327,14 +330,14 @@ async def slack_commands(
                 command=payload.get("command"),
                 elapsed_ms=elapsed_ms,
             )
-    
+
     # Schedule async task (Fire and forget, but logged)
     import asyncio
+
     asyncio.create_task(process_command_async())
-    
+
     # Return immediate ACK (200 < 3 seconds)
     return {
         "response_type": "ephemeral",
         "text": "Processing your command...",
     }
-

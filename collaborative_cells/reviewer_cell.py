@@ -116,23 +116,23 @@ Return JSON:
 class ReviewerCell(BaseCell):
     """
     Collaborative cell for code review and QA.
-    
+
     Coordinates two reviewer agents for thorough quality assessment.
     """
-    
+
     cell_type = "reviewer"
-    
+
     def __init__(self, config: Optional[CellConfig] = None):
         """Initialize the reviewer cell."""
         super().__init__(config)
         self._client: Optional[AsyncOpenAI] = None
-    
+
     def _ensure_client(self) -> AsyncOpenAI:
         """Ensure OpenAI client is initialized."""
         if self._client is None:
             self._client = AsyncOpenAI(api_key=self._config.api_key)
         return self._client
-    
+
     async def _run_producer(
         self,
         task: dict[str, Any],
@@ -141,27 +141,30 @@ class ReviewerCell(BaseCell):
     ) -> dict[str, Any]:
         """Run Reviewer A to produce primary review."""
         client = self._ensure_client()
-        
+
         prompt = REVIEWER_A_PROMPT.format(
             code=json.dumps(task.get("code", {}), indent=2),
             requirements=json.dumps(task.get("requirements", []), indent=2),
             context=json.dumps(context, indent=2),
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._config.model,
                 messages=[
-                    {"role": "system", "content": "You are Reviewer A, a senior QA engineer. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are Reviewer A, a senior QA engineer. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.2,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Reviewer A failed: {e}")
             return {
@@ -169,7 +172,7 @@ class ReviewerCell(BaseCell):
                 "verdict": "reject",
                 "error": str(e),
             }
-    
+
     async def _run_critic(
         self,
         output: dict[str, Any],
@@ -178,27 +181,30 @@ class ReviewerCell(BaseCell):
     ) -> dict[str, Any]:
         """Run Reviewer B to validate the review."""
         client = self._ensure_client()
-        
+
         prompt = REVIEWER_B_PROMPT.format(
             primary_review=json.dumps(output, indent=2),
             code=json.dumps(task.get("code", {}), indent=2),
             requirements=json.dumps(task.get("requirements", []), indent=2),
         )
-        
+
         try:
             response = await client.chat.completions.create(
                 model=self._config.model,
                 messages=[
-                    {"role": "system", "content": "You are Reviewer B, validating a code review. Return only valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are Reviewer B, validating a code review. Return only valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.2,
                 response_format={"type": "json_object"},
             )
-            
+
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-            
+
         except Exception as e:
             logger.error(f"Reviewer B failed: {e}")
             return {
@@ -206,7 +212,7 @@ class ReviewerCell(BaseCell):
                 "consensus": False,
                 "error": str(e),
             }
-    
+
     def _apply_revisions(
         self,
         output: dict[str, Any],
@@ -214,21 +220,23 @@ class ReviewerCell(BaseCell):
     ) -> tuple[dict[str, Any], list[str]]:
         """Apply secondary review findings."""
         revisions: list[str] = []
-        
+
         # Add missed issues
         for issue in critique.get("missed_issues", []):
-            output.setdefault("code_quality", {}).setdefault("issues", []).append({
-                "severity": issue.get("severity", "minor"),
-                "description": issue.get("description", ""),
-                "source": "secondary_review",
-            })
+            output.setdefault("code_quality", {}).setdefault("issues", []).append(
+                {
+                    "severity": issue.get("severity", "minor"),
+                    "description": issue.get("description", ""),
+                    "source": "secondary_review",
+                }
+            )
             revisions.append(f"Added missed issue: {issue.get('description', '')[:50]}")
-        
+
         # Update severity ratings based on disagreements
         for disagreement in critique.get("disagreements", []):
             issue_desc = disagreement.get("issue", "")
             suggested = disagreement.get("suggested_severity", "")
-            
+
             for category in ["code_quality", "security"]:
                 for issue in output.get(category, {}).get("issues", []):
                     if issue.get("description", "").startswith(issue_desc[:20]):
@@ -236,18 +244,18 @@ class ReviewerCell(BaseCell):
                         issue["severity_adjusted"] = True
                         revisions.append(f"Adjusted severity for: {issue_desc[:30]}")
                         break
-        
+
         # Add additional observations
         output["additional_observations"] = critique.get("additional_observations", [])
-        
+
         # Update verdict if reviewers disagree significantly
         if critique.get("final_verdict") != output.get("verdict"):
             output["verdict_disputed"] = True
             output["secondary_verdict"] = critique.get("final_verdict")
             revisions.append("Verdict disputed by secondary reviewer")
-        
+
         return output, revisions
-    
+
     async def _validate_output(
         self,
         output: dict[str, Any],
@@ -255,27 +263,27 @@ class ReviewerCell(BaseCell):
     ) -> tuple[bool, list[str]]:
         """Validate the review output."""
         errors: list[str] = []
-        
+
         # Check for overall score
         if "overall_score" not in output:
             errors.append("Missing overall score")
-        
+
         # Check for verdict
         if output.get("verdict") not in ["approve", "request_changes", "reject"]:
             errors.append("Invalid or missing verdict")
-        
+
         # Validate score ranges
         for key in ["overall_score"]:
             score = output.get(key, 0)
             if not (0.0 <= score <= 1.0):
                 errors.append(f"Invalid {key} range: {score}")
-        
+
         return len(errors) == 0, errors
-    
+
     # ==========================================================================
     # Review-Specific Methods
     # ==========================================================================
-    
+
     async def review_code(
         self,
         code: dict[str, str],
@@ -284,12 +292,12 @@ class ReviewerCell(BaseCell):
     ) -> dict[str, Any]:
         """
         Review code against requirements.
-        
+
         Args:
             code: Dict of file_path -> code_content
             requirements: List of requirements
             focus_areas: Optional areas to focus on
-            
+
         Returns:
             Review result
         """
@@ -297,24 +305,24 @@ class ReviewerCell(BaseCell):
             "code": code,
             "requirements": requirements,
         }
-        
+
         context = {
             "focus_areas": focus_areas or ["functionality", "security", "quality"],
         }
-        
+
         result = await self.execute(task, context)
         return result.output or {}
-    
+
     async def security_audit(
         self,
         code: dict[str, str],
     ) -> dict[str, Any]:
         """
         Perform security-focused review.
-        
+
         Args:
             code: Dict of file_path -> code_content
-            
+
         Returns:
             Security audit result
         """
@@ -322,14 +330,14 @@ class ReviewerCell(BaseCell):
             "code": code,
             "requirements": ["Identify all security vulnerabilities"],
         }
-        
+
         context = {
             "focus_areas": ["security"],
             "mode": "security_audit",
         }
-        
+
         result = await self.execute(task, context)
-        
+
         # Extract just security findings
         output = result.output or {}
         return {
@@ -337,17 +345,17 @@ class ReviewerCell(BaseCell):
             "vulnerabilities": output.get("security", {}).get("vulnerabilities", []),
             "verdict": output.get("verdict"),
         }
-    
+
     async def get_test_suggestions(
         self,
         code: dict[str, str],
     ) -> list[dict[str, Any]]:
         """
         Get suggested tests for code.
-        
+
         Args:
             code: Dict of file_path -> code_content
-            
+
         Returns:
             List of suggested tests
         """
@@ -355,14 +363,13 @@ class ReviewerCell(BaseCell):
             "code": code,
             "requirements": ["Identify all testing needs"],
         }
-        
+
         context = {
             "focus_areas": ["testing"],
             "mode": "test_planning",
         }
-        
+
         result = await self.execute(task, context)
         output = result.output or {}
-        
-        return output.get("testing", {}).get("suggested_tests", [])
 
+        return output.get("testing", {}).get("suggested_tests", [])

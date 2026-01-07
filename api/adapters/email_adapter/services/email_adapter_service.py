@@ -37,7 +37,7 @@ logger = structlog.get_logger(__name__)
 class EmailAdapterService:
     """
     Service layer for Email Adapter.
-    
+
     Provides high-level business operations using the adapter.
     """
 
@@ -58,7 +58,7 @@ class EmailAdapterService:
     ) -> dict:
         """
         Process an incoming event.
-        
+
         Returns dict with ok, packet_id, dedupe, error fields.
         """
         request = EmailAdapterRequest(
@@ -67,9 +67,9 @@ class EmailAdapterService:
             payload=payload,
             attachments=attachments or [],
         )
-        
+
         response = await self.adapter.handle(request)
-        
+
         return {
             "ok": response.ok,
             "packet_id": str(response.packet_id) if response.packet_id else None,

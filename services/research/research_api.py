@@ -6,7 +6,7 @@ FastAPI router for the /research endpoint.
 """
 
 import structlog
-from typing import Any, Optional
+from typing import Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -24,12 +24,16 @@ router = APIRouter(prefix="/research", tags=["research"])
 # Request/Response Models
 # =============================================================================
 
+
 class ResearchRequest(BaseModel):
     """Request model for research endpoint."""
+
     query: str = Field(..., min_length=1, max_length=5000, description="Research query")
     user_id: str = Field(default="anonymous", description="User identifier")
-    thread_id: Optional[str] = Field(None, description="Optional thread ID for tracking")
-    
+    thread_id: Optional[str] = Field(
+        None, description="Optional thread ID for tracking"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -42,17 +46,20 @@ class ResearchRequest(BaseModel):
 
 class ResearchResponse(BaseModel):
     """Response model for research endpoint."""
+
     thread_id: str = Field(..., description="Thread ID for this research")
     query: str = Field(..., description="Original query")
     refined_goal: str = Field(default="", description="Refined research goal")
     summary: str = Field(default="", description="Research summary")
     sources: list[str] = Field(default_factory=list, description="Sources cited")
     evidence_count: int = Field(default=0, description="Number of evidence pieces")
-    quality_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Quality score")
+    quality_score: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Quality score"
+    )
     feedback: str = Field(default="", description="Critic feedback")
     timestamp: str = Field(default="", description="Completion timestamp")
     error: Optional[str] = Field(None, description="Error message if failed")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -72,6 +79,7 @@ class ResearchResponse(BaseModel):
 
 class ResearchStatusResponse(BaseModel):
     """Response model for research status endpoint."""
+
     thread_id: str
     query: str
     refined_goal: str
@@ -87,20 +95,19 @@ class ResearchStatusResponse(BaseModel):
 # Dependencies
 # =============================================================================
 
+
 def get_research_runtime() -> ResearchGraphRuntime:
     """Dependency to get the research runtime."""
     runtime = get_runtime()
     if not runtime._initialized:
-        raise HTTPException(
-            status_code=503,
-            detail="Research service not initialized"
-        )
+        raise HTTPException(status_code=503, detail="Research service not initialized")
     return runtime
 
 
 # =============================================================================
 # Endpoints
 # =============================================================================
+
 
 @router.post(
     "",
@@ -114,25 +121,25 @@ async def research(
 ) -> ResearchResponse:
     """
     Execute a research query.
-    
+
     The query is processed by a multi-agent pipeline:
     1. Planner: Decomposes query into research steps
     2. Researcher: Gathers evidence using tools
     3. Merger: Synthesizes findings
     4. Critic: Evaluates quality (may trigger retry)
     5. Finalizer: Packages output
-    
+
     Results are persisted to the Memory Substrate.
     """
     logger.info(f"Research request: query={request.query[:50]}...")
-    
+
     try:
         result = await runtime.execute(
             query=request.query,
             user_id=request.user_id,
             thread_id=request.thread_id,
         )
-        
+
         # Handle error in result
         if "error" in result and result["error"]:
             return ResearchResponse(
@@ -140,7 +147,7 @@ async def research(
                 query=request.query,
                 error=result["error"],
             )
-        
+
         return ResearchResponse(
             thread_id=result.get("thread_id", ""),
             query=result.get("query", request.query),
@@ -152,12 +159,11 @@ async def research(
             feedback=result.get("feedback", ""),
             timestamp=result.get("timestamp", ""),
         )
-        
+
     except Exception as e:
         logger.error(f"Research failed: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Research execution failed: {str(e)}"
+            status_code=500, detail=f"Research execution failed: {str(e)}"
         )
 
 
@@ -173,17 +179,16 @@ async def get_research_status(
 ) -> ResearchStatusResponse:
     """
     Get status of a research thread.
-    
+
     Returns current progress and state of the research.
     """
     status = await runtime.get_status(thread_id)
-    
+
     if not status:
         raise HTTPException(
-            status_code=404,
-            detail=f"Research thread not found: {thread_id}"
+            status_code=404, detail=f"Research thread not found: {thread_id}"
         )
-    
+
     return ResearchStatusResponse(**status)
 
 
@@ -199,20 +204,19 @@ async def resume_research(
 ) -> ResearchResponse:
     """
     Resume research from a checkpoint.
-    
+
     Loads the last saved state and continues execution.
     """
     logger.info(f"Resuming research: thread={thread_id}")
-    
+
     try:
         result = await runtime.resume(thread_id)
-        
+
         if result is None:
             raise HTTPException(
-                status_code=404,
-                detail=f"No checkpoint found for thread: {thread_id}"
+                status_code=404, detail=f"No checkpoint found for thread: {thread_id}"
             )
-        
+
         return ResearchResponse(
             thread_id=result.get("thread_id", thread_id),
             query=result.get("query", ""),
@@ -224,13 +228,9 @@ async def resume_research(
             feedback=result.get("feedback", ""),
             timestamp=result.get("timestamp", ""),
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Resume failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Resume failed: {str(e)}"
-        )
-
+        raise HTTPException(status_code=500, detail=f"Resume failed: {str(e)}")

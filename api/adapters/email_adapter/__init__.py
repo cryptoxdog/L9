@@ -47,30 +47,32 @@ __spec_hash__ = "SPEC-62d9295fc71f"
 
 _logger = structlog.get_logger(__name__)
 
+
 def _validate_startup() -> None:
     """Validate required configuration at module load time."""
     # Only enforce if explicitly enabled (using env.example naming)
     if os.getenv("EMAIL_ENABLED", "").lower() != "true":
         _logger.debug("Email Adapter not enabled (EMAIL_ENABLED != true)")
         return
-    
+
     config = EmailAdapterConfig.from_env()
     errors = config.validate()
-    
+
     if errors:
         # Warn but don't crash - allows module to load without credentials
         _logger.warning(
             "Email Adapter enabled but missing credentials: %s. "
             "Webhook calls will fail until configured.",
-            "; ".join(errors)
+            "; ".join(errors),
         )
         return
-    
+
     _logger.info(
         "Email Adapter startup validated: module_id=%s, spec_hash=%s",
         config.module_id,
         __spec_hash__,
     )
+
 
 # Run validation on import
 _validate_startup()

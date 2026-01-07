@@ -35,8 +35,7 @@ qdrant/collections/
 neo4j/data/
 
 # --- Editor / Agent tooling ---
-.cursor/
-.cursor-commands/
+# .cursor/ and .cursor-commands/ are tracked in git
 
 # --- Archives (local only) ---
 _Archive_Perplexity/
@@ -78,9 +77,13 @@ docs/12-19-25/
 docs/_VPS MRI/
 
 # Local Docker overrides (machine-specific)
-docker-compose.yml
+# docker-compose.yml is now TRACKED (VPS production config with full observability)
 docker-compose.override.yml
+docker-compose.local.dev.yml
 docs/docker-compose.yaml
+
+# Secrets (NEVER commit)
+secrets/
 
 # Backup/reference files (local only)
 Repo-Files/
@@ -88,3 +91,15 @@ Repo-Files/
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml
 .Trash/
+
+# CodeGen extractions (generated output)
+codegen/extractions/
+
+# Prototype/roadmap docs (contains secrets, not production code)
+docs/
+
+# Python packaging artifacts
+*.egg-info/
+
+# CodeGen folder (specs, schemas, templates - not production)
+codegen/

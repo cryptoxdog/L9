@@ -8,8 +8,6 @@ Covers:
 - HEARTBEAT → None (no task)
 """
 
-from uuid import uuid4
-
 from core.schemas.ws_event_stream import EventMessage, EventType
 from core.schemas.tasks import TaskEnvelope, TaskKind
 from orchestration.ws_task_router import route_event_to_task, RouterConfig
@@ -80,4 +78,3 @@ class TestWSTaskRouterRouting:
         envelope = route_event_to_task(event, cfg)
 
         assert envelope is None
-

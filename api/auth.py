@@ -3,6 +3,7 @@ from fastapi import Header, HTTPException
 
 EXECUTOR_API_KEY = os.environ.get("L9_EXECUTOR_API_KEY")
 
+
 def verify_api_key(authorization: str = Header(None)):
     if not EXECUTOR_API_KEY:
         raise HTTPException(status_code=500, detail="Executor key not configured")

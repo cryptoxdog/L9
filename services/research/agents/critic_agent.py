@@ -43,13 +43,13 @@ Score guide:
 class CriticAgent(BaseAgent):
     """
     Critic Agent - Evaluates research quality.
-    
+
     Provides:
     - Quality scoring (0.0-1.0)
     - Detailed feedback
     - Approval/rejection decision
     """
-    
+
     def __init__(
         self,
         agent_id: str = "research_critic",
@@ -57,14 +57,14 @@ class CriticAgent(BaseAgent):
     ):
         """
         Initialize critic agent.
-        
+
         Args:
             agent_id: Unique agent identifier
             approval_threshold: Minimum score for approval
         """
         super().__init__(agent_id=agent_id)
         self.approval_threshold = approval_threshold
-    
+
     async def run(
         self,
         query: str,
@@ -73,23 +73,25 @@ class CriticAgent(BaseAgent):
     ) -> dict[str, Any]:
         """
         Evaluate research quality.
-        
+
         Args:
             query: Original research query
             evidence: Gathered evidence
             summary: Synthesized summary
-            
+
         Returns:
             Evaluation dict with score, feedback, approved
         """
         logger.info("Critic evaluating research quality")
-        
+
         # Format evidence for evaluation
         evidence_text = ""
         for i, ev in enumerate(evidence, 1):
-            evidence_text += f"\n[Evidence {i}] (confidence: {ev.get('confidence', 0):.2f})\n"
+            evidence_text += (
+                f"\n[Evidence {i}] (confidence: {ev.get('confidence', 0):.2f})\n"
+            )
             evidence_text += f"{ev.get('content', '')[:500]}...\n"
-        
+
         messages = [
             self.format_system_prompt(CRITIC_SYSTEM_PROMPT),
             self.format_user_prompt(
@@ -99,18 +101,18 @@ class CriticAgent(BaseAgent):
                 "Evaluate the quality of this research and respond in JSON format."
             ),
         ]
-        
+
         response = await self.call_llm_json(messages, max_tokens=1000)
-        
+
         # Parse evaluation
         score = float(response.get("score", 0.5))
         feedback = response.get("feedback", "No feedback provided")
         approved = response.get("approved", score >= self.approval_threshold)
-        
+
         # Override approval based on threshold
         if score < self.approval_threshold:
             approved = False
-        
+
         evaluation = {
             "score": score,
             "feedback": feedback,
@@ -119,10 +121,10 @@ class CriticAgent(BaseAgent):
             "suggestions": response.get("suggestions", []),
             "approved": approved,
         }
-        
+
         logger.info(f"Critic score: {score:.2f}, approved: {approved}")
         return evaluation
-    
+
     async def quick_check(
         self,
         query: str,
@@ -130,11 +132,11 @@ class CriticAgent(BaseAgent):
     ) -> tuple[float, str]:
         """
         Quick quality check without full evaluation.
-        
+
         Args:
             query: Original query
             summary: Summary to check
-            
+
         Returns:
             Tuple of (score, brief_feedback)
         """
@@ -144,15 +146,12 @@ class CriticAgent(BaseAgent):
                 "Respond with just a score (0.0-1.0) and one sentence of feedback. "
                 'Format: {"score": 0.X, "feedback": "..."}'
             ),
-            self.format_user_prompt(
-                f"Query: {query}\n\nSummary: {summary[:1000]}"
-            ),
+            self.format_user_prompt(f"Query: {query}\n\nSummary: {summary[:1000]}"),
         ]
-        
+
         response = await self.call_llm_json(messages, max_tokens=100)
-        
+
         score = float(response.get("score", 0.5))
         feedback = response.get("feedback", "Quick check completed")
-        
-        return score, feedback
 
+        return score, feedback

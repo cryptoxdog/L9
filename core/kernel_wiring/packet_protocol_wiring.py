@@ -12,6 +12,7 @@ def _get_kernels():
     global _KERNELS
     if _KERNELS is None:
         from runtime.kernel_loader import load_kernel_stack
+
         _KERNELS = load_kernel_stack()
     return _KERNELS
 
@@ -21,9 +22,10 @@ def get_packet_protocol() -> dict:
 
 
 def get_allowed_event_types() -> list:
-    return _get_kernels().get_rule(
-        "packet_protocol", "events.allowed_types", default=[]
-    ) or []
+    return (
+        _get_kernels().get_rule("packet_protocol", "events.allowed_types", default=[])
+        or []
+    )
 
 
 def get_default_channel() -> str:

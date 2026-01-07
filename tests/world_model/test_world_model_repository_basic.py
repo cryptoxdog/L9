@@ -9,12 +9,13 @@ Covers:
 """
 
 import pytest
-pytest.skip("world_model.repository not available in test environment.", allow_module_level=True)
 
-import asyncio
-from uuid import uuid4
+pytest.skip(
+    "world_model.repository not available in test environment.", allow_module_level=True
+)
 
-from world_model.repository import WorldModelRepository, get_pool
+
+from world_model.repository import WorldModelRepository
 
 
 class FakeConnection:
@@ -121,4 +122,3 @@ class TestWorldModelRepositoryBasic:
         assert isinstance(rows, list)
         assert len(rows) == 1
         assert fake_pool.conn.fetch_calls, "fetch should be called"
-

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import structlog
+
 logger = structlog.get_logger(__name__)
 """
 Send Module Spec generation request to Perplexity with full context embedded.
@@ -106,20 +107,14 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
         "messages": [
             {
                 "role": "system",
-                "content": "You are a stateless technical specification compiler. Follow the SUPERPROMPT and MODULE-SPEC SCHEMA exactly. Output ONLY valid YAML. No markdown. No commentary. No thinking blocks."
+                "content": "You are a stateless technical specification compiler. Follow the SUPERPROMPT and MODULE-SPEC SCHEMA exactly. Output ONLY valid YAML. No markdown. No commentary. No thinking blocks.",
             },
-            {
-                "role": "system", 
-                "content": system_context
-            },
-            {
-                "role": "user",
-                "content": user_prompt
-            }
-        ]
+            {"role": "system", "content": system_context},
+            {"role": "user", "content": user_prompt},
+        ],
     }
 
-    logger.info(f"\n🚀 Sending request to Perplexity sonar-reasoning...")
+    logger.info("\n🚀 Sending request to Perplexity sonar-reasoning...")
     logger.info(f"   Total prompt: ~{len(json.dumps(payload))} chars")
     logger.info("   ⏳ This may take 30-60 seconds...")
 
@@ -131,9 +126,9 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
                 "https://api.perplexity.ai/chat/completions",
                 headers={
                     "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
-                json=payload
+                json=payload,
             )
 
             elapsed = time.time() - start
@@ -144,7 +139,7 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
                 content = data["choices"][0]["message"]["content"]
                 usage = data.get("usage", {})
 
-                logger.info(f"✅ SUCCESS!")
+                logger.info("✅ SUCCESS!")
                 logger.info(f"   Tokens: {usage}")
 
                 # Clean up content - remove thinking blocks if present
@@ -152,7 +147,7 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
                     # Extract content after </think>
                     think_end = content.find("</think>")
                     if think_end > 0:
-                        content = content[think_end + 8:].strip()
+                        content = content[think_end + 8 :].strip()
 
                 # Remove markdown code blocks if present
                 if content.startswith("```yaml"):
@@ -170,9 +165,9 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
                     f.write(content)
 
                 logger.info(f"\n📁 Saved to: {output_path}")
-                logger.info(f"\n{'='*70}")
+                logger.info(f"\n{'=' * 70}")
                 logger.info("YAML OUTPUT:")
-                logger.info("="*70)
+                logger.info("=" * 70)
                 logger.info(content)
 
             else:
@@ -184,11 +179,14 @@ Generate the complete Module-Spec v2.5 YAML now. Start immediately with 'schema_
     except Exception as e:
         logger.info(f"❌ Exception: {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
 
 
 if __name__ == "__main__":
     main()
+
+
 
 
 

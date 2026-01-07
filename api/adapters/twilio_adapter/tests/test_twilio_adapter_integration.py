@@ -44,19 +44,17 @@ def app():
     """Create test FastAPI app."""
     app = FastAPI()
     app.include_router(router)
-    
+
     # Mock app state
     app.state.substrate_service = AsyncMock()
     app.state.substrate_service.write_packet = AsyncMock(
         return_value=MagicMock(packet_id=uuid4())
     )
     app.state.substrate_service.search_packets = AsyncMock(return_value=[])
-    
+
     app.state.aios_runtime_client = AsyncMock()
-    app.state.aios_runtime_client.chat = AsyncMock(
-        return_value={"status": "ok"}
-    )
-    
+    app.state.aios_runtime_client.chat = AsyncMock(return_value={"status": "ok"})
+
     return app
 
 
@@ -81,7 +79,7 @@ class TestRoutes:
             json={"event_id": "test", "payload": {}},
             # No Authorization header
         )
-        
+
         # ASSERTION: 401 Unauthorized
         assert response.status_code == 401
 
@@ -92,7 +90,7 @@ class TestRoutes:
             json={"event_id": "test", "payload": {}},
             headers={"Authorization": "Basic invalid"},
         )
-        
+
         # ASSERTION: 401 Unauthorized
         assert response.status_code == 401
 
@@ -103,7 +101,7 @@ class TestRoutes:
             json={"event_id": "test-123", "payload": {"message": "hello"}},
             headers={"Authorization": "Bearer valid_token"},
         )
-        
+
         # ASSERTION: Request succeeds
         assert response.status_code == 200
         data = response.json()
@@ -112,7 +110,7 @@ class TestRoutes:
     def test_health_endpoint(self, client):
         """Health check endpoint works."""
         response = client.get("/twilio/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"

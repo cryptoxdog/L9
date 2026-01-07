@@ -14,19 +14,18 @@ logger = structlog.get_logger(__name__)
 class Convergence:
     """
     Convergence for ResearchSwarm Orchestrator.
-    
+
     Builds consensus from multiple research agent outputs.
     """
-    
+
     def __init__(self):
         """Initialize convergence."""
         logger.info("Convergence initialized")
-    
+
     async def process(self, data: dict) -> dict:
         """Process data through convergence."""
         logger.info("Processing through convergence")
-        
-        # TODO: Implement specialized logic
-        
-        return {"success": True}
 
+        # TODO: Implement specialized logic
+
+        return {"success": True}

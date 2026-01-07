@@ -15,7 +15,6 @@ Note: Automatically uses Redis if available, falls back to in-memory.
 from __future__ import annotations
 
 import asyncio
-import json
 import structlog
 from collections import deque
 from dataclasses import dataclass, field
@@ -29,43 +28,44 @@ logger = structlog.get_logger(__name__)
 async def dispatch_task_immediate(task: QueuedTask) -> str:
     """
     Execute a task immediately without queueing.
-    
+
     Synchronous task execution for reactive dispatch.
-    
+
     Args:
         task: QueuedTask to execute immediately
-        
+
     Returns:
         Task ID
     """
     logger.info(f"Dispatching task {task.task_id} immediately: {task.name}")
-    
+
     # Get handler from task queue
     task_queue = TaskQueue(queue_name="l9:tasks", use_redis=True)
-    
+
     # Access handlers (they're registered via register_handler)
     # For immediate dispatch, we need to check if handler exists
     # If not, log warning and return task_id
     try:
         # Try to get handler - handlers are stored in _handlers dict
-        handler = getattr(task_queue, '_handlers', {}).get(task.handler)
-        
+        handler = getattr(task_queue, "_handlers", {}).get(task.handler)
+
         if not handler:
             logger.warning(f"No handler registered for: {task.handler}")
             return task.task_id
-        
+
         # Execute handler directly (matching process_one signature: handler receives payload and agent_id)
         await handler(task.payload, agent_id=task.agent_id)
         logger.info(f"Task {task.task_id} executed successfully")
     except Exception as e:
         logger.error(f"Task {task.task_id} execution failed: {e}", exc_info=True)
-    
+
     return task.task_id
 
 
 # Try to import Redis client
 try:
     from runtime.redis_client import get_redis_client
+
     _has_redis_client = True
 except ImportError:
     _has_redis_client = False
@@ -102,10 +102,12 @@ class QueuedTask:
             "created_at": self.created_at.isoformat(),
             "status": self.status,
             "approved_by": self.approved_by,
-            "approval_timestamp": self.approval_timestamp.isoformat() if self.approval_timestamp else None,
+            "approval_timestamp": self.approval_timestamp.isoformat()
+            if self.approval_timestamp
+            else None,
             "approval_reason": self.approval_reason,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> QueuedTask:
         """Deserialize from dict."""
@@ -117,10 +119,14 @@ class QueuedTask:
             agent_id=data.get("agent_id"),
             priority=data.get("priority", 5),
             tags=data.get("tags", []),
-            created_at=datetime.fromisoformat(data.get("created_at", datetime.utcnow().isoformat())),
+            created_at=datetime.fromisoformat(
+                data.get("created_at", datetime.utcnow().isoformat())
+            ),
             status=data.get("status", "pending_igor_approval"),
             approved_by=data.get("approved_by"),
-            approval_timestamp=datetime.fromisoformat(data["approval_timestamp"]) if data.get("approval_timestamp") else None,
+            approval_timestamp=datetime.fromisoformat(data["approval_timestamp"])
+            if data.get("approval_timestamp")
+            else None,
             approval_reason=data.get("approval_reason"),
         )
 
@@ -128,7 +134,7 @@ class QueuedTask:
 class TaskQueue:
     """
     Production task queue with Redis backend and in-memory fallback.
-    
+
     Tasks are ordered by priority (lower = higher priority).
     Automatically uses Redis if available, otherwise falls back to in-memory.
     """
@@ -136,7 +142,7 @@ class TaskQueue:
     def __init__(self, queue_name: str = "l9:tasks", use_redis: bool = True) -> None:
         """
         Initialize task queue.
-        
+
         Args:
             queue_name: Queue name for Redis (default: "l9:tasks")
             use_redis: Whether to attempt Redis connection (default: True)
@@ -148,10 +154,12 @@ class TaskQueue:
         self._lock = asyncio.Lock()
         self._handlers: Dict[str, Callable[..., Coroutine[Any, Any, Any]]] = {}
         self._redis_available = False
-        
+
         if self._use_redis:
             # Try to connect to Redis (async, will be checked on first use)
-            logger.info(f"TaskQueue initialized with Redis support (queue: {queue_name})")
+            logger.info(
+                f"TaskQueue initialized with Redis support (queue: {queue_name})"
+            )
         else:
             logger.info("TaskQueue initialized (in-memory only)")
 
@@ -159,16 +167,18 @@ class TaskQueue:
         """Ensure Redis client is connected."""
         if not self._use_redis:
             return False
-        
+
         if self._redis_client is None:
             self._redis_client = await get_redis_client()
-            self._redis_available = self._redis_client is not None and self._redis_client.is_available()
-            
+            self._redis_available = (
+                self._redis_client is not None and self._redis_client.is_available()
+            )
+
             if self._redis_available:
                 logger.info("TaskQueue: Redis backend active")
             else:
                 logger.info("TaskQueue: Redis unavailable, using in-memory fallback")
-        
+
         return self._redis_available
 
     async def enqueue(
@@ -182,7 +192,7 @@ class TaskQueue:
     ) -> str:
         """
         Add a task to the queue.
-        
+
         Args:
             name: Human-readable task name
             payload: Task data
@@ -190,7 +200,7 @@ class TaskQueue:
             agent_id: Optional target agent
             priority: 1-10, lower is higher priority
             tags: Optional tags for filtering
-            
+
         Returns:
             Task ID
         """
@@ -203,7 +213,7 @@ class TaskQueue:
             priority=priority,
             tags=tags or [],
         )
-        
+
         # Try Redis first
         if await self._ensure_redis():
             try:
@@ -223,7 +233,7 @@ class TaskQueue:
                     return task_id
             except Exception as e:
                 logger.warning(f"Redis enqueue failed, falling back to in-memory: {e}")
-        
+
         # Fallback to in-memory
         async with self._lock:
             # Insert in priority order
@@ -235,7 +245,7 @@ class TaskQueue:
                     break
             if not inserted:
                 self._queue.append(task)
-        
+
         logger.debug(
             "Enqueued task %s (in-memory): name=%s, priority=%d, handler=%s",
             task.task_id,
@@ -248,7 +258,7 @@ class TaskQueue:
     async def dequeue(self) -> Optional[QueuedTask]:
         """
         Remove and return the highest priority task.
-        
+
         Returns:
             QueuedTask or None if queue is empty
         """
@@ -262,7 +272,7 @@ class TaskQueue:
                     return task
             except Exception as e:
                 logger.warning(f"Redis dequeue failed, falling back to in-memory: {e}")
-        
+
         # Fallback to in-memory
         async with self._lock:
             if not self._queue:
@@ -279,7 +289,7 @@ class TaskQueue:
                 pass
             except Exception:
                 pass
-        
+
         # Fallback to in-memory
         async with self._lock:
             if not self._queue:
@@ -298,7 +308,7 @@ class TaskQueue:
                 return redis_size + in_memory_size
             except Exception:
                 pass
-        
+
         # Fallback to in-memory
         async with self._lock:
             return len(self._queue)
@@ -310,7 +320,7 @@ class TaskQueue:
     ) -> None:
         """
         Register a handler function for a handler name.
-        
+
         Args:
             name: Handler name (e.g., "ws_event_handler")
             handler: Async function to invoke
@@ -321,7 +331,7 @@ class TaskQueue:
     async def process_one(self) -> bool:
         """
         Process a single task from the queue.
-        
+
         Returns:
             True if a task was processed, False if queue was empty
         """
@@ -338,25 +348,29 @@ class TaskQueue:
             await handler(task.payload, agent_id=task.agent_id)
             logger.debug("Processed task %s", task.task_id)
         except Exception as e:
-            logger.error("Handler %s failed for task %s: %s", task.handler, task.task_id, e)
+            logger.error(
+                "Handler %s failed for task %s: %s", task.handler, task.task_id, e
+            )
 
         return True
 
 
-async def enqueue_long_plan_tasks(plan_id: str, task_specs: List[Dict[str, Any]]) -> List[str]:
+async def enqueue_long_plan_tasks(
+    plan_id: str, task_specs: List[Dict[str, Any]]
+) -> List[str]:
     """
     Bulk-enqueue extracted tasks from a long plan.
-    
+
     Args:
         plan_id: Plan identifier
         task_specs: List of task spec dicts from extract_tasks_from_plan()
-        
+
     Returns:
         List of task IDs for enqueued tasks
     """
     task_queue = TaskQueue(queue_name="l9:tasks", use_redis=True)
     task_ids = []
-    
+
     for spec in task_specs:
         try:
             # Enqueue task with plan tag
@@ -372,10 +386,9 @@ async def enqueue_long_plan_tasks(plan_id: str, task_specs: List[Dict[str, Any]]
             logger.debug(f"Enqueued task {task_id} from plan {plan_id}")
         except Exception as e:
             logger.warning(f"Failed to enqueue task from plan {plan_id}: {e}")
-    
+
     logger.info(f"Enqueued {len(task_ids)}/{len(task_specs)} tasks from plan {plan_id}")
     return task_ids
 
 
 __all__ = ["TaskQueue", "QueuedTask", "enqueue_long_plan_tasks"]
-

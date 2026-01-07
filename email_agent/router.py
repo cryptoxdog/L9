@@ -16,8 +16,7 @@ All handlers:
 """
 
 import structlog
-from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -32,19 +31,23 @@ router = APIRouter(prefix="/email", tags=["email-agent"])
 # Request Models
 # =============================================================================
 
+
 class QueryRequest(BaseModel):
     """Request model for email query."""
+
     query: str = ""
     max_results: int = 10
 
 
 class GetRequest(BaseModel):
     """Request model for getting email."""
+
     id: str
 
 
 class DraftRequest(BaseModel):
     """Request model for email draft."""
+
     to: str
     subject: str
     body: str
@@ -53,6 +56,7 @@ class DraftRequest(BaseModel):
 
 class SendRequest(BaseModel):
     """Request model for sending email."""
+
     draft_id: Optional[str] = None
     to: Optional[str] = None
     subject: Optional[str] = None
@@ -62,12 +66,14 @@ class SendRequest(BaseModel):
 
 class ReplyRequest(BaseModel):
     """Request model for replying to email."""
+
     id: str
     body: str
 
 
 class ForwardRequest(BaseModel):
     """Request model for forwarding email."""
+
     id: str
     to: str
     body: str = ""
@@ -76,6 +82,7 @@ class ForwardRequest(BaseModel):
 # =============================================================================
 # Memory Ingestion Helper
 # =============================================================================
+
 
 async def ingest_email_event(
     trace_id: str,
@@ -86,22 +93,22 @@ async def ingest_email_event(
 ) -> None:
     """
     Ingest email event to memory.
-    
+
     Args:
         trace_id: Unique trace identifier for this request
         action: Action being performed (e.g., "email.query", "email.send")
         phase: "pre" for before action, "post" for after action
         payload: Event payload (sanitized, no secrets)
         error: Error message if action failed
-        
+
     Raises:
         HTTPException: If ingestion fails (fail loud policy)
     """
     from memory.ingestion import ingest_packet
     from memory.substrate_models import PacketEnvelopeIn
-    
+
     packet_type = f"email_{phase}"
-    
+
     packet_in = PacketEnvelopeIn(
         packet_type=packet_type,
         payload={
@@ -117,7 +124,7 @@ async def ingest_email_event(
             "trace_id": trace_id,
         },
     )
-    
+
     try:
         await ingest_packet(packet_in)
         logger.debug(f"[{trace_id}] Ingested email event: {action} ({phase})")
@@ -125,7 +132,7 @@ async def ingest_email_event(
         logger.error(f"[{trace_id}] FAILED to ingest email event: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Memory ingestion failed for {action} ({phase}): {str(e)}. trace_id={trace_id}"
+            detail=f"Memory ingestion failed for {action} ({phase}): {str(e)}. trace_id={trace_id}",
         )
 
 
@@ -138,13 +145,14 @@ def generate_trace_id() -> str:
 # Email Handlers (Fully Wired)
 # =============================================================================
 
+
 @router.post("/query")
 async def query_emails(request: QueryRequest):
     """
     Query emails using Gmail search.
-    
+
     Ingests pre/post events to memory.
-    
+
     Example queries:
     - "from:lawyer has:attachment"
     - "subject:meeting"
@@ -152,7 +160,7 @@ async def query_emails(request: QueryRequest):
     """
     trace_id = generate_trace_id()
     action = "email.query"
-    
+
     # Pre-action ingestion
     await ingest_email_event(
         trace_id=trace_id,
@@ -163,12 +171,13 @@ async def query_emails(request: QueryRequest):
             "max_results": request.max_results,
         },
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
         messages = client.list_messages(request.query, request.max_results)
-        
+
         # Post-action ingestion (success)
         await ingest_email_event(
             trace_id=trace_id,
@@ -179,9 +188,9 @@ async def query_emails(request: QueryRequest):
                 "result_count": len(messages) if messages else 0,
             },
         )
-        
+
         return {"messages": messages, "trace_id": trace_id}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -201,15 +210,15 @@ async def query_emails(request: QueryRequest):
 async def get_email(request: GetRequest):
     """
     Get full email message with parsed body and attachments.
-    
+
     Ingests pre/post events to memory.
-    
+
     Returns:
         Message dictionary with id, from, to, subject, date, body_plain, body_html, attachments
     """
     trace_id = generate_trace_id()
     action = "email.get"
-    
+
     # Pre-action ingestion
     await ingest_email_event(
         trace_id=trace_id,
@@ -217,12 +226,13 @@ async def get_email(request: GetRequest):
         phase="pre",
         payload={"message_id": request.id},
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
         message = client.get_message(request.id)
-        
+
         if message:
             # Post-action ingestion (success)
             await ingest_email_event(
@@ -244,8 +254,11 @@ async def get_email(request: GetRequest):
                 phase="post",
                 payload={"status": "not_found", "message_id": request.id},
             )
-            raise HTTPException(status_code=404, detail=f"Message {request.id} not found (trace_id={trace_id})")
-            
+            raise HTTPException(
+                status_code=404,
+                detail=f"Message {request.id} not found (trace_id={trace_id})",
+            )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -265,12 +278,12 @@ async def get_email(request: GetRequest):
 async def draft_email(request: DraftRequest):
     """
     Create email draft with optional attachments.
-    
+
     Ingests pre/post events to memory.
     """
     trace_id = generate_trace_id()
     action = "email.draft"
-    
+
     # Pre-action ingestion (sanitized - no body content)
     await ingest_email_event(
         trace_id=trace_id,
@@ -283,17 +296,15 @@ async def draft_email(request: DraftRequest):
             "attachment_count": len(request.attachments) if request.attachments else 0,
         },
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
         draft_id = client.draft_email(
-            request.to,
-            request.subject,
-            request.body,
-            attachments=request.attachments
+            request.to, request.subject, request.body, attachments=request.attachments
         )
-        
+
         if draft_id:
             # Post-action ingestion (success)
             await ingest_email_event(
@@ -315,8 +326,10 @@ async def draft_email(request: DraftRequest):
                 payload={"status": "error"},
                 error="Draft creation returned None",
             )
-            raise HTTPException(status_code=500, detail=f"Failed to create draft (trace_id={trace_id})")
-            
+            raise HTTPException(
+                status_code=500, detail=f"Failed to create draft (trace_id={trace_id})"
+            )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -336,15 +349,15 @@ async def draft_email(request: DraftRequest):
 async def send_email(request: SendRequest):
     """
     Send email (from draft or directly) with optional attachments.
-    
+
     Ingests pre/post events to memory.
     """
     trace_id = generate_trace_id()
     action = "email.send"
-    
+
     # Determine send mode
     send_mode = "draft" if request.draft_id else "direct"
-    
+
     # Pre-action ingestion (sanitized)
     await ingest_email_event(
         trace_id=trace_id,
@@ -359,24 +372,29 @@ async def send_email(request: SendRequest):
             "attachment_count": len(request.attachments) if request.attachments else 0,
         },
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
-        
+
         if request.draft_id:
             # Send existing draft
             try:
-                draft = client.service.users().drafts().get(
-                    userId='me',
-                    id=request.draft_id
-                ).execute()
-                
-                sent_message = client.service.users().drafts().send(
-                    userId='me',
-                    body={'id': request.draft_id}
-                ).execute()
-                
+                draft = (
+                    client.service.users()
+                    .drafts()
+                    .get(userId="me", id=request.draft_id)
+                    .execute()
+                )
+
+                sent_message = (
+                    client.service.users()
+                    .drafts()
+                    .send(userId="me", body={"id": request.draft_id})
+                    .execute()
+                )
+
                 # Post-action ingestion (success)
                 await ingest_email_event(
                     trace_id=trace_id,
@@ -385,16 +403,16 @@ async def send_email(request: SendRequest):
                     payload={
                         "status": "success",
                         "send_mode": "draft",
-                        "message_id": sent_message.get('id'),
-                        "thread_id": sent_message.get('threadId'),
+                        "message_id": sent_message.get("id"),
+                        "thread_id": sent_message.get("threadId"),
                     },
                 )
-                
+
                 return {
                     "status": "success",
                     "message": "Email sent",
-                    "message_id": sent_message.get('id'),
-                    "thread_id": sent_message.get('threadId'),
+                    "message_id": sent_message.get("id"),
+                    "thread_id": sent_message.get("threadId"),
                     "trace_id": trace_id,
                 }
             except Exception as e:
@@ -406,7 +424,10 @@ async def send_email(request: SendRequest):
                     error=str(e),
                 )
                 logger.error(f"[{trace_id}] Failed to send draft: {e}")
-                raise HTTPException(status_code=500, detail=f"Failed to send draft: {str(e)} (trace_id={trace_id})")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to send draft: {str(e)} (trace_id={trace_id})",
+                )
         else:
             # Send directly
             if not all([request.to, request.subject, request.body]):
@@ -417,15 +438,18 @@ async def send_email(request: SendRequest):
                     payload={"status": "error", "send_mode": "direct"},
                     error="Missing required fields: to, subject, body",
                 )
-                raise HTTPException(status_code=400, detail=f"to, subject, and body required for direct send (trace_id={trace_id})")
-            
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"to, subject, and body required for direct send (trace_id={trace_id})",
+                )
+
             result = client.send_email(
                 request.to,
                 request.subject,
                 request.body,
-                attachments=request.attachments
+                attachments=request.attachments,
             )
-            
+
             if result:
                 # Post-action ingestion (success)
                 await ingest_email_event(
@@ -442,7 +466,7 @@ async def send_email(request: SendRequest):
                     "status": "success",
                     "message": "Email sent",
                     "trace_id": trace_id,
-                    **result
+                    **result,
                 }
             else:
                 await ingest_email_event(
@@ -452,8 +476,11 @@ async def send_email(request: SendRequest):
                     payload={"status": "error", "send_mode": "direct"},
                     error="send_email returned None",
                 )
-                raise HTTPException(status_code=500, detail=f"Failed to send email (trace_id={trace_id})")
-                
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to send email (trace_id={trace_id})",
+                )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -472,16 +499,16 @@ async def send_email(request: SendRequest):
 async def reply_email(request: ReplyRequest):
     """
     Reply to an email message.
-    
+
     Ingests pre/post events to memory.
-    
+
     Args:
         id: Original message ID to reply to
         body: Reply body
     """
     trace_id = generate_trace_id()
     action = "email.reply"
-    
+
     # Pre-action ingestion
     await ingest_email_event(
         trace_id=trace_id,
@@ -492,12 +519,13 @@ async def reply_email(request: ReplyRequest):
             "body_length": len(request.body) if request.body else 0,
         },
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
         result = client.reply_to_email(request.id, request.body)
-        
+
         if result:
             # Post-action ingestion (success)
             await ingest_email_event(
@@ -514,7 +542,7 @@ async def reply_email(request: ReplyRequest):
                 "status": "success",
                 "message": "Reply sent",
                 "trace_id": trace_id,
-                **result
+                **result,
             }
         else:
             await ingest_email_event(
@@ -524,8 +552,10 @@ async def reply_email(request: ReplyRequest):
                 payload={"status": "error", "original_message_id": request.id},
                 error="reply_to_email returned None",
             )
-            raise HTTPException(status_code=500, detail=f"Failed to send reply (trace_id={trace_id})")
-            
+            raise HTTPException(
+                status_code=500, detail=f"Failed to send reply (trace_id={trace_id})"
+            )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -544,9 +574,9 @@ async def reply_email(request: ReplyRequest):
 async def forward_email(request: ForwardRequest):
     """
     Forward an email message.
-    
+
     Ingests pre/post events to memory.
-    
+
     Args:
         id: Original message ID to forward
         to: Recipient email address(es)
@@ -554,7 +584,7 @@ async def forward_email(request: ForwardRequest):
     """
     trace_id = generate_trace_id()
     action = "email.forward"
-    
+
     # Pre-action ingestion
     await ingest_email_event(
         trace_id=trace_id,
@@ -566,12 +596,13 @@ async def forward_email(request: ForwardRequest):
             "body_length": len(request.body) if request.body else 0,
         },
     )
-    
+
     try:
         from email_agent.gmail_client import GmailClient
+
         client = GmailClient()
         result = client.forward_email(request.id, request.to, request.body)
-        
+
         if result:
             # Post-action ingestion (success)
             await ingest_email_event(
@@ -589,7 +620,7 @@ async def forward_email(request: ForwardRequest):
                 "status": "success",
                 "message": "Email forwarded",
                 "trace_id": trace_id,
-                **result
+                **result,
             }
         else:
             await ingest_email_event(
@@ -599,8 +630,10 @@ async def forward_email(request: ForwardRequest):
                 payload={"status": "error", "original_message_id": request.id},
                 error="forward_email returned None",
             )
-            raise HTTPException(status_code=500, detail=f"Failed to forward email (trace_id={trace_id})")
-            
+            raise HTTPException(
+                status_code=500, detail=f"Failed to forward email (trace_id={trace_id})"
+            )
+
     except HTTPException:
         raise
     except Exception as e:

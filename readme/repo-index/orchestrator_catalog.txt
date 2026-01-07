@@ -2,17 +2,6 @@
 # ========================
 # Agent coordination patterns for the L9 platform.
 
-## Orchestrator Pattern
-
-Each orchestrator follows a consistent structure:
-```
-<orchestrator>/
-├── __init__.py       # Module exports
-├── interface.py      # Abstract interface / protocol
-├── orchestrator.py   # Main orchestrator implementation
-└── *.py              # Additional components
-```
-
 ## Available Orchestrators
 
 ### action_tool/
@@ -42,24 +31,3 @@ Each orchestrator follows a consistent structure:
 ### world_model/
 **Purpose:** World model updates, scheduling, and causal inference
 **Files:** interface.py, orchestrator.py, scheduler.py
-
-
-## Orchestration Layer (orchestration/)
-
-- `unified_controller.py` - Central orchestration controller
-- `task_router.py` - HTTP task routing
-- `slack_task_router.py` - Slack-specific task routing
-- `ws_task_router.py` - WebSocket task routing
-- `plan_executor.py` - Plan execution engine
-- `long_plan_graph.py` - Long-running plan DAG
-- `cell_orchestrator.py` - Collaborative cell orchestration
-- `orchestrator_kernel.py` - Orchestrator kernel interface
-
-## Interface Contract
-
-All orchestrators implement:
-```python
-class OrchestratorInterface(Protocol):
-    async def run(self, context: Any) -> Any: ...
-    async def health_check(self) -> dict: ...
-```

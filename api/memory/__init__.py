@@ -1,2 +1,1 @@
 """Memory API module."""
-

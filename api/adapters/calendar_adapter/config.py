@@ -33,35 +33,47 @@ from typing import Optional
 @dataclass
 class CalendarAdapterConfig:
     """Configuration for Calendar Adapter."""
-    
+
     # Required environment variables
-    google_calendar_api_key: str = field(default_factory=lambda: os.environ.get("GOOGLE_CALENDAR_API_KEY", ""))
-    google_calendar_webhook_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CALENDAR_WEBHOOK_SECRET", ""))
-    
+    google_calendar_api_key: str = field(
+        default_factory=lambda: os.environ.get("GOOGLE_CALENDAR_API_KEY", "")
+    )
+    google_calendar_webhook_secret: str = field(
+        default_factory=lambda: os.environ.get("GOOGLE_CALENDAR_WEBHOOK_SECRET", "")
+    )
+
     # Optional environment variables
-    calendar_adapter_enabled: Optional[str] = field(default_factory=lambda: os.environ.get("CALENDAR_ADAPTER_ENABLED"))
-    calendar_adapter_log_level: Optional[str] = field(default_factory=lambda: os.environ.get("CALENDAR_ADAPTER_LOG_LEVEL"))
-    calendar_sync_interval_minutes: Optional[str] = field(default_factory=lambda: os.environ.get("CALENDAR_SYNC_INTERVAL_MINUTES"))
-    
+    calendar_adapter_enabled: Optional[str] = field(
+        default_factory=lambda: os.environ.get("CALENDAR_ADAPTER_ENABLED")
+    )
+    calendar_adapter_log_level: Optional[str] = field(
+        default_factory=lambda: os.environ.get("CALENDAR_ADAPTER_LOG_LEVEL")
+    )
+    calendar_sync_interval_minutes: Optional[str] = field(
+        default_factory=lambda: os.environ.get("CALENDAR_SYNC_INTERVAL_MINUTES")
+    )
+
     # Module settings
     module_id: str = "calendar.adapter"
     module_name: str = "Calendar Adapter"
     enabled: bool = True
-    
+
     # Timeouts
     default_timeout_seconds: int = 30
     aios_timeout_seconds: int = 60
-    
+
     # Idempotency
     dedupe_cache_ttl_seconds: int = 86400
-    
+
     def validate(self) -> list[str]:
         """Validate required configuration is present."""
         errors = []
-        if not self.google_calendar_api_key: errors.append("Missing required env: GOOGLE_CALENDAR_API_KEY")
-        if not self.google_calendar_webhook_secret: errors.append("Missing required env: GOOGLE_CALENDAR_WEBHOOK_SECRET")
+        if not self.google_calendar_api_key:
+            errors.append("Missing required env: GOOGLE_CALENDAR_API_KEY")
+        if not self.google_calendar_webhook_secret:
+            errors.append("Missing required env: GOOGLE_CALENDAR_WEBHOOK_SECRET")
         return errors
-    
+
     @classmethod
     def from_env(cls) -> "CalendarAdapterConfig":
         """Create config from environment variables."""

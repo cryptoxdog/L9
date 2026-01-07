@@ -12,6 +12,7 @@ def _get_kernels():
     global _KERNELS
     if _KERNELS is None:
         from runtime.kernel_loader import load_kernel_stack
+
         _KERNELS = load_kernel_stack()
     return _KERNELS
 
@@ -25,5 +26,7 @@ def get_output_verbosity() -> str:
 
 
 def is_topic_blocked(topic: str) -> bool:
-    blocked = _get_kernels().get_rule("behavioral", "prohibited_topics", default=[]) or []
+    blocked = (
+        _get_kernels().get_rule("behavioral", "prohibited_topics", default=[]) or []
+    )
     return topic in blocked

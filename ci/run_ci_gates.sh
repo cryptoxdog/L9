@@ -244,7 +244,80 @@ gate_5_forbidden_imports() {
 }
 
 # =============================================================================
-# GATE 6: TEST FILE PRESENCE
+# GATE 6: TOOL WIRING CONSISTENCY
+# =============================================================================
+
+gate_6_tool_wiring() {
+    log_header "GATE 6: TOOL WIRING CONSISTENCY"
+    
+    if [ ! -f "$SCRIPT_DIR/check_tool_wiring.py" ]; then
+        log_warn "Tool wiring checker not found: $SCRIPT_DIR/check_tool_wiring.py"
+        log_warn "Skipping tool wiring check"
+        return 0
+    fi
+    
+    log_info "Checking tool wiring consistency across registries..."
+    
+    if ! python3 "$SCRIPT_DIR/check_tool_wiring.py"; then
+        log_error "TOOL WIRING CHECK FAILED"
+        log_error "Fix all wiring gaps before proceeding"
+        return 1
+    fi
+    
+    log_info "✅ Tool wiring check passed"
+    return 0
+}
+
+# =============================================================================
+# GATE 8: NO DEPRECATED SERVICES
+# =============================================================================
+
+gate_8_no_deprecated_services() {
+    log_header "GATE 8: NO DEPRECATED SERVICES (Supabase, n8n)"
+    
+    if [ ! -f "$SCRIPT_DIR/check_no_deprecated_services.py" ]; then
+        log_warn "Deprecated services checker not found, skipping"
+        return 0
+    fi
+    
+    log_info "Checking for deprecated service references..."
+    
+    if ! python3 "$SCRIPT_DIR/check_no_deprecated_services.py"; then
+        log_error "DEPRECATED SERVICES CHECK FAILED"
+        log_error "Remove all references to deprecated services"
+        return 1
+    fi
+    
+    log_info "✅ No deprecated services found"
+    return 0
+}
+
+# =============================================================================
+# GATE 9: SCHEMA DEPRECATION CHECK
+# =============================================================================
+
+gate_9_schema_deprecation() {
+    log_header "GATE 9: SCHEMA DEPRECATION CHECK"
+    
+    if [ ! -f "$SCRIPT_DIR/check_schema_deprecation.py" ]; then
+        log_warn "Schema deprecation checker not found, skipping"
+        return 0
+    fi
+    
+    log_info "Checking for deprecated PacketEnvelope imports..."
+    
+    if ! python3 "$SCRIPT_DIR/check_schema_deprecation.py"; then
+        log_error "SCHEMA DEPRECATION CHECK FAILED"
+        log_error "Migrate deprecated imports to core.schemas.packet_envelope_v2"
+        return 1
+    fi
+    
+    log_info "✅ Schema deprecation check passed"
+    return 0
+}
+
+# =============================================================================
+# GATE 7: TEST FILE PRESENCE
 # =============================================================================
 
 run_test_presence_check() {
@@ -252,7 +325,7 @@ run_test_presence_check() {
     shift
     local files=("$@")
     
-    log_header "GATE 5: TEST FILE PRESENCE CHECK"
+    log_header "GATE 7: TEST FILE PRESENCE CHECK"
     
     # Extract module_id from spec
     local module_id
@@ -342,6 +415,9 @@ main() {
     run_syntax_check "${files[@]}" || exit 1
     run_import_check "${files[@]}" || exit 1
     gate_5_forbidden_imports "${files[@]}" || exit 1
+    gate_6_tool_wiring || exit 1
+    gate_8_no_deprecated_services || exit 1
+    gate_9_schema_deprecation || exit 1
     run_test_presence_check "$spec_file" "${files[@]}" || exit 1
     
     log_header "🎉 ALL CI GATES PASSED"
@@ -351,6 +427,8 @@ main() {
 }
 
 main "$@"
+
+
 
 
 

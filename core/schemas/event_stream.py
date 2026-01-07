@@ -30,8 +30,10 @@ from core.schemas.capabilities import AgentCapabilities, ToolName
 # Enums
 # =============================================================================
 
+
 class HandshakeStatus(str, Enum):
     """Status of agent handshake."""
+
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
@@ -40,6 +42,7 @@ class HandshakeStatus(str, Enum):
 
 class SecurityEventType(str, Enum):
     """Types of security events."""
+
     HANDSHAKE_INITIATED = "handshake_initiated"
     HANDSHAKE_ACCEPTED = "handshake_accepted"
     HANDSHAKE_REJECTED = "handshake_rejected"
@@ -54,13 +57,14 @@ class SecurityEventType(str, Enum):
 # Agent Handshake
 # =============================================================================
 
+
 class AgentHandshake(BaseModel):
     """
     Agent handshake message for registration and capability declaration.
-    
+
     Sent by agents on startup to register with the orchestrator.
     Contains agent metadata and capability declarations.
-    
+
     Attributes:
         agent_id: Unique agent identifier
         agent_version: Semantic version of the agent
@@ -70,7 +74,7 @@ class AgentHandshake(BaseModel):
         platform: Platform identifier (linux, darwin, win32)
         session_id: Current session identifier
         timestamp: Handshake timestamp
-        
+
     Usage:
         handshake = AgentHandshake(
             agent_id="coder-agent-1",
@@ -80,55 +84,53 @@ class AgentHandshake(BaseModel):
             platform="darwin",
         )
     """
+
     # Required fields
     agent_id: str = Field(..., min_length=1, description="Unique agent identifier")
-    
+
     # Version and metadata
     agent_version: str = Field(default="0.1.0", description="Agent semantic version")
     capabilities: List[str] = Field(
         default_factory=list,
-        description="List of capability names (simple string list)"
+        description="List of capability names (simple string list)",
     )
-    
+
     # Full capability object (optional, for advanced use)
     agent_capabilities: Optional[AgentCapabilities] = Field(
-        None,
-        description="Full AgentCapabilities object for detailed permissions"
+        None, description="Full AgentCapabilities object for detailed permissions"
     )
-    
+
     # Environment metadata
     hostname: Optional[str] = Field(None, description="Host where agent runs")
     platform: Optional[str] = Field(None, description="Platform identifier")
-    
+
     # Session tracking
     session_id: UUID = Field(default_factory=uuid4, description="Session identifier")
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="Handshake timestamp"
+        default_factory=datetime.utcnow, description="Handshake timestamp"
     )
-    
+
     # Handshake state
     status: HandshakeStatus = Field(
-        default=HandshakeStatus.PENDING,
-        description="Current handshake status"
+        default=HandshakeStatus.PENDING, description="Current handshake status"
     )
-    
+
     model_config = {"extra": "allow"}
-    
+
     def has_capability(self, tool: str) -> bool:
         """
         Check if agent declared a capability.
-        
+
         Args:
             tool: Tool name to check
-            
+
         Returns:
             True if declared, False otherwise
         """
         # Check simple list first
         if tool in self.capabilities:
             return True
-        
+
         # Check full capabilities object if present
         if self.agent_capabilities:
             try:
@@ -136,16 +138,16 @@ class AgentHandshake(BaseModel):
                 return self.agent_capabilities.is_tool_allowed(tool_enum)
             except ValueError:
                 return False
-        
+
         return False
 
 
 class HandshakeResponse(BaseModel):
     """
     Response to an agent handshake.
-    
+
     Sent by orchestrator to accept or reject agent registration.
-    
+
     Attributes:
         handshake_id: Reference to original handshake
         agent_id: Agent being responded to
@@ -155,26 +157,25 @@ class HandshakeResponse(BaseModel):
         expires_at: When this handshake expires
         rejection_reason: Reason if rejected
     """
+
     handshake_id: UUID = Field(default_factory=uuid4, description="Response identifier")
     agent_id: str = Field(..., description="Agent being responded to")
     status: HandshakeStatus = Field(..., description="Acceptance status")
-    
+
     # Approved capabilities
     effective_capabilities: List[str] = Field(
-        default_factory=list,
-        description="Capabilities actually granted"
+        default_factory=list, description="Capabilities actually granted"
     )
-    
+
     # Session management
     session_token: Optional[str] = Field(None, description="Session token for requests")
     expires_at: Optional[datetime] = Field(None, description="Handshake expiration")
-    
+
     # Rejection details
     rejection_reason: Optional[str] = Field(None, description="Reason if rejected")
-    
+
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="Response timestamp"
+        default_factory=datetime.utcnow, description="Response timestamp"
     )
 
 
@@ -182,13 +183,14 @@ class HandshakeResponse(BaseModel):
 # Security Events
 # =============================================================================
 
+
 class SecurityEvent(BaseModel):
     """
     Security audit log event.
-    
+
     Captures security-relevant events for audit trail.
     All security events are immutable once created.
-    
+
     Attributes:
         event_id: Unique event identifier
         event_type: Type of security event
@@ -198,45 +200,40 @@ class SecurityEvent(BaseModel):
         severity: Event severity (info, warning, error, critical)
         timestamp: When event occurred
     """
+
     event_id: UUID = Field(default_factory=uuid4, description="Event identifier")
     event_type: SecurityEventType = Field(..., description="Type of security event")
-    
+
     # Context
     agent_id: Optional[str] = Field(None, description="Agent involved")
     session_id: Optional[UUID] = Field(None, description="Session context")
-    
+
     # Event details
     details: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Event-specific details"
+        default_factory=dict, description="Event-specific details"
     )
     severity: str = Field(default="info", description="Event severity")
-    
+
     # Timing
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="Event timestamp"
+        default_factory=datetime.utcnow, description="Event timestamp"
     )
-    
+
     # Correlation
     correlation_id: Optional[UUID] = Field(
-        None,
-        description="Correlation ID for tracing related events"
+        None, description="Correlation ID for tracing related events"
     )
-    trace_id: Optional[str] = Field(
-        None,
-        description="Distributed trace ID"
-    )
-    
+    trace_id: Optional[str] = Field(None, description="Distributed trace ID")
+
     model_config = {"frozen": True}
 
 
 class CapabilityViolation(BaseModel):
     """
     Capability enforcement violation event.
-    
+
     Created when an agent attempts to use a tool without permission.
-    
+
     Attributes:
         violation_id: Unique violation identifier
         agent_id: Agent that attempted the action
@@ -245,39 +242,40 @@ class CapabilityViolation(BaseModel):
         blocked: Whether the action was blocked
         timestamp: When violation occurred
     """
-    violation_id: UUID = Field(default_factory=uuid4, description="Violation identifier")
+
+    violation_id: UUID = Field(
+        default_factory=uuid4, description="Violation identifier"
+    )
     agent_id: str = Field(..., description="Agent that attempted action")
     tool_attempted: ToolName = Field(..., description="Tool that was attempted")
-    
+
     # Action details
     action_details: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Details of attempted action"
+        default_factory=dict, description="Details of attempted action"
     )
-    
+
     # Enforcement result
     blocked: bool = Field(default=True, description="Whether action was blocked")
     enforcement_message: str = Field(
-        default="Capability not allowed",
-        description="Message returned to agent"
+        default="Capability not allowed", description="Message returned to agent"
     )
-    
+
     # Context
     session_id: Optional[UUID] = Field(None, description="Session context")
     correlation_id: Optional[UUID] = Field(None, description="Correlation ID")
-    
+
     # Timing
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="Violation timestamp"
+        default_factory=datetime.utcnow, description="Violation timestamp"
     )
-    
+
     model_config = {"frozen": True}
 
 
 # =============================================================================
 # Event Factories
 # =============================================================================
+
 
 def create_handshake_event(handshake: AgentHandshake) -> SecurityEvent:
     """Create a security event for an agent handshake."""
@@ -328,4 +326,3 @@ __all__ = [
     "create_handshake_event",
     "create_violation_event",
 ]
-

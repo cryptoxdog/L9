@@ -33,13 +33,10 @@ logger = structlog.get_logger(__name__)
 # =============================================================================
 
 # Get database URL from environment - use service DNS for Docker
-# Default uses 'postgres' hostname which resolves in Docker network
+# Default uses 'l9-postgres' service name from docker-compose.yml
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    os.getenv(
-        "MEMORY_DSN",
-        "postgresql://postgres:postgres@postgres:5432/l9"
-    )
+    os.getenv("MEMORY_DSN", "postgresql://postgres:postgres@l9-postgres:5432/l9_memory"),
 )
 
 
@@ -55,6 +52,7 @@ async def get_pool():
     global _pool
     if _pool is None:
         import asyncpg
+
         _pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
         logger.info("World Model DB pool initialized")
     return _pool
@@ -73,9 +71,10 @@ async def close_pool():
 # Entity Data Types
 # =============================================================================
 
+
 class WorldModelEntityRow:
     """Row data from world_model_entities table."""
-    
+
     def __init__(
         self,
         entity_id: str,
@@ -93,7 +92,7 @@ class WorldModelEntityRow:
         self.created_at = created_at
         self.updated_at = updated_at
         self.version = version
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "entity_id": self.entity_id,
@@ -104,7 +103,7 @@ class WorldModelEntityRow:
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "version": self.version,
         }
-    
+
     @classmethod
     def from_row(cls, row) -> "WorldModelEntityRow":
         attributes = row["attributes"]
@@ -123,7 +122,7 @@ class WorldModelEntityRow:
 
 class WorldModelUpdateRow:
     """Row data from world_model_updates table."""
-    
+
     def __init__(
         self,
         update_id: UUID,
@@ -147,7 +146,7 @@ class WorldModelUpdateRow:
         self.source_packet = source_packet
         self.state_version_before = state_version_before
         self.state_version_after = state_version_after
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "update_id": str(self.update_id),
@@ -165,7 +164,7 @@ class WorldModelUpdateRow:
 
 class WorldModelSnapshotRow:
     """Row data from world_model_snapshots table."""
-    
+
     def __init__(
         self,
         snapshot_id: UUID,
@@ -185,7 +184,7 @@ class WorldModelSnapshotRow:
         self.created_at = created_at
         self.description = description
         self.created_by = created_by
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "snapshot_id": str(self.snapshot_id),
@@ -203,36 +202,37 @@ class WorldModelSnapshotRow:
 # World Model Repository
 # =============================================================================
 
+
 class WorldModelRepository:
     """
     Database repository for World Model persistence.
-    
+
     Provides async CRUD operations for:
     - Entities
     - Updates (audit log)
     - Snapshots
-    
+
     Usage:
         repo = WorldModelRepository()
         entity = await repo.get_entity("entity-123")
         await repo.upsert_entity("entity-456", {"name": "Test"}, confidence=0.9)
     """
-    
+
     def __init__(self):
         """Initialize repository."""
         logger.info("WorldModelRepository initialized")
-    
+
     # =========================================================================
     # Entity Operations
     # =========================================================================
-    
+
     async def get_entity(self, entity_id: str) -> Optional[WorldModelEntityRow]:
         """
         Retrieve entity by ID.
-        
+
         Args:
             entity_id: Unique entity identifier
-            
+
         Returns:
             WorldModelEntityRow if found, None otherwise
         """
@@ -245,12 +245,12 @@ class WorldModelRepository:
                 FROM world_model_entities
                 WHERE entity_id = $1
                 """,
-                entity_id
+                entity_id,
             )
             if row:
                 return WorldModelEntityRow.from_row(row)
             return None
-    
+
     async def list_entities(
         self,
         entity_type: Optional[str] = None,
@@ -260,13 +260,13 @@ class WorldModelRepository:
     ) -> list[WorldModelEntityRow]:
         """
         List entities with optional filtering.
-        
+
         Args:
             entity_type: Filter by entity type
             min_confidence: Minimum confidence threshold
             limit: Maximum results
             offset: Pagination offset
-            
+
         Returns:
             List of matching entities
         """
@@ -275,23 +275,23 @@ class WorldModelRepository:
             conditions = []
             params = []
             param_idx = 1
-            
+
             if entity_type:
                 conditions.append(f"entity_type = ${param_idx}")
                 params.append(entity_type)
                 param_idx += 1
-            
+
             if min_confidence is not None:
                 conditions.append(f"confidence >= ${param_idx}")
                 params.append(min_confidence)
                 param_idx += 1
-            
+
             where_clause = ""
             if conditions:
                 where_clause = "WHERE " + " AND ".join(conditions)
-            
+
             params.extend([limit, offset])
-            
+
             query = f"""
                 SELECT entity_id, entity_type, attributes, confidence,
                        created_at, updated_at, version
@@ -300,10 +300,10 @@ class WorldModelRepository:
                 ORDER BY updated_at DESC
                 LIMIT ${param_idx} OFFSET ${param_idx + 1}
             """
-            
+
             rows = await conn.fetch(query, *params)
             return [WorldModelEntityRow.from_row(row) for row in rows]
-    
+
     async def upsert_entity(
         self,
         entity_id: str,
@@ -313,15 +313,15 @@ class WorldModelRepository:
     ) -> WorldModelEntityRow:
         """
         Insert or update entity.
-        
+
         Uses UPSERT pattern for atomic insert/update.
-        
+
         Args:
             entity_id: Unique entity identifier
             attributes: Entity attributes (merged on update)
             entity_type: Entity type classification
             confidence: Confidence score (0.0-1.0)
-            
+
         Returns:
             Updated/inserted entity
         """
@@ -343,32 +343,31 @@ class WorldModelRepository:
                 entity_id,
                 entity_type,
                 json.dumps(attributes),
-                confidence
+                confidence,
             )
             logger.debug(f"Upserted entity: {entity_id}")
             return WorldModelEntityRow.from_row(row)
-    
+
     async def delete_entity(self, entity_id: str) -> bool:
         """
         Delete entity by ID.
-        
+
         Args:
             entity_id: Entity to delete
-            
+
         Returns:
             True if deleted, False if not found
         """
         pool = await get_pool()
         async with pool.acquire() as conn:
             result = await conn.execute(
-                "DELETE FROM world_model_entities WHERE entity_id = $1",
-                entity_id
+                "DELETE FROM world_model_entities WHERE entity_id = $1", entity_id
             )
             deleted = result == "DELETE 1"
             if deleted:
                 logger.debug(f"Deleted entity: {entity_id}")
             return deleted
-    
+
     async def get_entity_count(self) -> int:
         """Get total entity count."""
         pool = await get_pool()
@@ -377,11 +376,11 @@ class WorldModelRepository:
                 "SELECT COUNT(*) as count FROM world_model_entities"
             )
             return row["count"] if row else 0
-    
+
     # =========================================================================
     # Update Operations (Audit Log)
     # =========================================================================
-    
+
     async def record_update(
         self,
         insight_id: Optional[UUID],
@@ -395,7 +394,7 @@ class WorldModelRepository:
     ) -> WorldModelUpdateRow:
         """
         Record an update to the world model audit log.
-        
+
         Args:
             insight_id: Source insight ID
             insight_type: Type of insight
@@ -405,7 +404,7 @@ class WorldModelRepository:
             source_packet: Source packet ID (if any)
             state_version_before: Version before update
             state_version_after: Version after update
-            
+
         Returns:
             Created update record
         """
@@ -428,10 +427,10 @@ class WorldModelRepository:
                 confidence,
                 source_packet,
                 state_version_before,
-                state_version_after
+                state_version_after,
             )
             logger.debug(f"Recorded update: {update_id}")
-            
+
             return WorldModelUpdateRow(
                 update_id=update_id,
                 insight_id=insight_id,
@@ -444,7 +443,7 @@ class WorldModelRepository:
                 state_version_before=state_version_before,
                 state_version_after=state_version_after,
             )
-    
+
     async def list_updates(
         self,
         insight_type: Optional[str] = None,
@@ -454,13 +453,13 @@ class WorldModelRepository:
     ) -> list[WorldModelUpdateRow]:
         """
         List update records with filtering.
-        
+
         Args:
             insight_type: Filter by insight type
             min_confidence: Minimum confidence
             since: Updates after this timestamp
             limit: Maximum results
-            
+
         Returns:
             List of update records
         """
@@ -469,28 +468,28 @@ class WorldModelRepository:
             conditions = []
             params = []
             param_idx = 1
-            
+
             if insight_type:
                 conditions.append(f"insight_type = ${param_idx}")
                 params.append(insight_type)
                 param_idx += 1
-            
+
             if min_confidence is not None:
                 conditions.append(f"confidence >= ${param_idx}")
                 params.append(min_confidence)
                 param_idx += 1
-            
+
             if since:
                 conditions.append(f"applied_at >= ${param_idx}")
                 params.append(since)
                 param_idx += 1
-            
+
             where_clause = ""
             if conditions:
                 where_clause = "WHERE " + " AND ".join(conditions)
-            
+
             params.append(limit)
-            
+
             query = f"""
                 SELECT update_id, insight_id, insight_type, entities, content,
                        confidence, applied_at, source_packet,
@@ -500,7 +499,7 @@ class WorldModelRepository:
                 ORDER BY applied_at DESC
                 LIMIT ${param_idx}
             """
-            
+
             rows = await conn.fetch(query, *params)
             results = []
             for row in rows:
@@ -510,24 +509,26 @@ class WorldModelRepository:
                 content = row["content"]
                 if isinstance(content, str):
                     content = json.loads(content)
-                results.append(WorldModelUpdateRow(
-                    update_id=row["update_id"],
-                    insight_id=row["insight_id"],
-                    insight_type=row["insight_type"],
-                    entities=entities,
-                    content=content,
-                    confidence=row["confidence"],
-                    applied_at=row["applied_at"],
-                    source_packet=row["source_packet"],
-                    state_version_before=row["state_version_before"],
-                    state_version_after=row["state_version_after"],
-                ))
+                results.append(
+                    WorldModelUpdateRow(
+                        update_id=row["update_id"],
+                        insight_id=row["insight_id"],
+                        insight_type=row["insight_type"],
+                        entities=entities,
+                        content=content,
+                        confidence=row["confidence"],
+                        applied_at=row["applied_at"],
+                        source_packet=row["source_packet"],
+                        state_version_before=row["state_version_before"],
+                        state_version_after=row["state_version_after"],
+                    )
+                )
             return results
-    
+
     # =========================================================================
     # Snapshot Operations
     # =========================================================================
-    
+
     async def save_snapshot(
         self,
         snapshot: dict[str, Any],
@@ -539,7 +540,7 @@ class WorldModelRepository:
     ) -> WorldModelSnapshotRow:
         """
         Save a world model snapshot.
-        
+
         Args:
             snapshot: Full state serialization
             state_version: Current state version
@@ -547,7 +548,7 @@ class WorldModelRepository:
             relation_count: Number of relations
             description: Optional description
             created_by: Creator identifier
-            
+
         Returns:
             Created snapshot record
         """
@@ -567,10 +568,10 @@ class WorldModelRepository:
                 entity_count,
                 relation_count,
                 description,
-                created_by
+                created_by,
             )
             logger.info(f"Saved snapshot: {snapshot_id} (version {state_version})")
-            
+
             return WorldModelSnapshotRow(
                 snapshot_id=snapshot_id,
                 snapshot=snapshot,
@@ -581,14 +582,14 @@ class WorldModelRepository:
                 description=description,
                 created_by=created_by,
             )
-    
+
     async def load_snapshot(self, snapshot_id: UUID) -> Optional[WorldModelSnapshotRow]:
         """
         Load a snapshot by ID.
-        
+
         Args:
             snapshot_id: Snapshot UUID
-            
+
         Returns:
             Snapshot if found, None otherwise
         """
@@ -601,7 +602,7 @@ class WorldModelRepository:
                 FROM world_model_snapshots
                 WHERE snapshot_id = $1
                 """,
-                snapshot_id
+                snapshot_id,
             )
             if row:
                 snapshot = row["snapshot"]
@@ -618,11 +619,11 @@ class WorldModelRepository:
                     created_by=row["created_by"],
                 )
             return None
-    
+
     async def get_latest_snapshot(self) -> Optional[WorldModelSnapshotRow]:
         """
         Get the most recent snapshot.
-        
+
         Returns:
             Latest snapshot if any exist
         """
@@ -652,17 +653,17 @@ class WorldModelRepository:
                     created_by=row["created_by"],
                 )
             return None
-    
+
     async def list_snapshots(
         self,
         limit: int = 20,
     ) -> list[WorldModelSnapshotRow]:
         """
         List recent snapshots.
-        
+
         Args:
             limit: Maximum results
-            
+
         Returns:
             List of snapshots (newest first)
         """
@@ -676,33 +677,35 @@ class WorldModelRepository:
                 ORDER BY created_at DESC
                 LIMIT $1
                 """,
-                limit
+                limit,
             )
             results = []
             for row in rows:
                 snapshot = row["snapshot"]
                 if isinstance(snapshot, str):
                     snapshot = json.loads(snapshot)
-                results.append(WorldModelSnapshotRow(
-                    snapshot_id=row["snapshot_id"],
-                    snapshot=snapshot,
-                    state_version=row["state_version"],
-                    entity_count=row["entity_count"],
-                    relation_count=row["relation_count"],
-                    created_at=row["created_at"],
-                    description=row["description"],
-                    created_by=row["created_by"],
-                ))
+                results.append(
+                    WorldModelSnapshotRow(
+                        snapshot_id=row["snapshot_id"],
+                        snapshot=snapshot,
+                        state_version=row["state_version"],
+                        entity_count=row["entity_count"],
+                        relation_count=row["relation_count"],
+                        created_at=row["created_at"],
+                        description=row["description"],
+                        created_by=row["created_by"],
+                    )
+                )
             return results
-    
+
     # =========================================================================
     # State Version Management
     # =========================================================================
-    
+
     async def get_state_version(self) -> int:
         """
         Get current state version (highest version from any entity).
-        
+
         Returns:
             Current state version
         """
@@ -730,4 +733,3 @@ def get_world_model_repository() -> WorldModelRepository:
     if _repository is None:
         _repository = WorldModelRepository()
     return _repository
-

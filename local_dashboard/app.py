@@ -8,7 +8,7 @@ Runs locally so only YOU can access it.
 Usage:
     1. Start L9 in Docker:
        docker compose up -d
-    
+
     2. Run this dashboard:
        cd /Users/ib-mac/Projects/L9/local_dashboard
        python app.py
@@ -19,7 +19,6 @@ Usage:
 import os
 import structlog
 import sys
-import json
 from datetime import datetime
 
 # Add parent directory to path for imports
@@ -27,8 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import httpx
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 import uvicorn
 
 # =============================================================================
@@ -39,7 +37,9 @@ import uvicorn
 
 logger = structlog.get_logger(__name__)
 L9_API_URL = os.getenv("L9_API_URL", "http://localhost:8000")
-L9_API_KEY = os.getenv("L9_API_KEY", "9c4753df3b7ee85e2370b0e9a55355e59a9cf3c15f65791de4ab8cdd656b4304")
+L9_API_KEY = os.getenv(
+    "L9_API_KEY", "9c4753df3b7ee85e2370b0e9a55355e59a9cf3c15f65791de4ab8cdd656b4304"
+)
 
 # Local settings
 LOCAL_HOST = "127.0.0.1"  # Only accessible from this machine
@@ -509,6 +509,7 @@ HTML_TEMPLATE = """
 # Routes
 # =============================================================================
 
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     """Serve the dashboard."""
@@ -521,53 +522,59 @@ async def chat(request: Request):
     try:
         body = await request.json()
         message = body.get("message", "")
-        
+
         if not message:
             raise HTTPException(status_code=400, detail="Message is required")
-        
+
         # Call L9 Agent Execute API in Docker
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
                 f"{L9_API_URL}/agent/execute",
                 headers={
                     "Authorization": f"Bearer {L9_API_KEY}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
                     "message": message,
                     "kind": "query",
-                    "source_id": "local_dashboard"
-                }
+                    "source_id": "local_dashboard",
+                },
             )
-            
+
             if response.status_code != 200:
                 error_detail = response.text
                 raise HTTPException(
-                    status_code=response.status_code, 
-                    detail=f"L9 API error: {error_detail}"
+                    status_code=response.status_code,
+                    detail=f"L9 API error: {error_detail}",
                 )
-            
+
             data = response.json()
-            
+
             # Extract reply from executor response
             reply = data.get("result", "") or data.get("error", "No response from L")
-            
+
             # Store in local history
-            conversation_history.append({
-                "role": "user",
-                "content": message,
-                "timestamp": datetime.now().isoformat()
-            })
-            conversation_history.append({
-                "role": "assistant",
-                "content": reply,
-                "timestamp": datetime.now().isoformat()
-            })
-            
+            conversation_history.append(
+                {
+                    "role": "user",
+                    "content": message,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+            conversation_history.append(
+                {
+                    "role": "assistant",
+                    "content": reply,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
             return {"reply": reply}
-            
+
     except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Cannot connect to L9 API. Is Docker running?")
+        raise HTTPException(
+            status_code=503, detail="Cannot connect to L9 API. Is Docker running?"
+        )
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="L9 API request timed out")
     except HTTPException:
@@ -582,7 +589,7 @@ async def health():
     return {
         "status": "ok",
         "l9_url": L9_API_URL,
-        "conversation_count": len(conversation_history) // 2
+        "conversation_count": len(conversation_history) // 2,
     }
 
 
@@ -618,11 +625,5 @@ if __name__ == "__main__":
 ╚══════════════════════════════════════════════════════════════╝
 
 """)
-    
-    uvicorn.run(
-        app,
-        host=LOCAL_HOST,
-        port=LOCAL_PORT,
-        log_level="warning"
-    )
 
+    uvicorn.run(app, host=LOCAL_HOST, port=LOCAL_PORT, log_level="warning")

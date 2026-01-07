@@ -9,12 +9,15 @@ TWILIO_SMS_NUMBER = os.getenv("TWILIO_SMS_NUMBER")
 TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 EXECUTOR_API_KEY = os.getenv("L9_EXECUTOR_API_KEY")
 
-if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_NUMBER, EXECUTOR_API_KEY]):
+if not all(
+    [TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_NUMBER, EXECUTOR_API_KEY]
+):
     raise RuntimeError("Twilio or executor environment variables not fully configured")
 
 router = APIRouter()
 
 CHAT_URL = "http://127.0.0.1:8000/chat"
+
 
 @router.post("/twilio/webhook", response_class=PlainTextResponse)
 async def twilio_webhook(request: Request):
