@@ -77,7 +77,7 @@ docs/12-19-25/
 docs/_VPS MRI/
 
 # Local Docker overrides (machine-specific)
-docker-compose.yml
+# docker-compose.yml is now TRACKED (VPS production config with full observability)
 docker-compose.override.yml
 docs/docker-compose.yaml
 
