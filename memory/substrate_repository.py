@@ -90,6 +90,8 @@ class SubstrateRepository:
         thread_id = envelope.thread_id
         tags = envelope.tags if envelope.tags else []
         ttl = envelope.ttl
+        # Extract parent_ids from lineage (DAG support)
+        parent_ids = envelope.lineage.parent_ids if envelope.lineage else []
         # Extra fields may be in metadata dict (extra="allow" in PacketMetadata)
         metadata_dict = envelope.metadata.model_dump() if envelope.metadata else {}
         content_hash = metadata_dict.get("content_hash")
@@ -101,13 +103,14 @@ class SubstrateRepository:
                 """
                 INSERT INTO packet_store (
                     packet_id, packet_type, envelope, timestamp, routing, provenance,
-                    thread_id, tags, ttl, content_hash, session_id, scope
+                    thread_id, parent_ids, tags, ttl, content_hash, session_id, scope
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                 ON CONFLICT (packet_id) DO UPDATE SET
                     envelope = EXCLUDED.envelope,
                     timestamp = EXCLUDED.timestamp,
                     thread_id = COALESCE(EXCLUDED.thread_id, packet_store.thread_id),
+                    parent_ids = COALESCE(EXCLUDED.parent_ids, packet_store.parent_ids),
                     tags = COALESCE(EXCLUDED.tags, packet_store.tags),
                     ttl = COALESCE(EXCLUDED.ttl, packet_store.ttl),
                     content_hash = COALESCE(EXCLUDED.content_hash, packet_store.content_hash),
@@ -127,13 +130,14 @@ class SubstrateRepository:
                     else None
                 ),
                 thread_id,
+                parent_ids,
                 tags,
                 ttl,
                 content_hash,
                 session_id,
                 scope,
             )
-            logger.debug(f"Inserted packet {envelope.packet_id} with thread_id={thread_id}, tags={tags}")
+            logger.debug(f"Inserted packet {envelope.packet_id} with thread_id={thread_id}, parent_ids={parent_ids}, tags={tags}")
             return envelope.packet_id
 
     async def get_packet(self, packet_id: UUID) -> Optional[PacketStoreRow]:
