@@ -42,14 +42,16 @@ import structlog
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent / "tier1"))
 from audit_shared_core import (
-    CacheManager, Reporter, GMPIntegration, ConfigValidator,
+    Reporter, GMPIntegration, ConfigValidator,
     ObservabilityHooks, setup_logger
 )
 
 # Import tier1 audit modules
+# Use CacheManager from audit_code_integrity (has result caching)
 from audit_code_integrity import (
     find_python_files, analyze_file_for_uncalled, analyze_file_for_orphans,
-    detect_circular_imports, REPO_ROOT as CODE_REPO_ROOT
+    detect_circular_imports, REPO_ROOT as CODE_REPO_ROOT,
+    CacheManager  # Has load_results/save_results for full caching
 )
 from audit_capability_inventory import (
     get_exposed_tools, get_async_methods, assess_capability,
@@ -207,13 +209,50 @@ class AuditOrchestrator:
             # Find all Python files
             all_files = find_python_files(self.repo_root)
             
-            # Build content index for reference checking
-            all_content = ""
-            for f in all_files:
-                try:
-                    all_content += f.read_text(encoding="utf-8", errors="ignore") + "\n"
-                except Exception:
-                    pass
+            # Try to use cached results (fast path)
+            # Check if we have valid cached results before doing expensive analysis
+            if self.cache_mgr:
+                cached_results = self.cache_mgr.load_results()
+                if cached_results:
+                    uncalled_count = len(cached_results.get("uncalled", []))
+                    orphans = cached_results.get("orphans", [])
+                    circular = cached_results.get("circular", [])
+                    total_items = uncalled_count + len(orphans) + len(circular)
+                    
+                    logger.info(f"Using cached code integrity results")
+                    return AuditResult(
+                        audit_type=AuditType.CODE_INTEGRITY,
+                        status="success",
+                        duration_ms=0,
+                        items_found=total_items,
+                        items_critical=len(circular),
+                        items_high=len([o for o in orphans if o.get("is_stub")]),
+                        items_medium=len([o for o in orphans if not o.get("is_stub")]),
+                        items_low=uncalled_count,
+                        data={
+                            "uncalled_functions": uncalled_count,
+                            "orphan_classes": len(orphans),
+                            "circular_imports": len(circular),
+                            "cached": True,
+                        },
+                    )
+            
+            # Full analysis (slow path)
+            # Build content index with caching
+            all_content = None
+            if self.cache_mgr:
+                all_content = self.cache_mgr.load_content_index(all_files)
+            
+            if all_content is None:
+                all_content = ""
+                for f in all_files:
+                    try:
+                        all_content += f.read_text(encoding="utf-8", errors="ignore") + "\n"
+                    except Exception:
+                        pass
+                
+                if self.cache_mgr:
+                    self.cache_mgr.save_content_index(all_files, all_content)
             
             # Analyze for uncalled functions and orphan classes
             uncalled = []
@@ -227,6 +266,11 @@ class AuditOrchestrator:
             
             # Detect circular imports
             circular = detect_circular_imports(self.repo_root)
+            
+            # Save results for next run
+            if self.cache_mgr:
+                self.cache_mgr.save_results(uncalled, orphans, circular)
+                self.cache_mgr.update_manifest(all_files)
             
             total_items = len(uncalled) + len(orphans) + len(circular)
             

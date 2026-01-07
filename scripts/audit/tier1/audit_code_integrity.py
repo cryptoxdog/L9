@@ -369,6 +369,61 @@ class CacheManager:
         except Exception as e:
             logger.warning(f"Failed to save content index cache: {e}")
 
+    def get_results_cache_path(self) -> Path:
+        """Path to analysis results cache."""
+        return self.cache_dir / "analysis_results.json"
+
+    def load_results(self) -> Optional[Dict]:
+        """Load cached analysis results if content index unchanged."""
+        results_path = self.get_results_cache_path()
+        hash_path = self.get_content_index_hash_path()
+        
+        if not results_path.exists() or not hash_path.exists():
+            return None
+        
+        try:
+            data = json.loads(results_path.read_text())
+            cached_index_hash = hash_path.read_text().strip()
+            
+            # Results are valid only if content index hash matches
+            if data.get("content_index_hash") == cached_index_hash:
+                logger.info("Loading analysis results from cache...")
+                return data
+        except (json.JSONDecodeError, Exception):
+            pass
+        
+        return None
+
+    def save_results(self, uncalled: List, orphans: List, circular: List):
+        """Save analysis results to cache."""
+        try:
+            results_path = self.get_results_cache_path()
+            hash_path = self.get_content_index_hash_path()
+            
+            if not hash_path.exists():
+                return
+            
+            content_hash = hash_path.read_text().strip()
+            
+            # Convert to serializable format (convert Path to str)
+            def serialize(obj):
+                d = asdict(obj)
+                for k, v in d.items():
+                    if isinstance(v, Path):
+                        d[k] = str(v)
+                return d
+            
+            data = {
+                "content_index_hash": content_hash,
+                "uncalled": [serialize(u) for u in uncalled],
+                "orphans": [serialize(o) for o in orphans],
+                "circular": circular,
+            }
+            results_path.write_text(json.dumps(data, indent=2))
+            logger.info("Saved analysis results to cache")
+        except Exception as e:
+            logger.warning(f"Failed to save results cache: {e}")
+
     def update_manifest(self, all_files: List[Path]):
         """Update manifest with current file hashes."""
         manifest = self.load_manifest()
@@ -773,27 +828,41 @@ async def main():
         if cache_mgr:
             cache_mgr.save_content_index(all_files, all_content)
 
-    # Analyze files
-    # NOTE: Always analyze ALL files for orphan detection (cross-file references)
-    # Caching only speeds up content index building, not file analysis
-    logger.info("Analyzing code for integrity issues...")
-    uncalled = []
-    orphans = []
+    # Try to load cached analysis results (only valid if content index unchanged)
+    cached_results = None
+    if cache_mgr and len(modified_files) == 0:
+        cached_results = cache_mgr.load_results()
+    
+    if cached_results:
+        # Use cached results (fast path)
+        uncalled = [UncalledFunction(**u) for u in cached_results.get("uncalled", [])]
+        orphans = [OrphanClass(**o) for o in cached_results.get("orphans", [])]
+        circular = cached_results.get("circular", [])
+        logger.info(f"Using cached analysis: {len(uncalled)} uncalled, {len(orphans)} orphans, {len(circular)} circular")
+    else:
+        # Full analysis (slow path)
+        logger.info("Analyzing code for integrity issues...")
+        uncalled = []
+        orphans = []
 
-    for filepath in all_files:
-        try:
-            uncalled.extend(analyze_file_for_uncalled(filepath, all_content))
-            orphans.extend(analyze_file_for_orphans(filepath, all_content))
-        except Exception as e:
-            logger.warning(f"Error analyzing {filepath}: {e}")
+        for filepath in all_files:
+            try:
+                uncalled.extend(analyze_file_for_uncalled(filepath, all_content))
+                orphans.extend(analyze_file_for_orphans(filepath, all_content))
+            except Exception as e:
+                logger.warning(f"Error analyzing {filepath}: {e}")
 
-    # Circular imports
-    circular = []
-    if not args.no_circular:
-        logger.info("Detecting circular imports...")
-        circular = detect_circular_imports(REPO_ROOT)
+        # Circular imports
+        circular = []
+        if not args.no_circular:
+            logger.info("Detecting circular imports...")
+            circular = detect_circular_imports(REPO_ROOT)
+        
+        # Save results to cache for next run
+        if cache_mgr:
+            cache_mgr.save_results(uncalled, orphans, circular)
 
-    # Update cache
+    # Update manifest
     if cache_mgr:
         cache_mgr.update_manifest(all_files)
 

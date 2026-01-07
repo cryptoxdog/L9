@@ -1801,8 +1801,8 @@
   },
   "scripts/audit/run_all.py": {
     "path": "scripts/audit/run_all.py",
-    "hash": "89b209eeb876912bab8bac152a0b38054a8f15fee9d879da2481611c525e63a4",
-    "modified": 1767746308.4877303
+    "hash": "3adea50fd4d8b23b6c8362dfeb129aa1c326f82133a20f38f2fcc65a0e9d3da3",
+    "modified": 1767747616.434982
   },
   "scripts/audit/audit_shared_core.py": {
     "path": "scripts/audit/audit_shared_core.py",
@@ -1831,8 +1831,8 @@
   },
   "scripts/audit/tier1/audit_code_integrity.py": {
     "path": "scripts/audit/tier1/audit_code_integrity.py",
-    "hash": "48c52b240e35a00b520ac0d7834addf27123c9a03a3316add15816961d79fb7a",
-    "modified": 1767746535.0454
+    "hash": "a770e761aea78f9b2414e67a84c3cb9e4c1a066a186990ef09391a422c20b035",
+    "modified": 1767747267.3611264
   },
   "mcp_memory/src/db.py": {
     "path": "mcp_memory/src/db.py",

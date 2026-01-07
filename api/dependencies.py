@@ -199,3 +199,4 @@ def get_world_model_service(request: Request) -> Optional[Any]:
     """
     return getattr(request.app.state, "world_model_service", None)
 
+

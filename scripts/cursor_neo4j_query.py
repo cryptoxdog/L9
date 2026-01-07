@@ -26,6 +26,9 @@ import os
 import json
 import argparse
 from pathlib import Path
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 # Try to load from .env
 env_path = Path(__file__).parent.parent / ".env"
@@ -184,16 +187,15 @@ def main():
     result = query_neo4j(cypher)
     
     if args.raw:
-        print(json.dumps(result, indent=2, default=str))
+        # Raw JSON output to stdout for programmatic use
+        sys.stdout.write(json.dumps(result, indent=2, default=str) + "\n")
     else:
-        print(f"\n=== Neo4j Query ===")
-        print(f"Query: {cypher[:100]}...")
-        print()
-        print(format_results(result))
+        logger.info("neo4j_query_result", query=cypher[:100], result=format_results(result))
     
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
 
