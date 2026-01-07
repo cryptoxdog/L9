@@ -33,6 +33,7 @@ from agents.coder_agent_b import CoderAgentB
 from agents.qa_agent import QAAgent
 from agents.reflection_agent import ReflectionAgent
 from agents.l_cto import LCTOAgent, create_l_cto_agent
+from agents.research_agent import ResearchAgent
 
 __all__ = [
     # Base
@@ -54,4 +55,6 @@ __all__ = [
     "QAAgent",
     # Meta
     "ReflectionAgent",
+    # Research
+    "ResearchAgent",
 ]

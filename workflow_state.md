@@ -376,9 +376,11 @@
 - **Cloudflare**: All DNS for quantumaipartners.com proxied via Cloudflare (HTTPS, DDoS protection)
 
 ---
-*Last updated: 2026-01-06 10:55 EST*
+*Last updated: 2026-01-06 17:25 EST*
 
 **Recent Sessions (7-day window):**
+- ✅ 2026-01-06: **GMP-37: Docker Authority + Supabase Audit** - Verified Supabase is ALREADY deprecated (all refs in `archive/deprecated/`, CI guard blocks reintroduction). Added Docker Authority Declaration to `DOCKER-DEPLOYMENT-GUIDE.md` (25 lines) and `README.md` (1 line). Codex was reading archived files — expected behavior, not repo drift. Report: `Report_GMP-37-Docker-Authority-Supabase-Deprecation-Audit.md`
+- ✅ 2026-01-06: **GMP-36: Audit Scripts Deployment** - Deployed frontier-grade audit suite to `scripts/audit/`. Structure: `audit.yaml` + `audit_shared_core.py` + `run_all.py` (root) + `tier1/` (3 audit scripts). Fixed REPO_ROOT paths for tier1 depth. All 5 Python scripts compile. Report: `Report_GMP-36-Audit-Scripts-Deployment.md`
 - ✅ 2026-01-06: **GMP-34: Neo4j Kernel Governance Graph** - Expanded bootstrap to include 10 Kernel nodes, GOVERNED_BY (L→Kernels), GUARDED_BY (high-risk tools→SafetyKernel), REPORTS_TO (L→igor). Graph now has 8 labels, 10 relationship types, 147 nodes total. Comprehensive governance layer complete.
 - ✅ 2026-01-06: **GMP-33: Neo4j Bootstrap Schema** - Created `scripts/bootstrap_neo4j_schema.py` to initialize governance labels (Responsibility, Directive, SOP) and L's governance entities. 3 constraints + 8 governance relationships created. Neo4j warning logs eliminated.
 - ✅ 2026-01-06: **DATABASE SCHEMA ALIGNMENT AUDIT** - Audited all Python files with SQL queries against actual PostgreSQL schema. Fixed: (1) `tool_pattern_extractor.py` - wrong column names (success→error IS NULL, created_at→timestamp, cost_cents→cost_usd), (2) `memory/retrieval.py` - governance_patterns query used id/payload/created_at→packet_id/envelope/timestamp. Updated test fixtures. Neo4j wiring FULLY OPERATIONAL: Stage 5 complete, L agent found in graph, GraphToWorldModelSync running.

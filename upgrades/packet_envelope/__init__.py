@@ -10,7 +10,7 @@ Implements phases 2-5 of the PacketEnvelope frontier upgrade:
 - Phase 5: Governance (TTL enforcement, GDPR, Compliance)
 
 Usage:
-    from l9.upgrades.packet_envelope import PacketEnvelopeUpgradeEngine
+    from upgrades.packet_envelope import PacketEnvelopeUpgradeEngine
     
     engine = PacketEnvelopeUpgradeEngine()
     await engine.activate_all_phases()

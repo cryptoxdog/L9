@@ -40,7 +40,7 @@ from typing import Any, Callable, Optional
 from uuid import UUID, uuid4
 
 # Strategy Memory (optional - Phase 0)
-from l9.orchestration.strategymemory import (
+from memory.strategymemory import (
     IStrategyMemoryService,
     StrategyCandidate,
     StrategyFeedback,

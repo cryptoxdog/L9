@@ -93,3 +93,6 @@ codegen/extractions/
 
 # Prototype/roadmap docs (contains secrets, not production code)
 docs/
+
+# Python packaging artifacts
+*.egg-info/

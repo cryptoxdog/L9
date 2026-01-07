@@ -162,6 +162,8 @@ uvicorn api.server:app --reload --port 8000
 
 ### Docker Compose
 
+> ⚠️ **DOCKER AUTHORITY:** Use ROOT `docker-compose.yml` only. Files in `docs/` are reference copies, not production. See [`VPS-Repo-Files/VPS-Deploy-Sequence/DOCKER-DEPLOYMENT-GUIDE.md`](VPS-Repo-Files/VPS-Deploy-Sequence/DOCKER-DEPLOYMENT-GUIDE.md) for full details.
+
 ```bash
 docker compose up -d
 docker compose logs -f l9-api
