@@ -774,11 +774,13 @@ async def main():
             cache_mgr.save_content_index(all_files, all_content)
 
     # Analyze files
+    # NOTE: Always analyze ALL files for orphan detection (cross-file references)
+    # Caching only speeds up content index building, not file analysis
     logger.info("Analyzing code for integrity issues...")
     uncalled = []
     orphans = []
 
-    for filepath in modified_files:
+    for filepath in all_files:
         try:
             uncalled.extend(analyze_file_for_uncalled(filepath, all_content))
             orphans.extend(analyze_file_for_orphans(filepath, all_content))

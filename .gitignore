@@ -96,3 +96,6 @@ docs/
 
 # Python packaging artifacts
 *.egg-info/
+
+# CodeGen folder (specs, schemas, templates - not production)
+codegen/
