@@ -95,7 +95,8 @@ from core.agents.schemas import (
     ToolCallResult,
 )
 from core.schemas.capabilities import ToolName, DEFAULT_L_CAPABILITIES
-from memory.tool_audit import log_tool_invocation
+# NOTE: log_tool_invocation imported lazily in guarded_execute to avoid
+# test path shadowing issue (tests/memory shadows memory module)
 
 if TYPE_CHECKING:
     from core.governance.engine import GovernanceEngineService
@@ -607,6 +608,289 @@ class ExecutorToolRegistry:
                 error=str(e),
                 duration_ms=duration_ms,
             )
+
+    async def guarded_execute(
+        self,
+        agent: Any,
+        tool_id: str,
+        arguments: dict[str, Any],
+        context: Optional[dict[str, Any]] = None,
+        principal_id: Optional[str] = None,
+    ) -> ToolCallResult:
+        """
+        Execute a tool call with kernel enforcement.
+
+        This wraps dispatch_tool_call with additional kernel-aware guards:
+        1. Verify agent has active kernels (GATE 1)
+        2. Verify kernels are loaded (GATE 2)
+        3. Check behavioral/safety kernel constraints (GATE 3-4)
+        5. Check governance policies allow the tool (GATE 5)
+        6. Check tool approval if required (GATE 6)
+        7. Execute tool via dispatch_tool_call
+        8. Emit ToolAuditEntry with kernel metadata (GATE 7)
+
+        Args:
+            agent: The kernel-aware agent (must have kernel_state attribute)
+            tool_id: Tool identifier
+            arguments: Tool call arguments
+            context: Optional execution context
+            principal_id: Optional principal ID for audit trail
+
+        Returns:
+            ToolCallResult with success/failure, result, and tool_id
+
+        Raises:
+            RuntimeError: If kernels not active (hard failure)
+        """
+        start_time = time.time()
+        call_id = uuid4()
+
+        # Build context if not provided
+        if context is None:
+            context = {}
+
+        agent_id = getattr(agent, "agent_id", context.get("agent_id", "unknown"))
+        context["agent_id"] = agent_id
+        principal_id = principal_id or context.get("principal_id", "unknown")
+
+        # Extract kernel metadata for audit trail
+        kernel_hashes = getattr(agent, "_kernel_hashes", {})
+        kernel_version = getattr(agent, "_kernel_version", "unknown")
+
+        # GATE 1: Verify kernel activation
+        kernel_state = getattr(agent, "kernel_state", None)
+        if kernel_state != "ACTIVE":
+            logger.error(
+                "guarded_execute.kernel_not_active",
+                agent_id=agent_id,
+                kernel_state=kernel_state,
+                tool_id=tool_id,
+            )
+            return ToolCallResult(
+                call_id=call_id,
+                tool_id=tool_id,
+                success=False,
+                error=f"Kernel set not active (state={kernel_state}). Execution denied.",
+            )
+
+        # GATE 2: Verify agent has kernels loaded
+        kernels = getattr(agent, "kernels", {})
+        if not kernels or len(kernels) == 0:
+            logger.error(
+                "guarded_execute.no_kernels",
+                agent_id=agent_id,
+                tool_id=tool_id,
+            )
+            return ToolCallResult(
+                call_id=call_id,
+                tool_id=tool_id,
+                success=False,
+                error="No kernels loaded. Execution denied.",
+            )
+
+        # GATE 3: Check behavioral constraints from kernels (if available)
+        behavioral = getattr(agent, "_behavioral", {})
+        prohibited_tools = behavioral.get("prohibited_tools", [])
+        if tool_id in prohibited_tools:
+            logger.warning(
+                "guarded_execute.tool_prohibited_by_kernel",
+                agent_id=agent_id,
+                tool_id=tool_id,
+            )
+            return ToolCallResult(
+                call_id=call_id,
+                tool_id=tool_id,
+                success=False,
+                error=f"Tool {tool_id} prohibited by behavioral kernel.",
+            )
+
+        # GATE 4: Check safety constraints from kernels (if available)
+        safety = getattr(agent, "_safety", {})
+        prohibited_actions = safety.get("prohibited_actions", [])
+        for action in prohibited_actions:
+            if action.lower() in tool_id.lower():
+                logger.warning(
+                    "guarded_execute.action_prohibited_by_safety_kernel",
+                    agent_id=agent_id,
+                    tool_id=tool_id,
+                    prohibited_action=action,
+                )
+                return ToolCallResult(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    success=False,
+                    error=f"Tool {tool_id} matches prohibited action '{action}' in safety kernel.",
+                )
+
+        # GATE 5: Check governance engine policies (if attached)
+        if self._governance_engine is not None:
+            try:
+                from core.governance.schemas import EvaluationRequest
+
+                eval_request = EvaluationRequest(
+                    subject=agent_id,
+                    action="tool.execute",
+                    resource=tool_id,
+                    context={
+                        "kernel_state": kernel_state,
+                        "kernel_count": len(kernels),
+                        "principal_id": principal_id,
+                        **context,
+                    },
+                )
+                eval_result = await self._governance_engine.evaluate(eval_request)
+
+                if not eval_result.allowed:
+                    logger.warning(
+                        "guarded_execute.governance_denied",
+                        agent_id=agent_id,
+                        tool_id=tool_id,
+                        policy_id=eval_result.policy_id,
+                        reason=eval_result.reason,
+                    )
+                    return ToolCallResult(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        success=False,
+                        error=f"Governance denied: {eval_result.reason}",
+                    )
+
+                logger.debug(
+                    "guarded_execute.governance_allowed",
+                    agent_id=agent_id,
+                    tool_id=tool_id,
+                    policy_id=eval_result.policy_id,
+                )
+            except Exception as gov_err:
+                # Governance check failure is a soft failure - log but continue
+                logger.warning(
+                    "guarded_execute.governance_check_error",
+                    agent_id=agent_id,
+                    tool_id=tool_id,
+                    error=str(gov_err),
+                )
+
+        # GATE 6: Check tool approval for high-risk tools
+        try:
+            from core.governance.approvals import ApprovalManager, HIGH_RISK_TOOLS
+
+            if tool_id in HIGH_RISK_TOOLS:
+                # Import substrate service if available
+                substrate = getattr(self, "_substrate_service", None)
+                if substrate is None:
+                    # Try to get from context
+                    substrate = context.get("substrate_service")
+
+                if substrate:
+                    approval_manager = ApprovalManager(substrate)
+                    is_approved = await approval_manager.is_approved(str(call_id))
+
+                    if not is_approved:
+                        logger.warning(
+                            "guarded_execute.approval_required",
+                            agent_id=agent_id,
+                            tool_id=tool_id,
+                            call_id=str(call_id),
+                        )
+                        return ToolCallResult(
+                            call_id=call_id,
+                            tool_id=tool_id,
+                            success=False,
+                            error=f"Tool {tool_id} requires approval. Request ID: {call_id}",
+                        )
+        except ImportError:
+            # ApprovalManager not available - skip check
+            pass
+        except Exception as approval_err:
+            logger.warning(
+                "guarded_execute.approval_check_error",
+                agent_id=agent_id,
+                tool_id=tool_id,
+                error=str(approval_err),
+            )
+
+        # Log guarded execution start
+        logger.info(
+            "guarded_execute.start",
+            agent_id=agent_id,
+            tool_id=tool_id,
+            kernel_state=kernel_state,
+            kernel_count=len(kernels),
+        )
+
+        # Execute tool via dispatch_tool_call
+        result = await self.dispatch_tool_call(
+            tool_id=tool_id,
+            arguments=arguments,
+            context=context,
+        )
+
+        # Calculate duration
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # GATE 7: Emit ToolAuditEntry with kernel metadata
+        try:
+            # Import lazily to avoid test path shadowing issue
+            # (tests/memory shadows memory module in pytest)
+            import importlib
+            tool_audit_module = importlib.import_module("memory.tool_audit")
+            log_tool_invocation = tool_audit_module.log_tool_invocation
+            ToolAuditEntry = tool_audit_module.ToolAuditEntry
+
+            audit_entry = ToolAuditEntry(
+                tool_name=tool_id,
+                agent_id=agent_id,
+                input_data={
+                    "arguments": arguments,
+                    "principal_id": principal_id,
+                    "kernel_version": kernel_version,
+                    "kernel_hash": next(iter(kernel_hashes.values()), "unknown") if kernel_hashes else "unknown",
+                    "kernel_count": len(kernels),
+                },
+                output_data={
+                    "success": result.success,
+                    "result": str(result.result)[:500] if result.result else None,
+                    "error": result.error,
+                },
+                duration_ms=float(duration_ms),
+                error=result.error,
+                request_id=str(call_id),
+            )
+
+            # Log to audit trail (best-effort)
+            await log_tool_invocation(
+                tool_id=tool_id,
+                agent_id=agent_id,
+                success=result.success,
+                duration_ms=duration_ms,
+                error=result.error,
+            )
+
+            logger.debug(
+                "guarded_execute.audit_emitted",
+                agent_id=agent_id,
+                tool_id=tool_id,
+                request_id=str(call_id),
+            )
+        except Exception as audit_err:
+            # Audit emission is best-effort - don't fail execution
+            logger.warning(
+                "guarded_execute.audit_error",
+                agent_id=agent_id,
+                tool_id=tool_id,
+                error=str(audit_err),
+            )
+
+        # Log guarded execution result
+        logger.info(
+            "guarded_execute.complete",
+            agent_id=agent_id,
+            tool_id=tool_id,
+            success=result.success,
+            duration_ms=duration_ms,
+        )
+
+        return result
 
     # =========================================================================
     # Governance

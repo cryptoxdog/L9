@@ -6,6 +6,5 @@ l9_port: 8000
 log_path: /opt/l9/logs
 mac_port: 8001
 memory_enabled: false
-qdrant_port: 6333
 request_timeout: 30
 shutdown_timeout: 5

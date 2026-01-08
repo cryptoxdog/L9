@@ -31,8 +31,8 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-# Feature flag for sync (default OFF until verified)
-L9_GRAPH_WM_SYNC = os.getenv("L9_GRAPH_WM_SYNC", "false").lower() == "true"
+# Feature flag for sync (default ON - verified and production-ready)
+L9_GRAPH_WM_SYNC = os.getenv("L9_GRAPH_WM_SYNC", "true").lower() == "true"
 
 
 class GraphToWorldModelSync:

@@ -21,7 +21,7 @@ from . import (
     phase_6_wire_governance,
     phase_7_verify_and_lock,
 )
-from .phase_2_instantiate import AgentInstance
+from .phase_2_instantiate import BootstrapInstanceData
 
 if TYPE_CHECKING:
     from core.agents.schemas import AgentConfig

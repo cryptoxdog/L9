@@ -48,8 +48,8 @@ modules:
   
   - module_id: slack_webhook_adapter
     tier: 2
-    scope: "Slack incoming/outgoing webhook integration"
-    status: pending
+    scope: "ARCHIVED - Use api/routes/slack.py + memory/slack_ingest.py"
+    status: archived  # 2026-01-08: Never deployed, archived to _archived/codegen_slack_adapter/
   
   - module_id: http_client
     tier: 2

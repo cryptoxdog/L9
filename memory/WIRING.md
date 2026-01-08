@@ -57,14 +57,120 @@ Migrations run automatically on FastAPI startup via `lifespan()` context manager
 python -c "import asyncio; from memory.migration_runner import run_migrations; asyncio.run(run_migrations())"
 ```
 
+## Dual Pipeline Architecture
+
+The memory system has **two distinct but connected pipelines** for packet ingestion:
+
+### Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HTTP POST /api/v1/memory/packet                                            │
+│       │                                                                     │
+│       └─→ api/memory/router.py:create_packet()                              │
+│            │                                                                │
+│            └─→ memory/ingestion.py:ingest_packet()  [CANONICAL ENTRYPOINT]  │
+│                 │                                                           │
+│                 └─→ memory/substrate_service.py:write_packet()              │
+│                      │                                                      │
+│                      └─→ SubstrateDAG.run()  [LANGGRAPH PIPELINE]          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Pipeline 1: IngestionPipeline (`memory/ingestion.py`)
+
+**Purpose**: High-level packet processing with validation, Neo4j sync, and tag generation.
+
+| Stage | Function | Description |
+|-------|----------|-------------|
+| 1. Validate | `_validate_packet()` | Check required fields, TTL, confidence bounds |
+| 2. Convert | `to_envelope()` | PacketEnvelopeIn → PacketEnvelope |
+| 3. Auto-tag | `_generate_tags()` | Generate type:/agent:/domain: tags |
+| 4. Store | `_store_packet()` | Write to packet_store table |
+| 5. Memory Event | `_store_memory_event()` | Write to agent_memory_events |
+| 6. Embed | `_embed_content()` | Generate semantic embedding |
+| 7. Artifacts | `_store_artifacts()` | Handle payload.artifacts |
+| 8. Lineage | `_update_lineage()` | Verify parent_ids exist |
+| 9. Graph Sync | `_sync_to_graph()` | **Non-blocking** Neo4j sync |
+
+**Key Feature**: Neo4j graph sync for entity/event relationships.
+
+### Pipeline 2: SubstrateDAG (`memory/substrate_graph.py`)
+
+**Purpose**: LangGraph-based processing with reasoning traces and insight extraction.
+
+| Node | Function | Description |
+|------|----------|-------------|
+| `intake_node` | Validate & normalize | Set defaults, ensure packet_id |
+| `reasoning_node` | Generate reasoning block | Extract features, inference steps |
+| `memory_write_node` | Persist to DB | packet_store + agent_memory_events |
+| `semantic_embed_node` | Generate embedding | With GMP-42 skip filter |
+| `extract_insights_node` | Heuristic extraction | Facts from payload structure |
+| `store_insights_node` | Persist insights | knowledge_facts table |
+| `world_model_trigger_node` | Propagate to world model | Conditional WorldModelService call |
+| `checkpoint_node` | Save DAG state | graph_checkpoints table |
+
+**Key Feature**: Reasoning traces, insight extraction, world model integration.
+
+### How They Connect
+
+```python
+# memory/ingestion.py:522
+async def ingest_packet(packet_in, service=None):
+    service = await get_service()
+    # Falls through to DAG pipeline:
+    return await service.write_packet(packet_in)
+
+# memory/substrate_service.py:179
+async def write_packet(self, packet_in):
+    envelope = packet_in.to_envelope()
+    result = await self._dag.run(envelope)  # <-- SubstrateDAG.run()
+    return result
+```
+
+**Current Flow**: `ingest_packet()` → `write_packet()` → `SubstrateDAG.run()`
+
+### Feature Comparison
+
+| Feature | IngestionPipeline | SubstrateDAG |
+|---------|-------------------|--------------|
+| Validation | ✅ Full (TTL, confidence) | ✅ Basic (required fields) |
+| Auto-tagging | ✅ Yes | ❌ No |
+| Neo4j Sync | ✅ Yes (best-effort) | ❌ No |
+| Reasoning Trace | ❌ No | ✅ Yes |
+| Insight Extraction | ❌ No | ✅ Yes (v1.1.0) |
+| World Model Trigger | ❌ No | ✅ Yes |
+| GMP-42 Embedding Filter | ❌ No | ✅ Yes |
+| Checkpoint State | ❌ No | ✅ Yes |
+
+### Design Rationale
+
+1. **IngestionPipeline** = Application-level concerns (Neo4j, tagging, batch ops)
+2. **SubstrateDAG** = AI/reasoning concerns (traces, insights, world model)
+
+### When to Use Each
+
+| Use Case | Recommended Entry Point |
+|----------|------------------------|
+| API packet ingestion | `ingest_packet()` → runs both pipelines |
+| Batch import | `IngestionPipeline.ingest_batch()` |
+| Direct DAG testing | `SubstrateDAG.run()` directly |
+| Slack message | `ingest_packet()` (canonical) |
+
+### Future Considerations
+
+- IngestionPipeline could be refactored to call SubstrateDAG internally for Neo4j sync
+- Alternatively, Neo4j sync could be added as a SubstrateDAG node
+- Current architecture works; refactoring optional
+
 ## LangGraph Decision
 
-**Status**: OPTIONAL / NOT REQUIRED
+**Status**: WIRED AND ACTIVE
 
-- `PacketNodeAdapter` exists but is not wired into main execution flow
-- Memory system works independently via `ingest_packet()` → `MemorySubstrateService` → `SubstrateDAG`
-- `SubstrateDAG` uses LangGraph internally for processing pipeline
-- See `langgraph/STATUS.md` for details
+- `SubstrateDAG` is instantiated at server startup via `MemorySubstrateService.__init__()`
+- Every call to `write_packet()` executes `SubstrateDAG.run()`
+- LangGraph is a required dependency for the memory system
+- `PacketNodeAdapter` exists but is separate from this flow
 
 ## Verification
 
@@ -118,6 +224,7 @@ All memory code paths are:
 - ✅ Documented in this file
 
 No placeholders, no "future TODOs", no silent failures.
+
 
 
 

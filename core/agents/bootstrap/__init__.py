@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from .phase_0_validate import validate_agent_blueprint
 from .phase_1_load_kernels import load_and_parse_kernels, KernelParsed, KERNEL_ORDER
-from .phase_2_instantiate import instantiate_agent
+from .phase_2_instantiate import instantiate_agent, BootstrapInstanceData
 from .phase_3_bind_kernels import bind_kernels_to_agent
 from .phase_4_load_identity import load_identity_persona
 from .phase_5_bind_tools import bind_tools_and_capabilities
@@ -28,6 +28,7 @@ __all__ = [
     "KernelParsed",
     "KERNEL_ORDER",
     "instantiate_agent",
+    "BootstrapInstanceData",
     "bind_kernels_to_agent",
     "load_identity_persona",
     "bind_tools_and_capabilities",

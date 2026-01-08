@@ -154,6 +154,24 @@ try:
 except ImportError:
     _has_tools_router = False
 
+# Optional: Reasoning Orchestrator (v3.5+ / Stage 2.6 Phase 2)
+try:
+    from api.routes.reasoning import router as reasoning_router
+    from orchestrators.reasoning.orchestrator import ReasoningOrchestrator
+
+    _has_reasoning = True
+except ImportError:
+    _has_reasoning = False
+
+# Optional: ResearchSwarm Orchestrator (v3.5+ / Stage 2.6 Phase 3)
+try:
+    from api.routes.research import router as research_swarm_router
+    from orchestrators.research_swarm.orchestrator import ResearchSwarmOrchestrator
+
+    _has_research_swarm = True
+except ImportError:
+    _has_research_swarm = False
+
 # Optional: Governance Engine (v2.4+)
 try:
     from core.governance.engine import GovernanceEngineService, create_governance_engine
@@ -199,13 +217,13 @@ except ImportError:
     _has_bootstrap = False
 
 # Feature flag for new agent initialization
-L9_NEW_AGENT_INIT = os.getenv("L9_NEW_AGENT_INIT", "false").lower() == "true"
+L9_NEW_AGENT_INIT = os.getenv("L9_NEW_AGENT_INIT", "true").lower() == "true"
 
 # Stage 3 Modules: Tool Audit, Event Queue, Virtual Context, Evaluator
 L9_STAGE3_MODULES = os.getenv("L9_STAGE3_MODULES", "true").lower() == "true"
 
 # Stage 5: Graph-Backed Agent State (Neo4j for mutable agent state)
-L9_GRAPH_AGENT_STATE = os.getenv("L9_GRAPH_AGENT_STATE", "false").lower() == "true"
+L9_GRAPH_AGENT_STATE = os.getenv("L9_GRAPH_AGENT_STATE", "true").lower() == "true"
 
 # Optional: Graph-Backed Agent State (v3.2+ Stage 5)
 try:
@@ -304,8 +322,7 @@ try:
 except ImportError:
     _has_twilio_adapter = False
 
-# Slack Webhook Adapter (v2.6+) - NOT USED (using slack_router v2.0+ instead)
-_has_slack_webhook_adapter = False
+# Note: Slack handled by api/routes/slack.py → memory/slack_ingest.py
 
 # Optional: Housekeeping Engine (v2.4+)
 try:
@@ -316,7 +333,7 @@ except ImportError:
     _has_housekeeping = False
 
 # Optional: Mac Agent API (env-driven)
-_has_mac_agent = os.getenv("MAC_AGENT_ENABLED", "false").lower() == "true"
+_has_mac_agent = os.getenv("MAC_AGENT_ENABLED", "true").lower() == "true"
 
 # Optional: WABA/WhatsApp (env-driven)
 _has_waba = os.getenv("WABA_ENABLED", "false").lower() == "true"
@@ -437,7 +454,7 @@ async def lifespan(app: FastAPI):
             import asyncio
 
             app.state.world_model_task = asyncio.create_task(
-                world_model_runtime.run_loop()
+                world_model_runtime.run_forever()
             )
             logger.info(
                 "World Model Runtime initialized and running",
@@ -582,9 +599,9 @@ async def lifespan(app: FastAPI):
                     startup_result: StartupResult = await session_startup.execute()
 
                     app.state.session_startup_result = startup_result
-                    app.state.startup_ready = startup_result.status == "ready"
+                    app.state.startup_ready = startup_result.status == "READY"
 
-                    if startup_result.status == "ready":
+                    if startup_result.status == "READY":
                         logger.info(
                             "✓ Session Startup PASSED: preflight=%s, files_loaded=%d, kernels_ready=%s",
                             startup_result.preflight_passed,
@@ -699,6 +716,30 @@ async def lifespan(app: FastAPI):
             except Exception as mem_orch_err:
                 logger.warning(f"MemoryOrchestrator init failed: {mem_orch_err}")
                 app.state.memory_orchestrator = None
+
+            # Initialize ReasoningOrchestrator (for /reasoning/execute endpoint)
+            if _has_reasoning:
+                try:
+                    reasoning_orchestrator = ReasoningOrchestrator()
+                    app.state.reasoning_orchestrator = reasoning_orchestrator
+                    logger.info("ReasoningOrchestrator initialized")
+                except Exception as reason_err:
+                    logger.warning(f"ReasoningOrchestrator init failed: {reason_err}")
+                    app.state.reasoning_orchestrator = None
+            else:
+                app.state.reasoning_orchestrator = None
+
+            # Initialize ResearchSwarmOrchestrator (for /research/swarm/execute endpoint)
+            if _has_research_swarm:
+                try:
+                    research_swarm_orchestrator = ResearchSwarmOrchestrator()
+                    app.state.research_swarm_orchestrator = research_swarm_orchestrator
+                    logger.info("ResearchSwarmOrchestrator initialized")
+                except Exception as swarm_err:
+                    logger.warning(f"ResearchSwarmOrchestrator init failed: {swarm_err}")
+                    app.state.research_swarm_orchestrator = None
+            else:
+                app.state.research_swarm_orchestrator = None
 
             # Initialize WorldModelService (explicit, not lazy)
             try:
@@ -1186,7 +1227,7 @@ async def lifespan(app: FastAPI):
                 # Schedule background cleanup every 24 hours
                 async def run_consolidation_loop():
                     """Background task for periodic memory consolidation"""
-                    consolidation_interval = int(os.getenv("L9_CONSOLIDATION_INTERVAL_HOURS", "24")) * 3600
+                    consolidation_interval = int(os.getenv("L9_CONSOLIDATION_INTERVAL_HOURS", "4")) * 3600
                     logger.info(f"Memory consolidation scheduled every {consolidation_interval // 3600} hours")
                     
                     while True:
@@ -1298,7 +1339,7 @@ async def lifespan(app: FastAPI):
     # ========================================================================
     # STARTUP: UKG Phase 3 - Graph to World Model Sync (optional)
     # ========================================================================
-    L9_GRAPH_WM_SYNC = os.getenv("L9_GRAPH_WM_SYNC", "false").lower() == "true"
+    L9_GRAPH_WM_SYNC = os.getenv("L9_GRAPH_WM_SYNC", "true").lower() == "true"
     
     if L9_GRAPH_WM_SYNC:
         try:
@@ -1326,7 +1367,7 @@ async def lifespan(app: FastAPI):
     # STARTUP: UKG Phase 4 - Tool Pattern Extraction (optional)
     # ========================================================================
     L9_TOOL_PATTERN_EXTRACTION = os.getenv(
-        "L9_TOOL_PATTERN_EXTRACTION", "false"
+        "L9_TOOL_PATTERN_EXTRACTION", "true"
     ).lower() == "true"
     
     if L9_TOOL_PATTERN_EXTRACTION:
@@ -2064,6 +2105,16 @@ if _has_commands:
 if _has_tools_router:
     app.include_router(tools_router, prefix="/tools")
     logger.info("Tools router registered at /tools")
+
+# Reasoning router (Stage 2.6 Phase 2)
+if _has_reasoning:
+    app.include_router(reasoning_router, prefix="/reasoning")
+    logger.info("Reasoning router registered at /reasoning")
+
+# ResearchSwarm router (Stage 2.6 Phase 3)
+if _has_research_swarm:
+    app.include_router(research_swarm_router, prefix="/research/swarm")
+    logger.info("ResearchSwarm router registered at /research/swarm")
 
 # Compliance router (GMP-21)
 try:

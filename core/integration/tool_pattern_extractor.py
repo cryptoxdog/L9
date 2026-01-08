@@ -30,9 +30,9 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-# Feature flag
+# Feature flag (default ON - production-ready)
 L9_TOOL_PATTERN_EXTRACTION = os.getenv(
-    "L9_TOOL_PATTERN_EXTRACTION", "false"
+    "L9_TOOL_PATTERN_EXTRACTION", "true"
 ).lower() == "true"
 
 # Default extraction interval (6 hours)

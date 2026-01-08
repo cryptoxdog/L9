@@ -29,6 +29,62 @@ logger = structlog.get_logger(__name__)
 
 
 # =============================================================================
+# Embedding Skip Patterns (GMP-42: Filter low-value content from semantic index)
+# =============================================================================
+
+# These patterns are generic error/fallback messages that pollute semantic search.
+# They carry no semantic information and should NOT be embedded.
+SKIP_EMBEDDING_PATTERNS: list[str] = [
+    # L's generic error responses
+    "Sorry, I encountered a temporary error. Please try again.",
+    "Sorry, I encountered an error processing your command.",
+    # Empty/fallback responses
+    "No response generated.",
+    "This message has already been processed.",
+    # L9 agent unavailable
+    "L9 agent executor not available. Please try again later.",
+    # Mac agent unavailable
+    "Mac agent is not available on this server.",
+]
+
+
+def _should_skip_embedding(text: str) -> bool:
+    """
+    Check if text matches known low-value patterns that should not be embedded.
+
+    Args:
+        text: The text content to check
+
+    Returns:
+        True if text should be skipped, False otherwise
+    """
+    if not text:
+        return True
+
+    text_stripped = text.strip()
+
+    # Exact match against known patterns
+    if text_stripped in SKIP_EMBEDDING_PATTERNS:
+        return True
+
+    # Pattern-based checks for variations
+    low_value_prefixes = [
+        "Sorry, I encountered",  # Error message variants
+        "❌ Mac command error:",  # Mac error prefix
+        "❌ Please provide a command",  # Help text
+    ]
+    for prefix in low_value_prefixes:
+        if text_stripped.startswith(prefix):
+            return True
+
+    # Skip very short content (less than 10 chars, likely noise)
+    if len(text_stripped) < 10:
+        return True
+
+    return False
+
+
+# =============================================================================
 # State Definition
 # =============================================================================
 
@@ -319,6 +375,15 @@ async def semantic_embed_node(
         or payload.get("description")
         or str(payload)[:1000]  # Fallback to stringified payload
     )
+
+    # GMP-42: Skip embedding for known low-value content patterns
+    if _should_skip_embedding(text_to_embed):
+        logger.debug(
+            "semantic_embed_node: Skipping - low-value content pattern detected",
+            text_preview=text_to_embed[:50] if text_to_embed else None,
+            packet_type=packet_type,
+        )
+        return state
 
     if semantic_service is None:
         logger.warning("semantic_embed_node: No semantic service, skipping")
@@ -631,41 +696,6 @@ async def world_model_trigger_node(
         }
 
 
-async def gc_trigger_node(
-    state: SubstrateGraphState, repository=None, housekeeping_engine=None
-) -> SubstrateGraphState:
-    """
-    Garbage collection trigger node.
-
-    Conditionally triggers housekeeping based on packet count or time.
-    Runs lightweight GC (TTL eviction only) to avoid blocking.
-    """
-    logger.debug("gc_trigger_node: Checking GC conditions")
-
-    # GC is triggered probabilistically to avoid running on every packet
-    # In production, this would check time since last GC
-    import random
-
-    should_gc = random.random() < 0.01  # 1% chance per packet
-
-    if not should_gc:
-        return state
-
-    if housekeeping_engine is None:
-        logger.debug("gc_trigger_node: No housekeeping engine, skipping")
-        return state
-
-    try:
-        # Run lightweight TTL eviction only
-        count = await housekeeping_engine.evict_expired_ttl()
-        if count > 0:
-            logger.info(f"gc_trigger_node: Evicted {count} expired packets")
-    except Exception as e:
-        logger.warning(f"gc_trigger_node: GC failed (non-fatal): {e}")
-
-    return state
-
-
 # =============================================================================
 # Graph Builder
 # =============================================================================
@@ -803,23 +833,3 @@ class SubstrateDAG:
             written_tables=state.get("written_tables", []),
             status="ok",
         )
-
-
-async def run_substrate_flow(
-    envelope: PacketEnvelope,
-    repository=None,
-    semantic_service=None,
-) -> PacketWriteResult:
-    """
-    Convenience function to run the substrate flow.
-
-    Args:
-        envelope: PacketEnvelope to process
-        repository: Optional SubstrateRepository
-        semantic_service: Optional SemanticService
-
-    Returns:
-        PacketWriteResult
-    """
-    dag = SubstrateDAG(repository=repository, semantic_service=semantic_service)
-    return await dag.run(envelope)

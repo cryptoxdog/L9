@@ -28,13 +28,13 @@ class IntegrationSettings(BaseSettings):
 
     # Integration toggles
     slack_app_enabled: bool = Field(
-        default=False,
+        default=True,
         alias="SLACK_APP_ENABLED",
         description="Enable Slack Events API integration",
     )
 
     mac_agent_enabled: bool = Field(
-        default=False,
+        default=True,
         alias="MAC_AGENT_ENABLED",
         description="Enable Mac Agent task execution",
     )

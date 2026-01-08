@@ -28,7 +28,7 @@ try:
         sys.exit(0)
 except ImportError:
     # If settings can't be imported, check env var directly
-    if os.getenv("MAC_AGENT_ENABLED", "false").lower() != "true":
+    if os.getenv("MAC_AGENT_ENABLED", "true").lower() != "true":
         logger.info("Mac Agent is disabled (MAC_AGENT_ENABLED=false). Exiting.")
         sys.exit(0)
 
@@ -137,7 +137,7 @@ async def poll_and_execute():
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
-    from services.mac_tasks import get_next_task, mark_task_completed
+    from orchestrators.agent_execution.task_queue import get_next_task, mark_task_completed
     from services.slack_client import post_result
     from mac_agent.executor import AutomationExecutor
 

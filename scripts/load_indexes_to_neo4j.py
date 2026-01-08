@@ -488,6 +488,16 @@ def main():
         default="neo4j",
         help="Neo4j database name (default: neo4j)",
     )
+    parser.add_argument(
+        "--vps",
+        action="store_true",
+        help="Load to VPS Neo4j (requires SSH tunnel: ssh -L 7687:127.0.0.1:7687 root@157.180.73.53)",
+    )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Load to local Docker Neo4j (default if no --vps)",
+    )
 
     args = parser.parse_args()
 
@@ -497,8 +507,18 @@ def main():
         logger.info("Run 'python3 tools/export_repo_indexes.py' first")
         sys.exit(1)
 
+    # Determine Neo4j URI
+    uri = args.uri
+    if args.vps and not uri:
+        # VPS Neo4j via SSH tunnel: ssh -L 7687:127.0.0.1:7687 root@157.180.73.53
+        uri = "bolt://127.0.0.1:7687"
+        logger.info("Using VPS Neo4j (via SSH tunnel)")
+    elif args.local and not uri:
+        uri = "bolt://localhost:7687"
+        logger.info("Using local Docker Neo4j")
+    
     loader = RepoGraphLoader(
-        uri=args.uri,
+        uri=uri,
         database=args.database,
         dry_run=args.dry_run,
         verbose=args.verbose,

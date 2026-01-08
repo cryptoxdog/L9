@@ -307,3 +307,97 @@ def mock_tool_registry():
     from tests.core.agents.test_executor import MockToolRegistry
 
     return MockToolRegistry()
+
+
+# =============================================================================
+# Slack Webhook Test Fixtures
+# =============================================================================
+
+import hmac
+import hashlib
+import time
+
+
+SLACK_TEST_SIGNING_SECRET = "test_slack_signing_secret_123"
+SLACK_TEST_CHANNEL_ID = "C12345678"
+SLACK_TEST_USER_ID = "U12345678"
+SLACK_TEST_TEAM_ID = "T12345678"
+
+
+@pytest.fixture
+def slack_signing_secret() -> str:
+    """Provide test Slack signing secret."""
+    return SLACK_TEST_SIGNING_SECRET
+
+
+@pytest.fixture
+def slack_test_ids() -> dict:
+    """Provide test Slack IDs (channel, user, team)."""
+    return {
+        "channel_id": SLACK_TEST_CHANNEL_ID,
+        "user_id": SLACK_TEST_USER_ID,
+        "team_id": SLACK_TEST_TEAM_ID,
+    }
+
+
+def generate_slack_signature(body: str, timestamp: str, secret: str) -> str:
+    """
+    Generate valid Slack HMAC-SHA256 signature for testing.
+    
+    Args:
+        body: Request body as string
+        timestamp: Unix timestamp as string
+        secret: Slack signing secret
+        
+    Returns:
+        Signature in format "v0=<hex_hash>"
+    """
+    sig_basestring = f"v0:{timestamp}:{body}"
+    signature = hmac.new(
+        secret.encode(), sig_basestring.encode(), hashlib.sha256
+    ).hexdigest()
+    return f"v0={signature}"
+
+
+@pytest.fixture
+def slack_signature_generator():
+    """
+    Provide a function to generate valid Slack signatures.
+    
+    Usage:
+        sig = slack_signature_generator(body, timestamp, secret)
+    """
+    return generate_slack_signature
+
+
+@pytest.fixture
+def fresh_slack_timestamp() -> str:
+    """Provide current Unix timestamp as string (fresh, within tolerance)."""
+    return str(int(time.time()))
+
+
+@pytest.fixture
+def stale_slack_timestamp() -> str:
+    """Provide timestamp > 300 seconds old (outside tolerance)."""
+    return str(int(time.time()) - 400)
+
+
+@pytest.fixture
+def slack_enabled(monkeypatch):
+    """
+    Enable Slack integration for tests.
+    
+    Sets SLACK_APP_ENABLED=true and SLACK_SIGNING_SECRET.
+    """
+    monkeypatch.setenv("SLACK_APP_ENABLED", "true")
+    monkeypatch.setenv("SLACK_SIGNING_SECRET", SLACK_TEST_SIGNING_SECRET)
+
+
+@pytest.fixture
+def slack_disabled(monkeypatch):
+    """
+    Disable Slack integration for tests.
+    
+    Sets SLACK_APP_ENABLED=false.
+    """
+    monkeypatch.setenv("SLACK_APP_ENABLED", "false")

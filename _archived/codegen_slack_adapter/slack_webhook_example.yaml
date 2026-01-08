@@ -1,0 +1,50 @@
+# ============================================================================
+# L9 MODULE BLOCK — Slack Webhook Adapter
+# ============================================================================
+# Purpose: Minimal input for spec compiler
+# Format: Module Block v1.0
+# ============================================================================
+
+module_block:
+  module_id: "slack.webhook"
+  name: "Slack Webhook Adapter"
+  tier: 2
+  description: "Validates Slack events, normalizes to L9 packets, and routes to AIOS reasoning."
+
+  runtime:
+    service: api
+    execution_model: request_driven
+    blocks_startup_on_failure: false
+
+  surface:
+    exposes_http_endpoint: true
+    exposes_webhook: true
+    exposes_tool: false
+
+  inbound:
+    route: "/slack/events"
+    method: POST
+    auth: hmac-sha256
+    headers:
+      - X-Slack-Request-Timestamp
+      - X-Slack-Signature
+
+  outbound:
+    internal:
+      - aios.runtime:/chat
+      - memory.service:/memory/ingest
+    external:
+      - slack.chat.postMessage
+
+  idempotency:
+    pattern: event_id
+    source: platform_event_id
+
+  acceptance_min:
+    - valid_request_processed
+    - invalid_signature_rejected
+    - idempotent_replay_cached
+    - stale_timestamp_rejected
+    - aios_response_forwarded
+    - packet_written_on_success
+

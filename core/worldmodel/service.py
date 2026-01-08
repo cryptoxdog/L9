@@ -310,13 +310,15 @@ class WorldModelService:
                 connection_status=ConnectionStatus.CONNECTED,
                 auth_method="api_key",
             ),
-            L9ExternalSystem(
-                name="MCP-Memory",
-                integration_type="mcp",
-                api_endpoint="http://localhost:9001",
-                connection_status=ConnectionStatus.UNKNOWN,
-                auth_method="api_key",
-            ),
+            # DEPRECATED 2026-01-07: MCP-Memory never implemented
+            # Memory access is via cursor_memory_client.py → REST API
+            # L9ExternalSystem(
+            #     name="MCP-Memory",
+            #     integration_type="mcp",
+            #     api_endpoint="http://localhost:9001",
+            #     connection_status=ConnectionStatus.UNKNOWN,
+            #     auth_method="api_key",
+            # ),
         ]
         
         for system in systems:

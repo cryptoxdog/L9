@@ -18,6 +18,12 @@ class SpanKind(str, Enum):
     CLIENT = "CLIENT"
     PRODUCER = "PRODUCER"
     CONSUMER = "CONSUMER"
+    # Kernel lifecycle spans (v3.4+ / GMP-KERNEL-BOOT)
+    KERNEL_LOAD = "KERNEL_LOAD"
+    KERNEL_INTEGRITY_CHECK = "KERNEL_INTEGRITY_CHECK"
+    KERNEL_ACTIVATION = "KERNEL_ACTIVATION"
+    KERNEL_RELOAD = "KERNEL_RELOAD"
+    KERNEL_EVOLUTION = "KERNEL_EVOLUTION"
 
 
 class SpanStatus(str, Enum):
@@ -166,6 +172,41 @@ class AgentTrajectorySpan(Span):
     current_iteration: int = 0
     success: Optional[bool] = None
     final_result: Optional[Any] = None
+
+
+class KernelLifecycleSpan(Span):
+    """Span for kernel lifecycle events (v3.4+ / GMP-KERNEL-BOOT)."""
+    kernel_id: str
+    kernel_version: Optional[str] = None
+    kernel_hash: Optional[str] = None
+    phase: str = "load"  # load, validate, activate, reload, evolve
+    integrity_status: Optional[str] = None  # NEW, MODIFIED, UNCHANGED, DELETED
+    rules_count: int = 0
+    agent_id: Optional[str] = None
+    kernel_count: int = 0
+
+    @classmethod
+    def start(
+        cls,
+        name: str,
+        trace_id: str,
+        kernel_id: str,
+        parent_span_id: Optional[str] = None,
+        kind: SpanKind = SpanKind.KERNEL_LOAD,
+        **kwargs: Any,
+    ) -> "KernelLifecycleSpan":
+        """Create and start a new kernel lifecycle span."""
+        span_id = str(uuid.uuid4()).replace("-", "")[:16]
+        return cls(
+            trace_id=trace_id,
+            span_id=span_id,
+            parent_span_id=parent_span_id,
+            name=name,
+            kind=kind,
+            start_time=datetime.utcnow(),
+            kernel_id=kernel_id,
+            **kwargs,
+        )
 
 
 class FailureSignal(BaseModel):

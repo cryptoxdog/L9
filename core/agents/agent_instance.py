@@ -153,6 +153,11 @@ class AgentInstance:
         """Get the thread ID for this task."""
         return self._task.get_thread_id()
 
+    @property
+    def tool_results(self) -> list[dict[str, Any]]:
+        """Get list of tool call results."""
+        return self._tool_results.copy()
+
     # =========================================================================
     # State Management
     # =========================================================================
@@ -309,6 +314,7 @@ class AgentInstance:
         Add a tool result to history.
 
         Uses tool_id as canonical identity for result tracking.
+        Large results are truncated to prevent context overflow.
 
         Args:
             tool_id: Canonical tool identity
@@ -316,13 +322,30 @@ class AgentInstance:
             result: Tool result
             success: Whether call succeeded
         """
+        # Max chars for tool result content (prevents context overflow)
+        MAX_TOOL_RESULT_CHARS = 4000
+        TRUNCATION_MARKER = "\n\n[TRUNCATED - result exceeded 4000 chars]"
+
+        # Convert result to string and truncate if needed
+        result_str = str(result) if success else f"Error: {result}"
+        was_truncated = False
+        if len(result_str) > MAX_TOOL_RESULT_CHARS:
+            result_str = result_str[:MAX_TOOL_RESULT_CHARS] + TRUNCATION_MARKER
+            was_truncated = True
+            logger.warning(
+                "tool_result_truncated: tool_id=%s, original_len=%d",
+                tool_id,
+                len(str(result)),
+            )
+
         self._tool_results.append(
             {
                 "tool_id": tool_id,
                 "call_id": call_id,
-                "result": result,
+                "result": result,  # Store original for internal use
                 "success": success,
                 "timestamp": datetime.utcnow().isoformat(),
+                "truncated": was_truncated,
             }
         )
 
@@ -331,8 +354,8 @@ class AgentInstance:
             {
                 "role": "tool",
                 "tool_call_id": call_id,
-                "content": str(result) if success else f"Error: {result}",
-                "metadata": {"tool_id": tool_id, "success": success},
+                "content": result_str,  # Truncated version for LLM
+                "metadata": {"tool_id": tool_id, "success": success, "truncated": was_truncated},
                 "timestamp": datetime.utcnow().isoformat(),
             }
         )
@@ -382,20 +405,80 @@ class AgentInstance:
     # Context Assembly
     # =========================================================================
 
+    def _build_dag_context_section(self) -> str:
+        """
+        Build context section from DAG-stored thread_context and semantic_hits.
+
+        Extracts context from self._task.context (populated by slack_ingest.py)
+        and formats it for injection into the system prompt.
+
+        Returns:
+            Formatted context string, or empty string if no context available.
+        """
+        task_context = self._task.context or {}
+        thread_context = task_context.get("thread_context", {})
+        semantic_hits = task_context.get("semantic_hits", {})
+
+        sections = []
+
+        # Thread context: past messages in this conversation
+        packets = thread_context.get("packets", [])
+        if packets:
+            section_lines = ["## Recent Conversation History"]
+            for packet in packets[-5:]:  # Last 5 messages
+                payload = packet.get("payload", {})
+                # Normalize: support both 'content' and 'text' field names
+                text = (payload.get("content") or payload.get("text", ""))[:300]
+                user_id = payload.get("user_id", "unknown")
+                if text:
+                    section_lines.append(f"- [{user_id}]: {text}")
+            if len(section_lines) > 1:  # Has content beyond header
+                sections.append("\n".join(section_lines))
+
+        # Semantic hits: related knowledge from memory
+        results = semantic_hits.get("results", [])
+        if results:
+            section_lines = ["## Related Knowledge (from memory)"]
+            for hit in results[:3]:  # Top 3 hits
+                payload = hit.get("payload", {})
+                # Normalize: support both 'content' and 'text' field names
+                text = (payload.get("content") or payload.get("text", ""))[:200]
+                score = hit.get("score", 0)
+                if text:
+                    section_lines.append(f"- (relevance: {score:.2f}) {text}")
+            if len(section_lines) > 1:  # Has content beyond header
+                sections.append("\n".join(section_lines))
+
+        if not sections:
+            return ""
+
+        # Wrap in clear section delimiters
+        header = "\n\n---\n**CONTEXT FROM MEMORY (DAG-injected)**\n"
+        footer = "\n---\n"
+        return header + "\n\n".join(sections) + footer
+
     def assemble_context(self) -> dict[str, Any]:
         """
         Assemble full context bundle for AIOS call.
 
+        Injects DAG-stored context (thread_context, semantic_hits) into
+        the system prompt for conversation continuity.
+
         Returns:
             Context dict containing:
-            - system_prompt: System prompt for the agent
+            - system_prompt: System prompt for the agent (enriched with DAG context)
             - messages: Conversation history
             - tools: Available tool definitions
             - task: Current task information
             - metadata: Additional context
         """
+        # Build enriched system prompt with DAG context
+        base_prompt = self._config.system_prompt or ""
+        dag_context = self._build_dag_context_section()
+        enriched_prompt = base_prompt + dag_context if dag_context else base_prompt
+
         return {
-            "system_prompt": self._config.system_prompt,
+            "system_prompt": enriched_prompt,
             "messages": self.get_messages_for_aios(),
             "tools": self.get_tool_definitions(),
             "task": {

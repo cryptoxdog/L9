@@ -41,7 +41,6 @@ I've generated 2 additional **frontier-grade TOP tier audits**:
 - Redis cache problems
 - Neo4j query timeouts
 - Postgres connection leaks
-- Qdrant vector DB issues
 
 **Features:**
 

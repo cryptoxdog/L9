@@ -1071,10 +1071,18 @@ def generate_feature_flags():
                     pass
     flag_descriptions = {
         "L9_NEW_AGENT_INIT": ("Enable 7-phase bootstrap ceremony", "true"),
-        "L9_ENABLE_LEGACY_CHAT": ("Gate old apiserver.py POST /chat", "true"),
+        "L9_ENABLE_LEGACY_CHAT": ("Gate old apiserver.py POST /chat", "false"),
         "L9_ENABLE_LEGACY_SLACK_ROUTER": ("Gate old webhookslack.py path", "false"),
         "L9_USE_KERNELS": ("Load kernels from files", "true"),
         "L9_ENABLE_WS_ORCHESTRATOR": ("WebSocket routes use wstaskrouter", "true"),
+        "L9_GRAPH_AGENT_STATE": ("Neo4j-backed mutable agent state", "true"),
+        "L9_GRAPH_WM_SYNC": ("Graph to World Model sync", "true"),
+        "L9_TOOL_PATTERN_EXTRACTION": ("Tool pattern extraction job", "true"),
+        "L9_OBSERVABILITY": ("Five-tier observability pack", "true"),
+        "L9_STAGE3_MODULES": ("Tool Audit, Event Queue, Virtual Context, Evaluator", "true"),
+        "L9_STAGE4_CONSOLIDATION": ("Periodic memory consolidation", "true"),
+        "SLACK_APP_ENABLED": ("Slack Events API integration", "true"),
+        "MAC_AGENT_ENABLED": ("Mac Agent task execution", "true"),
     }
     seen_flags = set()
     for flag, location in sorted(flags_found):

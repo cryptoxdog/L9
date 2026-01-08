@@ -1,3 +1,30 @@
+"""
+⚠️ DEPRECATED - NOT USED ⚠️
+
+This file is DEPRECATED and NOT registered in api/server.py.
+
+**Status**: Legacy implementation - features ported to memory/slack_ingest.py
+**Archive Date**: 2026-01-08
+**Replacement**: api/routes/slack.py → memory/slack_ingest.py
+
+**What uses this file**: Nothing (not wired in server.py)
+**What should be used instead**: 
+  - api/routes/slack.py (FastAPI routes)
+  - memory/slack_ingest.py (event handling logic)
+
+**Migration**: All features from this file have been ported to:
+  - memory/slack_ingest.py (main handler)
+  - orchestration/slack_task_router.py (task routing)
+  - api/routes/slack.py (HTTP endpoints)
+
+**Why archived**: 
+  - Not registered in api/server.py (line 2101-2102: "NOT USED")
+  - Duplicate functionality with routes/slack.py
+  - All features successfully ported to slack_ingest.py
+
+**Do not use this file** - it exists only for reference.
+"""
+
 import os
 import hmac
 import hashlib
@@ -14,7 +41,7 @@ from config.settings import settings
 logger = structlog.get_logger(__name__)
 
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
-SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "true").lower() == "true"
 
 # Bot user ID - used to filter out bot's own messages to prevent infinite loops
 # Supports both old SLACK_BOT_USER_ID and new L_SLACK_USER_ID

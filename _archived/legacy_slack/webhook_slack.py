@@ -1,8 +1,37 @@
-# ARCHIVED: 2026-01-07
+"""
+⚠️ DEPRECATED - NOT USED ⚠️
+
+This file is DEPRECATED and NOT registered in api/server.py.
+
+**Status**: Legacy implementation - features ported to memory/slack_ingest.py
+**Archive Date**: 2026-01-08
+**Replacement**: api/routes/slack.py → memory/slack_ingest.py
+
+**What uses this file**: Nothing (not wired in server.py)
+**What should be used instead**: 
+  - api/routes/slack.py (FastAPI routes)
+  - memory/slack_ingest.py (event handling logic)
+
+**Migration**: All features from this file have been ported to:
+  - memory/slack_ingest.py (main handler)
+  - orchestration/slack_task_router.py (task routing)
+  - api/routes/slack.py (HTTP endpoints)
+
+**Why archived**: 
+  - Not registered in api/server.py (line 2101-2102: "NOT USED")
+  - Duplicate functionality with routes/slack.py
+  - All features successfully ported to slack_ingest.py
+
+**Do not use this file** - it exists only for reference.
+"""
+
 import os
 import hmac
 import hashlib
 import time
+from typing import Optional
+from collections import OrderedDict
+from threading import Lock
 import structlog
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
@@ -13,6 +42,94 @@ logger = structlog.get_logger(__name__)
 
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+
+# Bot user ID - used to filter out bot's own messages to prevent infinite loops
+# Supports both old SLACK_BOT_USER_ID and new L_SLACK_USER_ID
+SLACK_BOT_USER_ID = os.getenv("SLACK_BOT_USER_ID", "")
+L_SLACK_USER_ID = os.getenv("L_SLACK_USER_ID", "l-cto")
+
+# Combined list of user IDs to ignore (L's own messages)
+L_USER_IDS = {uid.strip().lower() for uid in [SLACK_BOT_USER_ID, L_SLACK_USER_ID] if uid.strip()}
+
+
+# =============================================================================
+# Event Deduplication Cache
+# =============================================================================
+# Prevents processing the same Slack event multiple times
+# (Slack retries webhooks after 3s if no 200 response)
+
+class EventDedupeCache:
+    """
+    Thread-safe LRU cache for event deduplication.
+    
+    Stores event_ids with timestamps to prevent duplicate processing.
+    Auto-evicts entries older than TTL or when max_size is exceeded.
+    """
+    
+    def __init__(self, max_size: int = 10000, ttl_seconds: int = 300):
+        self._cache: OrderedDict[str, float] = OrderedDict()
+        self._lock = Lock()
+        self._max_size = max_size
+        self._ttl = ttl_seconds
+    
+    def is_duplicate(self, event_id: str) -> bool:
+        """
+        Check if event_id was recently processed.
+        
+        Returns True if duplicate (should skip processing).
+        Returns False if new (will be marked as processed).
+        """
+        if not event_id:
+            return False  # No event_id = can't dedupe, process it
+        
+        now = time.time()
+        
+        with self._lock:
+            # Check if already processed
+            if event_id in self._cache:
+                timestamp = self._cache[event_id]
+                if now - timestamp < self._ttl:
+                    logger.debug(
+                        "slack_event_duplicate",
+                        event_id=event_id,
+                        age_seconds=round(now - timestamp, 2),
+                    )
+                    return True
+                # Expired, remove it
+                del self._cache[event_id]
+            
+            # Mark as processed
+            self._cache[event_id] = now
+            
+            # Move to end (LRU)
+            self._cache.move_to_end(event_id)
+            
+            # Evict old entries if over max_size
+            while len(self._cache) > self._max_size:
+                self._cache.popitem(last=False)
+            
+            return False
+    
+    def clear(self):
+        """Clear the cache (for testing)."""
+        with self._lock:
+            self._cache.clear()
+
+
+# Global deduplication cache
+_event_dedupe_cache = EventDedupeCache(max_size=10000, ttl_seconds=300)
+
+# Email command detection keywords (used in multiple handlers)
+EMAIL_KEYWORDS = [
+    "email:",
+    "mail:",
+    "send email",
+    "reply to",
+    "draft email",
+    "search email",
+    "forward email",
+]
+EMAIL_PHRASE_KEYWORDS = ["send email to", "reply to", "forward to"]
 
 # Feature flag for legacy Slack routing
 # When False, route Slack messages through AgentTask + AgentExecutorService
@@ -308,7 +425,10 @@ async def slack_commands(request: Request):
 
 
 def verify_slack_signature(
-    body: str, timestamp: str, signature: str, signing_secret: str | None = SLACK_SIGNING_SECRET,
+    body: str,
+    timestamp: str,
+    signature: str,
+    signing_secret: Optional[str] = SLACK_SIGNING_SECRET,
 ) -> bool:
     """
     Verify Slack request signature.
@@ -404,10 +524,39 @@ async def slack_events(
         event = data.get("event", {})
         event_type = event.get("type")
         event_subtype = event.get("subtype")
+        event_id = data.get("event_id", "")
+        
+        # === DEDUPLICATION CHECK ===
+        # Slack retries webhooks after 3s if no 200 response
+        # This prevents processing the same event multiple times
+        if _event_dedupe_cache.is_duplicate(event_id):
+            logger.info(
+                "slack_event_deduplicated",
+                event_id=event_id,
+                event_type=event_type,
+            )
+            return JSONResponse(content={"status": "ok"})
 
-        # Ignore bot messages
-        if event_subtype == "bot_message":
-            logger.debug("[SLACK] Ignoring bot message")
+        # === BOT MESSAGE FILTERING ===
+        # Ignore bot messages (check subtype, bot_id, AND our own user_id to prevent infinite loops)
+        # This prevents the recursive "Hey! L9 here. You said:" echo bug (Dec 18, 2025)
+        event_user = event.get("user", "")
+        event_user_lower = event_user.lower() if event_user else ""
+        
+        is_bot_message = (
+            event_subtype == "bot_message"
+            or event.get("bot_id")
+            or (L_USER_IDS and event_user_lower in L_USER_IDS)
+        )
+        if is_bot_message:
+            logger.debug(
+                "slack_ignoring_bot_message",
+                bot_id=event.get("bot_id"),
+                subtype=event_subtype,
+                user=event_user,
+                is_l_user=(event_user_lower in L_USER_IDS),
+                l_user_ids=list(L_USER_IDS),
+            )
             return JSONResponse(content={"status": "ok"})
 
         # Handle app_mention events
@@ -533,21 +682,9 @@ async def slack_events(
 
                 # Check for email-related commands in app_mention
                 text_lower = text.strip().lower()
-                email_keywords = [
-                    "email:",
-                    "mail:",
-                    "send email",
-                    "reply to",
-                    "draft email",
-                    "search email",
-                    "forward email",
-                ]
                 is_email_command = any(
-                    text_lower.startswith(kw.lower()) for kw in email_keywords
-                ) or any(
-                    kw.lower() in text_lower
-                    for kw in ["send email to", "reply to", "forward to"]
-                )
+                    text_lower.startswith(kw.lower()) for kw in EMAIL_KEYWORDS
+                ) or any(kw.lower() in text_lower for kw in EMAIL_PHRASE_KEYWORDS)
 
                 # NEW: Route app_mention through task planner if files present or email command
                 if file_artifacts or is_email_command:
@@ -700,24 +837,11 @@ async def slack_events(
                     )
                     # Continue processing message even if files fail
 
-            # Check for email-related commands (enhanced detection)
-            email_keywords = [
-                "email:",
-                "mail:",
-                "send email",
-                "reply to",
-                "draft email",
-                "search email",
-                "forward email",
-            ]
-            # Check if text starts with any email keyword (case-insensitive)
+            # Check for email-related commands (uses module-level constants)
             text_lower = text.strip().lower()
             is_email_command = any(
-                text_lower.startswith(kw.lower()) for kw in email_keywords
-            ) or any(
-                kw.lower() in text_lower
-                for kw in ["send email to", "reply to", "forward to"]
-            )
+                text_lower.startswith(kw.lower()) for kw in EMAIL_KEYWORDS
+            ) or any(kw.lower() in text_lower for kw in EMAIL_PHRASE_KEYWORDS)
 
             # Handle DMs: Respond to ALL messages in direct messages
             # In channels: Only respond when mentioned or "l9" in text
@@ -735,11 +859,14 @@ async def slack_events(
             if is_simple_dm and user and channel:
                 from services.slack_client import slack_post
 
+                # NOTE: Do NOT echo the user's message back - this caused infinite loop (Dec 18, 2025)
+                # When L echoes "Hey! You said: X", Slack sends it back as event, L echoes again, etc.
                 slack_post(
                     channel,
-                    f'👋 Hey! L9 here. You said: "{text_original[:100]}{"..." if len(text_original) > 100 else ""}"\n\nTry:\n• `!mac <command>` - Run a Mac automation\n• `email: <request>` - Email operations\n• Attach a file for processing',
+                    "👋 Hey! L9 here. How can I help?\n\nTry:\n• `!mac <command>` - Run a Mac automation\n• `email: <request>` - Email operations\n• Attach a file for processing",
+                    thread_ts=thread_ts if thread_ts else None,
                 )
-                logger.info(f"[SLACK] Simple DM response to {user}")
+                logger.info("slack_simple_dm_response", user=user, channel=channel)
                 return JSONResponse(content={"status": "ok"})
 
             # NEW: Route Slack message through task planner (when files present or message directed at L9 or email command)

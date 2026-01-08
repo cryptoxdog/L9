@@ -7,7 +7,7 @@ memory_substrate | PostgreSQL-backed memory storage with vector search and fact 
 world_model_service | Entity relationship tracking and state management for L9 context
 
 # === API Layer ===
-slack_webhook_adapter | Inbound Slack webhook handler for message routing and event processing
+# slack_webhook_adapter — ARCHIVED: Use api/routes/slack.py + memory/slack_ingest.py
 email_triage_service | Gmail integration for email classification and automated responses
 agent_routes | REST API endpoints for agent orchestration and task management
 

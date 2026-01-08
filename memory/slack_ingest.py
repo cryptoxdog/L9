@@ -49,7 +49,7 @@ logger = structlog.get_logger(__name__)
 # Feature flag for legacy Slack routing
 # When False, route Slack messages through AgentTask + AgentExecutorService
 # When True, use legacy AIOS /chat endpoint
-L9_ENABLE_LEGACY_SLACK_ROUTER = getattr(settings, "l9_enable_legacy_slack_router", True)
+L9_ENABLE_LEGACY_SLACK_ROUTER = getattr(settings, "l9_enable_legacy_slack_router", False)
 
 
 # =============================================================================
@@ -64,6 +64,7 @@ async def handle_slack_with_l_agent(
     team_id: str,
     channel_id: str,
     user_id: str,
+    context: Optional[Dict[str, Any]] = None,
 ) -> Tuple[str, str]:
     """
     Route a Slack message through the L-CTO agent via AgentExecutorService.
@@ -78,6 +79,8 @@ async def handle_slack_with_l_agent(
         team_id: Slack workspace/team ID
         channel_id: Slack channel ID
         user_id: Slack user ID
+        context: Optional dict containing thread_context and semantic_hits
+                 from DAG-stored packets for conversation continuity
 
     Returns:
         Tuple of (reply_text, status) where:
@@ -99,7 +102,7 @@ async def handle_slack_with_l_agent(
             logger.error("handle_slack_with_l_agent: agent_executor not available")
             return ("L9 agent executor not available. Please try again later.", "error")
 
-        # Construct AgentTask for L-CTO
+        # Construct AgentTask for L-CTO with DAG-retrieved context
         task = AgentTask(
             agent_id="l-cto",
             kind=TaskKind.CONVERSATION,
@@ -114,6 +117,7 @@ async def handle_slack_with_l_agent(
                     "user_id": user_id,
                 },
             },
+            context=context or {},
         )
 
         logger.info(
@@ -205,7 +209,7 @@ async def _handle_mac_command(
         return {"ok": True, "handled": "mac_empty"}
     
     try:
-        from services.mac_tasks import enqueue_mac_task
+        from orchestrators.agent_execution.task_queue import enqueue_mac_task
         
         # Enhance command context with file artifacts if present
         enhanced_command = command
@@ -297,46 +301,44 @@ def _is_email_command(text: str) -> bool:
 # =============================================================================
 
 
-async def _route_to_task_planner(
+async def _route_to_mac_task(
     text: str,
     channel_id: str,
     user_id: str,
     file_artifacts: list,
     slack_client: SlackAPIClient,
-    is_email: bool = False,
     thread_ts: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
-    Route message to task planner for structured execution.
+    Route message to Mac Agent task planner for structured execution.
     
     Returns response dict if routed, None if routing not applicable/failed.
     """
     try:
         from orchestration.slack_task_router import route_slack_message
-        from services.mac_tasks import enqueue_task
+        from orchestrators.agent_execution.task_queue import enqueue_mac_task_dict
         
-        # If email command, prepend "email:" to ensure routing
-        routing_text = text
-        if is_email and not text.lower().startswith("email:"):
-            routing_text = f"email: {text}"
+        # Route message + artifacts to mac_task structure
+        task_dict = route_slack_message(text, file_artifacts, user_id)
         
-        # Route message + artifacts to task structure
-        task_dict = route_slack_message(routing_text, file_artifacts, user_id)
+        # Ensure it's a mac_task (safety check)
+        if task_dict.get("type") != "mac_task":
+            logger.warning(
+                f"slack_task_router returned non-mac_task: {task_dict.get('type')}. "
+                f"Fixing to mac_task."
+            )
+            task_dict["type"] = "mac_task"
         
         # Store channel in metadata for result posting
         if "metadata" not in task_dict:
             task_dict["metadata"] = {}
         task_dict["metadata"]["channel"] = channel_id
         
-        # Enqueue task
-        task_id = enqueue_task(task_dict)
+        # Enqueue mac_task
+        task_id = enqueue_mac_task_dict(task_dict)
         
         # Respond in Slack
-        task_type = task_dict.get("type", "task")
-        if task_type == "email_task":
-            response_msg = f"📧 Email task recognized and queued (ID: {task_id})."
-        else:
-            response_msg = f"Task accepted and queued (ID: {task_id}). I'll let you know when it's done."
+        response_msg = f"Task accepted and queued (ID: {task_id}). I'll let you know when it's done."
         
         await slack_client.post_message(
             channel=channel_id,
@@ -345,19 +347,83 @@ async def _route_to_task_planner(
         )
         
         logger.info(
-            "slack_task_routed",
+            "slack_mac_task_routed",
             task_id=task_id,
-            task_type=task_type,
             user_id=user_id,
             channel_id=channel_id,
         )
-        return {"ok": True, "handled": "task_routed", "task_id": task_id}
+        return {"ok": True, "handled": "mac_task_routed", "task_id": task_id}
         
     except ImportError as e:
-        logger.debug("task routing services not available", error=str(e))
+        logger.debug("mac task routing services not available", error=str(e))
         return None
     except Exception as e:
-        logger.error("_route_to_task_planner error", error=str(e))
+        logger.error("_route_to_mac_task error", error=str(e))
+        return None
+
+
+async def _route_to_email_task(
+    text: str,
+    channel_id: str,
+    user_id: str,
+    file_artifacts: list,
+    slack_client: SlackAPIClient,
+    thread_ts: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Route message to Email Agent task planner for structured execution.
+    
+    Returns response dict if routed, None if routing not applicable/failed.
+    """
+    try:
+        from orchestration.email_task_router import route_email_task
+        from email_agent.client import execute_email_task
+        
+        # Route message + artifacts to email_task structure
+        task_dict = route_email_task(text, file_artifacts, user_id)
+        
+        # Ensure it's an email_task (safety check)
+        if task_dict.get("type") != "email_task":
+            logger.warning(
+                f"email_task_router returned non-email_task: {task_dict.get('type')}. "
+                f"Fixing to email_task."
+            )
+            task_dict["type"] = "email_task"
+        
+        # Store channel in metadata for result posting
+        if "metadata" not in task_dict:
+            task_dict["metadata"] = {}
+        task_dict["metadata"]["channel"] = channel_id
+        
+        # Execute email task directly (email_agent doesn't use file-based queue)
+        result = execute_email_task(task_dict)
+        
+        # Respond in Slack
+        if result.get("status") == "success":
+            response_msg = f"📧 Email task completed successfully."
+        else:
+            error = result.get("data", {}).get("error", "Unknown error")
+            response_msg = f"📧 Email task failed: {error}"
+        
+        await slack_client.post_message(
+            channel=channel_id,
+            text=response_msg,
+            thread_ts=thread_ts,
+        )
+        
+        logger.info(
+            "slack_email_task_routed",
+            user_id=user_id,
+            channel_id=channel_id,
+            status=result.get("status"),
+        )
+        return {"ok": True, "handled": "email_task_executed", "result": result}
+        
+    except ImportError as e:
+        logger.debug("email task routing services not available", error=str(e))
+        return None
+    except Exception as e:
+        logger.error("_route_to_email_task error", error=str(e))
         return None
 
 
@@ -693,6 +759,11 @@ async def handle_slack_events(
         try:
             # Use app reference passed from router
             if app is not None:
+                # Pass DAG-retrieved context (thread history + semantic hits) to L-CTO
+                dag_context = {
+                    "thread_context": thread_context,
+                    "semantic_hits": semantic_hits,
+                }
                 reply, status = await handle_slack_with_l_agent(
                     app=app,
                     text=text,
@@ -700,6 +771,7 @@ async def handle_slack_events(
                     team_id=team_id,
                     channel_id=channel_id,
                     user_id=user_id,
+                    context=dag_context,
                 )
                 
                 # Post reply to Slack
@@ -759,15 +831,26 @@ async def handle_slack_events(
     
     # === Task Routing (files or email commands) ===
     if file_artifacts or is_email_command:
-        route_result = await _route_to_task_planner(
-            text=text,
-            channel_id=channel_id,
-            user_id=user_id,
-            file_artifacts=file_artifacts,
-            slack_client=slack_client,
-            is_email=is_email_command,
-            thread_ts=thread_ts,
-        )
+        if is_email_command:
+            # Route to Email Agent
+            route_result = await _route_to_email_task(
+                text=text,
+                channel_id=channel_id,
+                user_id=user_id,
+                file_artifacts=file_artifacts,
+                slack_client=slack_client,
+                thread_ts=thread_ts,
+            )
+        else:
+            # Route to Mac Agent
+            route_result = await _route_to_mac_task(
+                text=text,
+                channel_id=channel_id,
+                user_id=user_id,
+                file_artifacts=file_artifacts,
+                slack_client=slack_client,
+                thread_ts=thread_ts,
+            )
         if route_result:
             return route_result
     
@@ -1085,18 +1168,91 @@ async def _check_duplicate(
     """
     Check if event already processed.
 
-    Returns dedupe result with is_duplicate, reason.
+    Queries packet_store for duplicate events using two strategies:
+    1. Direct event_id match in payload
+    2. Composite match on team_id, channel_id, ts, user_id in payload
 
-    TODO: In production, this would query packet_store with:
-          WHERE payload->>'event_id' = ? OR
-                (metadata->>'team_id' = ? AND channel_id = ? AND ts = ? AND user_id = ?)
+    Returns dedupe result with is_duplicate, reason, and matched packet_id if found.
+
+    Args:
+        substrate_service: Memory substrate service instance
+        event_id: Slack event ID (unique per event)
+        thread_uuid: Thread UUID (for context, not used in dedupe)
+        team_id: Slack workspace/team ID
+        channel_id: Slack channel ID
+        ts: Slack message timestamp
+        user_id: Slack user ID
+
+    Returns:
+        Dict with:
+            - is_duplicate: bool
+            - reason: str (if duplicate found, explains why)
+            - packet_id: str (if duplicate found, the matched packet ID)
     """
     try:
-        # For now, return no duplicate (real implementation deferred to DAG/repo)
-        # This is a stub that can be implemented when query methods are available
-        return {"is_duplicate": False}
+        # Access repository for raw SQL query
+        repository = substrate_service._repository
+        
+        async with repository.acquire() as conn:
+            # Query for duplicate using event_id OR composite match
+            # The envelope column is JSONB, so we use -> for object access and ->> for text extraction
+            row = await conn.fetchrow(
+                """
+                SELECT packet_id, envelope, timestamp
+                FROM packet_store
+                WHERE 
+                    (envelope->'payload'->>'event_id' = $1)
+                    OR (
+                        envelope->'payload'->>'team_id' = $2
+                        AND envelope->'payload'->>'channel_id' = $3
+                        AND envelope->'payload'->>'ts' = $4
+                        AND envelope->'payload'->>'user_id' = $5
+                    )
+                ORDER BY timestamp DESC
+                LIMIT 1
+                """,
+                event_id,
+                team_id,
+                channel_id,
+                ts,
+                user_id,
+            )
+            
+            if row:
+                # Found a duplicate
+                matched_packet_id = str(row["packet_id"])
+                envelope = row["envelope"]
+                
+                # Determine reason for duplicate
+                if isinstance(envelope, dict):
+                    payload = envelope.get("payload", {})
+                    matched_event_id = payload.get("event_id")
+                    if matched_event_id == event_id:
+                        reason = "event_id_match"
+                    else:
+                        reason = "composite_match"
+                else:
+                    reason = "duplicate_found"
+                
+                logger.debug(
+                    "slack_duplicate_detected",
+                    event_id=event_id,
+                    matched_packet_id=matched_packet_id,
+                    reason=reason,
+                )
+                
+                return {
+                    "is_duplicate": True,
+                    "reason": reason,
+                    "packet_id": matched_packet_id,
+                }
+            
+            # No duplicate found
+            return {"is_duplicate": False}
+            
     except Exception as e:
-        logger.error("dedupe_check_error", error=str(e))
+        logger.error("dedupe_check_error", error=str(e), event_id=event_id)
+        # On error, return not duplicate to allow processing (fail open)
         return {"is_duplicate": False, "reason": "dedupe_check_failed"}
 
 

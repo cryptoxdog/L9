@@ -14,14 +14,14 @@ import structlog
 
 if TYPE_CHECKING:
     from .phase_1_load_kernels import KernelParsed
-    from .phase_2_instantiate import AgentInstance
+    from .phase_2_instantiate import BootstrapInstanceData
     from memory.substrate_service import MemorySubstrateService
 
 logger = structlog.get_logger(__name__)
 
 
 async def verify_and_lock(
-    instance: "AgentInstance",
+    instance: "BootstrapInstanceData",
     substrate_service: "MemorySubstrateService",
     kernels: Dict[str, "KernelParsed"],
 ) -> str:

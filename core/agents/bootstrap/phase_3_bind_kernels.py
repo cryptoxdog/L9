@@ -13,14 +13,14 @@ import structlog
 
 if TYPE_CHECKING:
     from .phase_1_load_kernels import KernelParsed
-    from .phase_2_instantiate import AgentInstance
+    from .phase_2_instantiate import BootstrapInstanceData
     from memory.substrate_service import MemorySubstrateService
 
 logger = structlog.get_logger(__name__)
 
 
 async def bind_kernels_to_agent(
-    instance: "AgentInstance",
+    instance: "BootstrapInstanceData",
     kernels: Dict[str, "KernelParsed"],
     substrate_service: "MemorySubstrateService",
 ) -> None:

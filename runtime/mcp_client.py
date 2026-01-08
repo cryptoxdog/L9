@@ -335,29 +335,14 @@ class MCPClient:
         ]
         logger.info("Memory MCP server configured")
 
-        # L9 Memory MCP - custom L9 memory server with semantic search
-        # Production: via Cloudflare proxy (no SSH tunnel needed)
-        # Local dev: set MCP_L9_MEMORY_URL=http://127.0.0.1:9001 with SSH tunnel
-        l9_memory_url = os.getenv("MCP_L9_MEMORY_URL", "https://l9.quantumaipartners.com")
-        l9_memory_key = os.getenv("MCP_L9_MEMORY_KEY") or os.getenv("MCP_API_KEY")
-        if l9_memory_key:
-            self._servers["l9-memory"] = {
-                "url": l9_memory_url,
-                "headers": {"Authorization": f"Bearer {l9_memory_key}"},
-                "enabled": True,
-                "type": "http",  # HTTP-based MCP, not stdio
-            }
-            self._allowed_tools["l9-memory"] = [
-                "saveMemory",
-                "searchMemory",
-                "getMemoryStats",
-                "deleteExpiredMemories",
-            ]
-            logger.info("L9 Memory MCP server configured at %s", l9_memory_url)
-        else:
-            logger.warning(
-                "L9 Memory MCP server not configured (MCP_L9_MEMORY_KEY or MCP_API_KEY missing)"
-            )
+        # ========================================================================
+        # DEPRECATED: L9 Memory MCP (2026-01-07)
+        # ========================================================================
+        # MCP SSE endpoint was never implemented. Memory access is via:
+        #   python3 .cursor-commands/cursor-memory/cursor_memory_client.py
+        # which calls the REST API at /api/v1/memory/* directly.
+        # See: _archived/archived_mcp_memory/ for historical MCP server code.
+        # ========================================================================
 
     def is_server_available(self, server_id: str) -> bool:
         """Check if an MCP server is configured and available."""

@@ -27,7 +27,7 @@ import os
 import structlog
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from core.agents.schemas import (
     AgentTask,
@@ -47,6 +47,18 @@ from core.governance.approvals import ApprovalManager
 from core.tools.tool_graph import ToolGraph
 from core.worldmodel.insight_emitter import get_insight_emitter
 from runtime.dora import emit_executor_trace
+
+# Self-reflection imports (optional - graceful degradation if not available)
+try:
+    from core.agents.selfreflection import (
+        TaskExecutionContext,
+        analyze_task_execution,
+    )
+    from core.agents.kernelevolution import create_evolution_plan
+
+    _has_self_reflection = True
+except ImportError:
+    _has_self_reflection = False
 
 logger = structlog.get_logger(__name__)
 
@@ -235,6 +247,25 @@ class SubstrateServiceProtocol(Protocol):
         """
         ...
 
+    async def search_packets_by_thread(
+        self,
+        thread_id: str,
+        packet_type: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """
+        Search packets by thread ID with optional packet type filter.
+
+        Args:
+            thread_id: Thread identifier (string)
+            packet_type: Optional packet type filter
+            limit: Max results
+
+        Returns:
+            List of matching packets
+        """
+        ...
+
 
 class AgentRegistryProtocol(Protocol):
     """Protocol for agent registry interface."""
@@ -313,11 +344,50 @@ class AgentExecutorService:
         # For substrate-backed idempotency, see roadmap v1.2.
         self._processed_tasks: dict[str, ExecutionResult] = {}
 
+        # Kernel-aware agent reference (for guarded execution)
+        self._kernel_aware_agent: Optional[Any] = None
+
         logger.info(
             "agent.executor.init: default_agent_id=%s, max_iterations=%d",
             self._default_agent_id,
             self._max_iterations,
         )
+
+    def set_kernel_aware_agent(self, agent: Any) -> None:
+        """
+        Set the kernel-aware agent for guarded execution.
+
+        This should be called after the agent registry initializes L-CTO
+        with kernels. The executor will use this agent for kernel-aware
+        tool dispatch via guarded_execute.
+
+        Args:
+            agent: Kernel-aware agent (must have kernel_state attribute)
+        """
+        self._kernel_aware_agent = agent
+        kernel_state = getattr(agent, "kernel_state", "UNKNOWN")
+        kernel_count = len(getattr(agent, "kernels", {}))
+        logger.info(
+            "agent.executor.kernel_agent_set: state=%s, kernels=%d",
+            kernel_state,
+            kernel_count,
+        )
+
+    def _get_kernel_aware_agent(self) -> Optional[Any]:
+        """
+        Get the kernel-aware agent if available and active.
+
+        Returns:
+            Agent with active kernels, or None if not available
+        """
+        if self._kernel_aware_agent is None:
+            return None
+
+        kernel_state = getattr(self._kernel_aware_agent, "kernel_state", None)
+        if kernel_state != "ACTIVE":
+            return None
+
+        return self._kernel_aware_agent
 
     # =========================================================================
     # Public API
@@ -436,6 +506,11 @@ class AgentExecutorService:
                 patterns=["agent_execution", "reasoning_loop"],
             )
 
+            # Self-reflection hook (v3.4+ / GMP-KERNEL-BOOT)
+            # Analyze task execution for behavioral gaps
+            if _has_self_reflection:
+                await self._run_self_reflection(task, result, instance)
+
             return result
 
         except Exception as e:
@@ -499,34 +574,43 @@ class AgentExecutorService:
                     )
 
             # Load governance rules and project history via memory_helpers
+            # Safe import pattern: gracefully handle missing module
             try:
                 from runtime.memory_helpers import (
                     memory_search,
                     MEMORY_SEGMENT_GOVERNANCE_META,
                     MEMORY_SEGMENT_PROJECT_HISTORY,
                 )
+                _has_memory_helpers = True
+            except ImportError:
+                _has_memory_helpers = False
+                logger.debug(
+                    "memory_helpers not available - skipping governance/history context"
+                )
 
-                governance_rules = await memory_search(
-                    segment=MEMORY_SEGMENT_GOVERNANCE_META,
-                    query=f"task {task_id}",
-                    agent_id=agent_id,
-                    top_k=5,
-                )
-                if governance_rules:
-                    context["governance_rules"] = governance_rules
+            if _has_memory_helpers:
+                try:
+                    governance_rules = await memory_search(
+                        segment=MEMORY_SEGMENT_GOVERNANCE_META,
+                        query=f"task {task_id}",
+                        agent_id=agent_id,
+                        top_k=5,
+                    )
+                    if governance_rules:
+                        context["governance_rules"] = governance_rules
 
-                project_history = await memory_search(
-                    segment=MEMORY_SEGMENT_PROJECT_HISTORY,
-                    query=f"task {task_id}",
-                    agent_id=agent_id,
-                    top_k=5,
-                )
-                if project_history:
-                    context["project_history"] = project_history
-            except Exception as e:
-                logger.warning(
-                    f"Failed to load memory segments for task {task_id}: {e}"
-                )
+                    project_history = await memory_search(
+                        segment=MEMORY_SEGMENT_PROJECT_HISTORY,
+                        query=f"task {task_id}",
+                        agent_id=agent_id,
+                        top_k=5,
+                    )
+                    if project_history:
+                        context["project_history"] = project_history
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to load memory segments for task {task_id}: {e}"
+                    )
 
         except Exception as e:
             logger.warning(f"Failed to bind memory context for task {task_id}: {e}")
@@ -736,33 +820,73 @@ class AgentExecutorService:
         """
         Hydrate agent context from thread history.
 
-        NOTE: Currently shallow implementation - searches for packets but does not
-        reconstruct conversation history. This is intentional for v1.0 to keep
-        execution deterministic. Full context hydration deferred to v1.1.
-
         Behavior:
         - Searches substrate for previous thread packets
+        - Injects last 5 relevant packets as system context (bounded)
         - Logs if search fails (does not block execution)
-        - Does NOT add messages to instance history (shallow)
 
         Args:
             instance: Agent instance to hydrate
         """
+        # Max packets to inject for context (bounded to prevent context overflow)
+        MAX_CONTEXT_PACKETS = 5
+
         try:
-            # Search for previous packets in this thread (shallow - for observability only)
+            # Search for previous packets in this thread
             history = await self._substrate_service.search_packets(
                 thread_id=instance.thread_id,
                 limit=50,
             )
 
-            # NOTE: Intentionally not adding history to instance.
-            # Full context reconstruction deferred to v1.1.
-            # This ensures each task execution is deterministic.
             if history:
-                logger.debug(
-                    "agent.executor.hydrate: thread_id=%s, found_packets=%d (not applied)",
+                # Filter to relevant packet types for context
+                relevant_types = {
+                    "agent.executor.result",
+                    "agent.executor.trace",
+                    "slack.message",
+                    "user.message",
+                }
+                relevant_packets = [
+                    p for p in history
+                    if p.get("packet_type") in relevant_types
+                    or p.get("payload", {}).get("event") in ("start", "iteration")
+                ]
+
+                # Take last N packets for bounded context
+                context_packets = relevant_packets[-MAX_CONTEXT_PACKETS:]
+
+                if context_packets:
+                    # Build context summary for system prompt injection
+                    context_lines = ["Previous context from this thread:"]
+                    for packet in context_packets:
+                        payload = packet.get("payload", {})
+                        ptype = packet.get("packet_type", "unknown")
+                        # Extract meaningful content
+                        content = (
+                            payload.get("content")
+                            or payload.get("text")
+                            or payload.get("result")
+                            or payload.get("message")
+                            or ""
+                        )
+                        if content:
+                            # Truncate long content
+                            content_preview = str(content)[:200]
+                            context_lines.append(f"- [{ptype}]: {content_preview}")
+
+                    if len(context_lines) > 1:
+                        # Inject as system-level context
+                        context_text = "\n".join(context_lines)
+                        instance.add_user_message(
+                            f"[SYSTEM CONTEXT]\n{context_text}\n[END CONTEXT]",
+                            metadata={"hydrated": True, "packet_count": len(context_packets)},
+                        )
+
+                logger.info(
+                    "agent.executor.hydrate: thread_id=%s, found=%d, injected=%d",
                     str(instance.thread_id),
                     len(history),
+                    len(context_packets) if context_packets else 0,
                 )
 
         except Exception as e:
@@ -866,6 +990,10 @@ class AgentExecutorService:
             self._max_iterations,
         )
 
+        # Circuit breaker: track consecutive AIOS failures
+        CIRCUIT_BREAKER_THRESHOLD = 3
+        consecutive_aios_failures = 0
+
         # Initialize with task payload as first message
         if instance.task.payload.get("message"):
             instance.add_user_message(instance.task.payload["message"])
@@ -904,9 +1032,49 @@ class AgentExecutorService:
                 thread_id=instance.thread_id,
             )
 
+            # Circuit breaker check before AIOS call
+            if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+                logger.error(
+                    "agent.executor.circuit_breaker_tripped",
+                    task_id=str(instance.task.id),
+                    consecutive_failures=consecutive_aios_failures,
+                )
+                instance.transition_to(ExecutorState.FAILED)
+                error = f"Circuit breaker tripped: {consecutive_aios_failures} consecutive AIOS failures"
+                # Emit escalation packet
+                await self._emit_packet(
+                    packet_type="agent.executor.escalation",
+                    payload={
+                        "event": "circuit_breaker_tripped",
+                        "task_id": str(instance.task.id),
+                        "agent_id": instance.task.agent_id,
+                        "consecutive_failures": consecutive_aios_failures,
+                        "requires_igor_approval": True,
+                    },
+                    thread_id=instance.thread_id,
+                )
+                break
+
             # Call AIOS
             context = instance.assemble_context()
-            aios_result = await self._aios_runtime.execute_reasoning(context)
+            try:
+                aios_result = await self._aios_runtime.execute_reasoning(context)
+                # Reset failure counter on success
+                if aios_result.result_type != AIOSResultType.ERROR:
+                    consecutive_aios_failures = 0
+            except Exception as aios_exc:
+                consecutive_aios_failures += 1
+                logger.warning(
+                    "agent.executor.aios_call_exception",
+                    task_id=str(instance.task.id),
+                    error=str(aios_exc),
+                    consecutive_failures=consecutive_aios_failures,
+                )
+                if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+                    continue  # Will trip circuit breaker on next iteration
+                # Create error result to continue loop
+                aios_result = AIOSResult.error_result(str(aios_exc))
+
             instance.add_tokens(aios_result.tokens_used)
 
             # Handle result based on type
@@ -960,13 +1128,19 @@ class AgentExecutorService:
                 instance.transition_to(ExecutorState.REASONING)
 
             elif aios_result.result_type == AIOSResultType.ERROR:
-                # AIOS error
+                # AIOS error - track for circuit breaker
+                consecutive_aios_failures += 1
                 error = aios_result.error or "Unknown AIOS error"
                 logger.error(
-                    "agent_aios_call_failed: task_id=%s, error=%s",
+                    "agent_aios_call_failed: task_id=%s, error=%s, consecutive_failures=%d",
                     str(instance.task.id),
                     error,
+                    consecutive_aios_failures,
                 )
+                # Only fail immediately if circuit breaker not yet tripped
+                # (let circuit breaker handle escalation on next iteration)
+                if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+                    continue  # Will trip circuit breaker on next iteration
                 instance.transition_to(ExecutorState.FAILED)
                 break
 
@@ -1021,6 +1195,19 @@ class AgentExecutorService:
             # Audit logging failed - log but don't fail execution
             logger.debug(f"agent.executor.audit: logging failed (non-fatal): {e}")
 
+        # Collect tool calls from instance for result
+        tool_call_results = []
+        for tr in instance.tool_results:
+            tool_call_results.append(
+                ToolCallResult(
+                    call_id=UUID(tr["call_id"]) if isinstance(tr.get("call_id"), str) else tr.get("call_id", uuid4()),
+                    tool_id=tr.get("tool_id", "unknown"),
+                    result=tr.get("result"),
+                    success=tr.get("success", True),
+                    error=str(tr.get("result")) if not tr.get("success") else None,
+                )
+            )
+
         return ExecutionResult(
             task_id=instance.task.id,
             status=status,
@@ -1029,6 +1216,8 @@ class AgentExecutorService:
             duration_ms=duration_ms,
             error=error,
             trace_id=instance.instance_id,
+            tool_calls=tool_call_results if tool_call_results else None,
+            tokens_used=instance.total_tokens,
         )
 
     # =========================================================================
@@ -1141,18 +1330,33 @@ class AgentExecutorService:
                 )
 
         # Dispatch through registry using tool_id
+        # Use guarded_execute if available (kernel-aware execution)
         try:
-            result = await self._tool_registry.dispatch_tool_call(
-                tool_id=tool_call.tool_id,
-                arguments=tool_call.arguments,
-                context={
-                    "task_id": str(instance.task.id),
-                    "agent_id": instance.config.agent_id,
-                    "thread_id": str(instance.thread_id),
-                    "iteration": instance.iteration,
-                    "memory_context": memory_context,  # Inject memory context
-                },
-            )
+            context = {
+                "task_id": str(instance.task.id),
+                "agent_id": instance.config.agent_id,
+                "thread_id": str(instance.thread_id),
+                "iteration": instance.iteration,
+                "memory_context": memory_context,  # Inject memory context
+            }
+
+            # Check if registry supports guarded execution and agent has kernels
+            agent = self._get_kernel_aware_agent()
+            if agent and hasattr(self._tool_registry, "guarded_execute"):
+                # Use guarded execution (kernel-aware)
+                result = await self._tool_registry.guarded_execute(
+                    agent=agent,
+                    tool_id=tool_call.tool_id,
+                    arguments=tool_call.arguments,
+                    context=context,
+                )
+            else:
+                # Fallback to standard dispatch
+                result = await self._tool_registry.dispatch_tool_call(
+                    tool_id=tool_call.tool_id,
+                    arguments=tool_call.arguments,
+                    context=context,
+                )
 
             # Persist task result after execution
             await self._persist_task_result(
@@ -1389,6 +1593,152 @@ class AgentExecutorService:
                 packet_type,
                 str(thread_id),
                 str(e),
+            )
+
+    # =========================================================================
+    # Self-Reflection (v3.4+ / GMP-KERNEL-BOOT)
+    # =========================================================================
+
+    async def _run_self_reflection(
+        self,
+        task: AgentTask,
+        result: ExecutionResult,
+        instance: AgentInstance,
+    ) -> None:
+        """
+        Run self-reflection analysis on completed task execution.
+
+        Detects behavioral gaps and generates kernel evolution proposals
+        if significant issues are found.
+
+        Args:
+            task: The completed task
+            result: The execution result
+            instance: The agent instance that executed the task
+        """
+        if not _has_self_reflection:
+            return
+
+        try:
+            # Build execution context for analysis
+            context = TaskExecutionContext(
+                task_id=str(task.id),
+                agent_id=task.agent_id,
+                task_kind=task.kind.value if hasattr(task.kind, "value") else str(task.kind),
+                success=result.status == "completed",
+                duration_ms=float(result.duration_ms),
+                tool_calls=[
+                    {
+                        "tool_id": tc.tool_id if hasattr(tc, "tool_id") else str(tc),
+                        "success": tc.success if hasattr(tc, "success") else True,
+                    }
+                    for tc in (result.tool_calls or [])
+                ],
+                errors=[result.error] if result.error else [],
+                warnings=[],
+                iterations=result.iterations,
+                tokens_used=result.tokens_used or 0,
+                governance_blocks=[],  # TODO: Track governance blocks in result
+                user_corrections=[],  # TODO: Track user corrections
+                metadata={
+                    "thread_id": str(task.get_thread_id()) if task.get_thread_id() else None,
+                },
+            )
+
+            # Analyze execution
+            reflection_result = await analyze_task_execution(context)
+
+            # Persist reflection result to substrate
+            if self._substrate_service:
+                try:
+                    from memory.substrate_models import PacketEnvelopeIn
+
+                    reflection_packet = PacketEnvelopeIn(
+                        packet_type="agent.reflection.result",
+                        agent_id=task.agent_id,
+                        thread_id=str(task.get_thread_id()) if task.get_thread_id() else None,
+                        payload={
+                            "reflection_id": reflection_result.reflection_id,
+                            "task_id": str(task.id),
+                            "gaps_detected": [
+                                {
+                                    "gap_type": gap.gap_type.value if hasattr(gap.gap_type, "value") else str(gap.gap_type),
+                                    "severity": gap.severity.value if hasattr(gap.severity, "value") else str(gap.severity),
+                                    "description": gap.description,
+                                    "suggested_action": gap.suggested_action,
+                                }
+                                for gap in reflection_result.gaps_detected
+                            ],
+                            "kernel_update_needed": reflection_result.kernel_update_needed,
+                            "summary": reflection_result.summary,
+                            "confidence": reflection_result.confidence,
+                        },
+                        metadata={
+                            "source": "self_reflection",
+                            "execution_status": result.status,
+                        },
+                    )
+                    await self._substrate_service.write_packet(reflection_packet)
+                    logger.debug(
+                        "executor.self_reflection.persisted",
+                        task_id=str(task.id),
+                        reflection_id=reflection_result.reflection_id,
+                    )
+                except Exception as persist_err:
+                    logger.warning(
+                        "executor.self_reflection.persist_failed",
+                        task_id=str(task.id),
+                        error=str(persist_err),
+                    )
+
+            # Log reflection results
+            if reflection_result.gaps_detected:
+                logger.info(
+                    "executor.self_reflection.gaps_detected",
+                    task_id=str(task.id),
+                    gap_count=len(reflection_result.gaps_detected),
+                    kernel_update_needed=reflection_result.kernel_update_needed,
+                )
+
+                # Generate evolution plan if kernel update is needed
+                if reflection_result.kernel_update_needed:
+                    evolution_plan = await create_evolution_plan(
+                        reflection_result,
+                        substrate_service=self._substrate_service,
+                    )
+                    logger.info(
+                        "executor.self_reflection.evolution_plan_created",
+                        task_id=str(task.id),
+                        plan_id=evolution_plan.plan_id,
+                        proposal_count=len(evolution_plan.proposals),
+                        requires_igor_approval=evolution_plan.requires_igor_approval,
+                    )
+
+                    # Emit evolution plan packet for review
+                    await self._emit_packet(
+                        packet_type="kernel.evolution.plan",
+                        payload={
+                            "plan_id": evolution_plan.plan_id,
+                            "reflection_id": reflection_result.reflection_id,
+                            "agent_id": task.agent_id,
+                            "proposal_count": len(evolution_plan.proposals),
+                            "requires_igor_approval": evolution_plan.requires_igor_approval,
+                            "estimated_impact": evolution_plan.estimated_impact,
+                        },
+                        thread_id=task.get_thread_id(),
+                    )
+            else:
+                logger.debug(
+                    "executor.self_reflection.no_gaps",
+                    task_id=str(task.id),
+                )
+
+        except Exception as e:
+            # Self-reflection should never fail the task
+            logger.warning(
+                "executor.self_reflection.error",
+                task_id=str(task.id),
+                error=str(e),
             )
 
     # =========================================================================

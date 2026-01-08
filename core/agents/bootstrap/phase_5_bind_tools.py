@@ -13,7 +13,7 @@ from datetime import datetime
 import structlog
 
 if TYPE_CHECKING:
-    from .phase_2_instantiate import AgentInstance
+    from .phase_2_instantiate import BootstrapInstanceData
     from memory.substrate_service import MemorySubstrateService
 
 logger = structlog.get_logger(__name__)
@@ -83,7 +83,7 @@ async def get_agent_capabilities(agent_id: str) -> List[ToolDefinition]:
 
 
 async def bind_tools_and_capabilities(
-    instance: "AgentInstance",
+    instance: "BootstrapInstanceData",
     substrate_service: "MemorySubstrateService",
 ) -> None:
     """

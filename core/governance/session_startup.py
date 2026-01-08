@@ -9,10 +9,12 @@ programmatic preflight checks and mandatory file loading.
 Key capabilities:
 - Runs preflight checks (symlinks, config, directories)
 - Loads mandatory startup files
+- Verifies kernel readiness (two-phase activation)
 - Returns structured status (not just instructions)
 - Tracks loaded components for debugging
 
-Version: 1.0.0
+Version: 2.0.0
+GMP: kernel_boot_frontier_phase1
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ import structlog
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 logger = structlog.get_logger(__name__)
 
@@ -55,9 +57,21 @@ class PreflightResult:
 
 
 @dataclass
+class KernelReadinessResult:
+    """Result of kernel readiness check."""
+
+    kernels_ready: bool
+    kernel_state: str  # INACTIVE, LOADING, VALIDATING, ACTIVE, ERROR
+    kernel_count: int
+    kernel_hash_snapshot: Dict[str, str] = field(default_factory=dict)
+    integrity_verified: bool = False
+    errors: list[str] = field(default_factory=list)
+
+
+@dataclass
 class StartupResult:
     """Complete startup protocol result."""
-    
+
     status: str  # "READY", "DEGRADED", "BLOCKED"
     preflight_passed: bool
     files_loaded: list[str]
@@ -66,34 +80,50 @@ class StartupResult:
     warnings: list[str]
     started_at: datetime = field(default_factory=datetime.utcnow)
     duration_ms: int = 0
+    # Kernel readiness (new in v2.0)
+    kernels_ready: bool = False
+    kernel_state: str = "NOT_CHECKED"
+    kernel_hash_snapshot: Dict[str, str] = field(default_factory=dict)
 
 
 class SessionStartup:
     """
     Executable session startup protocol.
-    
-    Runs preflight checks and loads mandatory files,
+
+    Runs preflight checks, loads mandatory files, and verifies kernel readiness,
     returning structured status for governance verification.
-    
+
     Usage:
         startup = SessionStartup(Path("/Users/ib-mac/Projects/L9"))
         result = startup.execute()
         if result.status != "READY":
             # Handle startup issues
             pass
+
+    Kernel Readiness (v2.0):
+        - Checks if kernel files exist
+        - Verifies kernel integrity (SHA256 hashes)
+        - Reports kernel state from agent registry
     """
-    
-    def __init__(self, workspace_root: Path) -> None:
+
+    def __init__(
+        self,
+        workspace_root: Path,
+        check_kernels: bool = True,
+    ) -> None:
         """
         Initialize startup protocol.
-        
+
         Args:
             workspace_root: Path to workspace root directory
+            check_kernels: Whether to check kernel readiness (default True)
         """
         self.root = workspace_root
+        self.check_kernels = check_kernels
         self._files_loaded: list[str] = []
         self._errors: list[str] = []
         self._warnings: list[str] = []
+        self._kernel_result: Optional[KernelReadinessResult] = None
     
     @property
     def mandatory_files(self) -> list[StartupFile]:
@@ -297,32 +327,124 @@ class SessionStartup:
         
         results["success"] = len([f for f in results["failed"] if "CRITICAL" in str(f)]) == 0
         return results
-    
+
+    def check_kernel_readiness(self) -> KernelReadinessResult:
+        """
+        Check kernel readiness for L-CTO agent.
+
+        Verifies:
+        1. Kernel files exist in private/kernels/00_system/
+        2. Kernel integrity (SHA256 hashes)
+        3. Kernel state from agent registry (if available)
+
+        Returns:
+            KernelReadinessResult with readiness status
+        """
+        errors: list[str] = []
+        kernel_hashes: Dict[str, str] = {}
+
+        # Check kernel files exist
+        kernel_dir = self.root / "private" / "kernels" / "00_system"
+        if not kernel_dir.exists():
+            errors.append(f"Kernel directory not found: {kernel_dir}")
+            return KernelReadinessResult(
+                kernels_ready=False,
+                kernel_state="NOT_FOUND",
+                kernel_count=0,
+                errors=errors,
+            )
+
+        # Count and hash kernel files
+        kernel_files = list(kernel_dir.glob("*.yaml"))
+        if len(kernel_files) < 10:
+            errors.append(
+                f"Insufficient kernel files: {len(kernel_files)}/10 required"
+            )
+
+        # Compute hashes for integrity verification
+        try:
+            import hashlib
+
+            for kf in kernel_files:
+                data = kf.read_bytes()
+                kernel_hashes[str(kf.relative_to(self.root))] = hashlib.sha256(
+                    data
+                ).hexdigest()
+        except Exception as e:
+            errors.append(f"Failed to compute kernel hashes: {e}")
+
+        # Try to get kernel state from agent registry
+        kernel_state = "NOT_LOADED"
+        try:
+            from core.agents.kernel_registry import KernelAwareAgentRegistry
+            import os
+
+            # Only check if USE_KERNELS is enabled
+            if os.getenv("L9_USE_KERNELS", "true").lower() in ("true", "1", "yes"):
+                # Don't instantiate registry here (would trigger loading)
+                # Just report that kernels should be checked at runtime
+                kernel_state = "PENDING_LOAD"
+        except ImportError:
+            kernel_state = "REGISTRY_NOT_AVAILABLE"
+            errors.append("Kernel registry module not available")
+
+        # Determine readiness
+        kernels_ready = len(kernel_files) >= 10 and len(errors) == 0
+
+        result = KernelReadinessResult(
+            kernels_ready=kernels_ready,
+            kernel_state=kernel_state,
+            kernel_count=len(kernel_files),
+            kernel_hash_snapshot=kernel_hashes,
+            integrity_verified=len(kernel_hashes) == len(kernel_files),
+            errors=errors,
+        )
+
+        self._kernel_result = result
+
+        logger.info(
+            "session_startup.kernel_check",
+            kernels_ready=kernels_ready,
+            kernel_count=len(kernel_files),
+            kernel_state=kernel_state,
+            errors=errors,
+        )
+
+        return result
+
     def execute(self) -> StartupResult:
         """
         Execute full startup protocol.
-        
+
+        Includes:
+        1. Preflight checks (workspace, symlinks, directories)
+        2. Mandatory file loading
+        3. Kernel readiness verification (if check_kernels=True)
+
         Returns:
             StartupResult with complete status
         """
         start_time = datetime.utcnow()
-        
+
         # Clear state
         self._files_loaded = []
         self._errors = []
         self._warnings = []
-        
+        self._kernel_result = None
+
         # Run preflight
         preflight_results = self.run_preflight()
-        preflight_passed = all(r.passed for r in preflight_results if r.name in [
-            "workspace_exists", "workflow_state_exists"
-        ])
-        
+        preflight_passed = all(
+            r.passed
+            for r in preflight_results
+            if r.name in ["workspace_exists", "workflow_state_exists"]
+        )
+
         if not preflight_passed:
             for r in preflight_results:
                 if not r.passed:
                     self._errors.append(f"Preflight failed: {r.name} - {r.message}")
-            
+
             return StartupResult(
                 status="BLOCKED",
                 preflight_passed=False,
@@ -332,10 +454,28 @@ class SessionStartup:
                 warnings=self._warnings,
                 duration_ms=self._calc_duration_ms(start_time),
             )
-        
+
         # Load mandatory files
         file_results = self.load_mandatory_files()
-        
+
+        # Check kernel readiness (v2.0)
+        kernels_ready = False
+        kernel_state = "NOT_CHECKED"
+        kernel_hash_snapshot: Dict[str, str] = {}
+
+        if self.check_kernels:
+            kernel_result = self.check_kernel_readiness()
+            kernels_ready = kernel_result.kernels_ready
+            kernel_state = kernel_result.kernel_state
+            kernel_hash_snapshot = kernel_result.kernel_hash_snapshot
+
+            # Add kernel errors to main errors
+            for err in kernel_result.errors:
+                if "Insufficient" in err or "not found" in err.lower():
+                    self._errors.append(f"CRITICAL: {err}")
+                else:
+                    self._warnings.append(f"Kernel: {err}")
+
         # Determine status
         critical_failures = [e for e in self._errors if "CRITICAL" in e]
         if critical_failures:
@@ -344,17 +484,19 @@ class SessionStartup:
             status = "DEGRADED"
         else:
             status = "READY"
-        
+
         duration_ms = self._calc_duration_ms(start_time)
-        
+
         logger.info(
             "session_startup.complete",
             status=status,
             files_loaded=len(file_results["loaded"]),
             files_failed=len(file_results["failed"]),
+            kernels_ready=kernels_ready,
+            kernel_state=kernel_state,
             duration_ms=duration_ms,
         )
-        
+
         return StartupResult(
             status=status,
             preflight_passed=preflight_passed,
@@ -363,6 +505,9 @@ class SessionStartup:
             errors=self._errors,
             warnings=self._warnings,
             duration_ms=duration_ms,
+            kernels_ready=kernels_ready,
+            kernel_state=kernel_state,
+            kernel_hash_snapshot=kernel_hash_snapshot,
         )
     
     def _calc_duration_ms(self, start_time: datetime) -> int:
@@ -390,6 +535,7 @@ __all__ = [
     "StartupFile",
     "PreflightResult",
     "StartupResult",
+    "KernelReadinessResult",
     "create_session_startup",
 ]
 

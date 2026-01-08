@@ -65,7 +65,7 @@ MODULES = [
     "01_config_loader",
     "02_structlog_setup",
     "03_packet_protocol",
-    "04_slack_webhook_adapter",
+    # "04_slack_webhook_adapter",  # ARCHIVED: Use api/routes/slack.py
     "05_health_routes",
 ]
 

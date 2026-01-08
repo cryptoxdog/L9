@@ -4,7 +4,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
-SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "true").lower() == "true"
 
 _client = None
 

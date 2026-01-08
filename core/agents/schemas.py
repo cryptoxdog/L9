@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, List, Optional
 from uuid import UUID, uuid4, uuid5, NAMESPACE_DNS
 
 from pydantic import BaseModel, Field
@@ -328,6 +328,8 @@ class ExecutionResult(BaseModel):
         duration_ms: Total execution duration
         error: Error message if failed
         trace_id: Trace ID for debugging
+        tool_calls: List of tool calls made during execution
+        tokens_used: Total tokens consumed across all LLM calls
     """
 
     task_id: UUID = Field(..., description="Task ID")
@@ -337,6 +339,12 @@ class ExecutionResult(BaseModel):
     duration_ms: int = Field(default=0, ge=0, description="Total duration")
     error: Optional[str] = Field(None, description="Error message if failed")
     trace_id: Optional[UUID] = Field(None, description="Trace ID")
+    tool_calls: Optional[List["ToolCallResult"]] = Field(
+        None, description="List of tool calls made during execution"
+    )
+    tokens_used: Optional[int] = Field(
+        None, ge=0, description="Total tokens consumed across all LLM calls"
+    )
 
     model_config = {"extra": "forbid"}
 

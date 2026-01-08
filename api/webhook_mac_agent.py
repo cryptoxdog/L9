@@ -7,7 +7,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 
-from services.mac_tasks import get_next_task, complete_task, list_tasks
+from orchestrators.agent_execution.task_queue import (
+    get_next_task,
+    mark_task_completed,
+    complete_task,  # Legacy API for backward compatibility
+    list_tasks,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -26,55 +31,77 @@ class TaskResultRequest(BaseModel):
 @router.get("/tasks/next")
 def get_next_mac_task():
     """
-    Get the next queued Mac task.
+    Get the next queued Mac task (file-based system).
     Returns null if no task is available.
     """
     task = get_next_task()
     if task is None:
         return {"task": None}
 
+    # Task is now a dict from file-based system
+    # Extract relevant fields
     task_dict = {
-        "id": task.id,
-        "source": task.source,
-        "channel": task.channel,
-        "user": task.user,
+        "task_id": task.get("task_id"),
+        "type": task.get("type", "mac_task"),
+        "status": task.get("status", "queued"),
     }
 
-    # Include command (legacy) or steps (V2)
-    if task.command:
-        task_dict["command"] = task.command
-    if task.steps:
-        task_dict["steps"] = task.steps
+    # Include metadata
+    metadata = task.get("metadata", {})
+    if metadata:
+        task_dict["source"] = metadata.get("source", "unknown")
+        task_dict["channel"] = metadata.get("channel")
+        task_dict["user"] = metadata.get("user")
 
-    # Include file attachments if present
-    if task.attachments:
-        task_dict["attachments"] = task.attachments
+    # Include steps (V2)
+    if task.get("steps"):
+        task_dict["steps"] = task.get("steps")
+
+    # Include file artifacts if present
+    if task.get("artifacts"):
+        task_dict["artifacts"] = task.get("artifacts")
 
     return {"task": task_dict}
 
 
 @router.post("/tasks/{task_id}/result")
-async def submit_task_result(task_id: int, payload: TaskResultRequest):
+async def submit_task_result(task_id: str, payload: TaskResultRequest):
     """
-    Submit the result of a Mac task execution.
+    Submit the result of a Mac task execution (file-based system).
     If source is "slack" and channel is set, posts result back to Slack.
     Ingests result to memory for audit trail.
+    
+    Note: task_id is now a UUID string (file-based system), not an integer.
     """
-    task = complete_task(
-        task_id,
-        payload.result,
-        payload.status,
-        screenshot_path=payload.screenshot_path,
-        logs=payload.logs,
-    )
-
-    if task is None:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    from orchestrators.agent_execution.task_queue import mark_task_completed
+    
+    # Mark task as completed (file-based system)
+    mark_task_completed(task_id)
+    
+    # For backward compatibility, try to get task from legacy in-memory system
+    # This is for legacy API compatibility only
+    task = None
+    try:
+        task = complete_task(
+            int(task_id) if task_id.isdigit() else 0,
+            payload.result,
+            payload.status,
+            screenshot_path=payload.screenshot_path,
+            logs=payload.logs,
+        )
+    except (ValueError, TypeError):
+        # task_id is UUID string, not integer - use file-based system only
+        pass
 
     # Ingest task result to memory (audit trail)
     try:
         from memory.ingestion import ingest_packet
         from memory.substrate_models import PacketEnvelopeIn
+
+        # Get task source/user from legacy system if available, otherwise use defaults
+        source = task.source if task else "unknown"
+        user = task.user if task else "unknown"
+        channel = task.channel if task else None
 
         packet_in = PacketEnvelopeIn(
             packet_type="mac_task_result",
@@ -86,8 +113,8 @@ async def submit_task_result(task_id: int, payload: TaskResultRequest):
                 else None,  # Truncate large results
                 "has_screenshot": bool(payload.screenshot_path),
                 "log_count": len(payload.logs) if payload.logs else 0,
-                "source": task.source,
-                "user": task.user,
+                "source": source,
+                "user": user,
             },
             metadata={"agent": "mac_agent", "source": "webhook_mac_agent"},
         )
@@ -96,7 +123,8 @@ async def submit_task_result(task_id: int, payload: TaskResultRequest):
         logger.warning(f"Failed to ingest task result to memory: {e}")
 
     # If source is slack and channel is set, post back to Slack
-    if task.source == "slack" and task.channel:
+    channel = task.channel if task else None
+    if channel:
         try:
             from services.slack_client import slack_post
 

@@ -421,6 +421,130 @@ class TestFactoryFunctions:
 
 
 # =============================================================================
+# DB Integration Tests
+# =============================================================================
+
+
+class TestSubstrateDAGDBIntegration:
+    """Integration tests for SubstrateDAG with real database (requires Docker)."""
+
+    @pytest.fixture
+    def db_url(self):
+        """Get database URL from environment or use default Docker URL."""
+        import os
+
+        return os.environ.get(
+            "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/l9_memory"
+        )
+
+    @pytest.fixture
+    async def repository(self, db_url):
+        """Create a real repository connected to test database."""
+        from memory.substrate_repository import SubstrateRepository
+
+        repo = SubstrateRepository(dsn=db_url)
+        try:
+            await repo.initialize()
+            yield repo
+        except Exception:
+            pytest.skip("Database not available for integration test")
+        finally:
+            await repo.close()
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_dag_with_db_writes_packet(self, repository):
+        """Test DAG writes packet to real database."""
+        from memory.substrate_models import PacketEnvelope
+        from memory.substrate_graph import SubstrateDAG
+        import uuid
+
+        # Create unique packet
+        test_id = str(uuid.uuid4())
+        envelope = PacketEnvelope(
+            packet_type="integration_test",
+            payload={"test_id": test_id, "message": "DB integration test"},
+            metadata={"source": "test_substrate_dag_db_integration"},
+        )
+
+        # Run DAG with real repository
+        dag = SubstrateDAG(repository=repository, semantic_service=None)
+        result = await dag.run(envelope)
+
+        # Verify result
+        assert result.status == "ok"
+        assert result.packet_id == envelope.packet_id
+        assert "packet_store" in result.written_tables
+
+        # Verify packet exists in database
+        stored = await repository.get_packet(envelope.packet_id)
+        assert stored is not None
+        assert stored.packet_type == "integration_test"
+        assert stored.payload["test_id"] == test_id
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_dag_with_db_creates_reasoning_trace(self, repository):
+        """Test DAG creates reasoning trace in database."""
+        from memory.substrate_models import PacketEnvelope
+        from memory.substrate_graph import SubstrateDAG
+
+        envelope = PacketEnvelope(
+            packet_type="reasoning_test",
+            payload={"content": "Test content for reasoning extraction"},
+        )
+
+        dag = SubstrateDAG(repository=repository, semantic_service=None)
+        result = await dag.run(envelope)
+
+        assert result.status == "ok"
+        assert "reasoning_traces" in result.written_tables
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_dag_with_db_extracts_insights(self, repository):
+        """Test DAG extracts and stores insights from structured payload."""
+        from memory.substrate_models import PacketEnvelope
+        from memory.substrate_graph import SubstrateDAG
+
+        # Payload with extractable insights
+        envelope = PacketEnvelope(
+            packet_type="insight_test",
+            payload={
+                "insights": [
+                    {"text": "Test insight 1", "confidence": 0.9},
+                    {"text": "Test insight 2", "confidence": 0.8},
+                ],
+                "facts": [{"statement": "Test fact", "source": "test"}],
+            },
+        )
+
+        dag = SubstrateDAG(repository=repository, semantic_service=None)
+        result = await dag.run(envelope)
+
+        assert result.status == "ok"
+        assert "knowledge_facts" in result.written_tables
+
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_dag_with_db_creates_checkpoint(self, repository):
+        """Test DAG creates checkpoint in database."""
+        from memory.substrate_models import PacketEnvelope
+        from memory.substrate_graph import SubstrateDAG
+
+        envelope = PacketEnvelope(
+            packet_type="checkpoint_test",
+            payload={"data": "checkpoint test data"},
+        )
+
+        dag = SubstrateDAG(repository=repository, semantic_service=None)
+        result = await dag.run(envelope)
+
+        assert result.status == "ok"
+        assert "graph_checkpoints" in result.written_tables
+
+
+# =============================================================================
 # Run Tests
 # =============================================================================
 

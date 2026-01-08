@@ -1,0 +1,252 @@
+schema_version: 2.6.0
+meta:
+  schema_version: 2.6.0
+  template_version: 2.6.0
+  created_at: '2025-12-18T00:42:30.092760+00:00'
+  created_by: spec_compiler
+  last_updated_at: '2025-12-18T00:42:30.169576+00:00'
+  last_updated_by: policy_applier
+  last_commit_sha: PENDING
+metadata:
+  module_id: slack.webhook
+  name: Slack Webhook Adapter
+  tier: 2
+  description: Validates Slack events, normalizes to L9 packets, and routes to AIOS
+    reasoning.
+  system: L9
+  language: python
+  runtime: python>=3.11
+ownership:
+  team: core
+  primary_contact: core_lead
+runtime_wiring:
+  service: api
+  startup_phase: normal
+  depends_on:
+  - postgres
+  - memory.service
+  blocks_startup_on_failure: false
+  placement: fastapi_route_handler_with_service_injection
+runtime_contract:
+  runtime_class: control_plane
+  execution_model: request_driven
+external_surface:
+  exposes_http_endpoint: true
+  exposes_webhook: true
+  exposes_tool: false
+  callable_from:
+  - external
+  - internal
+dependency_contract:
+  inbound:
+  - from_module: external
+    interface: http
+    endpoint: /slack/events
+  outbound:
+  - to_module: aios.runtime
+    interface: http
+    endpoint: /chat
+  - to_module: memory.service
+    interface: http
+    endpoint: /memory/ingest
+  - to_module: external
+    interface: http
+    endpoint: slack.chat.postMessage
+dependencies:
+  allowed_tiers:
+  - 0
+  - 1
+  - 2
+  outbound_calls:
+  - module: aios.runtime
+    interface: http
+    endpoint: /chat
+  - module: memory.service
+    interface: http
+    endpoint: /memory/ingest
+packet_contract:
+  emits:
+  - slack_webhook.in
+  - slack_webhook.out
+  - slack_webhook.error
+  requires_metadata:
+  - task_id
+  - thread_uuid
+  - source
+  - tool_id
+packet_expectations:
+  on_success:
+    emits:
+    - slack_webhook.out
+  on_error:
+    emits:
+    - slack_webhook.error
+  durability:
+    success: durable
+    error: durable
+idempotency:
+  pattern: event_id
+  source: platform_event_id
+  durability: none
+error_policy:
+  default: best_effort
+  retries:
+    enabled: false
+    max_attempts: 0
+  categories:
+    invalid_signature:
+      status: 401
+      action: reject
+    stale_timestamp:
+      status: 401
+      action: reject
+    aios_failure:
+      status: 200
+      action: log_and_continue
+    side_effect_failure:
+      status: 200
+      action: log_and_continue
+    storage_failure:
+      status: 200
+      action: log_and_continue
+observability:
+  logs:
+    enabled: true
+    level: info
+  metrics:
+    enabled: true
+  traces:
+    enabled: true
+runtime_touchpoints:
+  touches_db: true
+  touches_tools: true
+  touches_external_network: true
+  affects_boot: false
+tier_expectations:
+  requires_runtime_wiring: true
+  requires_packet_contract: true
+  requires_negative_tests: true
+test_scope:
+  unit: true
+  integration: true
+  docker_smoke: true
+acceptance:
+  positive:
+  - valid_request_processed
+  - idempotent_replay_cached
+  - stale_timestamp_rejected
+  - aios_response_forwarded
+  - packet_written_on_success
+  negative:
+  - invalid_signature_rejected
+global_invariants_ack:
+  emits_packet_on_ingress: true
+  unknown_tool_id_hard_fail: true
+  tool_calls_traceable: true
+  malformed_packet_blocked: true
+  missing_env_fails_boot: true
+spec_confidence:
+  level: high
+repo:
+  root_path: L9
+  allowed_new_files:
+  - api/adapters/slack_webhook_adapter.py
+  - api/routes/slack_webhook.py
+  - api/clients/slack_webhook_client.py
+  - tests/test_slack_webhook.py
+  - docs/slack_webhook.md
+  allowed_modified_files:
+  - api/server.py
+interfaces:
+  inbound:
+  - name: slack_webhook_endpoint
+    method: POST
+    route: /slack/events
+    auth: hmac-sha256
+    payload_type: JSON
+  outbound:
+  - name: aios_runtime_call
+    endpoint: /chat
+    method: POST
+    timeout_seconds: 30
+    retry: false
+  - name: memory_service_call
+    endpoint: /memory/ingest
+    method: POST
+    timeout_seconds: 30
+    retry: false
+  - name: slack_chat_postMessage
+    endpoint: https://api.slack.com/...
+    method: POST
+    timeout_seconds: 10
+    retry: true
+environment:
+  required:
+  - SLACK_WEBHOOK_SIGNING_SECRET
+  - SLACK_API_KEY
+  optional:
+  - SLACK_WEBHOOK_ENABLED
+  - SLACK_WEBHOOK_LOG_LEVEL
+orchestration:
+  validation:
+  - verify_signature
+  - check_timestamp_freshness
+  - parse_and_validate_payload
+  context_reads:
+  - search_conversation_history
+  side_effects:
+  - write_inbound_packet
+  - write_outbound_packet
+  - send_external_response
+boot_impact:
+  level: soft
+standards:
+  logging:
+    library: structlog
+  http_client:
+    library: httpx
+goals:
+- Validates Slack events, normalizes to L9 packets, and routes to AIOS reasoning.
+- Integrate with L9 memory substrate
+- Emit standardized packets (slack_webhook.*)
+non_goals:
+- No new database tables
+- No new migrations
+- No parallel memory/logging systems
+notes_for_generators:
+- 'Module tier: 2 (Agent Infrastructure)'
+- 'Placement: fastapi_route_handler_with_service_injection'
+- 'Idempotency: event_id (none)'
+- Policy rules applied at 2025-12-18T00:42:30.169576+00:00
+- 'Policy warnings: 1'
+codegen_hints:
+  completeness_target: 0.8
+  allow_real_logic: true
+  allow_real_tests: true
+  stub_strategy: production_scaffold
+  forbid_guessing: true
+  refuse_if_missing:
+  - runtime_wiring
+  - dependency_contract
+  - packet_contract
+  - acceptance
+delivery_metrics:
+  track:
+  - lead_time
+  - change_frequency
+  - change_failure_rate
+  - recovery_time
+  ownership:
+    primary: core
+    escalation: core_lead
+  enforcement:
+    human_editing_forbidden: true
+    ci_owned: true
+maturity:
+  stage: beta
+  production_ready: false
+escalation_policy:
+  on_repeated_failure:
+    threshold: 3
+    window: 24h
+    escalate_to: core_lead

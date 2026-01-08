@@ -8,7 +8,13 @@ before any test imports happen.
 
 import sys
 import os
+import warnings
 from pathlib import Path
+
+# Suppress urllib3 NotOpenSSLWarning (macOS system Python uses LibreSSL)
+# Fix: Recreate venv with Homebrew Python (/opt/homebrew/bin/python3)
+# Must filter by message BEFORE urllib3 is imported (warning fires at import time)
+warnings.filterwarnings("ignore", message=".*urllib3.*OpenSSL.*")
 
 # Add project root to path BEFORE any other imports
 # Use realpath to resolve any case sensitivity issues on macOS

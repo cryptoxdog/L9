@@ -14,14 +14,14 @@ import yaml
 import structlog
 
 if TYPE_CHECKING:
-    from .phase_2_instantiate import AgentInstance
+    from .phase_2_instantiate import BootstrapInstanceData
     from memory.substrate_service import MemorySubstrateService
 
 logger = structlog.get_logger(__name__)
 
 
 async def load_identity_persona(
-    instance: "AgentInstance",
+    instance: "BootstrapInstanceData",
     substrate_service: "MemorySubstrateService",
     identity_yaml_path: Optional[str] = None,
 ) -> None:

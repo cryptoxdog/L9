@@ -43,28 +43,20 @@ def route_slack_message(
     """
     client = get_client()
 
-    system_prompt = """You are L9 Planner v2. When the instruction is about email (reading, drafting, replying, forwarding, summarizing, searching), output a JSON email_task. Otherwise, output a mac_task.
+    system_prompt = """You are L9 Planner v2. Convert Slack messages into Mac Agent task structures.
 
-You must ALWAYS output valid JSON. Include steps for browser or email depending on intent.
+You must ALWAYS output valid JSON with type="mac_task" only.
 
 Output format MUST be:
 {
-  "type": "mac_task" | "email_task",
+  "type": "mac_task",
   "steps": [
-     // For mac_task:
      {"action": "goto", "url": "..."},
      {"action": "click", "selector": "text=..."},
      {"action": "fill", "selector": "#field", "text": "..."},
      {"action": "upload", "selector": "#file", "file_path": "<local_path>"},
      {"action": "screenshot"},
-     
-     // For email_task:
-     {"action": "list_messages", "query": "...", "max_results": 10},
-     {"action": "get_message", "message_id": "..."},
-     {"action": "draft_email", "to": "...", "subject": "...", "body": "..."},
-     {"action": "send_email", "draft_id": "..."}  // or {"action": "send_email", "to": "...", "subject": "...", "body": "..."}
-     {"action": "reply_to_email", "message_id": "...", "body": "..."},
-     {"action": "forward_email", "message_id": "...", "to": "...", "body": "..."}
+     {"action": "wait", "selector": "...", "timeout_ms": 5000}
   ],
   "artifacts": [...],
   "metadata": {
@@ -73,7 +65,7 @@ Output format MUST be:
   }
 }
 
-No other keys allowed.
+No other keys allowed. Type MUST be "mac_task".
 
 Available mac_task actions:
 - goto: Navigate to URL
@@ -83,23 +75,10 @@ Available mac_task actions:
 - screenshot: Take screenshot
 - wait: Wait for element (selector, optional timeout_ms)
 
-Available email_task actions:
-- list_messages: Search emails (query: Gmail search string, max_results: number)
-- get_message: Get full message (message_id: Gmail message ID)
-- draft_email: Create draft (to, subject, body)
-- send_email: Send email (draft_id OR to/subject/body)
-- reply_to_email: Reply to message (message_id, body)
-- forward_email: Forward message (message_id, to, body)
-
 When files are attached, use their "path" field as file_path in upload actions.
 If artifacts contain OCR/PDF/transcription data, use that information in your steps.
 
-CRITICAL: Choose "email_task" type when user wants to:
-- Read, search, draft, send, reply, forward emails
-- Check inbox, summarize emails
-- Any Gmail/email operation
-
-Choose "mac_task" type for browser automation, web scraping, or non-email tasks."""
+NOTE: This router ONLY creates mac_task types. Email operations should be handled through separate email task routing."""
 
     # Build user message with artifact context
     user_message = f"User request: {text}\n\n"
@@ -163,21 +142,15 @@ Choose "mac_task" type for browser automation, web scraping, or non-email tasks.
 
         task_dict = json.loads(content)
 
-        # Validate structure - allow both mac_task and email_task
+        # Validate structure - only mac_task allowed
         task_type = task_dict.get("type")
-        if task_type not in ["mac_task", "email_task"]:
+        if task_type != "mac_task":
             logger.warning(
-                f"Task type is not 'mac_task' or 'email_task', got: {task_type}"
+                f"Task type is not 'mac_task', got: {task_type}. "
+                f"Email tasks should use separate email task routing. "
+                f"Fixing to mac_task."
             )
-            # Infer type from text
-            text_lower = text.lower()
-            if any(
-                keyword in text_lower
-                for keyword in ["email", "send", "draft", "inbox", "message"]
-            ):
-                task_dict["type"] = "email_task"
-            else:
-                task_dict["type"] = "mac_task"
+            task_dict["type"] = "mac_task"
 
         # Ensure required fields
         if "steps" not in task_dict:

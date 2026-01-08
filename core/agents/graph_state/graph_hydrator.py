@@ -22,6 +22,17 @@ import structlog
 
 from .agent_graph_loader import AgentGraphState, AgentGraphLoader
 
+# Import kernel prompt builder for system prompt generation
+try:
+    from core.kernels.prompt_builder import (
+        build_system_prompt_from_kernels,
+        get_kernel_stack,
+        get_fallback_prompt,
+    )
+    _HAS_KERNEL_PROMPT_BUILDER = True
+except ImportError:
+    _HAS_KERNEL_PROMPT_BUILDER = False
+
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
     from core.agents.agent_instance import AgentInstance
@@ -113,6 +124,38 @@ class GraphHydrator:
     - Agent-specific state can evolve at runtime
     - Fast startup (~100ms for graph query)
     - Full audit trail for state changes
+    
+    Reactive Dispatch Integration Points
+    =====================================
+    
+    The hydrator integrates with message dispatch through these touch points:
+    
+    1. **Slack Webhook → Message Queue**
+       - Entry: `api/webhook_slack.py` receives Slack events
+       - Route: `memory/slack_ingest.py.handle_slack_inbound_event()`
+       - The `_retrieve_thread_context()` and `_retrieve_semantic_hits()` functions
+         retrieve prior context from PostgreSQL packet_store
+       - This context is passed to `handle_slack_with_l_agent()` → `AgentTask.context`
+    
+    2. **AgentTask.context → System Prompt**
+       - `core/agents/agent_instance.py.assemble_context()` injects DAG context
+         into the system prompt via `_build_dag_context_section()`
+       - Thread history and semantic hits become part of L's reasoning context
+    
+    3. **Graph Hydration (this module)**
+       - `hydrate()` loads agent state from Neo4j (responsibilities, directives, tools)
+       - `_build_system_prompt_from_kernels()` generates base prompt from YAML kernels
+       - `_extract_safety_constraints()` pulls safety constraints for enforcement
+    
+    4. **Executor Loop**
+       - `core/agents/executor.py._reactive_dispatch_loop()` would consume messages
+         from Redis/message queue (future: not yet wired)
+       - Each message triggers hydration → task creation → execution
+    
+    Future Integration (not yet implemented):
+    - Redis pub/sub or message queue for real-time dispatch
+    - WebSocket orchestrator for bidirectional agent communication
+    - Batch processing for high-volume message ingestion
     """
     
     def __init__(
@@ -199,12 +242,37 @@ class GraphHydrator:
         return context
     
     def _build_system_prompt_from_kernels(self) -> str:
-        """Extract system prompt from kernel stack."""
+        """
+        Build system prompt from kernel stack using the canonical prompt_builder.
+        
+        Integration: Uses core/kernels/prompt_builder.py which extracts content from:
+        - Identity kernel (02): designation, role, mission
+        - Behavioral kernel (04): communication style, prohibitions
+        - Cognitive kernel (03): reasoning patterns
+        - Execution kernel (07): action constraints
+        - Safety kernel (08): safety constraints
+        
+        Returns:
+            Complete system prompt string, or fallback if kernels unavailable
+        """
+        # Use prompt_builder if available (canonical path)
+        if _HAS_KERNEL_PROMPT_BUILDER:
+            try:
+                return build_system_prompt_from_kernels()
+            except Exception as e:
+                logger.warning(
+                    "prompt_builder.build_system_prompt_from_kernels() failed",
+                    error=str(e),
+                )
+                try:
+                    return get_fallback_prompt()
+                except Exception:
+                    pass
+        
+        # Legacy fallback: try direct kernel stack access
         if not self.kernel_stack:
             return ""
         
-        # This would integrate with existing kernel_loader
-        # For now, return placeholder
         try:
             master_kernel = self.kernel_stack.get("master")
             if master_kernel and hasattr(master_kernel, "system_prompt"):
@@ -215,7 +283,41 @@ class GraphHydrator:
         return ""
     
     def _extract_safety_constraints(self) -> list[str]:
-        """Extract safety constraints from kernel stack."""
+        """
+        Extract safety constraints from kernel stack.
+        
+        Integration: Pulls from safety kernel (08-safety.yaml) which defines:
+        - Critical directives (NEVER violate)
+        - Approval requirements for destructive operations
+        - Escalation thresholds
+        
+        Returns:
+            List of safety constraint strings
+        """
+        # Try prompt_builder's kernel stack first
+        if _HAS_KERNEL_PROMPT_BUILDER:
+            try:
+                stack = get_kernel_stack()
+                safety = stack.kernels_by_id.get("safety", {})
+                if isinstance(safety, dict):
+                    # Extract constraints from safety kernel dict
+                    constraints = []
+                    if "safety_envelope" in safety:
+                        envelope = safety["safety_envelope"]
+                        if isinstance(envelope, dict):
+                            for key, value in envelope.items():
+                                if isinstance(value, list):
+                                    constraints.extend(value)
+                                elif isinstance(value, str):
+                                    constraints.append(f"{key}: {value}")
+                    return constraints
+            except Exception as e:
+                logger.warning(
+                    "prompt_builder.get_kernel_stack() failed for safety constraints",
+                    error=str(e),
+                )
+        
+        # Legacy fallback: try direct kernel stack access
         if not self.kernel_stack:
             return []
         

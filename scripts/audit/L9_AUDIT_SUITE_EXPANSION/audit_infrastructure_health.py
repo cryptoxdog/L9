@@ -12,7 +12,6 @@ Detects:
   - Redis cache misses
   - Neo4j query timeouts
   - Postgres connection leaks
-  - Qdrant vector DB issues
 
 Features:
   - Concurrent health probes (asyncio)
@@ -133,13 +132,6 @@ HEALTH_PROBES = {
         port=int(os.getenv("NEO4J_PORT", 7687)),
         timeout=3.0,
     ),
-    "qdrant": ServiceProbe(
-        name="qdrant",
-        probe_type="http",
-        endpoint=os.getenv("QDRANT_URL", "http://localhost:6333/health"),
-        timeout=2.0,
-        expected_response="ok",
-    ),
 }
 
 # Dependency graph (service startup order)
@@ -147,9 +139,8 @@ DEPENDENCY_GRAPH = {
     "postgres": DependencyNode("postgres", depends_on=[], critical=True),
     "redis": DependencyNode("redis", depends_on=[], critical=True),
     "neo4j": DependencyNode("neo4j", depends_on=[], critical=False),
-    "qdrant": DependencyNode("qdrant", depends_on=[], critical=False),
     "memory_substrate": DependencyNode(
-        "memory_substrate", depends_on=["postgres", "qdrant"], critical=True
+        "memory_substrate", depends_on=["postgres"], critical=True
     ),
     "tool_graph": DependencyNode(
         "tool_graph", depends_on=["neo4j"], critical=False
@@ -170,7 +161,6 @@ CONFIG_RULES = {
     "REDIS_HOST": ("str", "localhost"),
     "REDIS_PORT": ("int", 6379),
     "NEO4J_URI": ("str", "neo4j://localhost:7687"),
-    "QDRANT_URL": ("str", "http://localhost:6333"),
     "L9_ENABLE_MEMORY": ("bool", True),
     "L9_ENABLE_GRAPH": ("bool", True),
     "TIER_1_ENABLED": ("bool", True),

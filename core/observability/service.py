@@ -233,5 +233,15 @@ async def initialize_observability(
     return service
 
 
+def get_observability_service() -> Optional[ObservabilityService]:
+    """
+    Get the global observability service instance.
+
+    Returns None if observability hasn't been initialized.
+    This is the preferred way to access the service from other modules.
+    """
+    return ObservabilityService.get()
+
+
 # Import SpanStatus for export_span
 from .models import SpanStatus
