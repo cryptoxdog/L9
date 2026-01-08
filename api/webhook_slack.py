@@ -2,6 +2,7 @@ import os
 import hmac
 import hashlib
 import time
+from typing import Optional
 import structlog
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
@@ -307,7 +308,10 @@ async def slack_commands(request: Request):
 
 
 def verify_slack_signature(
-    body: str, timestamp: str, signature: str, signing_secret: str | None = SLACK_SIGNING_SECRET,
+    body: str,
+    timestamp: str,
+    signature: str,
+    signing_secret: Optional[str] = SLACK_SIGNING_SECRET,
 ) -> bool:
     """
     Verify Slack request signature.
@@ -404,9 +408,9 @@ async def slack_events(
         event_type = event.get("type")
         event_subtype = event.get("subtype")
 
-        # Ignore bot messages
-        if event_subtype == "bot_message":
-            logger.debug("[SLACK] Ignoring bot message")
+        # Ignore bot messages (check BOTH subtype AND bot_id to prevent infinite loops)
+        if event_subtype == "bot_message" or event.get("bot_id"):
+            logger.debug("[SLACK] Ignoring bot message", extra={"bot_id": event.get("bot_id"), "subtype": event_subtype})
             return JSONResponse(content={"status": "ok"})
 
         # Handle app_mention events
