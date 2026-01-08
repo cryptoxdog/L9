@@ -70,3 +70,27 @@ def get_config() -> MacAgentConfig:
     if _config is None:
         _config = MacAgentConfig()
     return _config
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MAC-OPER-001",
+    "component_name": "Config",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "mac_agent",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements MacAgentConfig for config functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

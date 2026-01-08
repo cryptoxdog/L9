@@ -86,3 +86,27 @@ class EmailAdapterService:
             "module": self.config.module_id,
             "errors": errors,
         }
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-018",
+    "component_name": "Email Adapter Service",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "service",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements EmailAdapterService for email adapter service functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

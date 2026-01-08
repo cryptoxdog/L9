@@ -1335,3 +1335,27 @@ class ReflectionMemory:
             if outcome_key not in self._task_index:
                 self._task_index[outcome_key] = []
             self._task_index[outcome_key].append(task_ref.task_id)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "WOR-LEAR-007",
+    "component_name": "Reflection Memory",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "world_model",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides reflection memory components including ReflectionType, ReflectionPriority, Reflection",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

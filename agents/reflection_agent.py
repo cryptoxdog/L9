@@ -342,3 +342,27 @@ Provide:
     def clear_lessons(self) -> None:
         """Clear lessons learned."""
         self._lessons_learned.clear()
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "AGE-INTE-008",
+    "component_name": "Reflection Agent",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "agent_execution",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements ReflectionAgent for reflection agent functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -376,3 +376,27 @@ class SimulationRouter:
         """Clear all stored results."""
         self._results.clear()
         logger.info("Cleared simulation results")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "IR_-OPER-012",
+    "component_name": "Simulation Router",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "ir_engine",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides simulation router components including SimulationRequest, SimulationResult, RankedCandidate",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

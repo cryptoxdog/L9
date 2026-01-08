@@ -452,3 +452,27 @@ async def close_world_model_client() -> None:
     if _client is not None:
         await _client.close()
         _client = None
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "CLI-OPER-002",
+    "component_name": "World Model Client",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "clients",
+    "type": "service",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides world model client components including EntityData, StateVersion, SnapshotData",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

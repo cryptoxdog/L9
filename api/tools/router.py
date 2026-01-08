@@ -168,3 +168,27 @@ async def tool_graph_health(request: Request) -> dict:
         "tools_executable": True,
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-031",
+    "component_name": "Router",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides router components including ToolExecuteRequest, ToolExecuteResponse",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

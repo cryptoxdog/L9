@@ -280,3 +280,27 @@ class WorldModelRegistry:
     def relation_type_count(self) -> int:
         """Number of registered relation types."""
         return len(self._relation_types)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "WOR-LEAR-008",
+    "component_name": "Registry",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "world_model",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides registry components including EntityTypeSchema, RelationTypeSchema, WorldModelRegistry",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

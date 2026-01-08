@@ -434,3 +434,27 @@ def init_housekeeping_engine(repository) -> HousekeepingEngine:
     engine = get_housekeeping_engine()
     engine.set_repository(repository)
     return engine
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MEM-LEAR-004",
+    "component_name": "Housekeeping",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "memory_substrate",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements HousekeepingEngine for housekeeping functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

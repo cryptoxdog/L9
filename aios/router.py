@@ -66,3 +66,27 @@ class Router:
     def get_available_types(self) -> list[str]:
         """Return list of available message types."""
         return list(self.handlers.keys())
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "AIO-OPER-004",
+    "component_name": "Router",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "aios",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements Router for router functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

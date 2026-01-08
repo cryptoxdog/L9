@@ -454,3 +454,26 @@ def preview_emission(
     emitter = FileEmitter(repo_root=repo_root, dry_run=True)
     return emitter.preview(files)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "AGE-INTE-012",
+    "component_name": "File Emitter",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "agent_execution",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides file emitter components including FileChange, EmissionResult, FileEmitter",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

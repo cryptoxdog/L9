@@ -145,3 +145,27 @@ class MemoryAPI:
         count = await self.substrate.delete_expired()
         self.logger.info(f"Cleaned up {count} expired packets")
         return count
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "TOO-OPER-003",
+    "component_name": "Memory Api",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "tools",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements MemoryAPI for memory api functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

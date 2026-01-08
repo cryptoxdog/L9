@@ -93,3 +93,27 @@ class MemorySummarizer:
             except asyncio.CancelledError:
                 pass
             self.logger.info("Cleanup task cancelled")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "TOO-OPER-009",
+    "component_name": "Summarizer",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "tools",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements MemorySummarizer for summarizer functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -437,3 +437,26 @@ def upcast(raw: dict, target_version: str = SCHEMA_VERSION) -> dict:
     """Convenience function to upcast a packet dict."""
     return SchemaRegistry.upcast(raw, target_version)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-049",
+    "component_name": "Schema Registry",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides schema registry components including UpcasterNotFoundError, InvalidSchemaVersionError, _SchemaRegistry",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -212,3 +212,27 @@ if __name__ == "__main__":
         reload=False,
         log_level="info",
     )
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-006",
+    "component_name": "Vps Executor",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "engine",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides vps executor components including ShellTask, MemoryHealthTask, CompositeTask",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

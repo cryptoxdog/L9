@@ -148,3 +148,27 @@ class CompositeExporter:
                     await exporter.flush()
                 except Exception as exc:
                     logger.error(f"Flush failed in {type(exporter).__name__}: {exc}")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-037",
+    "component_name": "Exporters",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides exporters components including SpanExporter, AsyncSpanExporter, ConsoleExporter",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

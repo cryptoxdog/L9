@@ -142,3 +142,26 @@ COMMAND_PATTERNS: dict[str, re.Pattern] = {
     ),
 }
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-015",
+    "component_name": "Schemas",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides schemas components including CommandType, IntentType, RiskLevel",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

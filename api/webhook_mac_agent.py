@@ -142,3 +142,27 @@ def list_mac_tasks():
     """
     tasks = list_tasks()
     return {"tasks": tasks}
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-007",
+    "component_name": "Webhook Mac Agent",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements TaskResultRequest for webhook mac agent functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -126,3 +126,27 @@ def create_reasoning_node(orchestrator: ReasoningOrchestrator | None = None):
 
 # Backwards compatibility alias
 AdapterNode = ReasoningAdapterNode
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "ORC-INTE-022",
+    "component_name": "Adapter Node",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "orchestration",
+    "type": "service",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides adapter node components including ReasoningNodeState, ReasoningAdapterNode",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

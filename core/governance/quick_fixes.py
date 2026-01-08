@@ -306,3 +306,26 @@ __all__ = [
     "create_quick_fix_engine",
 ]
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-027",
+    "component_name": "Quick Fixes",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "governance",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides quick fixes components including QuickFix, FixResult, QuickFixEngine",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

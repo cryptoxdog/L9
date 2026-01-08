@@ -392,3 +392,27 @@ async def enqueue_long_plan_tasks(
 
 
 __all__ = ["TaskQueue", "QueuedTask", "enqueue_long_plan_tasks"]
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "RUN-OPER-009",
+    "component_name": "Task Queue",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "runtime",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides task queue components including QueuedTask, TaskQueue",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

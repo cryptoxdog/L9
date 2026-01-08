@@ -31,3 +31,27 @@ class CheckpointManager:
     async def load(self, agent_id: str) -> Optional[dict[str, Any]]:
         """Load latest state for an agent."""
         return await self._service.get_checkpoint(agent_id=agent_id)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MEM-LEAR-001",
+    "component_name": "Checkpoint Manager",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "memory_substrate",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements CheckpointManager for checkpoint manager functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

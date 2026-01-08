@@ -279,3 +279,27 @@ class SemanticSearchResult(BaseModel):
     hits: list[SemanticHit] = Field(
         default_factory=list, description="List of matching results"
     )
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-045",
+    "component_name": "Packet Envelope",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides packet envelope components including PacketKind, TokenUsage, SimpleContent",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

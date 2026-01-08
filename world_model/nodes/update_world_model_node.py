@@ -192,3 +192,27 @@ def create_world_model_packets_from_insights(
         packets.append(packet)
 
     return packets
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "WOR-LEAR-017",
+    "component_name": "Update World Model Node",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "world_model",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements WorldModelNodeState for update world model node functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -289,3 +289,27 @@ def html_to_text(html: str) -> str:
         text = re.sub(r"<[^>]+>", "", html)
         text = html.unescape(text) if HTML_AVAILABLE else text
         return text.strip()
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "EMA-OPER-003",
+    "component_name": "Parser",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "email_agent",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements HTMLToTextParser for parser functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

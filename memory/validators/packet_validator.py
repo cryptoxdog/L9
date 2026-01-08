@@ -53,3 +53,27 @@ class PacketValidator:
     @staticmethod
     def allowed_types() -> Iterable[str]:
         return sorted(ALLOWED_PACKET_TYPES)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MEM-LEAR-024",
+    "component_name": "Packet Validator",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "memory_substrate",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides packet validator components including PacketValidationError, PacketValidator",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

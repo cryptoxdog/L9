@@ -434,3 +434,33 @@ __all__ = [
 # END OF HEADER TEMPLATE
 # ============================================================================
 # Keep this comment to mark the end of the template section
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": ".DO-OPER-001",
+    "component_name": "Python-Header-Template-Enterprise",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": ".dora",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements ModuleMetadata for python-header-template-enterprise functionality",
+    "dependencies": [
+    "l9.core.governance",
+    "l9.core.memory",
+    "l9.core.schemas",
+    "l9.core.tools",
+    "l9.core.utils"
+],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

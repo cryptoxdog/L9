@@ -523,3 +523,27 @@ class ExtractedInsight(BaseModel):
     trigger_world_model: bool = Field(
         default=False, description="Whether to propagate to world model"
     )
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MEM-LEAR-013",
+    "component_name": "Substrate Models",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "memory_substrate",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides substrate models components including MemorySegment, PacketConfidence, PacketProvenance",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

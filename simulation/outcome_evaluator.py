@@ -441,3 +441,27 @@ class OutcomeEvaluator:
         """Update verdict thresholds."""
         self._pass_threshold = pass_threshold
         self._conditional_threshold = conditional_threshold
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SIM-LEAR-001",
+    "component_name": "Outcome Evaluator",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "simulation",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides outcome evaluator components including CriterionType, EvaluationVerdict, EvaluationCriteria",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

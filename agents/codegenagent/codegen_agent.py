@@ -504,3 +504,26 @@ async def preview_spec(spec_path: str) -> DryRunResult:
     agent = CodeGenAgent()
     return await agent.preview(spec_path)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "AGE-INTE-011",
+    "component_name": "Codegen Agent",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "agent_execution",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides codegen agent components including GenerationResult, DryRunResult, BatchResult",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

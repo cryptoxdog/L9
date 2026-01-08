@@ -1202,3 +1202,27 @@ async def broadcast_task(
     logger.info("Broadcast task to %d agents: type=%s", count, task_type)
 
     return count
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "ORC-INTE-007",
+    "component_name": "Unified Controller",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "orchestration",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides unified controller components including ExecutionMode, ControllerPhase, ControllerConfig",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

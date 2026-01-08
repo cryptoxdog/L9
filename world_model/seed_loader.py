@@ -777,3 +777,27 @@ if __name__ == "__main__":
                 logger.info(f"    Relations: {ir.get('relations_added', 0)}")
 
     asyncio.run(main())
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "WOR-LEAR-011",
+    "component_name": "Seed Loader",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "world_model",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements SeedLoader for seed loader functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

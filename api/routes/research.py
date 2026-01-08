@@ -154,8 +154,26 @@ async def execute_research(
             status_code=500, detail=f"Research execution failed: {str(e)}"
         )
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-029",
+    "component_name": "Research",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides research components including ResearchExecuteRequest, ResearchExecuteResponse",
+    "dependencies": [],
+}
 
-
-
-
-
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

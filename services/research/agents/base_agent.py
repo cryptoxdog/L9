@@ -174,3 +174,27 @@ class BaseAgent(ABC):
     def format_assistant_prompt(self, content: str) -> dict[str, str]:
         """Create an assistant message."""
         return {"role": "assistant", "content": content}
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SER-OPER-007",
+    "component_name": "Base Agent",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "agent_execution",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements BaseAgent for base agent functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

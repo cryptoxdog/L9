@@ -132,3 +132,26 @@ class MetricsSummary(BaseModel):
     language_usage: Dict[str, int] = Field(default_factory=dict)
     time_range_hours: int = Field(default=24)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SER-OPER-026",
+    "component_name": "Models",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "symbolic_computation",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides models components including BackendType, CodeLanguage, ComputationRequest",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

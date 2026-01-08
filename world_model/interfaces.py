@@ -219,3 +219,27 @@ class IWorldModelLoader(Protocol):
     def load_causal_structure(self, spec: dict[str, Any]) -> dict[str, Any]:
         """Extract causal structure from specification."""
         ...
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "WOR-LEAR-004",
+    "component_name": "Interfaces",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "world_model",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides interfaces components including IWorldModelState, IWorldModelEngine, IWorldModelUpdater",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

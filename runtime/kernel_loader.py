@@ -1087,3 +1087,27 @@ __all__ = [
     "verify_kernel_activation",
     "require_kernel_activation",
 ]
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "RUN-OPER-004",
+    "component_name": "Kernel Loader",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "runtime",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides kernel loader components including KernelAwareAgent, KernelStack",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

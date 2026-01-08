@@ -79,3 +79,27 @@ class PacketPayload(BaseModel):
     response: Optional[dict[str, Any]] = None
     error: Optional[dict[str, str]] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-015",
+    "component_name": "Schemas",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides schemas components including EmailAdapterRequest, EmailAdapterResponse, EmailAdapterContext",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

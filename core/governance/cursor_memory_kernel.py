@@ -686,3 +686,26 @@ if __name__ == "__main__":
         logger.info(f"Lessons: {len(state.lessons)}")
         logger.info(f"TODOs: {len(state.todos)}")
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-023",
+    "component_name": "Cursor Memory Kernel",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "governance",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides cursor memory kernel components including Lesson, TodoItem, SessionState",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

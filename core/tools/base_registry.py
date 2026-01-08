@@ -730,3 +730,26 @@ async def recall_task_history(num_tasks: int = 10) -> List[dict]:
         logger.error(f"recall_task_history failed: {e}", exc_info=True)
         return []
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-057",
+    "component_name": "Base Registry",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "tool_registry",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides base registry components including ToolType, ToolSchema, ToolMetadata",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

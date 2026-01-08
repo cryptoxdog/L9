@@ -619,3 +619,27 @@ class SimulationEngine:
     def clear_runs(self) -> None:
         """Clear all stored runs."""
         self._runs.clear()
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SIM-LEAR-003",
+    "component_name": "Simulation Engine",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "simulation",
+    "type": "engine",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides simulation engine components including SimulationMode, SimulationConfig, SimulationMetrics",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

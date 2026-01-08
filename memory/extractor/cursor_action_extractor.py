@@ -658,3 +658,27 @@ class DiagnosticSuite:
                     f.write(f"- **{file_info['name']}**\n")
                     f.write(f"  - Path: `{file_info['path']}`\n")
                 f.write("\n")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "MEM-LEAR-021",
+    "component_name": "Cursor Action Extractor",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "memory_substrate",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements CursorActionExtractor for cursor action extractor functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

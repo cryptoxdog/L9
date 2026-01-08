@@ -257,3 +257,27 @@ class IntegrationResult(BaseModel):
             if p.validation_status == ValidationStatus.VALID
         )
         return valid / total
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-047",
+    "component_name": "Research Factory Models",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides research factory models components including ValidationStatus, ResearchJobSpec, Query",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -492,3 +492,26 @@ def compile_contract_to_ir(contract: MetaContract) -> ModuleIR:
     compiler = MetaToIRCompiler()
     return compiler.compile(contract)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "IR_-OPER-001",
+    "component_name": "Compile Meta To Ir",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "ir_engine",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides compile meta to ir components including GenerationTarget, DependencyEdge, PacketSpec",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

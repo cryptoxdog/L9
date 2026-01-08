@@ -409,3 +409,27 @@ def get_perplexity_client() -> Optional[PerplexityClient]:
         log.warning("perplexity_not_configured", hint="Set PERPLEXITY_API_KEY")
         return None
     return PerplexityClient(api_key)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SER-OPER-011",
+    "component_name": "Perplexity Client",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "services",
+    "type": "service",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides perplexity client components including PerplexityModel, SearchContextSize, PerplexityRequest",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

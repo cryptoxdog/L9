@@ -335,3 +335,26 @@ def load_as_contract(path: str) -> MetaContract:
     loader = MetaLoader()
     return loader.load_as_contract(path)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "AGE-INTE-013",
+    "component_name": "Meta Loader",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "agent_execution",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides meta loader components including MetaLoaderError, MetaLoader",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

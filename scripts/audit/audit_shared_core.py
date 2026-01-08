@@ -459,3 +459,27 @@ class ObservabilityHooks:
 def setup_logger(name: str) -> structlog.stdlib.BoundLogger:
     """Get a structlog logger for the given name."""
     return structlog.get_logger(name)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SCR-OPER-004",
+    "component_name": "Audit Shared Core",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "scripts",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides audit shared core components including CacheEntry, CacheManager, CallGraphEdge",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

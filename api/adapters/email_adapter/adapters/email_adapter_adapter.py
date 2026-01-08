@@ -433,3 +433,27 @@ class EmailAdapterAdapter:
         except Exception as e:
             self.logger.warning("error_packet_write_failed", error=str(e))
             return None
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "API-OPER-016",
+    "component_name": "Email Adapter Adapter",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:13Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "api_gateway",
+    "type": "service",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides email adapter adapter components including EmailAdapterRequest, EmailAdapterResponse, EmailAdapterContext",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

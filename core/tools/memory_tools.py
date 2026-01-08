@@ -356,3 +356,26 @@ async def register_memory_tools(tool_registry: Any, substrate_service: Any = Non
     logger.info(f"✓ Memory tools registered: {registered} tools")
     return registered
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-058",
+    "component_name": "Memory Tools",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "tool_registry",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides memory tools components including MemorySegment, MemorySearchResult, MemoryWriteResult",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

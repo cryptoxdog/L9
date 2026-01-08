@@ -227,3 +227,27 @@ class ApplyEngine:
     async def _restart_service(self, service: str) -> None:
         logger.debug(f"Restarting service: {service}")
         await asyncio.sleep(1.0)
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "ORC-INTE-013",
+    "component_name": "Apply Engine",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "orchestration",
+    "type": "engine",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Implements ApplyEngine for apply engine functionality",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

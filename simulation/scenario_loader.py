@@ -471,3 +471,27 @@ class ScenarioLoader:
 
         self._scenarios[name] = scenario
         return scenario
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "SIM-LEAR-002",
+    "component_name": "Scenario Loader",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "learning",
+    "domain": "simulation",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides scenario loader components including ScenarioType, ScenarioCondition, Scenario",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

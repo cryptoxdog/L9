@@ -473,3 +473,26 @@ def preview_enhancement(spec: Dict[str, Any]) -> Dict[str, Any]:
     enhancer = ConstructEnhancer()
     return enhancer.preview_enhancement(spec)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "RUN-OPER-001",
+    "component_name": "Construct Enhancer",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "runtime",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides construct enhancer components including EnhancementResult, ConstructEnhancer, BatchEnhancementResult",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -646,3 +646,27 @@ async def forward_email(request: ForwardRequest):
         )
         logger.error(f"[{trace_id}] Email forward failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"{str(e)} (trace_id={trace_id})")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "EMA-OPER-004",
+    "component_name": "Router",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "email_agent",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides router components including QueryRequest, GetRequest, DraftRequest",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

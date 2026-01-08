@@ -1448,3 +1448,27 @@ __all__ = [
     "SubstrateServiceProtocol",
     "AgentRegistryProtocol",
 ]
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-002",
+    "component_name": "Executor",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "agent_execution",
+    "type": "engine",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides executor components including AIOSRuntime, ToolRegistryProtocol, SubstrateServiceProtocol",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

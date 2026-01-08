@@ -458,3 +458,26 @@ def create_observability(enabled: bool = True) -> PacketEnvelopeObservability:
     config = ObservabilityConfig(enabled=enabled)
     return PacketEnvelopeObservability(config)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "UPG-OPER-004",
+    "component_name": "Observability",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "upgrades",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides observability components including ObservabilityConfig, PacketEnvelopeObservability, StructuredLogEvent",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

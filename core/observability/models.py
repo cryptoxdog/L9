@@ -204,3 +204,27 @@ class AgentKPI(BaseModel):
     value: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     period: str = "1h"  # 1h, 1d, 1w
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COR-FOUN-039",
+    "component_name": "Models",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "foundation",
+    "domain": "core",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "critical",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides models components including SpanKind, SpanStatus, FailureClass",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

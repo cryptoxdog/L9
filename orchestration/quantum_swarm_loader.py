@@ -244,7 +244,26 @@ async def load_quantum_swarm(capsule_path: str) -> Dict[str, Any]:
     loader = QuantumSwarmLoader()
     return await loader.load_quantum_swarm(capsule_path)
 
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "ORC-INTE-005",
+    "component_name": "Quantum Swarm Loader",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "intelligence",
+    "domain": "orchestration",
+    "type": "collector",
+    "status": "active",
+    "governance_level": "high",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides quantum swarm loader components including SwarmLoaderError, QuantumSwarmLoader",
+    "dependencies": [],
+}
 
-
-
-
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

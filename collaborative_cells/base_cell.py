@@ -390,3 +390,27 @@ class BaseCell(ABC):
         """Register an agent with the cell."""
         self._agents[agent_id] = agent
         logger.debug(f"Registered agent {agent_id} with cell {self._cell_id}")
+
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+__dora_block__ = {
+    "component_id": "COL-OPER-002",
+    "component_name": "Base Cell",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:15:14Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "collaborative_cells",
+    "type": "utility",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": True,
+    "audit_trail": True,
+    "purpose": "Provides base cell components including ConsensusStrategy, CellConfig, AgentMessage",
+    "dependencies": [],
+}
+
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================
