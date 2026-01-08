@@ -20,5 +20,21 @@
     "governance_api": "http://localhost:8080",
     "health_check": "http://localhost:8080/governance/health",
     "validation": "http://localhost:8080/governance/validate"
+  },
+  "_l9_dora": {
+    "component_id": "L9-OPER-002",
+    "component_name": ".Suite6 Config",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:17:26Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": ".suite6-config.json",
+    "type": "config",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": true,
+    "audit_trail": true,
+    "purpose": "Schema or configuration definition for .suite6 config",
+    "dependencies": []
   }
 }

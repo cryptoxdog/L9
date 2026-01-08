@@ -46,3 +46,24 @@ View emoji reactions and their associated content in channels and conversations 
 im:write
 Start direct messages with people
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-009 |
+| **Component Name** | Readme L Cto Slack.Scope |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README l cto slack.scope |
+
+---

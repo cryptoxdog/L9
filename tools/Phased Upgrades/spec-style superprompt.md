@@ -200,3 +200,25 @@ l9_gap_analysis_superprompt:
       Treat the existing L9 memory governance spec and tool catalog as the current baseline.
       Analyze how this component compares to OpenAI, Google DeepMind, Anthropic, Meta (FAIR),
       Microsoft, Amazon (AWS), xAI, Mistral AI, Cognition AI, AnySphere, Reflection AI, and Blitzy.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-004 |
+| **Component Name** | Spec Style Superprompt |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for spec style superprompt |
+
+---

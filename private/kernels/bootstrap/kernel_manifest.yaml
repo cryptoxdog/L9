@@ -15,4 +15,24 @@ kernel_manifest:
   
   load_order_source: "runtime/kernel_loader.py::KERNEL_ORDER"
   enforcement: "strict"
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "PRI-OPER-011"
+  component_name: "Kernel Manifest"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "private"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for kernel manifest"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

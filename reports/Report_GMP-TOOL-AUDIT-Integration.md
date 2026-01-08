@@ -225,5 +225,24 @@ Creating tool audit packet with call_id=2f20fba6-937f-4c5d-96d3-9502c771b823...
 *Generated: 2026-01-04T16:32:20Z*
 *Agent: L9 Enterprise Execution Agent*
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
 
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-058 |
+| **Component Name** | Report Gmp Tool Audit Integration |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP TOOL AUDIT Integration |
+
+---

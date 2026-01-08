@@ -119,10 +119,24 @@ All memory code paths are:
 
 No placeholders, no "future TODOs", no silent failures.
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
 
+| Field | Value |
+|-------|-------|
+| **Component ID** | MEM-LEAR-003 |
+| **Component Name** | Wiring |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | learning |
+| **Domain** | memory_substrate |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for WIRING |
 
-
-
-
-
+---

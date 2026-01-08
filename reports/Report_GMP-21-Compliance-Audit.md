@@ -256,3 +256,24 @@ The ComplianceReporter provides violation detection for unapproved high-risk too
 **Timestamp**: 2026-01-01T00:00:00Z  
 **Report Version**: 1.0.0
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-019 |
+| **Component Name** | Report Gmp 21 Compliance Audit |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 21 Compliance Audit |
+
+---

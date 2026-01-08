@@ -390,3 +390,25 @@ anomalies = await pipeline.detect_anomalies(
 ---
 
 *L9 Memory Substrate Documentation — v1.1.0*
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-008 |
+| **Component Name** | Memory Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for MEMORY README |
+
+---

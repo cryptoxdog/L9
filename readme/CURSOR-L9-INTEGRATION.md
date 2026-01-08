@@ -375,3 +375,24 @@ async def fetch_user_data(user_id: str) -> dict:
 - `.cursor-commands/learning/failures/repeated-mistakes.md` — Mistake database
 - `core/governance/cursor_memory_kernel.py` — Cursor memory integration code
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-001 |
+| **Component Name** | Cursor L9 Integration |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for CURSOR L9 INTEGRATION |
+
+---

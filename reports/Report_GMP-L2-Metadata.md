@@ -245,3 +245,24 @@ The following validations should be performed when Neo4j is available:
 > Prerequisites met for GMP-L.3 (Approval Gate Infrastructure).
 > No further changes are permitted.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-047 |
+| **Component Name** | Report Gmp L2 Metadata |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP L2 Metadata |
+
+---

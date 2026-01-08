@@ -44,3 +44,25 @@ Next Step: "Run static typecheck in Cursor"
 
 Never produce text outside these blocks.
 Your job is to turn the plan into a FUNCTIONAL, ZERO-DRIFT repo.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | PRO-OPER-001 |
+| **Component Name** | Cursor Extraction Forge |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | prompts |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for cursor extraction forge |
+
+---

@@ -150,3 +150,24 @@ All tier1 scripts now correctly resolve REPO_ROOT:
 2. Consider archiving the source directory: `scripts/audit-scripts-frontier-grade/`
 3. Add `scripts/audit/` to CI pipeline for automated auditing
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-036 |
+| **Component Name** | Report Gmp 36 Audit Scripts Deployment |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 36 Audit Scripts Deployment |
+
+---

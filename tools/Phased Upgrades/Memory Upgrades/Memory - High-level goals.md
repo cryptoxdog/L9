@@ -314,3 +314,24 @@ This gives a machine-readable outline of how the memory subsystem is used to sup
 
 [^24]: https://ppl-ai-file-upload.s3.amazonaws.com/connectors/dropbox/id:AodXdp68OMMAAAAAABPV5Q/dc6b6ba5-40f9-4be3-8e6c-f0920e35b314/memory.py
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-007 |
+| **Component Name** | Memory   High Level Goals |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Memory   High level goals |
+
+---

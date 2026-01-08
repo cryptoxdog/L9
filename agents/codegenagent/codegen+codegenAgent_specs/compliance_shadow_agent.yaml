@@ -26,3 +26,24 @@ code: |
       trace = open(f"patch_audit/{agent_id}_trace.yaml").read()
       if "violation" in trace:
           open(f"rollback_plan/{agent_id}.yaml", "w").write("rollback: true\\nreason: policy_violation")
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-029"
+  component_name: "Compliance Shadow Agent"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for compliance shadow agent"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

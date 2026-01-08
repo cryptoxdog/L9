@@ -148,3 +148,25 @@ pattern:
     migration:
       from_versions: [int]
       steps: [string]
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-012 |
+| **Component Name** | Agentic Pipeline Pattern.V1.1 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for agentic pipeline pattern.v1.1 |
+
+---

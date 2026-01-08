@@ -97,3 +97,24 @@
 - The spec indicates `auth: hmac-sha256` for the webhook, but the generated route code uses Bearer token authentication. This may need to be reconciled for production use with actual Twilio webhooks, which use HMAC signature validation.
 - Config updated to use existing `TWILIO_ENABLED` flag from env.example (no new toggle needed).
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | API-OPER-010 |
+| **Component Name** | Wiring Log |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | api_gateway |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for WIRING LOG |
+
+---

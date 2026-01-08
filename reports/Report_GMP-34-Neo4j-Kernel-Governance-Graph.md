@@ -250,3 +250,24 @@ neo4j_hierarchy_created agents=1 reports_to=1
 
 **Deployment Readiness:** 90% - Graph is now comprehensive for local Docker. Ready for VPS push after e2e memory validation.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-034 |
+| **Component Name** | Report Gmp 34 Neo4J Kernel Governance Graph |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 34 Neo4j Kernel Governance Graph |
+
+---

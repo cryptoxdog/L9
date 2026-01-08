@@ -76,3 +76,25 @@ Summary:
 
 Your sole mission is to produce a PERFECT planning document
 for Suite-1 compatible file creation.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | PRO-OPER-002 |
+| **Component Name** | Cursor Extraction Planner |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | prompts |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for cursor extraction planner |
+
+---

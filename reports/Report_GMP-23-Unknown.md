@@ -233,3 +233,24 @@ Historical files in `.cursor-commands/` (Dropbox symlink) retain n8n context for
 **GMP Phase:** 6 (FINALIZE)  
 **Next GMP:** As needed
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-021 |
+| **Component Name** | Report Gmp 23 Unknown |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 23 Unknown |
+
+---

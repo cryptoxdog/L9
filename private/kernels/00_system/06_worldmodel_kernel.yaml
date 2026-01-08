@@ -145,4 +145,24 @@ schema:
     - evidence_source
     - superseded_by
     - created_at
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "PRI-OPER-006"
+  component_name: "06 Worldmodel Kernel"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "private"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for 06 worldmodel kernel"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

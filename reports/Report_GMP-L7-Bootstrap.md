@@ -524,3 +524,24 @@ TODO_INDEX_HASH: 7.1-test_file|7.2-tool_execution|7.3-approval_block|7.4-approva
 > All GMPs (L.0 through L.7) complete.
 > No further changes are permitted.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-052 |
+| **Component Name** | Report Gmp L7 Bootstrap |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP L7 Bootstrap |
+
+---

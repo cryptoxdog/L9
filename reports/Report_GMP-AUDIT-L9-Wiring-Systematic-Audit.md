@@ -333,3 +333,24 @@ These services are on `app.state` but have no `Depends()` wrapper for route inje
 *Generated: 2026-01-06 13:05 EST*
 *Updated: 2026-01-06 13:08 EST (fix applied)*
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-041 |
+| **Component Name** | Report Gmp Audit L9 Wiring Systematic Audit |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP AUDIT L9 Wiring Systematic Audit |
+
+---

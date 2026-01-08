@@ -568,3 +568,25 @@ instance:
         - ensure_new_memory_segments_created
         - backfill_task_id_pr_links
         - update_branch_protection_with_new_checks
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-011 |
+| **Component Name** | Agentic Pipeline Pattern.V1.0 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for agentic pipeline pattern.v1.0 |
+
+---

@@ -421,3 +421,25 @@ curl http://localhost:8000/api/os/status
 ```
 
 All documented in TODO-ON-VPS.md!
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | VPS-OPER-008 |
+| **Component Name** | Integration Checklist Updated |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | VPS-Repo-Files |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for INTEGRATION CHECKLIST UPDATED |
+
+---

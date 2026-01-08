@@ -44,3 +44,24 @@ code: |
   if __name__ == "__main__":
       ok = validate_meta(sys.argv[1] if len(sys.argv) > 1 else "meta.yaml")
       sys.exit(0 if ok else 1)
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-028"
+  component_name: "Ci Ci Meta Checker"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for ci ci meta checker"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

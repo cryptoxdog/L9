@@ -29,3 +29,25 @@ Once L9 is live on VPS:
 - I query the VPS graph directly
 - No local Docker needed
 - L runs 24/7 on VPS with full memory access
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-002 |
+| **Component Name** | Cursor Memory Vps |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Cursor Memory VPS |
+
+---

@@ -342,3 +342,24 @@ The following capabilities are intentionally deferred until proper safety mechan
 | 0.2.0 | 2025-01-27 | Added Stage 2.5 (Memory API & Client SDK completion), Stage 2.6 (Orchestrator API Wiring), gap analysis docs |
 | 0.1.0 | 2025-12-26 | Initial roadmap created |
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-010 |
+| **Component Name** | Roadmap |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for ROADMAP |
+
+---

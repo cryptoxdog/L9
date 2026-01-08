@@ -132,7 +132,24 @@ From workflow_state.md:
 *Generated: 2026-01-02T06:25:00Z*
 *GMP Version: 8.0.0*
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
 
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-025 |
+| **Component Name** | Report Gmp 26 Python Headers Mcp Wiring |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 26 Python Headers MCP Wiring |
 
-
+---

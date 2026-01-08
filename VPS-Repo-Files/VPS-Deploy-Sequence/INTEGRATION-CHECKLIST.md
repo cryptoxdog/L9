@@ -271,3 +271,25 @@ Your deployment system now:
 ```
 
 That's it. Everything else is automated. 🚀
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | VPS-OPER-009 |
+| **Component Name** | Integration Checklist |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | VPS-Repo-Files |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for INTEGRATION CHECKLIST |
+
+---

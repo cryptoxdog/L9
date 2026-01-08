@@ -382,3 +382,24 @@ Response:
 *Executor: Cursor AI (Claude Opus 4.5)*
 *Canonical reference: docs/_GMP Execute + Audit/GMP-Action-Prompt-Canonical-v1.0.md*
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-016 |
+| **Component Name** | Report Gmp 16 Closed Loop Learning |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 16 Closed Loop Learning |
+
+---

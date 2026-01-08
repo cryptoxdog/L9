@@ -380,3 +380,25 @@ In `/L9/deploy/docker-compose.memory_substrate_v1.0.0.yaml`:
 * If a detail is ambiguous, choose the **simplest correct implementation** and document it in the README.
 
 END OF PROMPT. FOLLOW THE SCHEMA. BUILD THE SUBSTRATE.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | PRO-OPER-004 |
+| **Component Name** | Memory Substrate Extractor Prompt V1.0.0 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | prompts |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for memory substrate extractor prompt v1.0.0 |
+
+---

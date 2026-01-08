@@ -70,3 +70,25 @@ elif token == settings.MCP_API_KEY_C:
 L (as CTO kernel) has **supervisory access** — can see and modify everything Cursor does. Cursor can see L's guidance but can't overwrite it.
 
 **You did NOT give us separate user IDs** — we share `l9-shared` so we collaborate in the same memory space.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-005 |
+| **Component Name** | L Cto Memory |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for L CTO MEMORY |
+
+---

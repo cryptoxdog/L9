@@ -194,3 +194,24 @@ Locked at: 2026-01-02T03:00:00Z
 | 🟠 MEDIUM | Test end-to-end memory save/search with governance |
 | 🟡 LOW | Implement C-only UPDATE/DELETE constraint in routes |
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-026 |
+| **Component Name** | Report Gmp 27 Memory Governance |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 27 Memory Governance |
+
+---

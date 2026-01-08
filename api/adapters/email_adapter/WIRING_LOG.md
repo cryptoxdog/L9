@@ -91,3 +91,24 @@
 - The generated test `test_thread_uuid_deterministic` has a logic bug: it expects different event_ids to produce different thread UUIDs, but the thread key is derived from `['email_from', 'email_subject', 'email_thread_id']` per the spec. When these fields are empty, all requests produce the same UUID. This is a spec/generator issue, not a wiring issue.
 - Config updated to use existing `EMAIL_ENABLED` toggle from env.example (no new toggle needed).
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | API-OPER-007 |
+| **Component Name** | Wiring Log |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | api_gateway |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for WIRING LOG |
+
+---

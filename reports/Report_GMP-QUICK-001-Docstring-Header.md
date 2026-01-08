@@ -130,3 +130,24 @@
 
 **Note:** Protocol files exist in `.cursor/rules/protocols/` but are filtered by globalignore for read_file tool. Contents were loaded from earlier context in this session.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-055 |
+| **Component Name** | Report Gmp Quick 001 Docstring Header |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP QUICK 001 Docstring Header |
+
+---

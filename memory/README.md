@@ -45,3 +45,24 @@ result = await service.write_packet(envelope)
 - [PacketEnvelope Reference](../docs/memory/PacketEnvelope.md)
 - [Schema Spec](../core/schemas/Memory.yaml)
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | MEM-LEAR-002 |
+| **Component Name** | Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | learning |
+| **Domain** | memory_substrate |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README |
+
+---

@@ -28,3 +28,24 @@ code: |
       memory_diff = open(f"memory_trace/{agent_id}_diff.yaml").read()
       regenerated = CodeGenAgent().generate_from_meta(f"meta/{agent_id}.yaml")
       open(f"regenerated/{agent_id}_regenerated.py", "w").write(str(regenerated))
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-027"
+  component_name: "Autonomy Codegen Autonomy Loop"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for autonomy codegen autonomy loop"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -25,3 +25,24 @@ code: |
       graph = SubstrateGraphState().load()
       decision = graph.decide(task_id)
       return decision
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-093"
+  component_name: "Orchestration Unified Controller Patch"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for orchestration unified controller patch"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

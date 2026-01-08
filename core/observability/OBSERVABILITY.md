@@ -202,3 +202,24 @@ The module automatically instruments:
 - `telemetry/memory_metrics.py` - Prometheus metrics for memory operations
 - `memory/tool_audit.py` - Tool invocation audit logging
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | COR-FOUN-001 |
+| **Component Name** | Observability |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | foundation |
+| **Domain** | core |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for OBSERVABILITY |
+
+---

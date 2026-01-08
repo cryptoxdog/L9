@@ -421,3 +421,24 @@ psql $DATABASE_URL -f L9/migrations/0006_init_world_model_snapshots.sql
 | - | - | Client SDK |
 | - | - | LangGraph nodes |
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REA-OPER-011 |
+| **Component Name** | Worldmodel Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | readme |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for WORLDMODEL README |
+
+---

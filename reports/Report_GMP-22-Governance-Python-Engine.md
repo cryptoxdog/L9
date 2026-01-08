@@ -342,3 +342,24 @@ M  workflow_state.md
 
 **Ready to commit with:** `git commit -m "feat(governance): Add Python enforcement modules (GMP-22)"`
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-020 |
+| **Component Name** | Report Gmp 22 Governance Python Engine |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 22 Governance Python Engine |
+
+---

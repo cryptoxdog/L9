@@ -337,3 +337,24 @@ When L proposes a high-risk change, the test agent can:
 *Report generated: 2026-01-01*
 *GMP Framework: v1.7*
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-018 |
+| **Component Name** | Report Gmp 19 Recursive Self Testing |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 19 Recursive Self Testing |
+
+---

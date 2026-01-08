@@ -37,4 +37,24 @@ code: |
           if file_hash != expected_hash:
               reports[fname] = {"expected": expected_hash, "found": file_hash}
       json.dump(reports, open("kernel_integrity_report.json", "w"))
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-038"
+  component_name: "Governance Kernel Integrity Monitor"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for governance kernel integrity monitor"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

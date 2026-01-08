@@ -378,3 +378,24 @@ None. All files provided in full, all TODOs verifiable, zero errors detected.
 > Audit report stored at `/Users/ib-mac/Projects/L9/reports/audit_report_gmp_l2_metadata.md`.
 > No further changes required. Ready for GMP-L.3.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-040 |
+| **Component Name** | Report Gmp Audit L2 Metadata |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP AUDIT L2 Metadata |
+
+---

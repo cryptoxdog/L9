@@ -3008,5 +3008,21 @@
     "path": "services/symbolic_computation/api/routes.py",
     "hash": "42fcde259846e7a2253b62e47c8efa99086957d4552c403ee93bcd5d505caa8d",
     "modified": 1767733102.851941
+  },
+  "_l9_dora": {
+    "component_id": ".AU-OPER-002",
+    "component_name": "Manifest",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:17:26Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": ".audit_cache",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": true,
+    "audit_trail": true,
+    "purpose": "Schema or configuration definition for manifest",
+    "dependencies": []
   }
 }

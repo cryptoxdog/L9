@@ -223,3 +223,25 @@ RETURN f.path, f.lines
 ORDER BY f.lines DESC
 LIMIT 10
 ```
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-033 |
+| **Component Name** | Report Gmp 33 Neo4J Bootstrap Schema |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 33 Neo4j Bootstrap Schema |
+
+---

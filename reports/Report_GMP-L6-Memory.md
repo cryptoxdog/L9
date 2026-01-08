@@ -421,3 +421,24 @@ TODO_INDEX_HASH: 6.1-_bind_memory_context|6.2-_persist_task_result|6.3-get_task_
 > Prerequisites met for GMP-L.7 (Bootstrap Simulation).
 > No further changes are permitted.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-051 |
+| **Component Name** | Report Gmp L6 Memory |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP L6 Memory |
+
+---

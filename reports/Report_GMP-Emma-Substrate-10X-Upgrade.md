@@ -183,3 +183,24 @@ None. All changes are additive (ALTER TABLE ADD COLUMN, CREATE TABLE, CREATE FUN
 
 **GMP Report Complete. Ready for Igor review.**
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-044 |
+| **Component Name** | Report Gmp Emma Substrate 10X Upgrade |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP Emma Substrate 10X Upgrade |
+
+---

@@ -62,3 +62,24 @@ pytest tests/ -k "test_packet_envelope"
 
 *L9 Platform — Core Schemas*
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | COR-FOUN-002 |
+| **Component Name** | Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | foundation |
+| **Domain** | schema_registry |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README |
+
+---

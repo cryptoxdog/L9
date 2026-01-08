@@ -153,3 +153,24 @@ Me: *queries method_catalog.txt*
 > Report: `/Users/ib-mac/Projects/L9/reports/Report_GMP-32-Repo-Index-Enhancement.md`
 > No further changes permitted.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-032 |
+| **Component Name** | Report Gmp 32 Repo Index Enhancement |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 32 Repo Index Enhancement |
+
+---

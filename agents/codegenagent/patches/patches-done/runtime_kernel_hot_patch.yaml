@@ -37,3 +37,24 @@ code: |
           f.write(patch["replacement_code"])
 
       return {"status": "patched", "backup": backup_file}
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-097"
+  component_name: "Runtime Kernel Hot Patch"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for runtime kernel hot patch"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

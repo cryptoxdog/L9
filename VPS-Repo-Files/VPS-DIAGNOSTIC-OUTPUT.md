@@ -269,4 +269,26 @@ OCI runtime exec failed: exec failed: unable to start container process: exec: "
 Neo4j check failed
 === Redis status ===
 PONG
-admin@L9:/opt/l9$ 
+admin@L9:/opt/l9$
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | VPS-OPER-004 |
+| **Component Name** | Vps Diagnostic Output |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | VPS-Repo-Files |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for VPS DIAGNOSTIC OUTPUT |
+
+---

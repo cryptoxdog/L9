@@ -213,3 +213,24 @@ notes_for_perplexity:
   - "Extract runtime_wiring for docker-compose generation"
   - "Extract observability for instrumentation"
   - "Extract ownership for incident routing"
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "GEN-OPER-001"
+  component_name: "Config Loader"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "generated"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for config loader"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

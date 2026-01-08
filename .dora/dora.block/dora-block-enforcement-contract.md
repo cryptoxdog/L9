@@ -760,3 +760,25 @@ This system makes DORA blocks:
 6. **Remediable** (auto-fix script available)
 
 **Result:** No file can be generated without a valid DORA block. Period.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | .DO-OPER-005 |
+| **Component Name** | Dora Block Enforcement Contract |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | .dora |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for dora block enforcement contract |
+
+---

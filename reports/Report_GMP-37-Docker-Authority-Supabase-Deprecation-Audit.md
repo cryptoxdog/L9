@@ -233,3 +233,24 @@ When Codex reads L9 codebase:
 **GMP Version:** v1.1  
 **Author:** Cursor Agent
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-037 |
+| **Component Name** | Report Gmp 37 Docker Authority Supabase Deprecation Audit |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP 37 Docker Authority Supabase Deprecation Audit |
+
+---

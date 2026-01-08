@@ -21,3 +21,24 @@ code: |
       episodic = memory.pgvector.embed_and_search(packet)
       causal = memory.neo4j.query_relations(packet)
       return {**semantic, **episodic, **causal}
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-019"
+  component_name: "Agents Mainagent V6 Memory Enricher"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for agents mainagent v6 memory enricher"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

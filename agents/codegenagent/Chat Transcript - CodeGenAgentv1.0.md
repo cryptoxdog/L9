@@ -10398,3 +10398,25 @@ Modified version designed to interpret agent_capsule.yaml, pattern references, a
 
 10. Live_Manifest_Builder.py [CGA-Aware]
 Upgraded builder engine capable of emitting CGA-aware manifests from chat inputs, schema diffs, or pattern calls.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | AGE-INTE-101 |
+| **Component Name** | Chat Transcript   Codegenagentv1.0 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | intelligence |
+| **Domain** | agent_execution |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Chat Transcript   CodeGenAgentv1.0 |
+
+---

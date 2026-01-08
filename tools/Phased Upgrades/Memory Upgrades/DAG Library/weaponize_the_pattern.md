@@ -24,3 +24,25 @@ To make agents actually use this pattern:
     - Fill `metadata`, `goals`, and `pipeline.stages` instance data.
     - Keep `pattern` and DAG logic the same.
   - The orchestrator can run the same high-level cycle (design → frontier review → TODO → approval → implementation → validation) for any subsystem, not just code mutation.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-015 |
+| **Component Name** | Weaponize The Pattern |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for weaponize the pattern |
+
+---

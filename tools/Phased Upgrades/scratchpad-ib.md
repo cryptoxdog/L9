@@ -113,3 +113,25 @@ Every TODO in the output follows GMP-Action-Prompt-Canonical:
 ---
 
 **Ready to use!** Just type `/plan "your objective"` in any L9 session.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-003 |
+| **Component Name** | Scratchpad Ib |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for scratchpad ib |
+
+---

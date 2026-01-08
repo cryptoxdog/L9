@@ -61,5 +61,21 @@
     "high": 13,
     "succeeded": 3,
     "failed": 0
+  },
+  "_l9_dora": {
+    "component_id": "REP-OPER-003",
+    "component_name": "Audit Run Audit Run 20260106 185743 D10C38C1",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:17:26Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "reports",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": true,
+    "audit_trail": true,
+    "purpose": "Schema or configuration definition for audit run audit run 20260106 185743 d10c38c1",
+    "dependencies": []
   }
 }

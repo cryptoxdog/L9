@@ -623,3 +623,24 @@ None. All files provided in full, all TODOs verifiable, zero errors detected. Al
 > Audit report stored at `/Users/ib-mac/Projects/L9/reports/audit_report_gmp_test_coverage_v1.0.md`.
 > No further changes required. Ready for test execution phase.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-042 |
+| **Component Name** | Report Gmp Audit Test Coverage |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP AUDIT Test Coverage |
+
+---

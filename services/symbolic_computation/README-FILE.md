@@ -259,5 +259,24 @@ curl -X POST http://localhost:8000/symbolic/cache/clear
 
 Part of L9 Secure AI OS — Internal use only
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
 
+| Field | Value |
+|-------|-------|
+| **Component ID** | SER-OPER-002 |
+| **Component Name** | Readme File |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | service_layer |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README FILE |
+
+---

@@ -318,3 +318,25 @@ code_mutation_system_spec:
       - Authentication/authorization for L9 API routes.
       - Richer breaking-change detection (contracts / LLM reviewer).
       - Telemetry and dashboards for agent performance and risk distribution.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-014 |
+| **Component Name** | Code Mutation System Spec.V1.1 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for code mutation system spec.v1.1 |
+
+---

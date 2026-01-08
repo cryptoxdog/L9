@@ -564,3 +564,24 @@ None. All files provided in full, all TODOs verifiable, zero errors detected, al
 **Status:** ✅ COMPLETE  
 **Audit Index Hash:** IT-v1.0-2024-DEC25
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-039 |
+| **Component Name** | Report Gmp Audit Integration Tests |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP AUDIT Integration Tests |
+
+---

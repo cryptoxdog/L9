@@ -47,5 +47,24 @@ scrape_configs:
   # - job_name: 'postgres'
   #   static_configs:
   #     - targets: ['postgres-exporter:9187']
-
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "DOC-OPER-001"
+  component_name: "Prometheus"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "docker"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for prometheus"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

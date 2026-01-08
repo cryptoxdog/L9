@@ -94,3 +94,25 @@ Your tools already emit structured data:
 | tool_audit | (auto-logged) | tool_audit | 24h |
 | create_chart | Chart ID + data | project_history | 7d |
 | generate_image | Image ID + prompt | project_history | 30d |
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-019 |
+| **Component Name** | Phase .5 Strategic Framework |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Phase .5 STRATEGIC FRAMEWORK |
+
+---

@@ -33,3 +33,24 @@ code: |
       prompt_path = f"capsules/{agent}_gmp_prompt.md"
 
       subprocess.run(["python", "agents/entrypoint.py", agent, "--prompt", prompt_path])
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-001"
+  component_name: "Agents Cli Cursor Cli Launcher"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for agents cli cursor cli launcher"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

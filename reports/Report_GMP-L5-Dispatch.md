@@ -397,3 +397,24 @@ TODO_INDEX_HASH: 5.1-_generate_tasks_from_query|5.2-on_user_message|5.3-dispatch
 > Prerequisites met for GMP-L.6 (Memory Substrate Integration).
 > No further changes are permitted.
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-050 |
+| **Component Name** | Report Gmp L5 Dispatch |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Report GMP L5 Dispatch |
+
+---

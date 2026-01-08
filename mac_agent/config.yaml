@@ -11,4 +11,24 @@ poll_interval: 5  # seconds
 gui_safety: true
 browser_headless: false
 screenshot_dir: "~/Desktop/l9_screenshots"
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "MAC-OPER-001"
+  component_name: "Config"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "mac_agent"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for config"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

@@ -507,5 +507,21 @@
       "caller_count": 0
     }
   ],
-  "circular": []
+  "circular": [],
+  "_l9_dora": {
+    "component_id": ".AU-OPER-001",
+    "component_name": "Analysis Results",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:17:26Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": ".audit_cache",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": true,
+    "audit_trail": true,
+    "purpose": "Schema or configuration definition for analysis results",
+    "dependencies": []
+  }
 }

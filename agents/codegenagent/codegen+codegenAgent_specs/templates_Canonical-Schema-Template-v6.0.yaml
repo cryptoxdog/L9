@@ -29,3 +29,24 @@ patch:
       templates:
         - SUPER_PROMPT_TEMPLATE
       output_map: hypergraph.update
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-073"
+  component_name: "Templates Canonical Schema Template V6.0"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "schema"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for templates Canonical Schema Template v6.0"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

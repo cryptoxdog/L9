@@ -335,3 +335,25 @@ Cursor MUST confirm:
 * All output is production-grade
 
 If ANY fail → regenerate EVERYTHING.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | PRO-OPER-003 |
+| **Component Name** | Master.Extractor.Prompt |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | prompts |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for master.extractor.prompt |
+
+---

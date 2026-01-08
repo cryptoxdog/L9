@@ -270,4 +270,24 @@ CGA is successful when:
 *Owner: CodeGenAgent System*
 *Authority: L-CTO*
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | AGE-INTE-102 |
+| **Component Name** | Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | intelligence |
+| **Domain** | agent_execution |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | critical |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README |
+
+---

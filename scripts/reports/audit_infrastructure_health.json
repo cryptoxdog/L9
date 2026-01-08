@@ -57,5 +57,21 @@
   ],
   "recommendations": [
     "Investigate slow probe times for: postgres, redis, neo4j, qdrant"
-  ]
+  ],
+  "_l9_dora": {
+    "component_id": "SCR-OPER-002",
+    "component_name": "Audit Infrastructure Health",
+    "module_version": "1.0.0",
+    "created_at": "2026-01-08T03:17:26Z",
+    "created_by": "L9_DORA_Injector",
+    "layer": "operations",
+    "domain": "scripts",
+    "type": "schema",
+    "status": "active",
+    "governance_level": "medium",
+    "compliance_required": true,
+    "audit_trail": true,
+    "purpose": "Schema or configuration definition for audit infrastructure health",
+    "dependencies": []
+  }
 }

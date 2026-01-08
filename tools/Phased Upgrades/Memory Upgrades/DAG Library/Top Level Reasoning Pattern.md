@@ -240,3 +240,25 @@ Your prompts follow a very consistent **requirements-elicitation and orchestrati
   - Metrics & dashboards for success/failure and risk over time.
 
 Overall, your prompts follow a **structured, multi-stage requirements-elicitation pattern** for agentic workflows: clarify → design → scope-lock → implement slices → integrate with GitHub → reflect → codify as specs, in a way that matches emerging best practices for orchestrating AI agents in enterprise systems.
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-010 |
+| **Component Name** | Top Level Reasoning Pattern |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for Top Level Reasoning Pattern |
+
+---

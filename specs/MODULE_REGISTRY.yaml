@@ -125,4 +125,24 @@ modules:
     tier: 7
     scope: "FastAPI application entry point"
     status: existing
-
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "SPE-OPER-001"
+  component_name: "Module Registry"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "operations"
+  domain: "specs"
+  type: "config"
+  status: "active"
+  governance_level: "medium"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for MODULE REGISTRY"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

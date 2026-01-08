@@ -332,3 +332,25 @@ code_mutation_memory_spec:
         - No schema-level storage of diff statistics or affected paths (could add to GenerationResult or MutationResult).
         - No built-in authz around who can read/write segments (relies on substrate-level policies).
         - No dedicated telemetry segment for metrics (success/failure counts, TTM).
+
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | TOO-OPER-013 |
+| **Component Name** | Code Mutation System Spec.V1.0 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | tools |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for code mutation system spec.v1.0 |
+
+---

@@ -194,5 +194,24 @@ After GMP-33 + GMP-34:
 - `readme/L9-KERNEL-REFERENCE.md` — Kernel summary
 - `readme/L-CTO-ABILITIES.md` — L's 70 tools
 
+---
 
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
 
+| Field | Value |
+|-------|-------|
+| **Component ID** | REP-OPER-014 |
+| **Component Name** | Gmp 34 Cursor L9 Powerup Phase2 |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | reports |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for GMP 34 Cursor L9 Powerup Phase2 |
+
+---

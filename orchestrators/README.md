@@ -83,3 +83,24 @@ class OrchestratorInterface(Protocol):
 
 *L9 Platform — Orchestrators Module*
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | ORC-INTE-001 |
+| **Component Name** | Readme |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | intelligence |
+| **Domain** | orchestration |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | high |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README |
+
+---

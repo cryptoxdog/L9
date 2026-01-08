@@ -25,3 +25,24 @@ code: |
           wm=world_model_engine,
           governance=governance_policy
       )
+# ============================================================================
+# L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+# ============================================================================
+l9_dora:
+  component_id: "AGE-INTE-083"
+  component_name: "Boot Singleton Patch Mainagent"
+  module_version: "1.0.0"
+  created_at: "2026-01-08T03:17:26Z"
+  created_by: "L9_DORA_Injector"
+  layer: "intelligence"
+  domain: "agent_execution"
+  type: "config"
+  status: "active"
+  governance_level: "critical"
+  compliance_required: true
+  audit_trail: true
+  purpose: "Configuration file for boot singleton patch mainagent"
+  dependencies: []
+# ============================================================================
+# END L9 DORA BLOCK
+# ============================================================================

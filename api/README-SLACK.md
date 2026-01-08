@@ -411,3 +411,24 @@ pytest tests/integration/test_slack_flow.py -v
 - [AIOS Runtime](../core/agents/README.md)
 - [Slack API Documentation](https://api.slack.com/)
 
+---
+
+## L9 DORA BLOCK - AUTO-GENERATED - DO NOT EDIT
+
+| Field | Value |
+|-------|-------|
+| **Component ID** | API-OPER-004 |
+| **Component Name** | Readme Slack |
+| **Module Version** | 1.0.0 |
+| **Created At** | 2026-01-08T03:17:26Z |
+| **Created By** | L9_DORA_Injector |
+| **Layer** | operations |
+| **Domain** | api_gateway |
+| **Type** | schema |
+| **Status** | active |
+| **Governance Level** | medium |
+| **Compliance Required** | True |
+| **Audit Trail** | True |
+| **Purpose** | Documentation for README SLACK |
+
+---
