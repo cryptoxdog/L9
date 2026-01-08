@@ -28,6 +28,8 @@ from fastapi import (
 from pydantic import BaseModel
 from openai import OpenAI
 from api.memory.router import router as memory_router
+from api.memory.graph import router as graph_router
+from api.memory.cache import router as cache_router
 from api.auth import verify_api_key
 import api.db as db
 import api.os_routes as os_routes
@@ -179,6 +181,14 @@ try:
     _has_kernel_registry = True
 except ImportError:
     _has_kernel_registry = False
+
+# Optional: Session Startup (v3.4+ / GMP-KERNEL-BOOT)
+try:
+    from core.governance.session_startup import SessionStartup, StartupResult
+
+    _has_session_startup = True
+except ImportError:
+    _has_session_startup = False
 
 # Optional: Agent Bootstrap Orchestrator (v3.0+ Paradigm Shift)
 try:
@@ -556,6 +566,56 @@ async def lifespan(app: FastAPI):
                 tool_registry = StubToolRegistry()
                 logger.info("Using stub ToolRegistry")
 
+            # ========================================================================
+            # SESSION STARTUP: Preflight checks + kernel readiness gate (v3.4+)
+            # ========================================================================
+            app.state.session_startup_result = None
+            app.state.startup_ready = False
+
+            if _has_session_startup:
+                try:
+                    logger.info("╔════════════════════════════════════════╗")
+                    logger.info("║  Running Session Startup Checks...     ║")
+                    logger.info("╚════════════════════════════════════════╝")
+
+                    session_startup = SessionStartup()
+                    startup_result: StartupResult = await session_startup.execute()
+
+                    app.state.session_startup_result = startup_result
+                    app.state.startup_ready = startup_result.status == "ready"
+
+                    if startup_result.status == "ready":
+                        logger.info(
+                            "✓ Session Startup PASSED: preflight=%s, files_loaded=%d, kernels_ready=%s",
+                            startup_result.preflight_passed,
+                            len(startup_result.files_loaded),
+                            startup_result.kernels_ready,
+                        )
+                        if startup_result.kernel_hash_snapshot:
+                            logger.info(
+                                "  Kernel hash snapshot: %d kernels verified",
+                                len(startup_result.kernel_hash_snapshot),
+                            )
+                    else:
+                        logger.critical(
+                            "❌ Session Startup FAILED: status=%s, errors=%s",
+                            startup_result.status,
+                            startup_result.errors[:3] if startup_result.errors else "none",
+                        )
+                        # In production, this should be fatal
+                        # For dev, we continue with degraded mode
+                        if startup_result.warnings:
+                            for warning in startup_result.warnings[:5]:
+                                logger.warning("  Startup warning: %s", warning)
+
+                except Exception as e:
+                    logger.critical("Session Startup crashed: %s", str(e), exc_info=True)
+                    app.state.startup_ready = False
+                    # Non-fatal in dev mode
+            else:
+                logger.warning("SessionStartup not available - skipping preflight checks")
+                app.state.startup_ready = True  # Assume ready if no checks available
+
             # Initialize agent registry with kernel loading
             if _has_kernel_registry:
                 try:
@@ -928,6 +988,28 @@ async def lifespan(app: FastAPI):
                 )
             else:
                 logger.info("✓✓✓ L9 FULLY INITIALIZED WITH ACTIVE KERNELS ✓✓✓")
+
+    # Validate Session Startup result (v3.4+ / GMP-KERNEL-BOOT)
+    if _has_session_startup:
+        startup_result = getattr(app.state, "session_startup_result", None)
+        startup_ready = getattr(app.state, "startup_ready", False)
+
+        if startup_result is None:
+            logger.warning("STARTUP VALIDATION: SessionStartup result not available")
+        elif not startup_ready:
+            logger.critical(
+                "STARTUP VALIDATION FAILED: SessionStartup not ready (status=%s)",
+                startup_result.status if startup_result else "unknown",
+            )
+            if startup_result and startup_result.errors:
+                for error in startup_result.errors[:3]:
+                    logger.critical("  Startup error: %s", error)
+        else:
+            logger.info(
+                "✓ Session Startup validation passed: kernels_ready=%s, files=%d",
+                startup_result.kernels_ready if startup_result else "unknown",
+                len(startup_result.files_loaded) if startup_result else 0,
+            )
 
     # Validate rate limiter
     if not hasattr(app.state, "rate_limiter") or app.state.rate_limiter is None:
@@ -1529,8 +1611,191 @@ async def health():
     """
     Root health check endpoint for Docker healthchecks and load balancers.
     Returns basic status without requiring authentication.
+
+    Includes startup readiness gate (v3.4+ / GMP-KERNEL-BOOT).
     """
-    return {"status": "ok", "service": "l9-api"}
+    startup_ready = getattr(app.state, "startup_ready", False)
+    startup_result = getattr(app.state, "session_startup_result", None)
+
+    # Determine overall health status
+    if startup_ready:
+        status = "ok"
+    else:
+        status = "degraded"
+
+    response = {
+        "status": status,
+        "service": "l9-api",
+        "startup_ready": startup_ready,
+    }
+
+    # Include startup details if available
+    if startup_result:
+        response["startup"] = {
+            "status": startup_result.status,
+            "preflight_passed": startup_result.preflight_passed,
+            "kernels_ready": startup_result.kernels_ready,
+            "files_loaded": len(startup_result.files_loaded),
+            "errors_count": len(startup_result.errors) if startup_result.errors else 0,
+        }
+
+    return response
+
+
+# Detailed Startup Health Check (v3.4+ / GMP-KERNEL-BOOT)
+@app.get("/health/startup")
+async def startup_health():
+    """
+    Detailed startup health check endpoint.
+    Returns full SessionStartup result including kernel hash snapshot.
+    """
+    startup_result = getattr(app.state, "session_startup_result", None)
+    startup_ready = getattr(app.state, "startup_ready", False)
+
+    if startup_result is None:
+        return {
+            "status": "unknown",
+            "message": "SessionStartup not executed or not available",
+            "startup_ready": startup_ready,
+        }
+
+    return {
+        "status": startup_result.status,
+        "startup_ready": startup_ready,
+        "preflight_passed": startup_result.preflight_passed,
+        "kernels_ready": startup_result.kernels_ready,
+        "files_loaded": startup_result.files_loaded,
+        "files_failed": startup_result.files_failed,
+        "errors": startup_result.errors,
+        "warnings": startup_result.warnings,
+        "kernel_hash_snapshot": startup_result.kernel_hash_snapshot,
+    }
+
+
+# Kernel Reload Endpoint (v3.4+ / GMP-KERNEL-BOOT)
+class KernelReloadRequest(BaseModel):
+    """Request body for kernel reload."""
+    force: bool = False
+
+
+class KernelReloadResponse(BaseModel):
+    """Response from kernel reload."""
+    success: bool
+    kernels_reloaded: int
+    modified_kernels: list[str]
+    errors: list[str]
+    message: str
+
+
+@app.post("/kernels/reload", response_model=KernelReloadResponse)
+async def reload_kernels_endpoint(
+    request: KernelReloadRequest,
+    api_key: str = Depends(verify_api_key),
+):
+    """
+    Hot-reload kernels without restarting the server.
+
+    This endpoint:
+    1. Checks which kernels have been modified on disk
+    2. Re-loads modified kernels (or all if force=True)
+    3. Re-activates the agent with new kernel data
+    4. Logs the evolution to memory substrate
+
+    Requires API key authentication.
+
+    WARNING: This is a potentially disruptive operation.
+    The agent's kernel_state will briefly transition to RELOADING.
+    """
+    try:
+        from core.kernels.kernelloader import reload_kernels
+        from core.memory.runtime import log_kernel_evolution
+    except ImportError as e:
+        return KernelReloadResponse(
+            success=False,
+            kernels_reloaded=0,
+            modified_kernels=[],
+            errors=[f"Kernel reload module not available: {str(e)}"],
+            message="Kernel reload not available",
+        )
+
+    # Get the agent registry
+    agent_registry = getattr(app.state, "agent_registry", None)
+    if agent_registry is None or not hasattr(agent_registry, "get_l_cto_agent"):
+        return KernelReloadResponse(
+            success=False,
+            kernels_reloaded=0,
+            modified_kernels=[],
+            errors=["Agent registry not available or not kernel-aware"],
+            message="Cannot reload: no kernel-aware agent registry",
+        )
+
+    # Get the L-CTO agent
+    try:
+        l_cto_agent = agent_registry.get_l_cto_agent()
+        if l_cto_agent is None:
+            return KernelReloadResponse(
+                success=False,
+                kernels_reloaded=0,
+                modified_kernels=[],
+                errors=["L-CTO agent not available"],
+                message="Cannot reload: L-CTO agent not initialized",
+            )
+    except Exception as e:
+        return KernelReloadResponse(
+            success=False,
+            kernels_reloaded=0,
+            modified_kernels=[],
+            errors=[f"Failed to get L-CTO agent: {str(e)}"],
+            message="Cannot reload: agent retrieval failed",
+        )
+
+    # Perform the reload
+    try:
+        result = reload_kernels(l_cto_agent, force=request.force)
+
+        # Log evolution to memory substrate
+        try:
+            await log_kernel_evolution(
+                event_type="RELOAD",
+                agent_id=getattr(l_cto_agent, "agent_id", "l-cto"),
+                kernel_ids=list(result.new_hashes.keys()),
+                previous_hashes=result.previous_hashes,
+                new_hashes=result.new_hashes,
+                modified_kernels=result.modified_kernels,
+                trigger="manual",
+                success=result.success,
+                errors=result.errors,
+                metadata={"force": request.force},
+            )
+        except Exception as log_error:
+            logger.warning("kernel_reload.evolution_log_failed", error=str(log_error))
+
+        if result.success:
+            return KernelReloadResponse(
+                success=True,
+                kernels_reloaded=result.kernels_reloaded,
+                modified_kernels=result.modified_kernels,
+                errors=result.errors,
+                message=f"Successfully reloaded {result.kernels_reloaded} kernels",
+            )
+        else:
+            return KernelReloadResponse(
+                success=False,
+                kernels_reloaded=result.kernels_reloaded,
+                modified_kernels=result.modified_kernels,
+                errors=result.errors,
+                message="Kernel reload failed",
+            )
+
+    except Exception as e:
+        logger.error("kernel_reload.endpoint_error", error=str(e), exc_info=True)
+        return KernelReloadResponse(
+            success=False,
+            kernels_reloaded=0,
+            modified_kernels=[],
+            errors=[str(e)],
+            message=f"Kernel reload failed with exception: {str(e)}",
+        )
 
 
 # Neo4j Health Check
@@ -1762,6 +2027,12 @@ app.include_router(agent_routes.router, prefix="/agent")
 
 # Persistent memory router
 app.include_router(memory_router, prefix="/api/v1/memory")
+
+# Graph router (Neo4j) - for cursor_memory_client.py
+app.include_router(graph_router, prefix="/api/v1/memory/graph")
+
+# Cache router (Redis) - for cursor_memory_client.py
+app.include_router(cache_router, prefix="/api/v1/memory/cache")
 
 # World Model router (v1.1.0+)
 if _has_world_model:
