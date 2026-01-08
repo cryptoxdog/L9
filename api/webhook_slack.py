@@ -3,6 +3,8 @@ import hmac
 import hashlib
 import time
 from typing import Optional
+from collections import OrderedDict
+from threading import Lock
 import structlog
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
@@ -13,8 +15,82 @@ logger = structlog.get_logger(__name__)
 
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+
 # Bot user ID - used to filter out bot's own messages to prevent infinite loops
+# Supports both old SLACK_BOT_USER_ID and new L_SLACK_USER_ID
 SLACK_BOT_USER_ID = os.getenv("SLACK_BOT_USER_ID", "")
+L_SLACK_USER_ID = os.getenv("L_SLACK_USER_ID", "l-cto")
+
+# Combined list of user IDs to ignore (L's own messages)
+L_USER_IDS = {uid.strip().lower() for uid in [SLACK_BOT_USER_ID, L_SLACK_USER_ID] if uid.strip()}
+
+
+# =============================================================================
+# Event Deduplication Cache
+# =============================================================================
+# Prevents processing the same Slack event multiple times
+# (Slack retries webhooks after 3s if no 200 response)
+
+class EventDedupeCache:
+    """
+    Thread-safe LRU cache for event deduplication.
+    
+    Stores event_ids with timestamps to prevent duplicate processing.
+    Auto-evicts entries older than TTL or when max_size is exceeded.
+    """
+    
+    def __init__(self, max_size: int = 10000, ttl_seconds: int = 300):
+        self._cache: OrderedDict[str, float] = OrderedDict()
+        self._lock = Lock()
+        self._max_size = max_size
+        self._ttl = ttl_seconds
+    
+    def is_duplicate(self, event_id: str) -> bool:
+        """
+        Check if event_id was recently processed.
+        
+        Returns True if duplicate (should skip processing).
+        Returns False if new (will be marked as processed).
+        """
+        if not event_id:
+            return False  # No event_id = can't dedupe, process it
+        
+        now = time.time()
+        
+        with self._lock:
+            # Check if already processed
+            if event_id in self._cache:
+                timestamp = self._cache[event_id]
+                if now - timestamp < self._ttl:
+                    logger.debug(
+                        "slack_event_duplicate",
+                        event_id=event_id,
+                        age_seconds=round(now - timestamp, 2),
+                    )
+                    return True
+                # Expired, remove it
+                del self._cache[event_id]
+            
+            # Mark as processed
+            self._cache[event_id] = now
+            
+            # Move to end (LRU)
+            self._cache.move_to_end(event_id)
+            
+            # Evict old entries if over max_size
+            while len(self._cache) > self._max_size:
+                self._cache.popitem(last=False)
+            
+            return False
+    
+    def clear(self):
+        """Clear the cache (for testing)."""
+        with self._lock:
+            self._cache.clear()
+
+
+# Global deduplication cache
+_event_dedupe_cache = EventDedupeCache(max_size=10000, ttl_seconds=300)
 
 # Email command detection keywords (used in multiple handlers)
 EMAIL_KEYWORDS = [
@@ -421,14 +497,29 @@ async def slack_events(
         event = data.get("event", {})
         event_type = event.get("type")
         event_subtype = event.get("subtype")
+        event_id = data.get("event_id", "")
+        
+        # === DEDUPLICATION CHECK ===
+        # Slack retries webhooks after 3s if no 200 response
+        # This prevents processing the same event multiple times
+        if _event_dedupe_cache.is_duplicate(event_id):
+            logger.info(
+                "slack_event_deduplicated",
+                event_id=event_id,
+                event_type=event_type,
+            )
+            return JSONResponse(content={"status": "ok"})
 
+        # === BOT MESSAGE FILTERING ===
         # Ignore bot messages (check subtype, bot_id, AND our own user_id to prevent infinite loops)
         # This prevents the recursive "Hey! L9 here. You said:" echo bug (Dec 18, 2025)
         event_user = event.get("user", "")
+        event_user_lower = event_user.lower() if event_user else ""
+        
         is_bot_message = (
             event_subtype == "bot_message"
             or event.get("bot_id")
-            or (SLACK_BOT_USER_ID and event_user == SLACK_BOT_USER_ID)
+            or (L_USER_IDS and event_user_lower in L_USER_IDS)
         )
         if is_bot_message:
             logger.debug(
@@ -436,7 +527,8 @@ async def slack_events(
                 bot_id=event.get("bot_id"),
                 subtype=event_subtype,
                 user=event_user,
-                is_own_user=(event_user == SLACK_BOT_USER_ID),
+                is_l_user=(event_user_lower in L_USER_IDS),
+                l_user_ids=list(L_USER_IDS),
             )
             return JSONResponse(content={"status": "ok"})
 
