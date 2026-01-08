@@ -13,6 +13,20 @@ logger = structlog.get_logger(__name__)
 
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
 SLACK_APP_ENABLED = os.getenv("SLACK_APP_ENABLED", "false").lower() == "true"
+# Bot user ID - used to filter out bot's own messages to prevent infinite loops
+SLACK_BOT_USER_ID = os.getenv("SLACK_BOT_USER_ID", "")
+
+# Email command detection keywords (used in multiple handlers)
+EMAIL_KEYWORDS = [
+    "email:",
+    "mail:",
+    "send email",
+    "reply to",
+    "draft email",
+    "search email",
+    "forward email",
+]
+EMAIL_PHRASE_KEYWORDS = ["send email to", "reply to", "forward to"]
 
 # Feature flag for legacy Slack routing
 # When False, route Slack messages through AgentTask + AgentExecutorService
@@ -408,9 +422,22 @@ async def slack_events(
         event_type = event.get("type")
         event_subtype = event.get("subtype")
 
-        # Ignore bot messages (check BOTH subtype AND bot_id to prevent infinite loops)
-        if event_subtype == "bot_message" or event.get("bot_id"):
-            logger.debug("[SLACK] Ignoring bot message", extra={"bot_id": event.get("bot_id"), "subtype": event_subtype})
+        # Ignore bot messages (check subtype, bot_id, AND our own user_id to prevent infinite loops)
+        # This prevents the recursive "Hey! L9 here. You said:" echo bug (Dec 18, 2025)
+        event_user = event.get("user", "")
+        is_bot_message = (
+            event_subtype == "bot_message"
+            or event.get("bot_id")
+            or (SLACK_BOT_USER_ID and event_user == SLACK_BOT_USER_ID)
+        )
+        if is_bot_message:
+            logger.debug(
+                "slack_ignoring_bot_message",
+                bot_id=event.get("bot_id"),
+                subtype=event_subtype,
+                user=event_user,
+                is_own_user=(event_user == SLACK_BOT_USER_ID),
+            )
             return JSONResponse(content={"status": "ok"})
 
         # Handle app_mention events
@@ -536,21 +563,9 @@ async def slack_events(
 
                 # Check for email-related commands in app_mention
                 text_lower = text.strip().lower()
-                email_keywords = [
-                    "email:",
-                    "mail:",
-                    "send email",
-                    "reply to",
-                    "draft email",
-                    "search email",
-                    "forward email",
-                ]
                 is_email_command = any(
-                    text_lower.startswith(kw.lower()) for kw in email_keywords
-                ) or any(
-                    kw.lower() in text_lower
-                    for kw in ["send email to", "reply to", "forward to"]
-                )
+                    text_lower.startswith(kw.lower()) for kw in EMAIL_KEYWORDS
+                ) or any(kw.lower() in text_lower for kw in EMAIL_PHRASE_KEYWORDS)
 
                 # NEW: Route app_mention through task planner if files present or email command
                 if file_artifacts or is_email_command:
@@ -703,24 +718,11 @@ async def slack_events(
                     )
                     # Continue processing message even if files fail
 
-            # Check for email-related commands (enhanced detection)
-            email_keywords = [
-                "email:",
-                "mail:",
-                "send email",
-                "reply to",
-                "draft email",
-                "search email",
-                "forward email",
-            ]
-            # Check if text starts with any email keyword (case-insensitive)
+            # Check for email-related commands (uses module-level constants)
             text_lower = text.strip().lower()
             is_email_command = any(
-                text_lower.startswith(kw.lower()) for kw in email_keywords
-            ) or any(
-                kw.lower() in text_lower
-                for kw in ["send email to", "reply to", "forward to"]
-            )
+                text_lower.startswith(kw.lower()) for kw in EMAIL_KEYWORDS
+            ) or any(kw.lower() in text_lower for kw in EMAIL_PHRASE_KEYWORDS)
 
             # Handle DMs: Respond to ALL messages in direct messages
             # In channels: Only respond when mentioned or "l9" in text
@@ -738,11 +740,14 @@ async def slack_events(
             if is_simple_dm and user and channel:
                 from services.slack_client import slack_post
 
+                # NOTE: Do NOT echo the user's message back - this caused infinite loop (Dec 18, 2025)
+                # When L echoes "Hey! You said: X", Slack sends it back as event, L echoes again, etc.
                 slack_post(
                     channel,
-                    f'👋 Hey! L9 here. You said: "{text_original[:100]}{"..." if len(text_original) > 100 else ""}"\n\nTry:\n• `!mac <command>` - Run a Mac automation\n• `email: <request>` - Email operations\n• Attach a file for processing',
+                    "👋 Hey! L9 here. How can I help?\n\nTry:\n• `!mac <command>` - Run a Mac automation\n• `email: <request>` - Email operations\n• Attach a file for processing",
+                    thread_ts=thread_ts if thread_ts else None,
                 )
-                logger.info(f"[SLACK] Simple DM response to {user}")
+                logger.info("slack_simple_dm_response", user=user, channel=channel)
                 return JSONResponse(content={"status": "ok"})
 
             # NEW: Route Slack message through task planner (when files present or message directed at L9 or email command)
