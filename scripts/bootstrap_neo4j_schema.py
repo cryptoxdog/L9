@@ -195,13 +195,14 @@ L_KERNELS = [
 ]
 
 # High-risk tools that require SafetyKernel guard
+# Note: Tool names must match OpenAI pattern ^[a-zA-Z0-9_-]+$ (no dots)
 HIGH_RISK_TOOLS = [
     "gmp_run",
     "git_commit",
     "mac_agent_exec_task",
-    "github.create_pull_request",
-    "github.merge_pull_request",
-    "vercel.trigger_deploy",
+    "github_create_pull_request",
+    "github_merge_pull_request",
+    "vercel_trigger_deploy",
 ]
 
 

@@ -157,6 +157,10 @@ python3 .cursor-commands/cursor-memory/cursor_memory_client.py [command]
 ## Recent Changes (digest)
 Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 
+- [2026-01-09] **Stub Elimination (GMP-47)** — CRITICAL stubs now fail loudly (RuntimeError) instead of silently degrading. Mac agent + ResearchSwarm fully implemented. `reports/GMP_Report_GMP-47-Stub-Elimination.md`
+- [2026-01-09] **EmbeddingProvider Default (GMP-34)** — Changed EMBEDDING_PROVIDER default from "stub" to "openai" across codebase.
+- [2026-01-09] **CircuitBreaker Memory Wiring (GMP-33)** — Wired CB to `memory/substrate_service.py` write_packet(). `reports/GMP_Report_GMP-33-CircuitBreaker-Memory-Wiring.md`
+- [2026-01-09] **CircuitBreaker Integration (GMP-32)** — Created reusable CircuitBreaker class in `core/observability/`, replaced inline CB in executor.py. `reports/GMP_Report_GMP-32-CircuitBreaker-Integration.md`
 - [2026-01-08] **OpenAI Tool Name Validation (GMP-46)** — Fixed Slack L-CTO error by renaming 10 dotted tool names and adding validation. `reports/GMP_Report_GMP-46-OpenAI-Tool-Name-Validation.md`
 - [2026-01-08] **ModuleRegistry Fail-Fast Contract** — `reports/Report_GMP-45-ModuleRegistry-FailFast.md`
 - [2026-01-08] **ToolInputSanitizer + ModuleRegistry (GMP-45)** — `reports/Report_GMP-45-ToolInputSanitizer-ModuleRegistry.md`
@@ -190,8 +194,9 @@ Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 
 - [ ] **Confirm local Docker memory is still healthy** (Postgres/Neo4j/Redis up; memory_write + memory_search smoke).
 - [ ] **Enforce `PacketValidator`** at the ingestion chokepoint (`memory/substrate_service.py:write_packet()`), with explicit error semantics + targeted tests.
-- [ ] **Unstub `ResearchSwarmOrchestrator`** (or explicitly gate it behind a feature flag until implemented).
-- [ ] **Run GMP-31 capability enabling** (details in `reports/GMP-31-Systematic-Capability-Enabling.md`; historical notes in `reports/Workflow_State_Archive_2026-01-08.md`).
+- [x] ~~**Unstub `ResearchSwarmOrchestrator`**~~ ✅ Implemented in GMP-47 (`orchestrators/research_swarm/orchestrator.py`)
+- [ ] **Run GMP-31 capability enabling** (details in `reports/GMP-31-Systematic-Capability-Enabling.md`).
+- [ ] **Test server startup** to verify fail-loudly behavior (GMP-47 removed silent stubs).
 
 ---
 
@@ -210,11 +215,11 @@ Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 - **Cloudflare**: All DNS for quantumaipartners.com proxied via Cloudflare (HTTPS, DDoS protection)
 
 ---
-*Last updated: 2026-01-08 05:30 EST*
+*Last updated: 2026-01-09 07:50 EST*
 
 **Recent Sessions (7-day window):**
+- ✅ 2026-01-09: E2E Audits — Memory + Slack audit scripts (tests/memory/test_e2e_memory_audit.py, tests/api/test_e2e_slack_audit.py), api/SLACK_INTEGRATION.md
+- ✅ 2026-01-09: GMP-46 — Fix Silent Failures in KERNEL_TIER (AIOSRuntime + KernelLoader)
+- ✅ 2026-01-09: GMP-32/33/34/47 — CircuitBreaker, EmbeddingProvider, Stub Elimination (4 GMPs)
+- ✅ 2026-01-08: GMP-44/45/46 — Tool Capabilities, ModuleRegistry, Tool Naming (3 GMPs)
 - Full history: `reports/Workflow_State_Archive_2026-01-08.md`
-- 2026-01-08: GMP-46 — OpenAI Tool Name Validation Fix (Slack L-CTO)
-- 2026-01-08: GMP-45 — ModuleRegistry Fail-Fast Contract
-- 2026-01-08: GMP-45 — ToolInputSanitizer + ModuleRegistry
-- 2026-01-08: GMP-44 — Auto-Discovery Tool Capabilities

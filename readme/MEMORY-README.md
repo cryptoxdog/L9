@@ -331,7 +331,7 @@ Apply in order:
 | `DATABASE_URL` | - | PostgreSQL connection string |
 | `OPENAI_API_KEY` | - | For OpenAI embeddings |
 | `EMBEDDING_MODEL` | text-embedding-3-large | Embedding model |
-| `EMBEDDING_PROVIDER` | stub | `openai` or `stub` |
+| `EMBEDDING_PROVIDER` | openai | `openai` or `stub` |
 | `DB_POOL_SIZE` | 5 | Connection pool size |
 | `DB_MAX_OVERFLOW` | 10 | Pool overflow limit |
 

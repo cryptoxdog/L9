@@ -102,6 +102,11 @@ Repo-Files/
 
 # Local reports (generated / archive)
 reports/GMP Reports/
+reports/Report_GMP-*.md
+reports/Workflow_State_Archive*.md
+
+# Local env notes
+_.env.vps.md
 
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml

@@ -268,7 +268,7 @@ psql $DATABASE_URL -f migrations/0009_feedback_and_effectiveness.sql
 |----------|----------|---------|-------------|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string |
 | `OPENAI_API_KEY` | No | — | For OpenAI embeddings/LLM |
-| `EMBEDDING_PROVIDER` | No | `stub` | `openai` or `stub` |
+| `EMBEDDING_PROVIDER` | No | `openai` | `openai` or `stub` |
 | `EMBEDDING_MODEL` | No | `text-embedding-3-large` | Embedding model |
 | `L9_API_KEY` | No | — | API authentication key |
 | `LOG_LEVEL` | No | `INFO` | Logging level |

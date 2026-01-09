@@ -207,7 +207,7 @@ curl http://localhost:8000/memory/stats
 Required environment variables:
 - `MEMORY_DSN` or `DATABASE_URL` - Postgres connection string
 - `OPENAI_API_KEY` (optional) - For OpenAI embeddings
-- `EMBEDDING_PROVIDER` (optional) - "openai" or "stub" (default: "stub")
+- `EMBEDDING_PROVIDER` (optional) - "openai" or "stub" (default: "openai")
 - `EMBEDDING_MODEL` (optional) - Model name (default: "text-embedding-3-large")
 
 ## Error Handling

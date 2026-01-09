@@ -628,7 +628,7 @@ async def test_tool_call_name_resolution_for_openai(
     """
     approved_tools = [
         ToolBinding(
-            tool_id="github.create_issue",
+            tool_id="github_create_issue",  # OpenAI-compatible (no dots)
             display_name="GitHub Create Issue",
             description="Create an issue in GitHub",
             input_schema={"type": "object"},
@@ -654,7 +654,7 @@ async def test_tool_call_name_resolution_for_openai(
 
     assert result.status == "completed"
     dispatch = mock_tool_registry.get_last_dispatch()
-    assert dispatch["tool_id"] == "github.create_issue"
+    assert dispatch["tool_id"] == "github_create_issue"
 
 
 # =============================================================================

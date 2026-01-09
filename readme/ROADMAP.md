@@ -286,6 +286,30 @@ GMP-31 and GMP-32 enabled **ALL 70 high-value capabilities** across 10 batches:
 
 ## Future (Deferred) 🔮
 
+### Stage 2.10: CircuitBreaker Enhancements
+> **Added:** 2026-01-09 (GMP-32/33 completed)
+
+**Status:** 🔮 DEFERRED
+
+**Completed:**
+- [x] Created reusable `CircuitBreaker` class in `core/observability/circuit_breaker.py`
+- [x] Wired CB to AIOS calls in `executor.py` (threshold: 3)
+- [x] Wired CB to memory DAG in `substrate_service.py` (threshold: 5)
+
+**Deferred:**
+- [ ] Add CB health endpoint to API (`GET /api/v1/memory/circuit-breaker/stats`)
+- [ ] Wire CB to `ingest_batch()` for batch operation protection
+- [ ] Add Prometheus metrics for CB state changes (trips, recoveries)
+- [ ] Wire CB to tool registry external calls
+
+**Files:**
+- `core/observability/circuit_breaker.py` — Reusable CB class
+- `core/observability/config.py` — CB settings (threshold, window, reset_timeout)
+- `reports/GMP_Report_GMP-32-CircuitBreaker-Integration.md`
+- `reports/GMP_Report_GMP-33-CircuitBreaker-Memory-Wiring.md`
+
+---
+
 ### Stage 8: Self-Reflection Governance Tracking 🔄
 
 **Status:** 🔄 PARTIAL (Data Flow Complete, Action Handlers Missing)
@@ -358,6 +382,7 @@ The following capabilities are intentionally deferred until proper safety mechan
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.6.0 | 2026-01-09 | Added Stage 2.10 (CircuitBreaker Enhancements) — GMP-32/33 completed, deferred items |
 | 0.5.0 | 2026-01-08 | Added Stage 8 (Self-Reflection Governance Tracking) with implementation spec |
 | 0.4.0 | 2026-01-08 | Added Development Environment section (venv Homebrew Python migration) |
 | 0.3.0 | 2026-01-05 | Added Stage 2.7 (PacketEnvelope v2.0 Schema Migration) with sunset timeline |
