@@ -1094,6 +1094,16 @@ class AgentExecutorService:
                     error = "AIOS returned tool_call type but no tool_call data"
                     instance.transition_to(ExecutorState.FAILED)
                     break
+                openai_tool_name = tool_call.tool_id
+                resolved_tool_id = instance.resolve_tool_id(openai_tool_name)
+                if resolved_tool_id != tool_call.tool_id:
+                    logger.warning(
+                        "tool_call_name_resolved",
+                        task_id=str(task.id),
+                        tool_name=tool_call.tool_id,
+                        tool_id=resolved_tool_id,
+                    )
+                    tool_call.tool_id = resolved_tool_id
 
                 # CRITICAL: Add assistant message with tool_calls BEFORE tool result
                 # OpenAI requires: assistant (with tool_calls) → tool (with matching tool_call_id)
@@ -1103,7 +1113,7 @@ class AgentExecutorService:
                             "id": str(tool_call.call_id),
                             "type": "function",
                             "function": {
-                                "name": tool_call.tool_id,
+                                "name": openai_tool_name,
                                 "arguments": json.dumps(tool_call.arguments),
                             },
                         }

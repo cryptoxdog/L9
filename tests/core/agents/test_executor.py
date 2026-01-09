@@ -608,6 +608,56 @@ async def test_tool_call_is_dispatched(
 
 
 # =============================================================================
+# Test: Tool call tool_name resolved to canonical tool_id
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_tool_call_name_resolution_for_openai(
+    executor: AgentExecutorService,
+    mock_aios: MockAIOSRuntime,
+    mock_tool_registry: MockToolRegistry,
+    sample_task: AgentTask,
+) -> None:
+    """
+    Contract: OpenAI tool name aliases are resolved back to canonical tool_id.
+
+    Verifies:
+    - OpenAI-safe tool name is mapped back to original tool_id
+    - Dispatch uses canonical tool_id
+    """
+    approved_tools = [
+        ToolBinding(
+            tool_id="github.create_issue",
+            display_name="GitHub Create Issue",
+            description="Create an issue in GitHub",
+            input_schema={"type": "object"},
+        ),
+    ]
+    mock_tool_registry.set_approved_tools(approved_tools)
+
+    tool_call = ToolCallRequest(
+        tool_id="github_create_issue",
+        arguments={"title": "Bug", "body": "Details"},
+        task_id=sample_task.id,
+        iteration=1,
+    )
+
+    mock_aios.set_responses(
+        [
+            AIOSResult.tool_request(tool_call, tokens_used=10),
+            AIOSResult.response("Issue created", tokens_used=10),
+        ]
+    )
+
+    result = await executor.start_agent_task(sample_task)
+
+    assert result.status == "completed"
+    dispatch = mock_tool_registry.get_last_dispatch()
+    assert dispatch["tool_id"] == "github.create_issue"
+
+
+# =============================================================================
 # Test: Executor terminates on final answer
 # =============================================================================
 
