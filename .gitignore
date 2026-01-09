@@ -34,8 +34,10 @@ production/
 qdrant/collections/
 neo4j/data/
 
-# --- Editor / Agent tooling (Mac-local only) ---
+# --- Editor / Agent tooling (Mac-local only, symlinks to Dropbox) ---
 .cursor-commands/
+.cursor/commands
+.cursor/rules
 .dora/
 
 # --- Igor's working files (local only) ---
