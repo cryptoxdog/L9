@@ -34,8 +34,15 @@ production/
 qdrant/collections/
 neo4j/data/
 
-# --- Editor / Agent tooling ---
-# .cursor/ and .cursor-commands/ are tracked in git
+# --- Editor / Agent tooling (Mac-local only) ---
+.cursor-commands/
+.dora/
+
+# --- Igor's working files (local only) ---
+# igor/ already listed below
+
+# --- Documentation (local only) ---
+docs/
 
 # --- Archives (local only) ---
 _Archive_Perplexity/
