@@ -43,6 +43,9 @@ neo4j/data/
 # --- Igor's working files (local only) ---
 # igor/ already listed below
 
+# --- Development agents (not ready for production) ---
+agents/codegenagent/
+
 # --- Documentation (local only) ---
 docs/
 
