@@ -624,7 +624,18 @@ async def lifespan(app: FastAPI):
             app.state.session_startup_result = None
             app.state.startup_ready = False
 
-            if _has_session_startup:
+            # Skip startup checks in container environments (broken symlinks, missing governance files)
+            # Detection: L9_SKIP_STARTUP_CHECKS=true OR running in Docker (/app as cwd)
+            skip_startup = os.getenv("L9_SKIP_STARTUP_CHECKS", "false").lower() in ("true", "1", "yes")
+            in_container = str(Path.cwd()) == "/app" or os.path.exists("/.dockerenv")
+            
+            if skip_startup or in_container:
+                logger.info("╔════════════════════════════════════════╗")
+                logger.info("║  Skipping Session Startup (container)  ║")
+                logger.info("╚════════════════════════════════════════╝")
+                app.state.startup_ready = True
+                app.state.session_startup_result = None
+            elif _has_session_startup:
                 try:
                     logger.info("╔════════════════════════════════════════╗")
                     logger.info("║  Running Session Startup Checks...     ║")
