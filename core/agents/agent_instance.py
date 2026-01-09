@@ -50,6 +50,8 @@ Version: 1.0.0
 
 from __future__ import annotations
 
+import hashlib
+import re
 import structlog
 from datetime import datetime
 from typing import Any, Optional
@@ -63,6 +65,8 @@ from core.agents.schemas import (
 )
 
 logger = structlog.get_logger(__name__)
+
+_OPENAI_TOOL_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 class AgentInstance:
@@ -104,6 +108,8 @@ class AgentInstance:
         self._tool_results: list[dict[str, Any]] = []
         self._created_at = datetime.utcnow()
         self._total_tokens = 0
+        self._tool_name_map: dict[str, str] = {}
+        self._tool_name_reverse_map: dict[str, str] = {}
 
         logger.info(
             "AgentInstance created",
@@ -217,12 +223,14 @@ class AgentInstance:
             List of tool definitions for AIOS
         """
         definitions = []
+        self._build_tool_name_map()
         for tool in self.get_bound_tools():
+            openai_name = self._tool_name_reverse_map.get(tool.tool_id, tool.tool_id)
             definitions.append(
                 {
                     "type": "function",
                     "function": {
-                        "name": tool.tool_id,  # Canonical identity
+                        "name": openai_name,  # OpenAI-compatible alias
                         "description": tool.description or "",
                         "parameters": tool.input_schema,
                     },
@@ -232,7 +240,37 @@ class AgentInstance:
 
     def has_tool(self, tool_id: str) -> bool:
         """Check if a tool is bound to this agent."""
-        return any(t.tool_id == tool_id and t.enabled for t in self._config.tools)
+        resolved_tool_id = self.resolve_tool_id(tool_id)
+        return any(t.tool_id == resolved_tool_id and t.enabled for t in self._config.tools)
+
+    def resolve_tool_id(self, tool_name: str) -> str:
+        """Resolve an OpenAI tool name alias back to canonical tool_id."""
+        self._build_tool_name_map()
+        return self._tool_name_map.get(tool_name, tool_name)
+
+    def _build_tool_name_map(self) -> None:
+        if self._tool_name_map:
+            return
+
+        for tool in self.get_bound_tools():
+            tool_id = tool.tool_id
+            openai_name = tool_id
+            if not _OPENAI_TOOL_NAME_PATTERN.match(openai_name):
+                openai_name = re.sub(r"[^a-zA-Z0-9_-]", "_", tool_id)
+                openai_name = openai_name or "tool"
+                if (
+                    openai_name in self._tool_name_map
+                    and self._tool_name_map[openai_name] != tool_id
+                ):
+                    suffix = hashlib.sha1(tool_id.encode("utf-8")).hexdigest()[:8]
+                    openai_name = f"{openai_name}_{suffix}"
+                logger.warning(
+                    "tool_name_sanitized",
+                    tool_id=tool_id,
+                    openai_name=openai_name,
+                )
+            self._tool_name_map[openai_name] = tool_id
+            self._tool_name_reverse_map[tool_id] = openai_name
 
     # =========================================================================
     # History Management
