@@ -15,6 +15,7 @@ Version: 0.5.0 (Research Factory Integration)
 from config.settings import settings
 
 import os
+from pathlib import Path
 import structlog
 from contextlib import asynccontextmanager
 from fastapi import (
@@ -629,7 +630,8 @@ async def lifespan(app: FastAPI):
                     logger.info("║  Running Session Startup Checks...     ║")
                     logger.info("╚════════════════════════════════════════╝")
 
-                    session_startup = SessionStartup()
+                    workspace_root = Path(os.getenv("L9_WORKSPACE_ROOT", Path.cwd()))
+                    session_startup = SessionStartup(workspace_root=workspace_root)
                     startup_result: StartupResult = await session_startup.execute()
 
                     app.state.session_startup_result = startup_result
