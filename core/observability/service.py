@@ -41,14 +41,11 @@ class ObservabilityService:
         })
 
     def _setup_logging(self) -> None:
-        """Configure logging."""
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(self.config.log_level)
+        """Configure logging (structlog is pre-configured at module level)."""
+        # structlog loggers are configured globally; this method is a no-op
+        # to preserve API compatibility. Log level is controlled via structlog
+        # configuration, not per-service.
+        pass
 
     @classmethod
     def get(cls) -> Optional["ObservabilityService"]:
