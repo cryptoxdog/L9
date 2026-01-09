@@ -1009,8 +1009,8 @@ async def mcp_discover_and_register(**kwargs: Any) -> dict[str, Any]:
                 server_registered = 0
 
                 for tool in tools:
-                    # Build full tool name: server.tool
-                    full_name = f"{server_id}.{tool.name}"
+                    # Build full tool name: server_tool (OpenAI-compatible, no dots)
+                    full_name = f"{server_id}_{tool.name}"
                     
                     # Determine risk level based on tool type
                     risk_level = "low"
