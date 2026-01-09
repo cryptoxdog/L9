@@ -22,6 +22,9 @@ AgentCapabilities::BaseModel @ igor/audit-tools/core_schemas_capabilities.py
 AgentConfig::BaseModel @ core/agents/schemas.py
 AgentConfigExtractor::BaseExtractor @ igor/audit-memory/memory_extractor_agent_config_extractor.py
 AgentConfigExtractor::BaseExtractor @ memory/extractor/agent_config_extractor.py
+AgentExecutionOrchestrator::IAgentExecutionOrchestrator @ orchestrators/agent_execution/orchestrator.py
+AgentExecutionRequest::BaseModel @ orchestrators/agent_execution/interface.py
+AgentExecutionResponse::BaseModel @ orchestrators/agent_execution/interface.py
 AgentHandshake::BaseModel @ core/schemas/event_stream.py
 AgentHandshake::BaseModel @ igor/audit-memory/core_schemas_event_stream.py
 AgentHeartbeat::BaseModel @ core/schemas/ws_event_stream.py
@@ -47,6 +50,7 @@ ArchitectAgentB::BaseAgent @ agents/architect_agent_b.py
 ArchitectCell::BaseCell @ collaborative_cells/architect_cell.py
 AsyncSpanExporter::ABC @ core/observability/exporters.py
 AuditLogExportResponse::BaseModel @ api/routes/compliance.py
+AuditType::str,Enum @ scripts/audit/run_all.py
 AuthType::str,Enum @ ir_engine/meta_ir.py
 AutonomyProfileConfig::BaseModel @ codegen/code-gen-files/schema_parser.py
 BackendType::str,Enum @ services/symbolic_computation/core/models.py
@@ -62,6 +66,7 @@ BatchRequest::BaseModel @ api/memory/router.py
 BatchRequest::BaseModel @ igor/audit-memory/api_memory_router.py
 BatchResponse::BaseModel @ api/memory/router.py
 BatchResponse::BaseModel @ igor/audit-memory/api_memory_router.py
+BehavioralKernelData::FlexibleModel @ core/kernels/schemas.py
 Blueprint::BaseModel @ orchestrators/meta/interface.py
 BlueprintEvaluation::BaseModel @ orchestrators/meta/interface.py
 BlueprintScore::BaseModel @ orchestrators/meta/interface.py
@@ -70,6 +75,8 @@ BootImpact::BaseModel @ ir_engine/meta_ir.py
 BootImpactLevel::str,Enum @ ir_engine/meta_ir.py
 CGMPEngineError::Exception @ agents/codegenagent/c_gmp_engine.py
 CacheError::SymbolicComputationError @ services/symbolic_computation/exceptions.py
+CacheResponse::BaseModel @ api/memory/cache.py
+CacheSetRequest::BaseModel @ api/memory/cache.py
 CalendarAdapterContext::BaseModel @ api/adapters/calendar_adapter/schemas.py
 CalendarAdapterContext::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py
 CalendarAdapterRequest::BaseModel @ api/adapters/calendar_adapter/schemas.py
@@ -78,6 +85,7 @@ CalendarAdapterResponse::BaseModel @ api/adapters/calendar_adapter/schemas.py
 CalendarAdapterResponse::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py
 CallGraphBuilder::NodeVisitor @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::NodeVisitor @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::NodeVisitor @ scripts/audit/tier1/audit_code_integrity.py
 CallableFrom::str,Enum @ ir_engine/meta_ir.py
 Capability::BaseModel @ core/schemas/capabilities.py
 Capability::BaseModel @ igor/audit-tools/core_schemas_capabilities.py
@@ -93,6 +101,8 @@ ChatRequest::BaseModel @ api/server.py
 ChatRequest::BaseModel @ api/server_memory.py
 ChatResponse::BaseModel @ api/server.py
 ChatResponse::BaseModel @ api/server_memory.py
+CircuitBreakerState::str,Enum @ core/observability/circuit_breaker.py
+CircuitOpenError::Exception @ core/observability/circuit_breaker.py
 CodeExtractor::BaseExtractor @ igor/audit-memory/memory_extractor_code_extractor.py
 CodeExtractor::BaseExtractor @ memory/extractor/code_extractor.py
 CodeGenRequest::BaseModel @ services/symbolic_computation/core/models.py
@@ -105,6 +115,7 @@ CodeLanguage::str,Enum @ services/symbolic_computation/models.py
 CoderAgentA::BaseAgent @ agents/coder_agent_a.py
 CoderAgentB::BaseAgent @ agents/coder_agent_b.py
 CoderCell::BaseCell @ collaborative_cells/coder_cell.py
+CognitiveKernelData::FlexibleModel @ core/kernels/schemas.py
 CollaborationNetworkBlock::BaseModel @ codegen/code-gen-files/schema_parser.py
 CollaboratorConfig::BaseModel @ codegen/code-gen-files/schema_parser.py
 Command::BaseModel @ core/commands/schemas.py
@@ -155,6 +166,8 @@ DecisionType::str,Enum @ memory/governance_patterns.py
 DependencySpec::BaseModel @ ir_engine/meta_ir.py
 DeploymentBlock::BaseModel @ codegen/code-gen-files/schema_parser.py
 DerivationType::str,Enum @ core/schemas/packet_envelope_v2.py
+DeriveType::str,Enum @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
+DeveloperKernelData::FlexibleModel @ core/kernels/schemas.py
 DraftRequest::BaseModel @ email_agent/router.py
 DuplicateTaskResponse::BaseModel @ core/agents/schemas.py
 EmailAdapterContext::BaseModel @ api/adapters/email_adapter/schemas.py
@@ -167,6 +180,7 @@ EmbeddingProvider::ABC @ igor/audit-memory/memory_substrate_semantic.py
 EmbeddingProvider::ABC @ memory/substrate_semantic.py
 EntityData::BaseModel @ clients/world_model_client.py
 EntityListResponse::BaseModel @ api/world_model_api.py
+EntityRequest::BaseModel @ api/memory/graph.py
 EntityResponse::BaseModel @ api/world_model_api.py
 EntityType::str,Enum @ core/worldmodel/l9_schema.py
 EnvVar::BaseModel @ ir_engine/meta_ir.py
@@ -194,8 +208,10 @@ Evidence::TypedDict @ services/research/graph_state.py
 EvolutionOrchestrator::IEvolutionOrchestrator @ orchestrators/evolution/orchestrator.py
 EvolutionOrchestratorRequest::BaseModel @ orchestrators/evolution/interface.py
 EvolutionOrchestratorResponse::BaseModel @ orchestrators/evolution/interface.py
+ExcessiveIterationPattern::GapDetectionPattern @ core/agents/selfreflection.py
 ExecuteTaskRequest::BaseModel @ api/agent_routes.py
 ExecuteTaskResponse::BaseModel @ api/agent_routes.py
+ExecutionKernelData::FlexibleModel @ core/kernels/schemas.py
 ExecutionMode::str,Enum @ orchestration/unified_controller.py
 ExecutionResult::BaseModel @ core/agents/schemas.py
 ExecutionStatus::str,Enum @ orchestration/plan_executor.py
@@ -208,6 +224,7 @@ ExtractedInsight::BaseModel @ igor/audit-memory/memory_substrate_models.py
 ExtractedInsight::BaseModel @ memory/substrate_models.py
 FailureClass::str,Enum @ core/observability/models.py
 FailureSignal::BaseModel @ core/observability/models.py
+FlexibleModel::BaseModel @ core/kernels/schemas.py
 ForwardRequest::BaseModel @ email_agent/router.py
 GMPRunInput::BaseModel @ core/schemas/l_tools.py
 GMPRunInput::BaseModel @ igor/audit-tools/core_schemas_l_tools.py
@@ -220,6 +237,7 @@ GlobalStateVisitor::NodeVisitor @ dev/tools/global_state_audit.py
 GlueConfig::BaseModel @ codegen/code-gen-files/glue_resolver.py
 GoalsSpec::BaseModel @ ir_engine/meta_ir.py
 GovernanceBlock::BaseModel @ codegen/code-gen-files/schema_parser.py
+GovernanceBlockPattern::GapDetectionPattern @ core/agents/selfreflection.py
 GovernanceCheckSpan::Span @ core/observability/models.py
 GovernanceDecision::str,Enum @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/governance_bridge.py
 GovernanceHarmonizationConfig::BaseModel @ codegen/code-gen-files/glue_resolver.py
@@ -227,6 +245,8 @@ GovernancePattern::BaseModel @ igor/audit-memory/memory_governance_patterns.py
 GovernancePattern::BaseModel @ memory/governance_patterns.py
 GraphCheckpointRow::BaseModel @ igor/audit-memory/memory_substrate_models.py
 GraphCheckpointRow::BaseModel @ memory/substrate_models.py
+GraphResponse::BaseModel @ api/memory/graph.py
+GuardrailConfig::FlexibleModel @ core/kernels/schemas.py
 HTMLToTextParser::HTMLParser @ email_agent/parser.py
 HTTPBinaryBinding::ProtocolBinding @ upgrades/packet_envelope/standardization.py
 HTTPHealthProbe::HealthProbe @ scripts/audit/tier1/audit_infrastructure_health.py
@@ -246,6 +266,7 @@ HttpClientStandard::BaseModel @ ir_engine/meta_ir.py
 HybridStrategy::ContextStrategy @ core/observability/context_strategies.py
 IActionToolOrchestrator::Protocol @ igor/audit-tools/orchestrators_action_tool_interface.py
 IActionToolOrchestrator::Protocol @ orchestrators/action_tool/interface.py
+IAgentExecutionOrchestrator::Protocol @ orchestrators/agent_execution/interface.py
 ICausalGraph::Protocol @ world_model/interfaces.py
 IEvolutionOrchestrator::Protocol @ orchestrators/evolution/interface.py
 IMemoryOrchestrator::Protocol @ igor/audit-memory/orchestrators_memory_interface.py
@@ -258,6 +279,7 @@ IRStatus::str,Enum @ ir_engine/ir_schema.py
 IRValidationResult::BaseModel @ ir_engine/ir_schema.py
 IReasoningOrchestrator::Protocol @ orchestrators/reasoning/interface.py
 IResearchSwarmOrchestrator::Protocol @ orchestrators/research_swarm/interface.py
+IStrategyMemoryService::ABC @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 IStrategyMemoryService::ABC @ memory/strategymemory.py
 IWorldModelEngine::Protocol @ world_model/interfaces.py
 IWorldModelLoader::Protocol @ world_model/interfaces.py
@@ -268,6 +290,8 @@ IdempotencyDurability::str,Enum @ ir_engine/meta_ir.py
 IdempotencyPattern::str,Enum @ ir_engine/meta_ir.py
 IdempotencySource::str,Enum @ ir_engine/meta_ir.py
 IdempotencySpec::BaseModel @ ir_engine/meta_ir.py
+IdentityConfig::FlexibleModel @ core/kernels/schemas.py
+IdentityKernelData::FlexibleModel @ core/kernels/schemas.py
 IdentityStandard::BaseModel @ ir_engine/meta_ir.py
 Impact::str,Enum @ scripts/audit/tier1/audit_capability_inventory.py
 InboundInterface::BaseModel @ ir_engine/meta_ir.py
@@ -291,11 +315,23 @@ InterfacesSpec::BaseModel @ ir_engine/meta_ir.py
 InvalidPolicyError::PolicyLoadError @ core/governance/loader.py
 InvalidSchemaVersionError::Exception @ core/schemas/schema_registry.py
 JSONFileExporter::SpanExporter @ core/observability/exporters.py
+KernelActivationResult::FlexibleModel @ core/kernels/schemas.py
+KernelAwareAgent::Protocol @ core/kernels/kernelloader.py
 KernelAwareAgent::Protocol @ igor/audit-tools/Current Config/runtime_kernel_loader.py
 KernelAwareAgent::Protocol @ runtime/kernel_loader.py
+KernelInfo::FlexibleModel @ core/kernels/schemas.py
+KernelLifecycleSpan::Span @ core/observability/models.py
+KernelManifest::FlexibleModel @ core/kernels/schemas.py
+KernelMeta::FlexibleModel @ core/kernels/schemas.py
 KernelPhase::str,Enum @ orchestration/orchestrator_kernel.py
 KernelReadInput::BaseModel @ core/schemas/l_tools.py
 KernelReadInput::BaseModel @ igor/audit-tools/core_schemas_l_tools.py
+KernelReloadRequest::BaseModel @ api/server.py
+KernelReloadResponse::BaseModel @ api/server.py
+KernelRule::FlexibleModel @ core/kernels/schemas.py
+KernelState::str,Enum @ core/kernels/schemas.py
+KernelType::str,Enum @ core/kernels/schemas.py
+KernelValidationResult::FlexibleModel @ core/kernels/schemas.py
 KernelViolationError::Exception @ tests/mocks/kernel_mocks.py
 KnowledgeFact::BaseModel @ igor/audit-memory/memory_substrate_models.py
 KnowledgeFact::BaseModel @ memory/substrate_models.py
@@ -316,6 +352,7 @@ LChatRequest::BaseModel @ api/server.py
 LChatResponse::BaseModel @ api/server.py
 LLMGenerationSpan::Span @ core/observability/models.py
 LearningSystemBlock::BaseModel @ codegen/code-gen-files/schema_parser.py
+LoadSequenceEntry::FlexibleModel @ core/kernels/schemas.py
 LogLevel::str,Enum @ ir_engine/meta_ir.py
 LoggingStandard::BaseModel @ ir_engine/meta_ir.py
 LogsConfig::BaseModel @ ir_engine/meta_ir.py
@@ -332,11 +369,13 @@ MacMessage::BaseModel @ igor/audit-tools/tools_mac_protocol.py
 MacMessage::BaseModel @ tools/mac_protocol.py
 MacResponse::BaseModel @ igor/audit-tools/tools_mac_protocol.py
 MacResponse::BaseModel @ tools/mac_protocol.py
+MasterKernelData::FlexibleModel @ core/kernels/schemas.py
 MemoryBackendsConfig::BaseModel @ codegen/code-gen-files/glue_resolver.py
 MemoryError::Exception @ tools/Phased Upgrades/Stage 1 - Phase 1-6/segments.py
 MemoryExtractor::BaseExtractor @ igor/audit-memory/memory_extractor_memory_extractor.py
 MemoryExtractor::BaseExtractor @ memory/extractor/memory_extractor.py
 MemoryHealthTask::BaseModel @ api/vps_executor.py
+MemoryKernelData::FlexibleModel @ core/kernels/schemas.py
 MemoryLayerConfig::BaseModel @ codegen/code-gen-files/schema_parser.py
 MemoryOperation::str,Enum @ igor/audit-memory/orchestrators_memory_interface.py
 MemoryOperation::str,Enum @ orchestrators/memory/interface.py
@@ -377,6 +416,7 @@ MetricsConfig::BaseModel @ ir_engine/meta_ir.py
 MetricsSummary::BaseModel @ services/symbolic_computation/core/models.py
 MockSearchTool::BaseTool @ igor/audit-tools/services_research_tools_tool_wrappers.py
 MockSearchTool::BaseTool @ services/research/tools/tool_wrappers.py
+ModeConfig::FlexibleModel @ core/kernels/schemas.py
 ModuleMetadata::BaseModel @ ir_engine/meta_ir.py
 ModuleSchemaExtractor::BaseExtractor @ igor/audit-memory/memory_extractor_module_schema_extractor.py
 ModuleSchemaExtractor::BaseExtractor @ memory/extractor/module_schema_extractor.py
@@ -418,6 +458,7 @@ PacketKind::str,Enum @ core/schemas/packet_envelope.py
 PacketKind::str,Enum @ core/schemas/packet_envelope_v2.py
 PacketKind::str,Enum @ igor/audit-memory/core_schemas_packet_envelope.py
 PacketLineage::BaseModel @ core/schemas/packet_envelope_v2.py
+PacketLineage::BaseModel @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketLineage::BaseModel @ igor/audit-memory/memory_substrate_models.py
 PacketLineage::BaseModel @ memory/substrate_models.py
 PacketMetadata::BaseModel @ core/schemas/packet_envelope.py
@@ -431,6 +472,7 @@ PacketPayload::BaseModel @ api/adapters/twilio_adapter/schemas.py
 PacketPayload::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/schemas.py
 PacketPayload::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/schemas.py
 PacketPayload::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/schemas.py
+PacketProtocolKernelData::FlexibleModel @ core/kernels/schemas.py
 PacketProvenance::BaseModel @ core/schemas/packet_envelope.py
 PacketProvenance::BaseModel @ core/schemas/packet_envelope_v2.py
 PacketProvenance::BaseModel @ igor/audit-memory/core_schemas_packet_envelope.py
@@ -442,6 +484,7 @@ PacketResponse::BaseModel @ api/memory/router.py
 PacketResponse::BaseModel @ igor/audit-memory/api_memory_router.py
 PacketStoreRow::BaseModel @ igor/audit-memory/memory_substrate_models.py
 PacketStoreRow::BaseModel @ memory/substrate_models.py
+PacketValidationError::Exception @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidationError::Exception @ igor/audit-memory/memory_validators_packet_validator.py
 PacketValidationError::Exception @ memory/validators/packet_validator.py
 PacketWriteResult::BaseModel @ clients/memory_client.py
@@ -466,11 +509,13 @@ ProactiveRecallRequest::BaseModel @ _archived/archived_mcp_memory/src/models.py
 ProactiveRecallRequest::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
 ProactiveRecallResponse::BaseModel @ _archived/archived_mcp_memory/src/models.py
 ProactiveRecallResponse::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
+Prohibition::FlexibleModel @ core/kernels/schemas.py
 ProtocolBinding::ABC @ upgrades/packet_envelope/standardization.py
 PythonModuleHealthProbe::HealthProbe @ scripts/audit/tier1/audit_infrastructure_health.py
 QAAgent::BaseAgent @ agents/qa_agent.py
 Query::BaseModel @ core/schemas/research_factory_models.py
 QueryPlan::BaseModel @ core/schemas/research_factory_models.py
+QueryRequest::BaseModel @ api/memory/graph.py
 QueryRequest::BaseModel @ email_agent/router.py
 RAGRetrievalSpan::Span @ core/observability/models.py
 RAGStrategy::ContextStrategy @ core/observability/context_strategies.py
@@ -492,7 +537,9 @@ ReflectionCell::BaseCell @ collaborative_cells/reflection_cell.py
 ReflectionPriority::str,Enum @ world_model/reflection_memory.py
 ReflectionType::str,Enum @ world_model/reflection_memory.py
 RegressionError::Exception @ core/evaluation/evaluator.py
+RelationshipRequest::BaseModel @ api/memory/graph.py
 RemediationAction::BaseModel @ core/observability/models.py
+RepeatedToolFailurePattern::GapDetectionPattern @ core/agents/selfreflection.py
 ReplyRequest::BaseModel @ email_agent/router.py
 RepoSpec::BaseModel @ ir_engine/meta_ir.py
 ResearchExecuteRequest::BaseModel @ api/routes/research.py
@@ -521,11 +568,13 @@ ReviewerCell::BaseCell @ collaborative_cells/reviewer_cell.py
 Risk::str,Enum @ scripts/audit/tier1/audit_capability_inventory.py
 RiskLevel::str,Enum @ core/commands/schemas.py
 RouterState::TypedDict @ orchestration/ws_task_router.py
+RuleType::str,Enum @ core/kernels/schemas.py
 RuntimeMode::str,Enum @ world_model/runtime.py
 RuntimeTouchpoints::BaseModel @ ir_engine/meta_ir.py
 RuntimeWiringSpec::BaseModel @ ir_engine/meta_ir.py
 SREMetric::BaseModel @ core/observability/models.py
 SSOTViolation::CompilerError @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tools/compile_module_spec.py
+SafetyKernelData::FlexibleModel @ core/kernels/schemas.py
 SaveMemoryRequest::BaseModel @ _archived/archived_mcp_memory/src/models.py
 SaveMemoryRequest::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
 SaveMemoryWithConfidenceRequest::BaseModel @ _archived/archived_mcp_memory/src/models.py
@@ -565,6 +614,7 @@ SemanticSearchResult::BaseModel @ igor/audit-memory/memory_substrate_models.py
 SemanticSearchResult::BaseModel @ memory/substrate_models.py
 SendRequest::BaseModel @ email_agent/router.py
 ServiceType::str,Enum @ ir_engine/meta_ir.py
+SessionContextRequest::BaseModel @ api/memory/cache.py
 SessionLearningRequest::BaseModel @ _archived/archived_mcp_memory/src/models.py
 SessionLearningRequest::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
 SessionLearningResponse::BaseModel @ _archived/archived_mcp_memory/src/models.py
@@ -582,12 +632,15 @@ SimulationRequest::BaseModel @ api/routes/simulation.py
 SimulationResponse::BaseModel @ api/routes/simulation.py
 SlackClientError::Exception @ api/slack_client.py
 SlackSignatureVerificationError::Exception @ api/slack_adapter.py
-SlackWebhookRequestModel::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py
-SlackWebhookResponseModel::BaseModel @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py
+SlackWebhookRequest::BaseModel @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookRequestModel::BaseModel @ _archived/codegen_slack_adapter/module.slack_adapter/routes/slack_webhook.py
+SlackWebhookResponse::BaseModel @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookResponseModel::BaseModel @ _archived/codegen_slack_adapter/module.slack_adapter/routes/slack_webhook.py
 SnapshotData::BaseModel @ clients/world_model_client.py
 SnapshotRequest::BaseModel @ api/world_model_api.py
 SnapshotResponse::BaseModel @ api/world_model_api.py
 SourceType::str,Enum @ world_model/knowledge_ingestor.py
+SovereigntyConfig::FlexibleModel @ core/kernels/schemas.py
 Span::BaseModel @ core/observability/models.py
 SpanExporter::ABC @ core/observability/exporters.py
 SpanKind::str,Enum @ core/observability/models.py
@@ -598,20 +651,34 @@ SpecValidationError::Exception @ ci/validate_spec_v25.py
 SpecValidationError::Exception @ codegen/code-gen-files/validate_spec_v25.py
 StandardsSpec::BaseModel @ ir_engine/meta_ir.py
 StartupPhase::str,Enum @ ir_engine/meta_ir.py
+StateMachineConfig::FlexibleModel @ core/kernels/schemas.py
 StateVersion::BaseModel @ clients/world_model_client.py
 StateVersionResponse::BaseModel @ api/world_model_api.py
 StepStatus::str,Enum @ orchestration/plan_executor.py
+StrategyCandidate::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 StrategyCandidate::BaseModel @ memory/strategymemory.py
+StrategyFeedback::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 StrategyFeedback::BaseModel @ memory/strategymemory.py
+StrategyFeedbackMetadata::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyFeedbackPayload::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyMemoryService::IStrategyMemoryService @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 StrategyMemoryService::IStrategyMemoryService @ memory/strategymemory.py
+StrategyRequestMetadata::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyRequestPayload::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyResponseMetadata::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyResponsePayload::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_packet_models.py
+StrategyRetrievalRequest::BaseModel @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 StrategyRetrievalRequest::BaseModel @ memory/strategymemory.py
+StrategySelector::AgentQ @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py
 StructuredLogger::Logger @ services/symbolic_computation/logger.py
 StructuredReasoningBlock::BaseModel @ core/schemas/packet_envelope.py
 StructuredReasoningBlock::BaseModel @ igor/audit-memory/core_schemas_packet_envelope.py
 StructuredReasoningBlock::BaseModel @ igor/audit-memory/memory_substrate_models.py
 StructuredReasoningBlock::BaseModel @ memory/substrate_models.py
+StubDetector::NodeVisitor @ scripts/audit/tier1/audit_code_integrity.py
 StubEmbeddingProvider::EmbeddingProvider @ igor/audit-memory/memory_substrate_semantic.py
 StubEmbeddingProvider::EmbeddingProvider @ memory/substrate_semantic.py
+StyleConfig::FlexibleModel @ core/kernels/schemas.py
 SubstrateConnectionError::SubstrateException @ tools/Phased Upgrades/Stage 1 - Phase 1-6/substrate_service.py
 SubstrateException::Exception @ tools/Phased Upgrades/Stage 1 - Phase 1-6/substrate_service.py
 SubstrateExporter::AsyncSpanExporter @ core/observability/exporters.py
@@ -634,12 +701,14 @@ TCPHealthProbe::HealthProbe @ scripts/audit/tier1/audit_infrastructure_health.py
 TaskBatch::BaseModel @ core/schemas/tasks.py
 TaskComplexity::str,Enum @ orchestration/task_router.py
 TaskEnvelope::BaseModel @ core/schemas/tasks.py
+TaskExecutionStatus::str,Enum @ orchestrators/agent_execution/interface.py
 TaskGraph::BaseModel @ core/schemas/tasks.py
 TaskKind::str,Enum @ core/agents/schemas.py
 TaskKind::str,Enum @ core/schemas/tasks.py
 TaskResult::BaseModel @ core/schemas/tasks.py
 TaskResultRequest::BaseModel @ api/webhook_mac_agent.py
 TaskRisk::str,Enum @ orchestration/task_router.py
+TaskSizingConfig::FlexibleModel @ core/kernels/schemas.py
 TaskStatus::str,Enum @ core/schemas/tasks.py
 TaskType::str,Enum @ orchestration/task_router.py
 TelemetryConfig::BaseModel @ codegen/code-gen-files/schema_parser.py
@@ -650,6 +719,8 @@ TemporalQueryRequest::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
 TemporalQueryResponse::BaseModel @ _archived/archived_mcp_memory/src/models.py
 TemporalQueryResponse::BaseModel @ igor/audit-memory/mcp_memory_src_models.py
 TestScope::BaseModel @ ir_engine/meta_ir.py
+ThresholdsConfig::FlexibleModel @ core/kernels/schemas.py
+TokenOverusePattern::GapDetectionPattern @ core/agents/selfreflection.py
 TokenUsage::BaseModel @ core/schemas/packet_envelope.py
 TokenUsage::BaseModel @ igor/audit-memory/core_schemas_packet_envelope.py
 ToolBinding::BaseModel @ core/agents/schemas.py
@@ -663,6 +734,7 @@ ToolExecuteResponse::BaseModel @ api/tools/router.py
 ToolExecuteResponse::BaseModel @ igor/audit-tools/api_tools_router.py
 ToolExecutor::Protocol @ core/tools/registry_adapter.py
 ToolExecutor::Protocol @ igor/audit-tools/core_tools_registry_adapter.py
+ToolInputSanitizationError::ValueError @ core/tools/sanitizer.py
 ToolMetadata::BaseModel @ core/tools/base_registry.py
 ToolMetadata::BaseModel @ igor/audit-tools/services_research_tools_tool_registry.py
 ToolName::str,Enum @ core/schemas/capabilities.py
@@ -692,11 +764,13 @@ UpgradeExecution::BaseModel @ orchestrators/evolution/interface.py
 UpgradeStatus::str,Enum @ orchestrators/evolution/interface.py
 UpgradeType::str,Enum @ orchestrators/evolution/interface.py
 UpgradeValidation::BaseModel @ orchestrators/evolution/interface.py
+UserCorrectionPattern::GapDetectionPattern @ core/agents/selfreflection.py
 ValidateRequest::BaseModel @ api/routes/factory.py
 ValidateRequest::BaseModel @ services/symbolic_computation/api/routes.py
 ValidateResponse::BaseModel @ api/routes/factory.py
 ValidationError::BaseModel @ ir_engine/ir_schema.py
 ValidationError::Exception @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tools/apply_policy_rules.py
+ValidationError::FlexibleModel @ core/kernels/schemas.py
 ValidationError::SymbolicComputationError @ services/symbolic_computation/exceptions.py
 ValidationResult::BaseModel @ services/symbolic_computation/core/models.py
 ValidationStatus::str,Enum @ core/schemas/research_factory_models.py
@@ -706,6 +780,7 @@ WiringSpec::BaseModel @ codegen/code-gen-files/glue_resolver.py
 WorkflowStatus::str,Enum @ orchestration/cell_orchestrator.py
 WorldModelGraphState::TypedDict @ world_model/nodes/service_nodes.py
 WorldModelIntegrationBlock::BaseModel @ codegen/code-gen-files/schema_parser.py
+WorldModelKernelData::FlexibleModel @ core/kernels/schemas.py
 WorldModelNodeState::TypedDict @ world_model/nodes/update_world_model_node.py
 WorldModelOperation::str,Enum @ orchestrators/world_model/interface.py
 WorldModelOrchestrator::IWorldModelOrchestrator @ orchestrators/world_model/orchestrator.py
@@ -714,4 +789,4 @@ WorldModelQueryInput::BaseModel @ igor/audit-tools/core_schemas_l_tools.py
 WorldModelRequest::BaseModel @ orchestrators/world_model/interface.py
 WorldModelResponse::BaseModel @ orchestrators/world_model/interface.py
 
-# Total: 710 classes with inheritance
+# Total: 785 classes with inheritance

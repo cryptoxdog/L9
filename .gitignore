@@ -121,3 +121,5 @@ codegen/extractions/
 # CodeGen folder (specs, schemas, templates - not production)
 codegen/
 .tmp.driveupload/
+tests/agents/codegenagent/
+tests/codegen/

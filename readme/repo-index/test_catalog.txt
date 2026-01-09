@@ -14,7 +14,7 @@
 - `tests/core/agents/test_graph_state.py` (13 tests)
 - `tests/core/agents/test_bootstrap_phases.py` (14 tests)
 - `tests/core/agents/test_agent_self_modify.py` (14 tests)
-- `tests/core/agents/test_executor.py` (17 tests)
+- `tests/core/agents/test_executor.py` (18 tests)
 - `tests/core/observability/test_observability_integration.py` (32 tests)
 - `tests/core/schemas/test_content_hash_integrity.py` (14 tests)
 - `tests/core/schemas/test_schema_registry.py` (20 tests)
@@ -29,16 +29,19 @@
 - `tests/integration/test_api_agent_integration.py` (4 tests)
 - `tests/integration/test_igor_commands.py` (29 tests)
 - `tests/integration/test_graph_state_integration.py` (7 tests)
+- `tests/integration/test_kernel_evolution_flow.py` (20 tests)
 - `tests/integration/test_research_tool_integration.py` (3 tests)
 - `tests/integration/test_orchestrator_memory_integration.py` (3 tests)
 - `tests/integration/test_kernel_agent_activation_integration.py` (4 tests)
 - `tests/integration/test_api_memory_integration.py` (12 tests)
 - `tests/integration/test_slack_dispatch_integration.py` (3 tests)
 - `tests/integration/test_l_cto_end_to_end.py` (12 tests)
+- `tests/integration/test_kernel_hot_reload.py` (13 tests)
 - `tests/integration/test_graph_wm_sync.py` (16 tests)
 - `tests/integration/test_l_bootstrap.py` (8 tests)
 - `tests/integration/test_world_model_repository_integration.py` (3 tests)
 - `tests/integration/test_world_model.py` (19 tests)
+- `tests/integration/test_governance_tracking_e2e.py` (20 tests)
 - `tests/integration/test_closed_loop_learning.py` (7 tests)
 - `tests/integration/test_ws_task_routing_integration.py` (3 tests)
 - `tests/integration/test_compliance_audit.py` (15 tests)
@@ -49,8 +52,10 @@
 ### tests/memory/
 
 - `tests/memory/test_substrate_api.py` (2 tests)
+- `tests/memory/test_embedding_filter.py` (9 tests)
 - `tests/memory/test_pruning.py` (5 tests)
 - `tests/memory/test_memory_adapter_basic.py` (3 tests)
+- `tests/memory/test_e2e_memory_audit.py` (7 tests)
 - `tests/memory/test_packet_envelope.py` (2 tests)
 - `tests/memory/test_memory_ingestion.py` (10 tests)
 - `tests/memory/test_vector_search.py` (1 tests)
@@ -68,11 +73,13 @@
 
 - `tests/api/test_server_health.py` (3 tests)
 - `tests/api/test_auth.py` (8 tests)
+- `tests/api/test_slack_adapter.py` (26 tests)
+- `tests/api/test_e2e_slack_audit.py` (0 tests)
 
 ## Summary
 
-- **Total test files**: 50
-- **Total test functions**: 539
+- **Total test files**: 57
+- **Total test functions**: 635
 
 ## Running Tests
 

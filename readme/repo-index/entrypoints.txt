@@ -9,30 +9,34 @@ _archived/archived_mcp_memory/src/main.py
     - GET /mcp/tools
     - POST /mcp/call
     - ROUTER /memory/*
-agents/codegenagent/extract_yaml_specs.py
-  Type: Script
-  Has __main__ block: Yes
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+  Type: FastAPI
+  Routes (1):
+    - POST /events
 agents/research_agent.py
   Type: Script
   Has __main__ block: Yes
 aios/runtime.py
   Type: Script
   Has __main__ block: Yes
+api/e2e_slack_audit.py
+  Type: Script
+  Has __main__ block: Yes
 api/server.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
-  Routes (12):
+  Routes (14):
     - GET /
     - GET /health
+    - GET /health/startup
+    - POST /kernels/reload
     - GET /health/neo4j
     - POST /lchat
     - POST /chat
     - WEBSOCKET /ws/agent
     - WEBSOCKET /lws
     - ROUTER /os/*
-    - ROUTER /agent/*
-    - ROUTER /api/v1/memory/*
-    ... and 2 more
+    ... and 4 more
 api/server_memory.py
   Type: FastAPI
   Title: L9 Phase 2 Secure AI OS
@@ -55,6 +59,9 @@ ci/check_schema_deprecation.py
   Type: Script
   Has __main__ block: Yes
 ci/check_syntax.py
+  Type: Script
+  Has __main__ block: Yes
+ci/check_tool_naming.py
   Type: Script
   Has __main__ block: Yes
 ci/check_tool_wiring.py
@@ -89,6 +96,9 @@ mac_agent/runner.py
   Type: Script
   Has __main__ block: Yes
 mac_agent/websocket_client.py
+  Type: Script
+  Has __main__ block: Yes
+orchestrators/agent_execution/orchestrator.py
   Type: Script
   Has __main__ block: Yes
 scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py

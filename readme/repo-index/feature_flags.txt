@@ -1,81 +1,31 @@
 # L9 Feature Flags
 # ==================
 # Runtime feature flags for L9 capabilities.
-# Updated: 2026-01-08 (GMP-40 + GMP-40b)
 
 ## Active Feature Flags
 
-| Flag | Purpose | Default | Location(s) |
-|------|---------|---------|-------------|
-| `L9_NEW_AGENT_INIT` | Enable 7-phase bootstrap ceremony | `true` | api/server.py:202 |
-| `L9_USE_KERNELS` | Load kernels from YAML files | `true` | api/llm.py, core/agents/registry.py, core/agents/kernel_registry.py |
-| `L9_STAGE3_MODULES` | Tool Audit, Event Queue, Virtual Context, Evaluator | `true` | api/server.py:205 |
-| `L9_STAGE4_CONSOLIDATION` | Periodic memory consolidation | `true` | api/server.py:1165 |
-| `L9_CONSOLIDATION_INTERVAL_HOURS` | Consolidation interval in hours | `4` | api/server.py:1188 |
-| `L9_GRAPH_AGENT_STATE` | Neo4j-backed mutable agent state | `true` | api/server.py:208 |
-| `L9_GRAPH_WM_SYNC` | Graph → World Model sync | `true` | api/server.py:1300, core/integration/graph_to_wm_sync.py:35 |
-| `L9_TOOL_PATTERN_EXTRACTION` | Tool pattern extraction job | `true` | api/server.py:1327, core/integration/tool_pattern_extractor.py:34 |
-| `L9_OBSERVABILITY` | Five-tier observability pack | `true` | api/server.py:227 |
-| `L9_ENABLE_LEGACY_CHAT` | Gate old /chat route (direct OpenAI) | `false` | config/settings.py:65 |
-| `L9_ENABLE_LEGACY_SLACK_ROUTER` | Gate legacy Slack routing | `false` | config/settings.py:71, memory/slack_ingest.py:52 |
-| `L9_TENANT_ID` | Key prefix for L's Redis/memory | `l-cto` | core/tools/tool_graph.py:33, runtime/redis_client.py:29 |
+| Flag | Purpose | Default | Location |
+|------|---------|---------|----------|
+| `L9_ENABLE_GOVERNANCE` | Feature flag | `false` | scripts/audit/tier1/audit_infrastructure_health.py |
+| `L9_ENABLE_GOVERNANCE_ENFORCEMENT` | Feature flag | `false` | codegen/templates/python/module-template.py |
+| `L9_ENABLE_GRAPH` | Feature flag | `false` | scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py |
+| `L9_ENABLE_LEGACY_CHAT` | Gate old apiserver.py POST /chat | `false` | api/server.py |
+| `L9_ENABLE_LEGACY_SLACK_ROUTER` | Gate old webhookslack.py path | `false` | _archived/legacy_slack/test_webhook_slack.py |
+| `L9_ENABLE_MEMORY` | Feature flag | `false` | scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_infrastructure_health.py |
+| `L9_ENABLE_STRICT_MODE` | Feature flag | `false` | codegen/templates/python/module-template.py |
+| `L9_ENABLE_WS_ORCHESTRATOR` | WebSocket routes use wstaskrouter | `true` | tools/export_repo_indexes.py |
+| `L9_NEW_AGENT_INIT` | Enable 7-phase bootstrap ceremony | `true` | api/server.py |
+| `L9_USE_KERNELS` | Load kernels from files | `true` | api/llm.py |
 
-## Integration Toggles
-
-| Flag | Purpose | Default | Location(s) |
-|------|---------|---------|-------------|
-| `SLACK_APP_ENABLED` | Slack Events API integration | `true` | config/settings.py:30, api/webhook_slack.py:44, services/slack_client.py:7 |
-| `MAC_AGENT_ENABLED` | Mac Agent task execution | `true` | config/settings.py:36, api/server.py:318, mac_agent/runner.py:31 |
-| `EMAIL_ENABLED` | Email integration | `false` | config/settings.py:42 |
-| `INBOX_PARSER_ENABLED` | Inbox parser | `false` | config/settings.py:46 |
-| `TWILIO_ENABLED` | Twilio SMS/WhatsApp | `false` | config/settings.py:52 |
-| `WABA_ENABLED` | WhatsApp Business Account | `false` | config/settings.py:58 |
-
-## Flag Architecture
-
-### Two Configuration Patterns
-
-**1. Pydantic BaseSettings** (config/settings.py)
-- Automatically reads from `.env` file
-- Provides type validation (bool, str, int)
-- Uses `alias="ENV_VAR_NAME"` for mapping
-- Recommended for most settings
+## Flag Usage Pattern
 
 ```python
-from config.settings import settings
-if settings.slack_app_enabled:
-    # Slack is enabled
-```
+import os
 
-**2. os.getenv() inline** (api/server.py, etc.)
-- Direct environment variable read
-- Simpler for feature flags that gate code blocks
-- Always provide default: `os.getenv("FLAG", "true")`
-
-```python
 if os.getenv('L9_NEW_AGENT_INIT', 'true').lower() == 'true':
+    # Use new 7-phase bootstrap
     await bootstrap_agent(config, substrate)
+else:
+    # Legacy initialization
+    agent = create_agent_legacy(config)
 ```
-
-### Precedence
-1. Environment variable (shell export)
-2. `.env` file
-3. Code default
-
-## Docker-Compose Settings
-
-From `docker-compose.yml`:
-```yaml
-L9_USE_KERNELS: ${L9_USE_KERNELS:-true}
-MAC_AGENT_ENABLED: ${MAC_AGENT_ENABLED:-true}
-SLACK_APP_ENABLED: ${SLACK_APP_ENABLED:-false}
-```
-
-Note: docker-compose defaults may differ from code defaults. `.env` values take precedence.
-
-## Notes
-
-- **L9_NEW_AGENT_INIT=true** enables the 7-phase bootstrap ceremony (kernel injection, tool binding, governance wiring)
-- **L9_ENABLE_LEGACY_*=false** disables old code paths in favor of AgentTask routing
-- **All graph flags=true** enables Neo4j-backed agent state and world model sync
-- **Consolidation every 4 hours** (was 24h default)

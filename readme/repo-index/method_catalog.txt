@@ -60,7 +60,11 @@ AgentController::_create_blocked_response(original_packet, reason) @ codegen/ext
 AgentController::_create_success_response(original_packet, result) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py
 AgentController::async initialize() @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py
 AgentController::async process_packet(packet) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py
+AgentExecutionOrchestrator::__init__() @ orchestrators/agent_execution/orchestrator.py
+AgentExecutionOrchestrator::async execute(request) @ orchestrators/agent_execution/orchestrator.py
+AgentExecutionOrchestrator::async poll_and_execute() @ orchestrators/agent_execution/orchestrator.py
 AgentExecutorService::__init__(aios_runtime, tool_registry, substrate_service, agent_registry, default_agent_id, max_iterations) @ core/agents/executor.py
+AgentExecutorService::_get_kernel_aware_agent() @ core/agents/executor.py
 AgentExecutorService::_validate_task(task) @ core/agents/executor.py
 AgentExecutorService::async _bind_memory_context(task_id, agent_id) @ core/agents/executor.py
 AgentExecutorService::async _dispatch_tool_call(instance, tool_call) @ core/agents/executor.py
@@ -72,7 +76,9 @@ AgentExecutorService::async _instantiate_agent(task) @ core/agents/executor.py
 AgentExecutorService::async _persist_task_result(task_id, result) @ core/agents/executor.py
 AgentExecutorService::async _reactive_dispatch_loop() @ core/agents/executor.py
 AgentExecutorService::async _run_execution_loop(instance) @ core/agents/executor.py
+AgentExecutorService::async _run_self_reflection(task, result, instance) @ core/agents/executor.py
 AgentExecutorService::async start_agent_task(task) @ core/agents/executor.py
+AgentExecutorService::set_kernel_aware_agent(agent) @ core/agents/executor.py
 AgentGraphLoader::__init__(neo4j_driver) @ core/agents/graph_state/agent_graph_loader.py
 AgentGraphLoader::async exists(agent_id) @ core/agents/graph_state/agent_graph_loader.py
 AgentGraphLoader::async get_critical_directives(agent_id) @ core/agents/graph_state/agent_graph_loader.py
@@ -85,10 +91,14 @@ AgentGraphState::get_sop_steps(sop_name) @ core/agents/graph_state/agent_graph_l
 AgentHandshake::has_capability(tool) @ core/schemas/event_stream.py
 AgentHandshake::has_capability(tool) @ igor/audit-memory/core_schemas_event_stream.py
 AgentInstance::__init__(config, task) @ core/agents/agent_instance.py
+AgentInstance::_build_dag_context_section() @ core/agents/agent_instance.py
+AgentInstance::_build_tool_name_map() @ core/agents/agent_instance.py
 AgentInstance::add_assistant_message(content, metadata) @ core/agents/agent_instance.py
 AgentInstance::add_assistant_message_with_tool_calls(tool_calls, content, metadata) @ core/agents/agent_instance.py
+AgentInstance::add_governance_block(block_type, violation, pattern, tool_id, metadata) @ core/agents/agent_instance.py
 AgentInstance::add_tokens(tokens) @ core/agents/agent_instance.py
 AgentInstance::add_tool_result(tool_id, call_id, result, success) @ core/agents/agent_instance.py
+AgentInstance::add_user_correction(correction, metadata) @ core/agents/agent_instance.py
 AgentInstance::add_user_message(content, metadata) @ core/agents/agent_instance.py
 AgentInstance::assemble_context() @ core/agents/agent_instance.py
 AgentInstance::config() @ core/agents/agent_instance.py
@@ -96,16 +106,20 @@ AgentInstance::get_bound_tools() @ core/agents/agent_instance.py
 AgentInstance::get_history() @ core/agents/agent_instance.py
 AgentInstance::get_messages_for_aios() @ core/agents/agent_instance.py
 AgentInstance::get_tool_definitions() @ core/agents/agent_instance.py
+AgentInstance::governance_blocks() @ core/agents/agent_instance.py
 AgentInstance::has_tool(tool_id) @ core/agents/agent_instance.py
 AgentInstance::increment_iteration() @ core/agents/agent_instance.py
 AgentInstance::instance_id() @ core/agents/agent_instance.py
 AgentInstance::iteration() @ core/agents/agent_instance.py
+AgentInstance::resolve_tool_id(tool_name) @ core/agents/agent_instance.py
 AgentInstance::state() @ core/agents/agent_instance.py
 AgentInstance::task() @ core/agents/agent_instance.py
 AgentInstance::thread_id() @ core/agents/agent_instance.py
 AgentInstance::to_trace_dict() @ core/agents/agent_instance.py
+AgentInstance::tool_results() @ core/agents/agent_instance.py
 AgentInstance::total_tokens() @ core/agents/agent_instance.py
 AgentInstance::transition_to(new_state) @ core/agents/agent_instance.py
+AgentInstance::user_corrections() @ core/agents/agent_instance.py
 AgentMessage::to_dict() @ agents/base_agent.py
 AgentRegistry::__contains__(agent_id) @ core/agents/registry.py
 AgentRegistry::__init__(config_dir) @ core/agents/registry.py
@@ -138,6 +152,7 @@ AgentSelfModifyTool::async update_responsibility(agent_id, responsibility_title,
 AgentTask::get_dedupe_key() @ core/agents/schemas.py
 AgentTask::get_thread_id() @ core/agents/schemas.py
 AgentTask::to_dict() @ core/schemas/tasks.py
+AlignmentReport::is_aligned(threshold) @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
 AnalogicalReasoner::async find_analogies(context) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/analogical_reasoner.py
 AnomalyHandler::async _escalate_anomaly(anomaly) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/anomaly_handler.py
 AnomalyHandler::async handle_anomaly(anomaly) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/anomaly_handler.py
@@ -231,6 +246,35 @@ AuditLogger::async log_approval(task_id, approved_by, approved, reason, timestam
 AuditLogger::async log_command(command_id, command_type, user_id, action, risk_level, raw_text, result, error, timestamp) @ core/compliance/audit_log.py
 AuditLogger::async log_memory_write(agent_id, segment, content_type, size_bytes, packet_type, thread_id, timestamp) @ core/compliance/audit_log.py
 AuditLogger::async log_tool_execution(tool_name, agent_id, input_data, output_data, success, approved_by, approval_timestamp, execution_timestamp) @ core/compliance/audit_log.py
+AuditOrchestrator::__init__(repo_root, cache_enabled, parallel_jobs, output_formats) @ scripts/audit/run_all.py
+AuditOrchestrator::_build_summary() @ scripts/audit/run_all.py
+AuditOrchestrator::_generate_html_report() @ scripts/audit/run_all.py
+AuditOrchestrator::_generate_json_report() @ scripts/audit/run_all.py
+AuditOrchestrator::_generate_jsonl_report() @ scripts/audit/run_all.py
+AuditOrchestrator::_generate_report(format_str) @ scripts/audit/run_all.py
+AuditOrchestrator::_generate_run_id() @ scripts/audit/run_all.py
+AuditOrchestrator::_get_tier_audits(tier) @ scripts/audit/run_all.py
+AuditOrchestrator::_log_summary(run) @ scripts/audit/run_all.py
+AuditOrchestrator::_run_capability_audit() @ scripts/audit/run_all.py
+AuditOrchestrator::_run_code_integrity_audit() @ scripts/audit/run_all.py
+AuditOrchestrator::_run_infrastructure_audit() @ scripts/audit/run_all.py
+AuditOrchestrator::run_all(tier, only) @ scripts/audit/run_all.py
+AuditOrchestrator::run_audit(audit_type, tier) @ scripts/audit/run_all.py
+AuditResult::__init__(name) @ api/e2e_slack_audit.py
+AuditResult::__init__(name) @ tests/api/test_e2e_slack_audit.py
+AuditResult::__init__(name) @ tests/memory/test_e2e_memory_audit.py
+AuditResult::add_check(name, passed, details) @ api/e2e_slack_audit.py
+AuditResult::add_check(name, passed, details) @ tests/api/test_e2e_slack_audit.py
+AuditResult::add_check(name, passed, details) @ tests/memory/test_e2e_memory_audit.py
+AuditResult::add_recommendation(recommendation) @ api/e2e_slack_audit.py
+AuditResult::add_recommendation(recommendation) @ tests/api/test_e2e_slack_audit.py
+AuditResult::add_recommendation(recommendation) @ tests/memory/test_e2e_memory_audit.py
+AuditResult::add_warning(warning) @ api/e2e_slack_audit.py
+AuditResult::add_warning(warning) @ tests/api/test_e2e_slack_audit.py
+AuditResult::add_warning(warning) @ tests/memory/test_e2e_memory_audit.py
+AuditResult::finalize() @ api/e2e_slack_audit.py
+AuditResult::finalize() @ tests/api/test_e2e_slack_audit.py
+AuditResult::finalize() @ tests/memory/test_e2e_memory_audit.py
 AutomationExecutor::__init__() @ mac_agent/executor.py
 AutomationExecutor::async _check_selector(selector) @ mac_agent/executor.py
 AutomationExecutor::async _cleanup() @ mac_agent/executor.py
@@ -303,6 +347,7 @@ BatchSpecGenerator::__init__(config) @ scripts/batch_generate_specs.py
 BatchSpecGenerator::async process_batch(modules) @ scripts/batch_generate_specs.py
 BatchSpecGenerator::async run(modules, dry_run) @ scripts/batch_generate_specs.py
 BatchSpecGenerator::save_spec(module_name, content) @ scripts/batch_generate_specs.py
+BehaviorGap::to_dict() @ core/agents/selfreflection.py
 BlueprintAdapter::__init__(openai_client, model) @ orchestrators/meta/adapter.py
 BlueprintAdapter::_build_improvement_prompt(blueprint, evaluation) @ orchestrators/meta/adapter.py
 BlueprintAdapter::_build_scoring_prompt(blueprint, criteria, context) @ orchestrators/meta/adapter.py
@@ -337,6 +382,7 @@ CGMPEngine::clear_generated() @ agents/codegenagent/c_gmp_engine.py
 CGMPEngine::get_generated_files() @ agents/codegenagent/c_gmp_engine.py
 CGMPEngine::get_generated_readmes() @ agents/codegenagent/c_gmp_engine.py
 CacheManager::__init__(cache_dir) @ scripts/audit/audit_shared_core.py
+CacheManager::__init__(cache_dir) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::__init__(config, redis_client) @ services/symbolic_computation/core/cache_manager.py
 CacheManager::_cache_l1_result(key, value) @ services/symbolic_computation/core/cache_manager.py
 CacheManager::_hash_expression(expr) @ services/symbolic_computation/core/cache_manager.py
@@ -346,13 +392,26 @@ CacheManager::async cache_compiled_function(expr, func) @ services/symbolic_comp
 CacheManager::async cache_expression(expr, backend, result) @ services/symbolic_computation/core/cache_manager.py
 CacheManager::async get_cached_result(expr, backend) @ services/symbolic_computation/core/cache_manager.py
 CacheManager::clear() @ services/symbolic_computation/core/cache_manager.py
+CacheManager::compute_manifest_hash(all_files) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::get_cached_compiled(expr) @ services/symbolic_computation/core/cache_manager.py
+CacheManager::get_content_index_hash_path() @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::get_content_index_path() @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::get_file_hash(filepath) @ scripts/audit/audit_shared_core.py
+CacheManager::get_file_hash(filepath) @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::get_modified_files(all_files) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::get_modified_files(all_files, audit_type, repo_root) @ scripts/audit/audit_shared_core.py
+CacheManager::get_results_cache_path() @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::get_stats() @ services/symbolic_computation/core/cache_manager.py
 CacheManager::invalidate(pattern) @ scripts/audit/audit_shared_core.py
+CacheManager::load_content_index(all_files) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::load_manifest() @ scripts/audit/audit_shared_core.py
+CacheManager::load_manifest() @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::load_results() @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::save_content_index(all_files, content) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::save_manifest(manifest) @ scripts/audit/audit_shared_core.py
+CacheManager::save_manifest(manifest) @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::save_results(uncalled, orphans, circular) @ scripts/audit/tier1/audit_code_integrity.py
+CacheManager::update_manifest(all_files) @ scripts/audit/tier1/audit_code_integrity.py
 CacheManager::update_manifest(all_files, audit_type, repo_root) @ scripts/audit/audit_shared_core.py
 CalendarAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ api/adapters/calendar_adapter/adapters/calendar_adapter_adapter.py
 CalendarAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/adapters/calendar_adapter_adapter.py
@@ -410,14 +469,20 @@ CalendarAdapterService::async process(event_id, payload, source, attachments) @ 
 CalendarAdapterService::async process(event_id, payload, source, attachments) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/services/calendar_adapter_service.py
 CallGraphBuilder::__init__(filepath) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::__init__(filepath) @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::__init__(filepath) @ scripts/audit/tier1/audit_code_integrity.py
 CallGraphBuilder::_get_call_target(func_node) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::visit_AsyncFunctionDef(node) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::visit_AsyncFunctionDef(node) @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::visit_AsyncFunctionDef(node) @ scripts/audit/tier1/audit_code_integrity.py
+CallGraphBuilder::visit_Attribute(node) @ scripts/audit/tier1/audit_code_integrity.py
 CallGraphBuilder::visit_Call(node) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::visit_Call(node) @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::visit_Call(node) @ scripts/audit/tier1/audit_code_integrity.py
 CallGraphBuilder::visit_ClassDef(node) @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::visit_ClassDef(node) @ scripts/audit/tier1/audit_code_integrity.py
 CallGraphBuilder::visit_FunctionDef(node) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 CallGraphBuilder::visit_FunctionDef(node) @ scripts/audit/audit_shared_core.py
+CallGraphBuilder::visit_FunctionDef(node) @ scripts/audit/tier1/audit_code_integrity.py
 CallerIdentity::__init__(caller_id, user_id) @ _archived/archived_mcp_memory/src/main.py
 CallerIdentity::__init__(caller_id, user_id) @ igor/audit-memory/mcp_memory_src_main.py
 CallerIdentity::creator() @ _archived/archived_mcp_memory/src/main.py
@@ -525,6 +590,24 @@ CheckpointManager::async load(agent_id) @ igor/audit-memory/memory_checkpoint_ma
 CheckpointManager::async load(agent_id) @ memory/checkpoint_manager.py
 CheckpointManager::async save(agent_id, state) @ igor/audit-memory/memory_checkpoint_manager.py
 CheckpointManager::async save(agent_id, state) @ memory/checkpoint_manager.py
+CircuitBreaker::__init__(config) @ core/observability/circuit_breaker.py
+CircuitBreaker::__init__(config) @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::__repr__() @ core/observability/circuit_breaker.py
+CircuitBreaker::from_settings(cls, settings, name) @ core/observability/circuit_breaker.py
+CircuitBreaker::get_state() @ core/observability/circuit_breaker.py
+CircuitBreaker::get_state() @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::get_stats() @ core/observability/circuit_breaker.py
+CircuitBreaker::is_open() @ core/observability/circuit_breaker.py
+CircuitBreaker::is_open() @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::record_failure(error) @ core/observability/circuit_breaker.py
+CircuitBreaker::record_failure(error) @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::record_success() @ core/observability/circuit_breaker.py
+CircuitBreaker::record_success() @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::reset() @ core/observability/circuit_breaker.py
+CircuitBreaker::reset() @ igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py
+CircuitBreaker::state() @ core/observability/circuit_breaker.py
+CircuitBreakerConfig::__post_init__() @ core/observability/circuit_breaker.py
+CircuitOpenError::__init__(message, circuit_name) @ core/observability/circuit_breaker.py
 ClassAnalyzer::__init__(repo_root) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 ClassAnalyzer::_check_stub(node, content) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
 ClassAnalyzer::_get_base_name(base_node) @ scripts/audit/L9_AUDIT_SUITE_EXPANSION/audit_code_integrity.py
@@ -772,6 +855,8 @@ DoraTraceBlock::create(cls, task, inputs, outputs, patterns_used, duration_ms, e
 DoraTraceBlock::to_dict() @ runtime/dora.py
 DryRunResult::would_create() @ agents/codegenagent/codegen_agent.py
 DryRunResult::would_modify() @ agents/codegenagent/codegen_agent.py
+DuplicateDetector::__init__(substrate_service) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+DuplicateDetector::async is_duplicate(event_id) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
 EmailAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ api/adapters/email_adapter/adapters/email_adapter_adapter.py
 EmailAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/adapters/email_adapter_adapter.py
 EmailAdapterAdapter::_generate_context(request) @ api/adapters/email_adapter/adapters/email_adapter_adapter.py
@@ -859,6 +944,12 @@ Evaluator::async compare_to_baseline(current, baseline_version) @ core/evaluatio
 Evaluator::async run_eval(agent_id, eval_set_name, version) @ core/evaluation/evaluator.py
 Evaluator::define_eval_set(name, examples, description) @ core/evaluation/evaluator.py
 Event::__post_init__() @ core/coordination/event_queue.py
+EventDedupeCache::__init__(max_size, ttl_seconds) @ _archived/legacy_slack/webhook_slack.py
+EventDedupeCache::__init__(max_size, ttl_seconds) @ api/webhook_slack.py
+EventDedupeCache::clear() @ _archived/legacy_slack/webhook_slack.py
+EventDedupeCache::clear() @ api/webhook_slack.py
+EventDedupeCache::is_duplicate(event_id) @ _archived/legacy_slack/webhook_slack.py
+EventDedupeCache::is_duplicate(event_id) @ api/webhook_slack.py
 EventQueue::__init__(max_size, backpressure_enabled) @ core/coordination/event_queue.py
 EventQueue::async process_forever() @ core/coordination/event_queue.py
 EventQueue::async publish(event) @ core/coordination/event_queue.py
@@ -884,6 +975,7 @@ EvolutionOrchestrator::async apply_upgrades(request) @ orchestrators/evolution/o
 EvolutionOrchestrator::async get_upgrade_history(limit) @ orchestrators/evolution/orchestrator.py
 EvolutionOrchestrator::async rollback_upgrade(upgrade_id) @ orchestrators/evolution/orchestrator.py
 EvolutionOrchestrator::async validate_upgrade(upgrade) @ orchestrators/evolution/orchestrator.py
+ExcessiveIterationPattern::detect(context) @ core/agents/selfreflection.py
 ExecutionChain::to_dict() @ orchestration/orchestrator_kernel.py
 ExecutionPlan::get_executable_steps() @ ir_engine/ir_to_plan_adapter.py
 ExecutionPlan::get_next_step() @ ir_engine/ir_to_plan_adapter.py
@@ -901,6 +993,7 @@ ExecutorToolRegistry::approve_tool(agent_id, tool_id) @ core/tools/registry_adap
 ExecutorToolRegistry::approve_tool(agent_id, tool_id) @ igor/audit-tools/core_tools_registry_adapter.py
 ExecutorToolRegistry::async dispatch_tool_call(tool_id, arguments, context) @ core/tools/registry_adapter.py
 ExecutorToolRegistry::async dispatch_tool_call(tool_id, arguments, context) @ igor/audit-tools/core_tools_registry_adapter.py
+ExecutorToolRegistry::async guarded_execute(agent, tool_id, arguments, context, principal_id) @ core/tools/registry_adapter.py
 ExecutorToolRegistry::get_approved_tools(agent_id, principal_id) @ core/tools/registry_adapter.py
 ExecutorToolRegistry::get_approved_tools(agent_id, principal_id) @ igor/audit-tools/core_tools_registry_adapter.py
 ExecutorToolRegistry::list_tools() @ core/tools/registry_adapter.py
@@ -938,6 +1031,9 @@ ExtractionManifest::to_dict() @ codegen/code-gen-files/extractor.py
 ExtractionResult::add_error(error) @ codegen/code-gen-files/extractor.py
 ExtractionResult::add_warning(warning) @ codegen/code-gen-files/extractor.py
 ExtractionResult::to_dict() @ codegen/code-gen-files/extractor.py
+FailingAgent::__init__() @ tests/unit/test_kernel_loader_activation.py
+FailingAgent::absorb_kernel(kernel_data) @ tests/unit/test_kernel_loader_activation.py
+FailingAgent::set_system_context(context) @ tests/unit/test_kernel_loader_activation.py
 FailureDetector::detect_from_span(span) @ core/observability/failures.py
 FakeConnection::__init__() @ tests/world_model/test_world_model_repository_basic.py
 FakeConnection::async __aenter__() @ tests/world_model/test_world_model_repository_basic.py
@@ -984,6 +1080,7 @@ GMPWorker::async start() @ runtime/gmp_worker.py
 GMPWorker::async stop() @ runtime/gmp_worker.py
 GapAnalysis::can_proceed() @ runtime/superprompt_emitter.py
 GapAnalysis::has_critical_gaps() @ runtime/superprompt_emitter.py
+GapDetectionPattern::detect(context) @ core/agents/selfreflection.py
 GapDetector::_check_empty_lists(spec, gaps) @ runtime/superprompt_emitter.py
 GapDetector::_check_placeholders(spec, gaps, path) @ runtime/superprompt_emitter.py
 GapDetector::_check_required_content(spec, gaps) @ runtime/superprompt_emitter.py
@@ -1017,6 +1114,7 @@ GmailClient::list_messages(query, limit) @ email_agent/gmail_client.py
 GmailClient::reply_to_email(msg_id, body) @ email_agent/gmail_client.py
 GmailClient::send_email(to, subject, body, attachments) @ email_agent/gmail_client.py
 GovernanceBlock::validate_mode(cls, v) @ codegen/code-gen-files/schema_parser.py
+GovernanceBlockPattern::detect(context) @ core/agents/selfreflection.py
 GovernanceBridge::__init__(approval_service, igor) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/governance_bridge.py
 GovernanceBridge::_determine_escalation_level(decision) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/governance_bridge.py
 GovernanceBridge::_requires_escalation(decision) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/governance_bridge.py
@@ -1123,6 +1221,8 @@ HybridStrategy::async assemble(conversation, knowledge_base, max_tokens) @ core/
 HydratedAgentContext::to_system_prompt_context() @ core/agents/graph_state/graph_hydrator.py
 IActionToolOrchestrator::async execute(request) @ igor/audit-tools/orchestrators_action_tool_interface.py
 IActionToolOrchestrator::async execute(request) @ orchestrators/action_tool/interface.py
+IAgentExecutionOrchestrator::async execute(request) @ orchestrators/agent_execution/interface.py
+IAgentExecutionOrchestrator::async poll_and_execute() @ orchestrators/agent_execution/interface.py
 ICausalGraph::get_causes(node_id) @ world_model/interfaces.py
 ICausalGraph::get_effects(node_id) @ world_model/interfaces.py
 ICausalGraph::query_path(from_node, to_node) @ world_model/interfaces.py
@@ -1198,8 +1298,11 @@ IRValidator::validate(graph) @ ir_engine/ir_validator.py
 IRValidator::validate_and_update_status(graph) @ ir_engine/ir_validator.py
 IReasoningOrchestrator::async execute(request) @ orchestrators/reasoning/interface.py
 IResearchSwarmOrchestrator::async execute(request) @ orchestrators/research_swarm/interface.py
+IStrategyMemoryService::async record_new_strategy(task_id, description, plan_payload, context_embedding, tags) @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 IStrategyMemoryService::async record_new_strategy(task_id, description, plan_payload, context_embedding, tags) @ memory/strategymemory.py
+IStrategyMemoryService::async retrieve_strategies(request, limit) @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 IStrategyMemoryService::async retrieve_strategies(request, limit) @ memory/strategymemory.py
+IStrategyMemoryService::async update_strategy_outcome(feedback) @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategymemory_interface.py
 IStrategyMemoryService::async update_strategy_outcome(feedback) @ memory/strategymemory.py
 IWorldModelEngine::initialize_state() @ world_model/interfaces.py
 IWorldModelEngine::load_specs(spec_paths) @ world_model/interfaces.py
@@ -1305,8 +1408,10 @@ KPITracker::__init__(window_size) @ core/observability/aggregation.py
 KPITracker::get_alerts(thresholds) @ core/observability/aggregation.py
 KPITracker::get_trend(kpi_name) @ core/observability/aggregation.py
 KPITracker::record_kpi(kpi) @ core/observability/aggregation.py
+KernelAwareAgent::absorb_kernel(kernel_data) @ core/kernels/kernelloader.py
 KernelAwareAgent::absorb_kernel(kernel_data) @ igor/audit-tools/Current Config/runtime_kernel_loader.py
 KernelAwareAgent::absorb_kernel(kernel_data) @ runtime/kernel_loader.py
+KernelAwareAgent::set_system_context(context) @ core/kernels/kernelloader.py
 KernelAwareAgent::set_system_context(context) @ igor/audit-tools/Current Config/runtime_kernel_loader.py
 KernelAwareAgent::set_system_context(context) @ runtime/kernel_loader.py
 KernelAwareAgentRegistry::__init__() @ core/agents/kernel_registry.py
@@ -1314,8 +1419,16 @@ KernelAwareAgentRegistry::_initialize_fallback() @ core/agents/kernel_registry.p
 KernelAwareAgentRegistry::_initialize_with_kernels() @ core/agents/kernel_registry.py
 KernelAwareAgentRegistry::agent_exists(agent_id) @ core/agents/kernel_registry.py
 KernelAwareAgentRegistry::get_agent_config(agent_id) @ core/agents/kernel_registry.py
+KernelAwareAgentRegistry::get_kernel_hashes() @ core/agents/kernel_registry.py
 KernelAwareAgentRegistry::get_kernel_state() @ core/agents/kernel_registry.py
 KernelAwareAgentRegistry::get_l_cto_agent() @ core/agents/kernel_registry.py
+KernelAwareAgentRegistry::verify_kernel_integrity() @ core/agents/kernel_registry.py
+KernelEvolutionEvent::__init__(event_type, agent_id, kernel_ids, previous_hashes, new_hashes, modified_kernels, trigger, success, errors, metadata) @ core/memory/runtime.py
+KernelEvolutionEvent::to_packet_payload() @ core/memory/runtime.py
+KernelLifecycleSpan::start(cls, name, trace_id, kernel_id, parent_span_id, kind) @ core/observability/models.py
+KernelManifest::ensure_kernel_info(cls, v) @ core/kernels/schemas.py
+KernelManifest::get_kernel_type() @ core/kernels/schemas.py
+KernelReloadResult::__init__(success, kernels_reloaded, modified_kernels, errors, previous_hashes, new_hashes) @ core/kernels/kernelloader.py
 KernelStack::__init__(kernels_by_id, kernels_by_file, hashes, base_dir) @ igor/audit-tools/Current Config/runtime_kernel_loader.py
 KernelStack::__init__(kernels_by_id, kernels_by_file, hashes, base_dir) @ runtime/kernel_loader.py
 KernelStack::as_dict() @ igor/audit-tools/Current Config/runtime_kernel_loader.py
@@ -1328,6 +1441,8 @@ KernelStack::get_rule(kernel_id, path, default) @ igor/audit-tools/Current Confi
 KernelStack::get_rule(kernel_id, path, default) @ runtime/kernel_loader.py
 KernelState::enforce_memory_constraints(data) @ tests/mocks/kernel_mocks.py
 KernelState::enforce_rate_limit(tool, count) @ tests/mocks/kernel_mocks.py
+KernelUpdateProposal::to_dict() @ core/agents/kernelevolution.py
+KernelUpdateProposal::to_gmp_spec() @ core/agents/kernelevolution.py
 KernelViolationError::__init__(message, constraint, value) @ tests/mocks/kernel_mocks.py
 KnowledgeIngestor::__init__(state, config) @ world_model/knowledge_ingestor.py
 KnowledgeIngestor::_add_entity(data, result) @ world_model/knowledge_ingestor.py
@@ -1645,6 +1760,8 @@ MigrationRunner::async run_migration(migration_name, file_path) @ igor/audit-mem
 MigrationRunner::async run_migration(migration_name, file_path) @ memory/migration_runner.py
 MigrationRunner::get_migration_files() @ igor/audit-memory/memory_migration_runner.py
 MigrationRunner::get_migration_files() @ memory/migration_runner.py
+MinimalAgent::__init__() @ tests/unit/test_kernel_loader_activation.py
+MinimalAgent::absorb_kernel(kernel_data) @ tests/unit/test_kernel_loader_activation.py
 MinimalApprovalManager::format_approval_request_with_tests(task_id, proposal_summary, test_summary) @ tests/integration/test_recursive_self_testing.py
 MistakePrevention::__init__() @ core/governance/mistake_prevention.py
 MistakePrevention::_load_default_rules() @ core/governance/mistake_prevention.py
@@ -1676,6 +1793,10 @@ MockGmailClient::get_message(message_id) @ tests/smoke_email.py
 MockGmailClient::list_messages(query, max_results) @ tests/smoke_email.py
 MockGmailClient::reply_to_email(message_id, body) @ tests/smoke_email.py
 MockGmailClient::send_email(to, subject, body, attachments) @ tests/smoke_email.py
+MockKernelAwareAgent::__init__() @ tests/unit/test_kernel_loader_activation.py
+MockKernelAwareAgent::__init__(kernel_state, kernels, behavioral, safety) @ tests/unit/test_guarded_execution.py
+MockKernelAwareAgent::absorb_kernel(kernel_data) @ tests/unit/test_kernel_loader_activation.py
+MockKernelAwareAgent::set_system_context(context) @ tests/unit/test_kernel_loader_activation.py
 MockMemoryAdapter::__init__(max_vectors, blob_threshold_kb) @ igor/audit-memory/tests_mocks_memory_mocks.py
 MockMemoryAdapter::__init__(max_vectors, blob_threshold_kb) @ tests/mocks/memory_mocks.py
 MockMemoryAdapter::async ingest(data) @ igor/audit-memory/tests_mocks_memory_mocks.py
@@ -1724,12 +1845,15 @@ MockRedis::async keys(pattern) @ tests/mocks/orchestrator_mocks.py
 MockRedis::async set(key, value, ex, px) @ tests/mocks/orchestrator_mocks.py
 MockSearchTool::async execute(args) @ igor/audit-tools/services_research_tools_tool_wrappers.py
 MockSearchTool::async execute(args) @ services/research/tools/tool_wrappers.py
+MockSubstrateService::__init__() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
 MockSubstrateService::__init__() @ tests/core/agents/test_executor.py
 MockSubstrateService::__init__() @ tests/integration/test_orchestrator_memory_integration.py
 MockSubstrateService::async search_packets() @ tests/integration/test_orchestrator_memory_integration.py
+MockSubstrateService::async search_packets(metadata_filter, limit) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
 MockSubstrateService::async search_packets(thread_id, limit) @ tests/core/agents/test_executor.py
 MockSubstrateService::async search_packets_by_thread(thread_id, packet_type, limit) @ tests/core/agents/test_executor.py
 MockSubstrateService::async search_packets_by_type(packet_type, agent_id, limit) @ tests/core/agents/test_executor.py
+MockSubstrateService::async write_packet(packet) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
 MockSubstrateService::async write_packet(packet) @ tests/integration/test_orchestrator_memory_integration.py
 MockSubstrateService::async write_packet(packet_in) @ tests/core/agents/test_executor.py
 MockSubstrateService::clear_write_exception() @ tests/core/agents/test_executor.py
@@ -1737,9 +1861,11 @@ MockSubstrateService::get_packets_by_type(packet_type) @ tests/core/agents/test_
 MockSubstrateService::set_search_results(results) @ tests/core/agents/test_executor.py
 MockSubstrateService::set_write_exception(exc) @ tests/core/agents/test_executor.py
 MockToolRegistry::__init__() @ tests/core/agents/test_executor.py
+MockToolRegistry::__init__() @ tests/unit/test_guarded_execution.py
 MockToolRegistry::__init__(redis) @ tests/mocks/orchestrator_mocks.py
 MockToolRegistry::async check_rate_limit(tool_name) @ tests/mocks/orchestrator_mocks.py
 MockToolRegistry::async dispatch_tool_call(tool_id, arguments, context) @ tests/core/agents/test_executor.py
+MockToolRegistry::async dispatch_tool_call(tool_id, arguments, context) @ tests/unit/test_guarded_execution.py
 MockToolRegistry::async execute(tool_name) @ tests/mocks/orchestrator_mocks.py
 MockToolRegistry::async get_usage(tool_name) @ tests/mocks/orchestrator_mocks.py
 MockToolRegistry::async increment_usage(tool_name) @ tests/mocks/orchestrator_mocks.py
@@ -1783,6 +1909,12 @@ ModuleCodeGenerator::_validate_spec(spec) @ codegen/code-gen-files/Module Produc
 ModuleCodeGenerator::_write_file(path, content) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py
 ModuleCodeGenerator::generate(spec) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py
 ModuleIR::get_imports() @ ir_engine/compile_meta_to_ir.py
+ModuleRegistry::__init__() @ core/moduleregistry.py
+ModuleRegistry::get_definition(module_id) @ core/moduleregistry.py
+ModuleRegistry::get_status(module_id) @ core/moduleregistry.py
+ModuleRegistry::register(definition) @ core/moduleregistry.py
+ModuleRegistry::set_status(status) @ core/moduleregistry.py
+ModuleRegistry::snapshot() @ core/moduleregistry.py
 ModuleSchemaExtractor::extract(input_path, output_root) @ igor/audit-memory/memory_extractor_module_schema_extractor.py
 ModuleSchemaExtractor::extract(input_path, output_root) @ memory/extractor/module_schema_extractor.py
 ModuleSchemaExtractor::generate_modules(kernel, output_root) @ igor/audit-memory/memory_extractor_module_schema_extractor.py
@@ -1937,6 +2069,7 @@ PacketFormatter::_format_generic(result) @ codegen/extractions/domain_tensor_bri
 PacketFormatter::_format_mortgageos(result) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_formatter.py
 PacketFormatter::_format_plastos(result) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_formatter.py
 PacketFormatter::format_for_domain(result, domain) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_formatter.py
+PacketLineage::validate_timestamp(cls, v) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketNodeAdapter::__init__(service, agent_id, event_type) @ graph_adapter/packet_node_adapter.py
 PacketNodeAdapter::async __call__(state, node, node_name) @ graph_adapter/packet_node_adapter.py
 PacketRouter::__init__() @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_router.py
@@ -1950,12 +2083,21 @@ PacketRouter::register_handler(packet_kind, handler) @ codegen/extractions/domai
 PacketRouter::set_fallback_handler(handler) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_router.py
 PacketSource::async fetch_packets(packet_types, limit, since) @ world_model/runtime.py
 PacketSpec::class_name() @ ir_engine/compile_meta_to_ir.py
+PacketValidationError::__init__(message, field, value) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
+PacketValidator::__init__() @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::__init__(strict_mode) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_validator.py
+PacketValidator::_validate_confidence(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
+PacketValidator::_validate_derive_type(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::_validate_kind(kind) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_validator.py
+PacketValidator::_validate_lineage(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
+PacketValidator::_validate_metadata(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::_validate_payload(payload) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_validator.py
+PacketValidator::_validate_required_fields(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::_validate_source_id(source_id) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_validator.py
+PacketValidator::_validate_version(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::allowed_types() @ igor/audit-memory/memory_validators_packet_validator.py
 PacketValidator::allowed_types() @ memory/validators/packet_validator.py
+PacketValidator::validate(packet) @ igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py
 PacketValidator::validate(packet_in) @ igor/audit-memory/memory_validators_packet_validator.py
 PacketValidator::validate(packet_in) @ memory/validators/packet_validator.py
 PacketValidator::validate_packet(packet) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/packet_validator.py
@@ -2105,6 +2247,9 @@ QuantumSwarmLoader::_load_capsule(capsule_path) @ orchestration/quantum_swarm_lo
 QuantumSwarmLoader::async _warmup_cache(expressions) @ orchestration/quantum_swarm_loader.py
 QuantumSwarmLoader::async load_quantum_swarm(capsule_path) @ orchestration/quantum_swarm_loader.py
 QuantumSwarmLoader::get_stats() @ orchestration/quantum_swarm_loader.py
+QueryInjectionDetector::__init__() @ igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py
+QueryInjectionDetector::detect_injection(query) @ igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py
+QueryInjectionDetector::sanitize_query(query, max_length) @ igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py
 QueuedTask::from_dict(cls, data) @ runtime/task_queue.py
 QueuedTask::to_dict() @ runtime/task_queue.py
 QuickFixEngine::__init__() @ core/governance/quick_fixes.py
@@ -2256,6 +2401,7 @@ ReflectionMemory::to_dict() @ world_model/reflection_memory.py
 ReflectionMemory::update_improvement_status(improvement_id, status, actual_impact) @ world_model/reflection_memory.py
 ReflectionMemory::update_reflection(reflection_id, content, confidence, priority) @ world_model/reflection_memory.py
 ReflectiveAuditor::audit_reasoning(decision) @ codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/reflective_auditor.py
+RepeatedToolFailurePattern::detect(context) @ core/agents/selfreflection.py
 RepoGraphLoader::__init__(uri, user, password, database, dry_run, verbose) @ scripts/load_indexes_to_neo4j.py
 RepoGraphLoader::_run_query(query, parameters) @ scripts/load_indexes_to_neo4j.py
 RepoGraphLoader::clear_repo_graph() @ scripts/load_indexes_to_neo4j.py
@@ -2316,7 +2462,9 @@ ResearchState::has_errors() @ core/schemas/research_factory_state.py
 ResearchState::is_complete() @ core/schemas/research_factory_state.py
 ResearchState::start_pass(pass_num) @ core/schemas/research_factory_state.py
 ResearchState::to_metrics() @ core/schemas/research_factory_state.py
-ResearchSwarmOrchestrator::__init__() @ orchestrators/research_swarm/orchestrator.py
+ResearchSwarmOrchestrator::__init__(llm_client) @ orchestrators/research_swarm/orchestrator.py
+ResearchSwarmOrchestrator::async _attempt_consensus(results, threshold) @ orchestrators/research_swarm/orchestrator.py
+ResearchSwarmOrchestrator::async _spawn_research_agent(agent_id, query, agent_index) @ orchestrators/research_swarm/orchestrator.py
 ResearchSwarmOrchestrator::async execute(request) @ orchestrators/research_swarm/orchestrator.py
 ResearcherAgent::__init__(agent_id) @ services/research/agents/researcher_agent.py
 ResearcherAgent::async _execute_tool(tool_name, query) @ services/research/agents/researcher_agent.py
@@ -2445,8 +2593,9 @@ SemanticService::async embed_and_store(text, payload, agent_id) @ igor/audit-mem
 SemanticService::async embed_and_store(text, payload, agent_id) @ memory/substrate_semantic.py
 SemanticService::async search(query, top_k, agent_id) @ igor/audit-memory/memory_substrate_semantic.py
 SemanticService::async search(query, top_k, agent_id) @ memory/substrate_semantic.py
-SessionStartup::__init__(workspace_root) @ core/governance/session_startup.py
+SessionStartup::__init__(workspace_root, check_kernels) @ core/governance/session_startup.py
 SessionStartup::_calc_duration_ms(start_time) @ core/governance/session_startup.py
+SessionStartup::check_kernel_readiness() @ core/governance/session_startup.py
 SessionStartup::execute() @ core/governance/session_startup.py
 SessionStartup::load_mandatory_files() @ core/governance/session_startup.py
 SessionStartup::mandatory_files() @ core/governance/session_startup.py
@@ -2486,31 +2635,39 @@ SimulationRouter::set_engine(engine) @ ir_engine/simulation_router.py
 SimulationRun::to_dict() @ simulation/simulation_engine.py
 SlackAPIClient::__init__(bot_token, http_client) @ api/slack_client.py
 SlackAPIClient::async post_message(channel, text, thread_ts, blocks, metadata, reply_broadcast) @ api/slack_client.py
+SlackEventNormalizer::__init__(workspace_id) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackEventNormalizer::generate_thread_uuid(team_id, channel_id, thread_ts) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackEventNormalizer::parse_event_callback(payload) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
 SlackRequestNormalizer::_generate_thread_uuid(team_id, channel_id, thread_ts) @ api/slack_adapter.py
 SlackRequestNormalizer::parse_command(payload) @ api/slack_adapter.py
 SlackRequestNormalizer::parse_event_callback(payload) @ api/slack_adapter.py
 SlackRequestValidator::__init__(signing_secret) @ api/slack_adapter.py
 SlackRequestValidator::verify(request_body, timestamp_str, signature) @ api/slack_adapter.py
 SlackSignatureVerificationError::__init__(reason, http_status) @ api/slack_adapter.py
-SlackWebhookAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::_get_dedupe_key(request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::_get_thread_key(request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _execute(request, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _execute_side_effects(result, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _generate_context(request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _validate(request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _write_error_packet(error, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _write_inbound_packet(request, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async _write_outbound_packet(result, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookAdapter::async handle(request, context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py
-SlackWebhookClient::__init__(config) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::_get_headers() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async __aenter__() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async __aexit__() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async _request(method, endpoint, data) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async aios_runtime_call(data) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async memory_service_call(data) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
-SlackWebhookClient::async slack_chat_postMessage(data) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py
+SlackSignatureVerifier::__init__(signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackSignatureVerifier::verify(timestamp, body, signature) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookAdapter::__init__(signing_secret, substrate_service, workspace_id) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::_get_dedupe_key(request) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::_get_thread_key(request) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _execute(request, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _execute_side_effects(result, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _generate_context(request) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _handle_event_callback(callback_data) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookAdapter::async _validate(request) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _write_error_packet(error, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _write_inbound_packet(request, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async _write_outbound_packet(result, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async handle(request, context) @ _archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py
+SlackWebhookAdapter::async handle_webhook(request) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
+SlackWebhookClient::__init__(config) @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::_get_headers() @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async __aenter__() @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async __aexit__() @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async _request(method, endpoint, data) @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async aios_runtime_call(data) @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async memory_service_call(data) @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
+SlackWebhookClient::async slack_chat_postMessage(data) @ _archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py
 SmokeTestResults::__init__() @ tests/smoke_test.py
 SmokeTestResults::__init__() @ tests/smoke_test_root.py
 SmokeTestResults::record(name, success, error) @ tests/smoke_test.py
@@ -2566,6 +2723,8 @@ StrategyMemoryService::__init__() @ memory/strategymemory.py
 StrategyMemoryService::async record_new_strategy(task_id, description, plan_payload, context_embedding, tags) @ memory/strategymemory.py
 StrategyMemoryService::async retrieve_strategies(request, limit) @ memory/strategymemory.py
 StrategyMemoryService::async update_strategy_outcome(feedback) @ memory/strategymemory.py
+StrategySelector::forward(task_embedding) @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py
+StrategySelector::learn_from_execution(strategy_id, outcome) @ igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py
 StreamConsumer::__init__(consumer_group, event_handlers) @ upgrades/packet_envelope/scalability.py
 StreamConsumer::async _fetch_events(from_offset, batch_size) @ upgrades/packet_envelope/scalability.py
 StreamConsumer::async _send_to_dlq(event) @ upgrades/packet_envelope/scalability.py
@@ -2575,9 +2734,9 @@ StructuredLogEvent::to_json() @ upgrades/packet_envelope/observability.py
 StructuredLogger::__init__(name) @ services/symbolic_computation/logger.py
 StructuredLogger::_configure_handler() @ services/symbolic_computation/logger.py
 StructuredLogger::log_structured(level, message, extra) @ services/symbolic_computation/logger.py
-StubAIOSRuntime::async execute_reasoning(context) @ api/server.py
-StubAgentRegistry::agent_exists(agent_id) @ api/server.py
-StubAgentRegistry::get_agent_config(agent_id) @ api/server.py
+StubDetector::__init__(source_code) @ scripts/audit/tier1/audit_code_integrity.py
+StubDetector::check_is_stub(node) @ scripts/audit/tier1/audit_code_integrity.py
+StubDetector::visit_ClassDef(node) @ scripts/audit/tier1/audit_code_integrity.py
 StubEmbeddingProvider::__init__(dimensions) @ igor/audit-memory/memory_substrate_semantic.py
 StubEmbeddingProvider::__init__(dimensions) @ memory/substrate_semantic.py
 StubEmbeddingProvider::async embed_batch(texts) @ igor/audit-memory/memory_substrate_semantic.py
@@ -2586,8 +2745,12 @@ StubEmbeddingProvider::async embed_text(text) @ igor/audit-memory/memory_substra
 StubEmbeddingProvider::async embed_text(text) @ memory/substrate_semantic.py
 StubEmbeddingProvider::dimensions() @ igor/audit-memory/memory_substrate_semantic.py
 StubEmbeddingProvider::dimensions() @ memory/substrate_semantic.py
-StubToolRegistry::async dispatch_tool_call(tool_id, arguments, context) @ api/server.py
-StubToolRegistry::get_approved_tools(agent_id, principal_id) @ api/server.py
+SubstrateAlignmentChecker::__init__(substrate_repository, graph_client, vector_store) @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
+SubstrateAlignmentChecker::async _check_orphaned_relationships(neo4j_ids, postgres_ids) @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
+SubstrateAlignmentChecker::async _get_neo4j_memory_node_ids() @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
+SubstrateAlignmentChecker::async _get_postgres_packet_ids() @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
+SubstrateAlignmentChecker::async _get_qdrant_packet_ids() @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
+SubstrateAlignmentChecker::async check_full_alignment() @ igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py
 SubstrateDAG::__init__(repository, semantic_service, world_model_service) @ igor/audit-memory/memory_substrate_graph.py
 SubstrateDAG::__init__(repository, semantic_service, world_model_service) @ memory/substrate_graph.py
 SubstrateDAG::async run(envelope) @ igor/audit-memory/memory_substrate_graph.py
@@ -2650,6 +2813,7 @@ SubstrateService::async search_packets(query, segment, agent_id, limit) @ tools/
 SubstrateService::async semantic_search(embedding, segment, agent_id, limit) @ tools/Phased Upgrades/Stage 1 - Phase 1-6/substrate_service.py
 SubstrateService::async write_packet(packet) @ tools/Phased Upgrades/Stage 1 - Phase 1-6/substrate_service.py
 SubstrateServiceProtocol::async search_packets(thread_id, limit) @ core/agents/executor.py
+SubstrateServiceProtocol::async search_packets_by_thread(thread_id, packet_type, limit) @ core/agents/executor.py
 SubstrateServiceProtocol::async write_packet(packet_in) @ core/agents/executor.py
 SuperPromptEmitter::__init__(include_examples) @ runtime/superprompt_emitter.py
 SuperPromptEmitter::_build_prompt(spec, gap_analysis) @ runtime/superprompt_emitter.py
@@ -2705,7 +2869,6 @@ TaskExecutor::__init__() @ mac_agent/websocket_client.py
 TaskExecutor::async _execute_browser(payload) @ mac_agent/websocket_client.py
 TaskExecutor::async _execute_python(payload) @ mac_agent/websocket_client.py
 TaskExecutor::async _execute_shell(payload) @ mac_agent/websocket_client.py
-TaskExecutor::async _execute_stub(task_id, task_type, payload) @ mac_agent/websocket_client.py
 TaskExecutor::async execute(task_id, task_type, payload, timeout) @ mac_agent/websocket_client.py
 TaskExecutor::running_count() @ mac_agent/websocket_client.py
 TaskGraph::get_ready_tasks() @ core/schemas/tasks.py
@@ -2769,11 +2932,13 @@ TestAPIMemoryIntegration::test_memory_health_integration(client) @ tests/integra
 TestAPIMemoryIntegration::test_memory_router_mounted(client) @ tests/integration/test_api_memory_integration.py
 TestAPIMemoryIntegration::test_memory_stats_flow(client) @ tests/integration/test_api_memory_integration.py
 TestAPIMemoryIntegration::test_memory_test_endpoint(client) @ tests/integration/test_api_memory_integration.py
-TestAcceptance::async test_aios_response_forwarded(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAcceptance::async test_idempotent_replay_cached(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAcceptance::async test_packet_written_on_success(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAcceptance::async test_stale_timestamp_rejected(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAcceptance::async test_valid_request_processed(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
+TestAPIServerStartupGate::async test_health_endpoint_degraded_when_startup_fails() @ tests/unit/test_startup_readiness.py
+TestAPIServerStartupGate::async test_health_endpoint_includes_startup_status() @ tests/unit/test_startup_readiness.py
+TestAcceptance::async test_aios_response_forwarded(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAcceptance::async test_idempotent_replay_cached(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAcceptance::async test_packet_written_on_success(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAcceptance::async test_stale_timestamp_rejected(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAcceptance::async test_valid_request_processed(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
 TestAcceptanceNegative::async test_duplicate_event_dedupes(adapter, sample_request, mock_substrate_service, mock_aios_client) @ api/adapters/calendar_adapter/tests/test_calendar_adapter.py
 TestAcceptanceNegative::async test_duplicate_event_dedupes(adapter, sample_request, mock_substrate_service, mock_aios_client) @ api/adapters/email_adapter/tests/test_email_adapter.py
 TestAcceptanceNegative::async test_duplicate_event_dedupes(adapter, sample_request, mock_substrate_service, mock_aios_client) @ api/adapters/twilio_adapter/tests/test_twilio_adapter.py
@@ -2826,10 +2991,10 @@ TestActionToolOrchestrator::test_response_model_validation() @ igor/audit-tools/
 TestActionToolOrchestrator::test_response_model_validation() @ tests/orchestrators/test_action_tool_orchestrator.py
 TestActionToolOrchestrator::test_validate_action_request() @ igor/audit-tools/tests_orchestrators_test_action_tool_orchestrator.py
 TestActionToolOrchestrator::test_validate_action_request() @ tests/orchestrators/test_action_tool_orchestrator.py
-TestAdapter::async test_dedupe_hit(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAdapter::async test_handle_success(adapter, sample_request) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAdapter::async test_handle_with_context(adapter, sample_request, sample_context) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
-TestAdapter::async test_packet_written_on_success(adapter, sample_request, mock_substrate_service) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
+TestAdapter::async test_dedupe_hit(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAdapter::async test_handle_success(adapter, sample_request) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAdapter::async test_handle_with_context(adapter, sample_request, sample_context) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
+TestAdapter::async test_packet_written_on_success(adapter, sample_request, mock_substrate_service) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
 TestAdapterSingleton::test_get_memory_adapter_requires_init() @ tests/test_memory_adapter.py
 TestAdapterSingleton::test_init_memory_adapter() @ tests/test_memory_adapter.py
 TestAdaptivePrompting::test_empty_patterns() @ tests/integration/test_closed_loop_learning.py
@@ -2850,6 +3015,13 @@ TestAgentExecutor::test_agent_execute_basic(api_client) @ tests/docker/test_stac
 TestAgentExecutor::test_agent_task_submit(api_client) @ tests/docker/test_stack_smoke.py
 TestAgentHeartbeat::test_heartbeat_defaults_and_constraints() @ tests/runtime/test_ws_protocol_static.py
 TestAgentHeartbeat::test_heartbeat_with_metrics() @ tests/runtime/test_ws_protocol_static.py
+TestAgentInstanceGovernanceTracking::test_add_governance_block_authority(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceGovernanceTracking::test_add_governance_block_safety(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceGovernanceTracking::test_add_governance_block_tool_approval(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceGovernanceTracking::test_governance_blocks_copy_isolation(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceUserCorrectionTracking::test_add_user_correction(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceUserCorrectionTracking::test_multiple_user_corrections(instance) @ tests/integration/test_governance_tracking_e2e.py
+TestAgentInstanceUserCorrectionTracking::test_user_corrections_copy_isolation(instance) @ tests/integration/test_governance_tracking_e2e.py
 TestAgentResult::to_dict() @ core/testing/test_agent.py
 TestApprovalIntegration::test_format_approval_request_all_passing() @ tests/integration/test_recursive_self_testing.py
 TestApprovalIntegration::test_format_approval_request_with_tests() @ tests/integration/test_recursive_self_testing.py
@@ -2868,6 +3040,8 @@ TestAuditLogger::async test_log_memory_write_without_substrate() @ tests/integra
 TestAuditLogger::async test_log_tool_execution_without_substrate() @ tests/integration/test_compliance_audit.py
 TestAuditLoggerConvenience::async test_log_command_to_audit() @ tests/integration/test_compliance_audit.py
 TestAuditLogging::async test_governance_check_logged(governance) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_governance_integration.py
+TestAuditTrailEmission::async test_guarded_execution_continues_on_audit_error(mock_agent) @ tests/unit/test_guarded_execution.py
+TestAuditTrailEmission::async test_guarded_execution_emits_audit_with_kernel_metadata(mock_agent) @ tests/unit/test_guarded_execution.py
 TestAuthValidation::test_auth_empty_token() @ tests/api/test_auth.py
 TestAuthValidation::test_auth_very_long_token() @ tests/api/test_auth.py
 TestAuthValidation::test_auth_whitespace_token() @ tests/api/test_auth.py
@@ -2884,8 +3058,14 @@ TestBatchOperations::test_write_packet_to_dict() @ tests/core/schemas/test_schem
 TestBatchTensorCalls::async test_batch_processing(coordinator) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_tensor_coordination.py
 TestBatchTensorCalls::async test_empty_entities(coordinator) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_tensor_coordination.py
 TestBatchTensorCalls::async test_single_entity(coordinator) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_tensor_coordination.py
+TestBootstrapIntegration::test_bootstrap_with_create_l_cto_agent(temp_kernel_dir) @ tests/unit/test_lcto_bootstrap.py
+TestBootstrapIntegration::test_bootstrap_without_kernel_loading() @ tests/unit/test_lcto_bootstrap.py
+TestBootstrapIntegration::test_full_bootstrap_flow(temp_kernel_dir) @ tests/unit/test_lcto_bootstrap.py
 TestBootstrapOrchestrator::async test_orchestrator_all_phases_success() @ tests/core/agents/test_bootstrap_phases.py
 TestBootstrapOrchestrator::async test_orchestrator_phase_failure_rollback() @ tests/core/agents/test_bootstrap_phases.py
+TestBotMessageFiltering::test_ignores_bot_id_field() @ _archived/legacy_slack/test_webhook_slack.py
+TestBotMessageFiltering::test_ignores_bot_message_subtype() @ _archived/legacy_slack/test_webhook_slack.py
+TestBotMessageFiltering::test_ignores_own_user_id() @ _archived/legacy_slack/test_webhook_slack.py
 TestBuildResearchGraph::test_build_research_graph() @ tests/test_research_graph.py
 TestCCodeGeneration::async test_generate_c_simple(generator) @ tests/services/symbolic_computation/test_code_generator.py
 TestCCodeGeneration::generator() @ tests/services/symbolic_computation/test_code_generator.py
@@ -2927,6 +3107,7 @@ TestCaching::async test_cache_hit(cache_mock) @ tests/services/symbolic_computat
 TestCaching::async test_cache_miss_then_store(evaluator, cache_mock) @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestCaching::cache_mock() @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestCaching::evaluator(cache_mock) @ tests/services/symbolic_computation/test_expression_evaluator.py
+TestCanonicalLogEvents::test_canonical_events_documented() @ tests/api/test_slack_adapter.py
 TestCodeCompilation::generator() @ tests/services/symbolic_computation/test_code_generator.py
 TestCodeCompilation::test_compile_python_code(generator) @ tests/services/symbolic_computation/test_code_generator.py
 TestCodeGenerator::async test_c_code_generation(codegen) @ services/symbolic_computation/test_symbolic_computation.py
@@ -2986,6 +3167,8 @@ TestContextStrategies::async test_naive_truncation_strategy() @ tests/core/obser
 TestContextStrategies::async test_recency_biased_window_strategy() @ tests/core/observability/test_observability_integration.py
 TestConvenienceFunction::test_generate_readme_for_module() @ tests/agents/codegenagent/test_readme_generator.py
 TestCoreImports::test_core_module_imports(module_name) @ tests/test_imports.py
+TestCreateKernelAwareRegistry::test_create_registry_raises_on_kernel_failure(monkeypatch) @ tests/unit/test_lcto_bootstrap.py
+TestCreateKernelAwareRegistry::test_create_registry_without_kernels(mock_env_without_kernels) @ tests/unit/test_lcto_bootstrap.py
 TestDAGNodes::async test_intake_node() @ tests/test_memory_substrate_basic.py
 TestDAGNodes::async test_intake_node_missing_required() @ tests/test_memory_substrate_basic.py
 TestDAGNodes::async test_memory_write_node_no_repo() @ tests/test_memory_substrate_basic.py
@@ -3000,6 +3183,8 @@ TestDatabaseConnectivity::test_database_url_not_localhost() @ tests/docker/test_
 TestDateRangeFiltering::test_in_date_range_before() @ tests/integration/test_compliance_audit.py
 TestDateRangeFiltering::test_in_date_range_empty() @ tests/integration/test_compliance_audit.py
 TestDateRangeFiltering::test_in_date_range_valid() @ tests/integration/test_compliance_audit.py
+TestDeduplication::async test_duplicate_event_detected(mock_substrate_service) @ tests/api/test_slack_adapter.py
+TestDeduplication::async test_new_event_processed(mock_substrate_service) @ tests/api/test_slack_adapter.py
 TestDefaultTools::test_get_tool_registry_initializes_defaults() @ igor/audit-tools/tests_test_tool_registry.py
 TestDefaultTools::test_get_tool_registry_initializes_defaults() @ tests/test_tool_registry.py
 TestDependencyValidation::test_circular_dependency_error(graph_with_circular_dependency) @ tests/ir_engine/test_ir_validation_and_status.py
@@ -3009,6 +3194,16 @@ TestDetectDrift::test_drift_detected_with_repeated_failures() @ tests/core/gover
 TestDetectDrift::test_no_drift_with_high_success_rate() @ tests/core/governance/test_validation.py
 TestDockerNetworkConfig::test_memory_api_base_url_uses_service_name() @ tests/docker/test_env_validation.py
 TestDockerNetworkConfig::test_redis_host_uses_service_name() @ tests/docker/test_env_validation.py
+TestDuplicateDetector::async test_is_duplicate_handles_substrate_error(mock_substrate_service) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestDuplicateDetector::async test_is_duplicate_returns_false_for_new_event(mock_substrate_service) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestDuplicateDetector::async test_is_duplicate_returns_true_for_known_event(mock_substrate_service) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestEdgeCases::test_absorption_error_handling(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestEdgeCases::test_agent_with_custom_config() @ tests/unit/test_lcto_bootstrap.py
+TestEdgeCases::test_agent_with_manifest_path() @ tests/unit/test_lcto_bootstrap.py
+TestEdgeCases::test_agent_without_set_system_context(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestEdgeCases::test_empty_kernel_absorption() @ tests/unit/test_lcto_bootstrap.py
+TestEdgeCases::test_empty_kernel_file(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestEdgeCases::test_multiple_kernel_absorptions() @ tests/unit/test_lcto_bootstrap.py
 TestEndToEndFlow::async test_full_analyze_flow() @ tests/integration/test_igor_commands.py
 TestEndToEndFlow::async test_full_help_flow() @ tests/integration/test_igor_commands.py
 TestEndToEndFlow::async test_nlp_to_intent_flow() @ tests/integration/test_igor_commands.py
@@ -3027,6 +3222,7 @@ TestErrorHandling::async test_error_emits_error_packet(adapter, sample_request, 
 TestErrorHandling::async test_invalid_expression(evaluator) @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestErrorHandling::async test_invalid_expression(generator) @ tests/services/symbolic_computation/test_code_generator.py
 TestErrorHandling::async test_missing_variable(evaluator) @ tests/services/symbolic_computation/test_expression_evaluator.py
+TestErrorHandling::async test_substrate_error_handled(mock_substrate_service) @ tests/api/test_slack_adapter.py
 TestErrorHandling::async test_thread_uuid_deterministic(adapter) @ api/adapters/calendar_adapter/tests/test_calendar_adapter.py
 TestErrorHandling::async test_thread_uuid_deterministic(adapter) @ api/adapters/email_adapter/tests/test_email_adapter.py
 TestErrorHandling::async test_thread_uuid_deterministic(adapter) @ api/adapters/twilio_adapter/tests/test_twilio_adapter.py
@@ -3036,16 +3232,30 @@ TestErrorHandling::async test_thread_uuid_deterministic(adapter) @ codegen/code-
 TestErrorHandling::evaluator() @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestErrorHandling::generator() @ tests/services/symbolic_computation/test_code_generator.py
 TestErrorHandling::test_corrupted_metadata_still_works() @ tests/core/schemas/test_schema_registry.py
+TestErrorHandling::test_metrics_graceful_degradation() @ tests/api/test_slack_adapter.py
 TestErrorHandling::test_unknown_version_defaults() @ tests/core/schemas/test_schema_registry.py
 TestErrorPaths::async test_empty_context(engine) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_reasoning_engine.py
 TestErrorPaths::async test_reasoner_failure_handling(engine) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_reasoning_engine.py
 TestEscalationTriggers::async test_high_risk_triggers_escalation(governance) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_governance_integration.py
 TestEscalationTriggers::async test_low_confidence_triggers_escalation(governance) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_governance_integration.py
 TestEscalationTriggers::async test_normal_decision_approved(governance) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_governance_integration.py
+TestEventDedupeCacheUnit::test_cache_clear() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDedupeCacheUnit::test_cache_handles_empty_event_id() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDedupeCacheUnit::test_cache_marks_first_occurrence_as_new() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDedupeCacheUnit::test_cache_marks_second_occurrence_as_duplicate() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDedupeCacheUnit::test_cache_respects_max_size() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDeduplication::test_different_event_ids_both_processed() @ _archived/legacy_slack/test_webhook_slack.py
+TestEventDeduplication::test_duplicate_event_ignored() @ _archived/legacy_slack/test_webhook_slack.py
 TestEventMessageBasics::test_handshake_event_roundtrip() @ tests/runtime/test_ws_protocol_static.py
 TestEventMessageBasics::test_minimal_event_defaults() @ tests/runtime/test_ws_protocol_static.py
+TestEvolutionPlan::async test_create_evolution_plan(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestEvolutionPlan::async test_evolution_plan_approval_requirement(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestEvolutionPlan::async test_evolution_plan_impact_assessment(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
 TestExecutionPlanSerialization::test_execution_plan_to_dict(validated_graph) @ tests/ir_engine/test_ir_packet_formats.py
 TestExecutionPlanSerialization::test_execution_step_to_dict(validated_graph) @ tests/ir_engine/test_ir_packet_formats.py
+TestExecutionResultGovernanceWiring::test_execution_result_none_when_empty(task) @ tests/integration/test_governance_tracking_e2e.py
+TestExecutionResultGovernanceWiring::test_execution_result_with_governance_blocks(task, instance) @ tests/integration/test_governance_tracking_e2e.py
+TestExecutionResultGovernanceWiring::test_execution_result_with_user_corrections(task, instance) @ tests/integration/test_governance_tracking_e2e.py
 TestExecutor::__init__(use_docker, timeout_seconds, coverage_enabled) @ core/testing/test_executor.py
 TestExecutor::_parse_pytest_output(stdout, stderr, returncode) @ core/testing/test_executor.py
 TestExecutor::async _run_pytest(working_dir, test_file, env_config) @ core/testing/test_executor.py
@@ -3060,6 +3270,12 @@ TestExecutorGovernanceValidation::mock_agent_registry() @ tests/core/agents/test
 TestExecutorGovernanceValidation::mock_aios_runtime() @ tests/core/agents/test_executor_governance.py
 TestExecutorGovernanceValidation::mock_substrate_service() @ tests/core/agents/test_executor_governance.py
 TestExecutorGovernanceValidation::mock_tool_registry() @ tests/core/agents/test_executor_governance.py
+TestExecutorGuardedIntegration::test_executor_get_kernel_aware_agent_active() @ tests/unit/test_guarded_execution.py
+TestExecutorGuardedIntegration::test_executor_get_kernel_aware_agent_inactive() @ tests/unit/test_guarded_execution.py
+TestExecutorGuardedIntegration::test_executor_get_kernel_aware_agent_none() @ tests/unit/test_guarded_execution.py
+TestExecutorGuardedIntegration::test_executor_set_kernel_aware_agent() @ tests/unit/test_guarded_execution.py
+TestExecutorIntegration::async test_executor_runs_self_reflection() @ tests/integration/test_kernel_evolution_flow.py
+TestExecutorIntegration::async test_self_reflection_does_not_fail_task() @ tests/integration/test_kernel_evolution_flow.py
 TestExecutorRegistryWiring::test_registry_imports_audit_function() @ tests/integration/test_tool_observability_integration.py
 TestExecutorRegistryWiring::test_registry_imports_tool_audit() @ tests/integration/test_tool_observability_integration.py
 TestExporters::test_console_exporter_export() @ tests/core/observability/test_observability_integration.py
@@ -3087,6 +3303,8 @@ TestFileEmission::test_emit_dry_run(contract, ir_compiler, py_compiler, file_emi
 TestFileEmission::test_preview_emission(contract, ir_compiler, py_compiler, file_emitter) @ tests/codegen/test_codegen_pipeline.py
 TestFortranCodeGeneration::async test_generate_fortran_simple(generator) @ tests/services/symbolic_computation/test_code_generator.py
 TestFortranCodeGeneration::generator() @ tests/services/symbolic_computation/test_code_generator.py
+TestFullEvolutionFlow::async test_end_to_end_flow(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestFullEvolutionFlow::async test_no_evolution_for_clean_execution(successful_task_context) @ tests/integration/test_kernel_evolution_flow.py
 TestFullPipeline::async test_optimize_then_evaluate(optimizer, evaluator) @ tests/services/symbolic_computation/test_integration.py
 TestFullPipeline::async test_validate_then_evaluate(validator, evaluator) @ tests/services/symbolic_computation/test_integration.py
 TestFullPipeline::evaluator() @ tests/services/symbolic_computation/test_integration.py
@@ -3095,6 +3313,13 @@ TestFullPipeline::test_codegen_refuses_unfinalized_spec(sample_module_block, sso
 TestFullPipeline::test_end_to_end_pipeline(sample_module_block, ssot_dir, output_dir) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py
 TestFullPipeline::test_full_pipeline(valid_spec) @ tests/codegen/test_codegen_pipeline.py
 TestFullPipeline::validator() @ tests/services/symbolic_computation/test_integration.py
+TestGMPSpecGeneration::async test_generate_gmp_spec(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestGMPSpecGeneration::async test_proposal_to_gmp_spec() @ tests/integration/test_kernel_evolution_flow.py
+TestGapDetection::test_detects_excessive_iterations(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestGapDetection::test_detects_repeated_tool_failures(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestGapDetection::test_detects_token_overuse(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestGapDetection::test_detects_user_corrections(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestGapDetection::test_no_gaps_on_successful_execution(successful_task_context) @ tests/integration/test_kernel_evolution_flow.py
 TestGeneratedReadme::test_generated_readme_creation() @ tests/agents/codegenagent/test_readme_generator.py
 TestGeneratedReadme::test_generated_readme_with_metadata() @ tests/agents/codegenagent/test_readme_generator.py
 TestGenerator::__init__(use_llm, llm_client) @ core/testing/test_generator.py
@@ -3107,7 +3332,26 @@ TestGenerator::_generate_import_test(module_name) @ core/testing/test_generator.
 TestGenerator::_generate_syntax_test(code_proposal, module_name) @ core/testing/test_generator.py
 TestGenerator::generate_integration_tests(code_proposal, dependencies, module_name) @ core/testing/test_generator.py
 TestGenerator::generate_unit_tests(code_proposal, module_name) @ core/testing/test_generator.py
+TestGovernanceBlockPatternDetection::test_governance_block_pattern_does_not_fire_on_failure() @ tests/integration/test_governance_tracking_e2e.py
+TestGovernanceBlockPatternDetection::test_governance_block_pattern_empty_blocks() @ tests/integration/test_governance_tracking_e2e.py
+TestGovernanceBlockPatternDetection::test_governance_block_pattern_fires_on_denied_blocks() @ tests/integration/test_governance_tracking_e2e.py
+TestGovernanceBlockPatternDetection::test_governance_block_pattern_no_denied_reason() @ tests/integration/test_governance_tracking_e2e.py
+TestGovernanceEngineIntegration::async test_guarded_execution_continues_on_governance_error() @ tests/unit/test_guarded_execution.py
+TestGovernanceEngineIntegration::async test_guarded_execution_denies_on_governance_deny() @ tests/unit/test_guarded_execution.py
+TestGovernanceEngineIntegration::async test_guarded_execution_invokes_governance_engine() @ tests/unit/test_guarded_execution.py
+TestGovernanceTrackingEndToEnd::async test_full_flow_both_patterns_fire(task, instance) @ tests/integration/test_governance_tracking_e2e.py
+TestGovernanceTrackingEndToEnd::async test_no_patterns_fire_when_no_issues(task, instance) @ tests/integration/test_governance_tracking_e2e.py
 TestGracefulDegradation::test_functions_handle_prometheus_unavailable() @ tests/telemetry/test_memory_metrics.py
+TestGuardedExecute::async test_guarded_execute_blocks_prohibited_action() @ tests/unit/test_guarded_execution.py
+TestGuardedExecute::async test_guarded_execute_blocks_prohibited_tool() @ tests/unit/test_guarded_execution.py
+TestGuardedExecute::async test_guarded_execute_fails_inactive_kernels() @ tests/unit/test_guarded_execution.py
+TestGuardedExecute::async test_guarded_execute_fails_no_kernels() @ tests/unit/test_guarded_execution.py
+TestGuardedExecute::async test_guarded_execute_passes_context(mock_agent) @ tests/unit/test_guarded_execution.py
+TestGuardedExecute::async test_guarded_execute_success(mock_agent) @ tests/unit/test_guarded_execution.py
+TestGuardedExecuteEdgeCases::async test_agent_without_kernel_state() @ tests/unit/test_guarded_execution.py
+TestGuardedExecuteEdgeCases::async test_agent_without_kernels_attribute() @ tests/unit/test_guarded_execution.py
+TestGuardedExecuteEdgeCases::async test_dispatch_failure_propagates(mock_agent) @ tests/unit/test_guarded_execution.py
+TestGuardedExecuteEdgeCases::async test_empty_context(mock_agent) @ tests/unit/test_guarded_execution.py
 TestHashAlgorithmProperties::test_hash_is_collision_resistant() @ tests/core/schemas/test_content_hash_integrity.py
 TestHashAlgorithmProperties::test_hash_is_sha256() @ tests/core/schemas/test_content_hash_integrity.py
 TestHealthEndpoints::test_agent_health(api_client) @ tests/docker/test_stack_smoke.py
@@ -3179,6 +3423,9 @@ TestIntegration::async test_upgrade_engine_all_phases() @ tests/upgrades/test_pa
 TestIntegration::async test_upgrade_engine_phase_dependency() @ tests/upgrades/test_packet_envelope_phases.py
 TestIntegration::async test_upgrade_engine_phase_sequence() @ tests/upgrades/test_packet_envelope_phases.py
 TestIntegrationResult::test_success_rate_property() @ core/schemas/tests/test_research_factory.py
+TestIntegrityVerification::test_verify_integrity_all_ok(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestIntegrityVerification::test_verify_integrity_missing(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestIntegrityVerification::test_verify_integrity_modified(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
 TestIntentExtractor::test_is_ambiguous_low_confidence() @ tests/integration/test_igor_commands.py
 TestIntentExtractor::test_is_ambiguous_with_ambiguities() @ tests/integration/test_igor_commands.py
 TestIntentExtractor::test_not_ambiguous_high_confidence() @ tests/integration/test_igor_commands.py
@@ -3190,11 +3437,40 @@ TestKernelAgentActivationIntegration::test_agent_receives_kernel_prompt() @ test
 TestKernelAgentActivationIntegration::test_kernel_files_exist() @ tests/integration/test_kernel_agent_activation_integration.py
 TestKernelAgentActivationIntegration::test_kernel_loader_integration() @ tests/integration/test_kernel_agent_activation_integration.py
 TestKernelAgentActivationIntegration::test_kernel_prompt_builder_integration() @ tests/integration/test_kernel_agent_activation_integration.py
+TestKernelAwareAgentRegistry::test_registry_agent_exists(mock_env_without_kernels) @ tests/unit/test_lcto_bootstrap.py
+TestKernelAwareAgentRegistry::test_registry_get_agent_config(mock_env_without_kernels) @ tests/unit/test_lcto_bootstrap.py
+TestKernelAwareAgentRegistry::test_registry_initialization_with_kernels(temp_kernel_dir, monkeypatch) @ tests/unit/test_lcto_bootstrap.py
+TestKernelAwareAgentRegistry::test_registry_initialization_without_kernels(mock_env_without_kernels) @ tests/unit/test_lcto_bootstrap.py
 TestKernelAwareRegistry::test_registry_creates_with_kernels() @ tests/test_l_cto_kernel_activation.py
 TestKernelAwareRegistry::test_registry_provides_kernel_prompt() @ tests/test_l_cto_kernel_activation.py
+TestKernelEvolutionLogging::async test_log_kernel_evolution_creates_event() @ tests/integration/test_kernel_hot_reload.py
+TestKernelEvolutionLogging::async test_log_kernel_evolution_handles_substrate_unavailable() @ tests/integration/test_kernel_hot_reload.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_creation() @ tests/unit/test_kernel_observability.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_finish_method() @ tests/unit/test_kernel_observability.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_finish_with_error() @ tests/unit/test_kernel_observability.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_inherits_from_span() @ tests/unit/test_kernel_observability.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_start_method() @ tests/unit/test_kernel_observability.py
+TestKernelLifecycleSpan::test_kernel_lifecycle_span_with_all_fields() @ tests/unit/test_kernel_observability.py
 TestKernelLoader::test_guarded_execute_requires_active_kernels() @ tests/test_l_cto_kernel_activation.py
 TestKernelLoader::test_kernel_order_files_exist() @ tests/test_l_cto_kernel_activation.py
 TestKernelLoader::test_load_kernels_returns_agent() @ tests/test_l_cto_kernel_activation.py
+TestKernelLoaderSpanEmission::test_create_kernel_span_helper() @ tests/unit/test_kernel_observability.py
+TestKernelLoaderSpanEmission::test_finish_span_helper() @ tests/unit/test_kernel_observability.py
+TestKernelLoaderSpanEmission::test_kernel_lifecycle_span_can_be_created_manually() @ tests/unit/test_kernel_observability.py
+TestKernelLoaderSpanEmission::test_kernel_lifecycle_span_captures_error() @ tests/unit/test_kernel_observability.py
+TestKernelRegistryIntegration::test_startup_captures_kernel_hashes() @ tests/unit/test_startup_readiness.py
+TestKernelRegistryIntegration::test_startup_checks_kernel_files() @ tests/unit/test_startup_readiness.py
+TestKernelReloadEndpoint::async test_endpoint_requires_api_key() @ tests/integration/test_kernel_hot_reload.py
+TestKernelReloadEndpoint::async test_endpoint_response_structure() @ tests/integration/test_kernel_hot_reload.py
+TestKernelSpanAttributes::test_span_includes_agent_id() @ tests/unit/test_kernel_observability.py
+TestKernelSpanAttributes::test_span_includes_integrity_status() @ tests/unit/test_kernel_observability.py
+TestKernelSpanAttributes::test_span_includes_kernel_count() @ tests/unit/test_kernel_observability.py
+TestKernelStateGuards::async test_guard_error_state() @ tests/unit/test_guarded_execution.py
+TestKernelStateGuards::async test_guard_loading_state() @ tests/unit/test_guarded_execution.py
+TestKernelStateGuards::async test_guard_validating_state() @ tests/unit/test_guarded_execution.py
+TestKernelStateTransitions::test_state_error_on_failure() @ tests/unit/test_lcto_bootstrap.py
+TestKernelStateTransitions::test_state_inactive_to_loading() @ tests/unit/test_lcto_bootstrap.py
+TestKernelStateTransitions::test_state_loading_to_active(temp_kernel_dir) @ tests/unit/test_lcto_bootstrap.py
 TestL9Integration::async test_instrument_agent_executor_wraps_method() @ tests/core/observability/test_observability_integration.py
 TestL9Integration::async test_instrument_handles_missing_methods() @ tests/core/observability/test_observability_integration.py
 TestL9Integration::async test_instrument_handles_none_service() @ tests/core/observability/test_observability_integration.py
@@ -3204,6 +3480,15 @@ TestL9Schema::test_agent_creation() @ tests/integration/test_world_model.py
 TestL9Schema::test_infrastructure_creation() @ tests/integration/test_world_model.py
 TestL9Schema::test_relationship_creation() @ tests/integration/test_world_model.py
 TestL9Schema::test_tool_creation() @ tests/integration/test_world_model.py
+TestLCTOAgent::test_lcto_agent_absorb_behavioral_kernel() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_absorb_kernel() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_absorb_safety_kernel() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_creation() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_describe_self_active(temp_kernel_dir) @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_describe_self_inactive() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_fallback_prompt_when_inactive() @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_kernel_prompt_when_active(temp_kernel_dir) @ tests/unit/test_lcto_bootstrap.py
+TestLCTOAgent::test_lcto_agent_set_system_context() @ tests/unit/test_lcto_bootstrap.py
 TestLCTOEndToEnd::agent_registry() @ tests/integration/test_l_cto_end_to_end.py
 TestLCTOEndToEnd::async test_audit_logging_after_execution(executor) @ tests/integration/test_l_cto_end_to_end.py
 TestLCTOEndToEnd::async test_error_handling_and_packet_emission(executor, mock_substrate_service, mock_aios_runtime) @ tests/integration/test_l_cto_end_to_end.py
@@ -3247,6 +3532,8 @@ TestLogToolInvocation::async test_log_tool_invocation_timeout_status() @ tests/m
 TestLogToolInvocation::async test_log_tool_invocation_truncates_long_error() @ tests/memory/test_tool_audit.py
 TestLogToolInvocation::async test_log_tool_invocation_with_arguments() @ tests/memory/test_tool_audit.py
 TestLogToolInvocation::async test_log_tool_invocation_with_result_summary() @ tests/memory/test_tool_audit.py
+TestMemoryEndToEnd::async test_valid_packet_end_to_end(mock_services) @ igor/01-07-2026/L9 Memory Substrate Audit/test_memory_substrate_flow.py
+TestMemoryEndToEnd::mock_services() @ igor/01-07-2026/L9 Memory Substrate Audit/test_memory_substrate_flow.py
 TestMemoryGovernanceIntegration::async test_audit_trail_tracks_executions() @ tests/integration/test_l_cto_memory_governance_integration.py
 TestMemoryGovernanceIntegration::async test_drift_detection_triggers_on_low_success_rate() @ tests/integration/test_l_cto_memory_governance_integration.py
 TestMemoryGovernanceIntegration::async test_governance_blocks_and_logs_violations() @ tests/integration/test_l_cto_memory_governance_integration.py
@@ -3322,7 +3609,7 @@ TestMultiCandidateSimulation::async test_ranked_candidates_have_correct_ranks(ca
 TestMultiCandidateSimulation::async test_ranked_candidates_include_selection_reason(candidate_graphs) @ tests/ir_engine/test_ir_simulation_router_integration.py
 TestMultiCandidateSimulation::async test_simulate_candidates_returns_ranked_list(candidate_graphs) @ tests/ir_engine/test_ir_simulation_router_integration.py
 TestMultiCandidateSimulation::candidate_graphs() @ tests/ir_engine/test_ir_simulation_router_integration.py
-TestNegative::async test_invalid_signature_rejected(adapter) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py
+TestNegative::async test_invalid_signature_rejected(adapter) @ _archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py
 TestNeo4jQuery::async test_query_semantic_graph(memory_bridge) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_memory_integration.py
 TestNoCircularImports::test_api_server_no_circular() @ tests/test_imports.py
 TestObservabilityConfig::test_default_config_values() @ tests/core/observability/test_observability_integration.py
@@ -3407,6 +3694,8 @@ TestPacketEnvelopeRoundtrip::test_envelope_serialization_roundtrip() @ igor/audi
 TestPacketEnvelopeRoundtrip::test_envelope_serialization_roundtrip() @ tests/memory/test_packet_envelope.py
 TestPacketEnvelopeRoundtrip::test_packet_in_to_envelope() @ igor/audit-memory/tests_memory_test_packet_envelope.py
 TestPacketEnvelopeRoundtrip::test_packet_in_to_envelope() @ tests/memory/test_packet_envelope.py
+TestPacketStorage::async test_inbound_packet_stored(mock_substrate_service) @ tests/api/test_slack_adapter.py
+TestPacketStorage::async test_outbound_packet_stored(mock_substrate_service) @ tests/api/test_slack_adapter.py
 TestPacketStructure::async test_packet_has_required_fields() @ tests/integration/test_tool_observability_integration.py
 TestPacketStructure::async test_packet_has_ttl() @ tests/integration/test_tool_observability_integration.py
 TestPacketStructure::async test_packet_tags_include_tool_info() @ tests/integration/test_tool_observability_integration.py
@@ -3430,8 +3719,19 @@ TestPerformance::async test_caching_performance() @ services/symbolic_computatio
 TestPhase0Validate::async test_validate_agent_config_missing_id() @ tests/core/agents/test_bootstrap_phases.py
 TestPhase0Validate::async test_validate_agent_config_success() @ tests/core/agents/test_bootstrap_phases.py
 TestPhase0Validate::async test_validate_substrate_not_ready() @ tests/core/agents/test_bootstrap_phases.py
+TestPhase1Load::test_phase1_computes_hashes(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase1Load::test_phase1_fails_on_missing_kernels(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase1Load::test_phase1_handles_yaml_errors(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase1Load::test_phase1_loads_all_kernels(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase1Load::test_phase1_skips_integrity_check_when_disabled(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase1Load::test_phase1_validates_schema(temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
 TestPhase1LoadKernels::async test_load_kernels_file_not_found() @ tests/core/agents/test_bootstrap_phases.py
 TestPhase1LoadKernels::async test_load_kernels_success() @ tests/core/agents/test_bootstrap_phases.py
+TestPhase2Activate::test_phase2_absorbs_all_kernels(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase2Activate::test_phase2_activates_agent(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase2Activate::test_phase2_fails_on_insufficient_kernels(mock_agent) @ tests/unit/test_kernel_loader_activation.py
+TestPhase2Activate::test_phase2_sets_system_context(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestPhase2Activate::test_phase2_stores_hashes(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
 TestPhase2Instantiate::async test_instantiate_agent_creates_instance() @ tests/core/agents/test_bootstrap_phases.py
 TestPhase2Observability::test_observability_config_defaults() @ tests/upgrades/test_packet_envelope_phases.py
 TestPhase2Observability::test_observability_disabled_mode() @ tests/upgrades/test_packet_envelope_phases.py
@@ -3477,6 +3777,9 @@ TestProcessPacketEndpoint::async test_valid_packet_processed(controller) @ codeg
 TestProcessPacketFunction::async test_process_packet_creates_controller(mock_packet) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_bridge_controller.py
 TestPrometheusAvailability::test_prometheus_available_flag_exists() @ tests/telemetry/test_memory_metrics.py
 TestPrometheusAvailability::test_prometheus_available_when_installed() @ tests/telemetry/test_memory_metrics.py
+TestProposalGeneration::test_generate_proposal_from_capability_gap() @ tests/integration/test_kernel_evolution_flow.py
+TestProposalGeneration::test_generate_proposal_from_constraint_gap() @ tests/integration/test_kernel_evolution_flow.py
+TestProposalGeneration::test_generate_proposal_from_safety_gap() @ tests/integration/test_kernel_evolution_flow.py
 TestPublicAPI::test_all_exports() @ tests/memory/test_tool_audit.py
 TestPublicAPI::test_all_exports() @ tests/telemetry/test_memory_metrics.py
 TestPublicAPI::test_exports_are_callable() @ tests/telemetry/test_memory_metrics.py
@@ -3533,6 +3836,18 @@ TestReferentialIntegrity::test_invalid_action_dependency_error(graph_with_invali
 TestReferentialIntegrity::test_invalid_child_intent_error(graph_with_invalid_references) @ tests/ir_engine/test_ir_validation_and_status.py
 TestReferentialIntegrity::test_invalid_derived_from_intent_warning(graph_with_invalid_references) @ tests/ir_engine/test_ir_validation_and_status.py
 TestReferentialIntegrity::test_invalid_parent_intent_error(graph_with_invalid_references) @ tests/ir_engine/test_ir_validation_and_status.py
+TestReflectionAnalysis::async test_analyze_problematic_task(problematic_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestReflectionAnalysis::async test_analyze_successful_task(successful_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestReflectionAnalysis::async test_reflection_includes_patterns_observed(failed_task_context) @ tests/integration/test_kernel_evolution_flow.py
+TestReloadKernelsErrorHandling::test_reload_handles_invalid_yaml(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsErrorHandling::test_reload_handles_missing_kernel_file(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsFunction::test_reload_detects_modified_kernel(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsFunction::test_reload_preserves_agent_state_on_success(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsFunction::test_reload_returns_hash_changes(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsFunction::test_reload_with_force(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadKernelsFunction::test_reload_with_no_changes(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadObservabilitySpans::test_reload_creates_span(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
+TestReloadWithAgentRegistry::test_reload_updates_registry_agent(mock_kernel_files, mock_agent) @ tests/integration/test_kernel_hot_reload.py
 TestRequiredVariables::test_critical_vars_present(var) @ tests/docker/test_env_validation.py
 TestResearchFactoryNodes::async test_full_pipeline() @ core/schemas/tests/test_research_factory.py
 TestResearchFactoryNodes::async test_pass_1_plan_queries() @ core/schemas/tests/test_research_factory.py
@@ -3614,6 +3929,9 @@ TestRoutes::test_valid_auth_accepted(client) @ api/adapters/twilio_adapter/tests
 TestRoutes::test_valid_auth_accepted(client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/tests/test_calendar_adapter_integration.py
 TestRoutes::test_valid_auth_accepted(client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter_integration.py
 TestRoutes::test_valid_auth_accepted(client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/tests/test_twilio_adapter_integration.py
+TestSafetyConstraints::async test_allowed_tool_not_blocked(mock_agent) @ tests/unit/test_guarded_execution.py
+TestSafetyConstraints::async test_case_insensitive_prohibited_action() @ tests/unit/test_guarded_execution.py
+TestSafetyConstraints::async test_partial_match_prohibited_action() @ tests/unit/test_guarded_execution.py
 TestSampleSchemas::test_all_sample_schemas_are_valid_yaml(sample_schemas_dir) @ tests/codegen/test_sample_schemas.py
 TestSampleSchemas::test_load_domain_adapter_yaml(sample_schemas_dir) @ tests/codegen/test_sample_schemas.py
 TestSampleSchemas::test_load_glue_layer_yaml(sample_schemas_dir) @ tests/codegen/test_sample_schemas.py
@@ -3638,6 +3956,9 @@ TestSchemaRegistryProperties::test_current_version() @ tests/core/schemas/test_s
 TestSchemaRegistryProperties::test_supported_versions() @ tests/core/schemas/test_schema_registry.py
 TestSchemaToContract::test_contract_validation_rules(minimal_valid_contract) @ tests/codegen/test_sample_schemas.py
 TestSchemaToContract::test_create_contract_from_valid_dict(minimal_valid_contract) @ tests/codegen/test_sample_schemas.py
+TestSchemaValidation::test_kernel_manifest_missing_name() @ tests/unit/test_kernel_loader_activation.py
+TestSchemaValidation::test_kernel_manifest_valid() @ tests/unit/test_kernel_loader_activation.py
+TestSchemaValidation::test_kernel_type_inference() @ tests/unit/test_kernel_loader_activation.py
 TestSchemaValidation::test_missing_action_description_error(graph_missing_descriptions) @ tests/ir_engine/test_ir_validation_and_status.py
 TestSchemaValidation::test_missing_constraint_description_error(graph_missing_descriptions) @ tests/ir_engine/test_ir_validation_and_status.py
 TestSchemaValidation::test_missing_intent_description_error(graph_missing_descriptions) @ tests/ir_engine/test_ir_validation_and_status.py
@@ -3669,10 +3990,30 @@ TestSemanticToPlanHappyPath::async test_semantic_to_plan_happy_path(mock_openai_
 TestServerHealth::test_docs_endpoint_accessible() @ tests/api/test_server_health.py
 TestServerHealth::test_health_endpoint_returns_200() @ tests/api/test_server_health.py
 TestServerHealth::test_root_endpoint_returns_info() @ tests/api/test_server_health.py
+TestSessionStartupExecution::async test_execute_checks_kernel_readiness() @ tests/unit/test_startup_readiness.py
+TestSessionStartupExecution::async test_execute_loads_mandatory_files() @ tests/unit/test_startup_readiness.py
+TestSessionStartupExecution::async test_execute_preflight_checks() @ tests/unit/test_startup_readiness.py
+TestSessionStartupExecution::async test_execute_preflight_failure_sets_status() @ tests/unit/test_startup_readiness.py
+TestSessionStartupExecution::async test_execute_returns_startup_result() @ tests/unit/test_startup_readiness.py
+TestSessionStartupKernelReadiness::test_kernel_readiness_checks_kernel_directory() @ tests/unit/test_startup_readiness.py
+TestSessionStartupKernelReadiness::test_kernel_readiness_computes_hashes() @ tests/unit/test_startup_readiness.py
+TestSessionStartupKernelReadiness::test_kernel_readiness_with_missing_directory() @ tests/unit/test_startup_readiness.py
 TestSetMemorySubstrateHealth::test_set_health_never_raises() @ tests/telemetry/test_memory_metrics.py
 TestSetMemorySubstrateHealth::test_set_health_to_healthy() @ tests/telemetry/test_memory_metrics.py
 TestSetMemorySubstrateHealth::test_set_health_to_unhealthy() @ tests/telemetry/test_memory_metrics.py
 TestSetMemorySubstrateHealth::test_set_health_toggle() @ tests/telemetry/test_memory_metrics.py
+TestShouldSkipEmbedding::test_allow_content_at_boundary() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_allow_valid_content() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_empty_content() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_error_pattern_with_whitespace() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_error_prefix_variants() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_exact_error_patterns() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_patterns_are_strings() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_patterns_list_not_empty() @ tests/memory/test_embedding_filter.py
+TestShouldSkipEmbedding::test_skip_very_short_content() @ tests/memory/test_embedding_filter.py
+TestSignatureVerification::test_expired_timestamp_rejected(mock_slack_validator) @ tests/api/test_slack_adapter.py
+TestSignatureVerification::test_invalid_signature_rejected(mock_slack_validator) @ tests/api/test_slack_adapter.py
+TestSignatureVerification::test_valid_signature_accepted(mock_slack_validator) @ tests/api/test_slack_adapter.py
 TestSimpleEvaluation::async test_evaluate_constant(evaluator) @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestSimpleEvaluation::async test_evaluate_multi_variable(evaluator) @ tests/services/symbolic_computation/test_expression_evaluator.py
 TestSimpleEvaluation::async test_evaluate_quadratic(evaluator) @ tests/services/symbolic_computation/test_expression_evaluator.py
@@ -3699,9 +4040,51 @@ TestSlackAPIClient::async test_post_message_success() @ tests/test_slack_adapter
 TestSlackAPIClient::async test_post_message_timeout() @ tests/test_slack_adapter.py
 TestSlackAPIClient::test_post_message_missing_bot_token() @ tests/test_slack_adapter.py
 TestSlackAPIClient::test_post_message_missing_http_client() @ tests/test_slack_adapter.py
+TestSlackAdapterAcceptance::async test_accepts_valid_slack_event_callback(slack_adapter_with_mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterAcceptance::async test_rejects_unsigned_requests() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterAcceptance::async test_writes_valid_packets(slack_adapter_with_mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterIntegration::test_slack_normalizer_imports() @ tests/api/test_slack_adapter.py
+TestSlackAdapterIntegration::test_slack_validator_imports() @ tests/api/test_slack_adapter.py
+TestSlackAdapterIntegration::test_thread_uuid_generation(sample_slack_event) @ tests/api/test_slack_adapter.py
+TestSlackAdapterSubstrateIntegration::async test_deduplication_via_substrate(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_error_recovery(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_full_event_flow_writes_to_substrate(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_multiple_event_types(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_packet_metadata_structure(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_thread_uuid_determinism(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackAdapterSubstrateIntegration::async test_unsupported_event_type_skipped(slack_adapter_with_mock_substrate, mock_substrate) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py
+TestSlackCommands::test_commands_disabled_returns_503() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackCommands::test_commands_do_subcommand() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackCommands::test_commands_email_search() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackCommands::test_commands_unknown_returns_help() @ _archived/legacy_slack/test_webhook_slack.py
 TestSlackDispatchIntegration::test_invalid_signature_rejected() @ tests/integration/test_slack_dispatch_integration.py
 TestSlackDispatchIntegration::test_signature_verification_integration() @ tests/integration/test_slack_dispatch_integration.py
 TestSlackDispatchIntegration::test_slack_adapter_normalizes_event() @ tests/integration/test_slack_dispatch_integration.py
+TestSlackEventNormalizer::test_generate_thread_uuid_deterministic() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackEventNormalizer::test_generate_thread_uuid_different_for_different_inputs() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackEventNormalizer::test_parse_app_mention_event() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackEventNormalizer::test_parse_message_event() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackEventNormalizer::test_parse_unsupported_event() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackEvents::test_events_app_mention_l_agent_router() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_app_mention_legacy_router() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_bad_signature_returns_403() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_bot_message_ignored() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_disabled_returns_503() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_mac_command() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackEvents::test_events_url_verification() @ _archived/legacy_slack/test_webhook_slack.py
+TestSlackMetrics::test_init_slack_metrics() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_metrics_module_imports() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_aios_call() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_idempotent_hit() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_packet_write_error() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_rate_limit_hit() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_signature_verification_failure() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_signature_verification_success() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_slack_processing() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_slack_reply_error() @ tests/api/test_slack_adapter.py
+TestSlackMetrics::test_record_slack_request() @ tests/api/test_slack_adapter.py
+TestSlackReply::async test_reply_error_handled(mock_slack_client) @ tests/api/test_slack_adapter.py
+TestSlackReply::async test_reply_posted_successfully(mock_slack_client) @ tests/api/test_slack_adapter.py
 TestSlackRequestNormalizer::test_parse_command() @ tests/test_slack_adapter.py
 TestSlackRequestNormalizer::test_parse_event_callback_basic() @ tests/test_slack_adapter.py
 TestSlackRequestNormalizer::test_parse_event_callback_unknown_channel_type() @ tests/test_slack_adapter.py
@@ -3713,10 +4096,33 @@ TestSlackSignatureVerification::test_signature_verification_invalid_timestamp_fo
 TestSlackSignatureVerification::test_signature_verification_missing_headers() @ tests/test_slack_adapter.py
 TestSlackSignatureVerification::test_signature_verification_stale_timestamp() @ tests/test_slack_adapter.py
 TestSlackSignatureVerification::test_signature_verification_success() @ tests/test_slack_adapter.py
+TestSlackSignatureVerifier::test_verify_invalid_signature(signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackSignatureVerifier::test_verify_invalid_timestamp_format(signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackSignatureVerifier::test_verify_stale_timestamp(signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackSignatureVerifier::test_verify_valid_signature(signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_event_callback_deduplicates(slack_adapter) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_event_callback_error_handling(slack_adapter) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_event_callback_stores_packet(slack_adapter) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_webhook_invalid_json(slack_adapter, signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_webhook_invalid_signature(slack_adapter) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
+TestSlackWebhookAdapter::async test_handle_webhook_url_verification(slack_adapter, signing_secret) @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py
 TestSmokeSummary::test_all_critical_paths(api_client, memory_client) @ tests/docker/test_stack_smoke.py
+TestSpanKindKernelValues::test_all_kernel_span_kinds_are_strings() @ tests/unit/test_kernel_observability.py
+TestSpanKindKernelValues::test_kernel_activation_span_kind_exists() @ tests/unit/test_kernel_observability.py
+TestSpanKindKernelValues::test_kernel_evolution_span_kind_exists() @ tests/unit/test_kernel_observability.py
+TestSpanKindKernelValues::test_kernel_integrity_check_span_kind_exists() @ tests/unit/test_kernel_observability.py
+TestSpanKindKernelValues::test_kernel_load_span_kind_exists() @ tests/unit/test_kernel_observability.py
+TestSpanKindKernelValues::test_kernel_reload_span_kind_exists() @ tests/unit/test_kernel_observability.py
 TestSpecCompiler::test_compile_basic_spec(sample_module_block, ssot_dir) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py
 TestSpecCompiler::test_compile_sets_ownership(sample_module_block, ssot_dir) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py
 TestSpecCompiler::test_compile_sets_standards(sample_module_block, ssot_dir) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tests/test_pipeline.py
+TestStartupErrorHandling::test_startup_handles_insufficient_kernels() @ tests/unit/test_startup_readiness.py
+TestStartupErrorHandling::test_startup_handles_missing_kernel_directory() @ tests/unit/test_startup_readiness.py
+TestStartupErrorHandling::test_startup_records_errors_in_result() @ tests/unit/test_startup_readiness.py
+TestStartupHealthEndpoint::test_startup_health_response_structure() @ tests/unit/test_startup_readiness.py
+TestStartupHealthEndpoint::test_startup_health_unknown_when_not_executed() @ tests/unit/test_startup_readiness.py
+TestStartupResultDataclass::test_startup_result_default_values() @ tests/unit/test_startup_readiness.py
+TestStartupResultDataclass::test_startup_result_with_kernel_data() @ tests/unit/test_startup_readiness.py
 TestStatusEndpoint::async test_initialized_status(controller) @ codegen/extractions/domain_tensor_bridge_v6_20260102/tests/domain_tensor_bridge/test_api_surfaces.py
 TestStrictMode::test_strict_mode_warnings_dont_affect_validity() @ tests/ir_engine/test_ir_validation_and_status.py
 TestStructuredReasoningBlock::test_create_reasoning_block() @ tests/test_memory_substrate_basic.py
@@ -3724,6 +4130,12 @@ TestStubEmbeddingProvider::async test_embed_batch() @ tests/test_memory_substrat
 TestStubEmbeddingProvider::async test_embed_deterministic() @ tests/test_memory_substrate_basic.py
 TestStubEmbeddingProvider::async test_embed_different_texts() @ tests/test_memory_substrate_basic.py
 TestStubEmbeddingProvider::async test_embed_text() @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::async repository(db_url) @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::async test_dag_with_db_creates_checkpoint(repository) @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::async test_dag_with_db_creates_reasoning_trace(repository) @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::async test_dag_with_db_extracts_insights(repository) @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::async test_dag_with_db_writes_packet(repository) @ tests/test_memory_substrate_basic.py
+TestSubstrateDAGDBIntegration::db_url() @ tests/test_memory_substrate_basic.py
 TestSubstrateDAGNoDB::async test_full_dag_flow() @ tests/test_memory_substrate_basic.py
 TestSymPyToolIntegration::async test_tool_evaluate(tool) @ tests/services/symbolic_computation/test_integration.py
 TestSymPyToolIntegration::async test_tool_generate_code(tool) @ tests/services/symbolic_computation/test_integration.py
@@ -3806,7 +4218,14 @@ TestToolResolver::test_resolve_unauthorized_role(resolver) @ igor/audit-tools/te
 TestToolResolver::test_resolve_unauthorized_role(resolver) @ tests/test_tool_registry.py
 TestToolResolver::test_resolve_with_filter(resolver) @ igor/audit-tools/tests_test_tool_registry.py
 TestToolResolver::test_resolve_with_filter(resolver) @ tests/test_tool_registry.py
+TestTraceContextIntegration::test_trace_context_child_preserves_trace_id() @ tests/unit/test_kernel_observability.py
+TestTraceContextIntegration::test_trace_context_creates_valid_span_id() @ tests/unit/test_kernel_observability.py
+TestTraceContextIntegration::test_trace_context_creates_valid_trace_id() @ tests/unit/test_kernel_observability.py
+TestTraceContextIntegration::test_trace_context_to_headers() @ tests/unit/test_kernel_observability.py
 TestUUIDSerialization::test_uuids_serialized_as_strings(validated_graph) @ tests/ir_engine/test_ir_packet_formats.py
+TestUnifiedLoader::test_load_kernels_raises_on_phase1_failure(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestUnifiedLoader::test_load_kernels_returns_agent(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestUnifiedLoader::test_load_kernels_two_phase(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
 TestUpcasting::test_transitive_upcasting() @ tests/core/schemas/test_schema_registry.py
 TestUpcasting::test_upcast_does_not_mutate_input() @ tests/core/schemas/test_schema_registry.py
 TestUpcasting::test_upcast_same_version_returns_original() @ tests/core/schemas/test_schema_registry.py
@@ -3819,6 +4238,10 @@ TestUpdatePacketStoreSize::test_update_packet_store_size_never_raises() @ tests/
 TestUpdatePacketStoreSize::test_update_packet_store_size_overwrites() @ tests/telemetry/test_memory_metrics.py
 TestUpdatePacketStoreSize::test_update_packet_store_size_sets_gauge() @ tests/telemetry/test_memory_metrics.py
 TestUpdatePacketStoreSize::test_update_packet_store_size_zero() @ tests/telemetry/test_memory_metrics.py
+TestUserCorrectionPatternDetection::test_user_correction_pattern_empty_corrections() @ tests/integration/test_governance_tracking_e2e.py
+TestUserCorrectionPatternDetection::test_user_correction_pattern_fires_on_multiple_corrections() @ tests/integration/test_governance_tracking_e2e.py
+TestUserCorrectionPatternDetection::test_user_correction_pattern_severity_scales() @ tests/integration/test_governance_tracking_e2e.py
+TestUserCorrectionPatternDetection::test_user_correction_pattern_single_correction_no_fire() @ tests/integration/test_governance_tracking_e2e.py
 TestUtilities::test_extract_variables() @ services/symbolic_computation/test_symbolic_computation.py
 TestUtilities::test_simplify_expression() @ services/symbolic_computation/test_symbolic_computation.py
 TestUtilities::test_simplify_invalid_expression() @ services/symbolic_computation/test_symbolic_computation.py
@@ -3848,9 +4271,21 @@ TestValidationStatusEnum::test_validation_status_values() @ core/schemas/tests/t
 TestVariableNameValidation::test_invalid_variable_names(validator) @ tests/services/symbolic_computation/test_validator.py
 TestVariableNameValidation::test_valid_variable_names(validator) @ tests/services/symbolic_computation/test_validator.py
 TestVariableNameValidation::validator() @ tests/services/symbolic_computation/test_validator.py
+TestVerification::test_require_kernel_activation_failure(mock_agent) @ tests/unit/test_kernel_loader_activation.py
+TestVerification::test_require_kernel_activation_success(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestVerification::test_verify_kernel_activation_inactive(mock_agent) @ tests/unit/test_kernel_loader_activation.py
+TestVerification::test_verify_kernel_activation_no_kernels(mock_agent) @ tests/unit/test_kernel_loader_activation.py
+TestVerification::test_verify_kernel_activation_success(mock_agent, temp_kernel_dir) @ tests/unit/test_kernel_loader_activation.py
+TestVerification::test_verify_kernel_activation_wrong_state(mock_agent) @ tests/unit/test_kernel_loader_activation.py
 TestVerifyIntegrity::test_verify_integrity_no_hash_returns_false() @ tests/core/schemas/test_content_hash_integrity.py
 TestVerifyIntegrity::test_verify_integrity_valid_packet() @ tests/core/schemas/test_content_hash_integrity.py
 TestVerifyIntegrity::test_verify_integrity_wrong_hash_returns_false() @ tests/core/schemas/test_content_hash_integrity.py
+TestVerifySlackSignature::test_verify_signature_invalid_hash() @ _archived/legacy_slack/test_webhook_slack.py
+TestVerifySlackSignature::test_verify_signature_missing_signature() @ _archived/legacy_slack/test_webhook_slack.py
+TestVerifySlackSignature::test_verify_signature_missing_timestamp() @ _archived/legacy_slack/test_webhook_slack.py
+TestVerifySlackSignature::test_verify_signature_no_secret() @ _archived/legacy_slack/test_webhook_slack.py
+TestVerifySlackSignature::test_verify_signature_stale_timestamp() @ _archived/legacy_slack/test_webhook_slack.py
+TestVerifySlackSignature::test_verify_signature_valid() @ _archived/legacy_slack/test_webhook_slack.py
 TestVersionDetection::test_detect_v1_0_0_packet() @ tests/core/schemas/test_schema_registry.py
 TestVersionDetection::test_detect_v1_0_1_packet() @ tests/core/schemas/test_schema_registry.py
 TestVersionDetection::test_detect_v1_1_0_by_fields() @ tests/core/schemas/test_schema_registry.py
@@ -3895,6 +4330,7 @@ TimelineService::async get_timeline_json(agent_id, event_type, limit) @ memory/t
 TokenBucketLimiter::__init__(rate_per_minute) @ scripts/batch_generate_specs.py
 TokenBucketLimiter::async acquire() @ scripts/batch_generate_specs.py
 TokenBucketLimiter::async wait_for_token() @ scripts/batch_generate_specs.py
+TokenOverusePattern::detect(context) @ core/agents/selfreflection.py
 ToolAuditEntry::__post_init__() @ core/tools/tool_audit.py
 ToolAuditService::__init__(substrate_service, buffer_size) @ core/tools/tool_audit.py
 ToolAuditService::async _auto_flush() @ core/tools/tool_audit.py
@@ -3904,6 +4340,7 @@ ToolAuditService::async log_execution(entry) @ core/tools/tool_audit.py
 ToolAuditService::async start() @ core/tools/tool_audit.py
 ToolAuditService::async stop() @ core/tools/tool_audit.py
 ToolCostEstimator::estimate(tool_name, input_data, output_data) @ core/tools/tool_audit.py
+ToolDefinition::__post_init__() @ core/tools/tool_graph.py
 ToolExecutor::async execute() @ core/tools/registry_adapter.py
 ToolExecutor::async execute() @ igor/audit-tools/core_tools_registry_adapter.py
 ToolGraph::async _get_neo4j() @ core/tools/tool_graph.py
@@ -3925,6 +4362,15 @@ ToolGraph::async log_tool_call(tool_name, agent_id, success, duration_ms, error)
 ToolGraph::async log_tool_call(tool_name, agent_id, success, duration_ms, error) @ igor/audit-tools/core_tools_tool_graph.py
 ToolGraph::async register_tool(tool) @ core/tools/tool_graph.py
 ToolGraph::async register_tool(tool) @ igor/audit-tools/core_tools_tool_graph.py
+ToolInputSanitizationError::__init__(tool_id, reasons) @ core/tools/sanitizer.py
+ToolInputSanitizer::__init__(config) @ core/tools/sanitizer.py
+ToolInputSanitizer::_enforce_resource_limits(tool_id, obj, reasons) @ core/tools/sanitizer.py
+ToolInputSanitizer::_exceeds_depth(obj, max_depth) @ core/tools/sanitizer.py
+ToolInputSanitizer::_exceeds_list_length(obj, max_len) @ core/tools/sanitizer.py
+ToolInputSanitizer::_exceeds_string_length(obj, max_len) @ core/tools/sanitizer.py
+ToolInputSanitizer::_has_path_traversal(path) @ core/tools/sanitizer.py
+ToolInputSanitizer::_sanitize_value(key, value, expected, reasons) @ core/tools/sanitizer.py
+ToolInputSanitizer::sanitize(tool_id, arguments, schema) @ core/tools/sanitizer.py
 ToolMeta::__init__(name, description, input_schema) @ runtime/mcp_client.py
 ToolMeta::to_dict() @ runtime/mcp_client.py
 ToolPatternExtractor::__init__(interval_hours, enabled, lookback_hours) @ core/integration/tool_pattern_extractor.py
@@ -3984,6 +4430,7 @@ ToolResolver::resolve(role, tool_names) @ igor/audit-tools/services_research_too
 ToolResolver::resolve(role, tool_names) @ services/research/tools/tool_resolver.py
 TraceContext::child_context() @ core/observability/models.py
 TraceContext::to_headers() @ core/observability/models.py
+TranscriptCompiler::compile(transcript_text) @ codegen/compiler/transcript_compiler.py
 TwilioAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py
 TwilioAdapterAdapter::__init__(substrate_service, aios_runtime_client, memory_service_client) @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py
 TwilioAdapterAdapter::_generate_context(request) @ api/adapters/twilio_adapter/adapters/twilio_adapter_adapter.py
@@ -4075,6 +4522,7 @@ UniversalExtractor::async validate_only(schema) @ codegen/code-gen-files/extract
 UniversalExtractor::get_template_content(template_name) @ codegen/code-gen-files/extractor.py
 UniversalExtractor::list_templates() @ codegen/code-gen-files/extractor.py
 UpdateRecord::to_dict() @ world_model/runtime.py
+UserCorrectionPattern::detect(context) @ core/agents/selfreflection.py
 ValidationError::__str__() @ codegen/code-gen-files/schema_validator.py
 ValidationResult::__init__(spec_path) @ ci/validate_spec_v25.py
 ValidationResult::__init__(spec_path) @ codegen/code-gen-files/validate_spec_v25.py
@@ -4370,4 +4818,4 @@ _SchemaRegistry::supported_versions() @ core/schemas/schema_registry.py
 _SchemaRegistry::upcast(raw, target_version) @ core/schemas/schema_registry.py
 _SchemaRegistry::write_packet(packet) @ core/schemas/schema_registry.py
 
-# Total: 4366 class methods
+# Total: 4814 class methods

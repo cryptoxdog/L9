@@ -6,6 +6,79 @@ _archived/archived_mcp_memory/src/main.py::get_client_ip(request) - Get client I
 _archived/archived_mcp_memory/src/main.py::record_failed_auth(ip) - Record a failed authentication attempt.
 _archived/archived_mcp_memory/src/main.py::source(self) - Metadata source value for this caller.
 _archived/archived_mcp_memory/src/mcp_server.py::get_mcp_tools() - 
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::event_loop() - Provide event loop for async tests.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::mock_substrate_service(mock_write_result) - Canonical mock of MemorySubstrateService
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::mock_write_result() - Create a mock PacketWriteResult.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::pytest_configure(config) - Register custom pytest markers.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::slack_signing_secret() - Slack app signing secret for tests.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/conftest.py::slack_workspace_id() - Slack workspace identifier.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::__init__(self, signing_secret) - Initialize with Slack app signing secret
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::__init__(self, signing_secret, substrate_service, workspace_id) - Initialize adapter.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::__init__(self, substrate_service) - Initialize with substrate service.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::__init__(self, workspace_id) - Initialize normalizer.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::create_slack_router(substrate_service, signing_secret, workspace_id) - Create FastAPI router for Slack webhook.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::generate_thread_uuid(self, team_id, channel_id, thread_ts) - Generate deterministic UUIDv5 for thread
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::parse_event_callback(self, payload) - Parse Slack event_callback to normalized
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py::verify(self, timestamp, body, signature) - Verify request signature.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::mock_substrate_service() - Mock MemorySubstrateService.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::signing_secret() - Slack app signing secret for testing.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::slack_adapter(signing_secret, mock_substrate_service) - Create adapter instance with mocked subs
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_generate_thread_uuid_deterministic(self) - Generated thread UUID is deterministic.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_generate_thread_uuid_different_for_different_inputs(self) - Different inputs generate different UUID
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_parse_app_mention_event(self) - Parse valid app_mention event.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_parse_message_event(self) - Parse valid message event.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_parse_unsupported_event(self) - Unsupported event type returns None.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_verify_invalid_signature(self, signing_secret) - Invalid signature fails verification.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_verify_invalid_timestamp_format(self, signing_secret) - Invalid timestamp format fails gracefull
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_verify_stale_timestamp(self, signing_secret) - Stale timestamp (>5 min) fails verificat
+_archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-tests.py::test_verify_valid_signature(self, signing_secret) - Valid signature passes verification.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py::__init__(self) - Initialize in-memory storage.
+_archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py::mock_substrate() - In-memory MockSubstrateService for integ
+_archived/codegen_slack_adapter/Slack-Audit-Pack/test-slack-adapter-integration.py::slack_adapter_with_mock_substrate(mock_substrate) - Create adapter with MockSubstrateService
+_archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py::__init__(self, substrate_service, aios_runtime_client, memory_service_client) - Initialize adapter with dependencies.
+_archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py::_get_dedupe_key(self, request) - Generate deduplication key from request.
+_archived/codegen_slack_adapter/module.slack_adapter/adapters/slack_webhook_adapter.py::_get_thread_key(self, request) - Generate deterministic thread key from r
+_archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py::__init__(self, config) - Initialize client with configuration.
+_archived/codegen_slack_adapter/module.slack_adapter/clients/slack_webhook_client.py::_get_headers(self) - Get request headers.
+_archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py::adapter(mock_substrate_service) - Create adapter instance.
+_archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py::mock_substrate_service() - Mock substrate service.
+_archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py::sample_context() - Create sample context.
+_archived/codegen_slack_adapter/module.slack_adapter/tests/test_slack_webhook.py::sample_request() - Create sample request.
+_archived/legacy_slack/test_webhook_slack.py::create_test_app(slack_enabled, signing_secret) - Create a minimal FastAPI app with webhoo
+_archived/legacy_slack/test_webhook_slack.py::fresh_timestamp() - Return current Unix timestamp as string.
+_archived/legacy_slack/test_webhook_slack.py::generate_slack_signature(body, timestamp, secret) - Generate valid Slack HMAC-SHA256 signatu
+_archived/legacy_slack/test_webhook_slack.py::stale_timestamp() - Return timestamp > 300 seconds old (outs
+_archived/legacy_slack/test_webhook_slack.py::test_cache_clear(self) - Cache clear should remove all entries.
+_archived/legacy_slack/test_webhook_slack.py::test_cache_handles_empty_event_id(self) - Empty event_id should return False (can'
+_archived/legacy_slack/test_webhook_slack.py::test_cache_marks_first_occurrence_as_new(self) - First occurrence of event_id should retu
+_archived/legacy_slack/test_webhook_slack.py::test_cache_marks_second_occurrence_as_duplicate(self) - Second occurrence of same event_id shoul
+_archived/legacy_slack/test_webhook_slack.py::test_cache_respects_max_size(self) - Cache should evict oldest entries when m
+_archived/legacy_slack/test_webhook_slack.py::test_commands_disabled_returns_503(self) - When SLACK_APP_ENABLED=false, returns HT
+_archived/legacy_slack/test_webhook_slack.py::test_commands_do_subcommand(self) - POST /slack/commands with 'do' subcomman
+_archived/legacy_slack/test_webhook_slack.py::test_commands_email_search(self) - POST /slack/commands with 'email search'
+_archived/legacy_slack/test_webhook_slack.py::test_commands_unknown_returns_help(self) - Unknown subcommand returns help text.
+_archived/legacy_slack/test_webhook_slack.py::test_different_event_ids_both_processed(self) - Different event_ids should both be proce
+_archived/legacy_slack/test_webhook_slack.py::test_duplicate_event_ignored(self) - Same event_id sent twice should only be 
+_archived/legacy_slack/test_webhook_slack.py::test_events_app_mention_l_agent_router(self) - App mention with L-agent router calls ha
+_archived/legacy_slack/test_webhook_slack.py::test_events_app_mention_legacy_router(self) - App mention with legacy router calls sla
+_archived/legacy_slack/test_webhook_slack.py::test_events_bad_signature_returns_403(self) - Invalid HMAC signature returns HTTP 403.
+_archived/legacy_slack/test_webhook_slack.py::test_events_bot_message_ignored(self) - Bot messages (subtype=bot_message) are i
+_archived/legacy_slack/test_webhook_slack.py::test_events_disabled_returns_503(self) - When SLACK_APP_ENABLED=false, returns HT
+_archived/legacy_slack/test_webhook_slack.py::test_events_mac_command(self) - Message starting with !mac enqueues Mac 
+_archived/legacy_slack/test_webhook_slack.py::test_events_url_verification(self) - URL verification challenge is echoed bac
+_archived/legacy_slack/test_webhook_slack.py::test_ignores_bot_id_field(self) - Messages with bot_id field should be ign
+_archived/legacy_slack/test_webhook_slack.py::test_ignores_bot_message_subtype(self) - Messages with subtype=bot_message should
+_archived/legacy_slack/test_webhook_slack.py::test_ignores_own_user_id(self) - Messages from L's own user ID should be 
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_invalid_hash(self) - Invalid hash returns False.
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_missing_signature(self) - Empty or None signature returns False.
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_missing_timestamp(self) - Empty or None timestamp returns False.
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_no_secret(self) - Missing signing_secret returns False.
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_stale_timestamp(self) - Timestamp > 300 seconds old returns Fals
+_archived/legacy_slack/test_webhook_slack.py::test_verify_signature_valid(self) - Valid signature with fresh timestamp ret
+_archived/legacy_slack/webhook_slack.py::__init__(self, max_size, ttl_seconds) - 
+_archived/legacy_slack/webhook_slack.py::clear(self) - Clear the cache (for testing).
+_archived/legacy_slack/webhook_slack.py::is_duplicate(self, event_id) - Check if event_id was recently processed
+_archived/legacy_slack/webhook_slack.py::verify_slack_signature(body, timestamp, signature, signing_secret) - Verify Slack request signature.
 agents/architect_agent_a.py::__init__(self, agent_id, config) - Initialize Architect Agent A.
 agents/architect_agent_a.py::get_system_prompt(self) - Get the system prompt.
 agents/architect_agent_b.py::__init__(self, agent_id, config) - Initialize Architect Agent B.
@@ -229,18 +302,25 @@ api/dependencies.py::get_redis_client(request) - Get Redis client from app.state
 api/dependencies.py::get_substrate_service(request) - Get SubstrateService from app.state.
 api/dependencies.py::get_tool_registry(request) - Get ExecutorToolRegistry from app.state.
 api/dependencies.py::get_world_model_service(request) - Get WorldModelService from app.state.
+api/e2e_slack_audit.py::__init__(self, name) - 
+api/e2e_slack_audit.py::add_check(self, name, passed, details) - 
+api/e2e_slack_audit.py::add_recommendation(self, recommendation) - 
+api/e2e_slack_audit.py::add_warning(self, warning) - 
+api/e2e_slack_audit.py::finalize(self) - 
 api/llm.py::chat_with_l9(user_message) - Call LLM and return:
 api/llm.py::get_client() - 
 api/llm.py::get_system_prompt() - Get the system prompt, either from kerne
 api/memory/router.py::get_memory_orchestrator(request) - Get MemoryOrchestrator from app.state.
+api/routes/modules.py::_get_module_registry(request) - 
 api/routes/reasoning.py::get_reasoning_orchestrator(request) - Get ReasoningOrchestrator from app.state
 api/routes/research.py::get_research_swarm_orchestrator(request) - Get ResearchSwarmOrchestrator from app.s
 api/routes/simulation.py::_get_engine() - Get or create simulation engine singleto
+api/routes/slack.py::record_rate_limit_hit() - 
+api/routes/slack.py::record_signature_verification() - 
+api/routes/slack.py::record_slack_processing() - 
+api/routes/slack.py::record_slack_request() - 
 api/routes/upgrades.py::get_upgrade_engine() - Get or create the upgrade engine singlet
 api/routes/worldmodel.py::get_world_model_service(request) - Get WorldModelService from app.state.
-api/server.py::agent_exists(self, agent_id) - 
-api/server.py::get_agent_config(self, agent_id) - 
-api/server.py::get_approved_tools(self, agent_id, principal_id) - 
 api/server.py::init_metrics() - 
 api/server.py::root() - 
 api/server_memory.py::health() - 
@@ -259,8 +339,11 @@ api/vps_executor.py::check_auth(authorization) -
 api/vps_executor.py::is_allowed_command(cmd) - 
 api/vps_executor.py::memory_health() - 
 api/vps_executor.py::run_shell(command, cwd) - 
-api/webhook_mac_agent.py::get_next_mac_task() - Get the next queued Mac task.
+api/webhook_mac_agent.py::get_next_mac_task() - Get the next queued Mac task (file-based
 api/webhook_mac_agent.py::list_mac_tasks() - List all Mac tasks (for debugging).
+api/webhook_slack.py::__init__(self, max_size, ttl_seconds) - 
+api/webhook_slack.py::clear(self) - Clear the cache (for testing).
+api/webhook_slack.py::is_duplicate(self, event_id) - Check if event_id was recently processed
 api/webhook_slack.py::verify_slack_signature(body, timestamp, signature, signing_secret) - Verify Slack request signature.
 api/webhook_twilio.py::verify_twilio_signature(url, params, signature, auth_token) - Verify Twilio request signature using HM
 api/webhook_waba.py::verify_webhook_signature(request_body, x_hub_signature) - Verify Meta's webhook signature.
@@ -291,6 +374,10 @@ ci/check_syntax.py::fix_duplicate_parameters(lines) - Remove duplicate parameter
 ci/check_syntax.py::fix_extra_closing_parens(lines) - Fix patterns like ):) -> ):
 ci/check_syntax.py::main() - Main entry point.
 ci/check_syntax.py::should_skip_file(file_path) - Check if file should be skipped.
+ci/check_tool_naming.py::check_all_files(base_path) - Check all relevant files.
+ci/check_tool_naming.py::check_file(filepath) - Check a single file for non-compliant to
+ci/check_tool_naming.py::main() - 
+ci/check_tool_naming.py::should_skip(path) - Check if file should be skipped.
 ci/check_tool_wiring.py::check_tool_wiring() - Check tool wiring consistency across all
 ci/check_tool_wiring.py::main() - Main entry point.
 ci/lint_forbidden_imports.py::__init__(self, file_path) - 
@@ -395,15 +482,6 @@ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_a
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter_integration.py::test_invalid_auth_rejected(self, client) - ACCEPTANCE: invalid_auth_rejected - rout
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter_integration.py::test_invalid_bearer_rejected(self, client) - ACCEPTANCE: invalid_auth_rejected - rout
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/tests/test_email_adapter_integration.py::test_valid_auth_accepted(self, client) - Route accepts valid bearer token.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::__init__(self, substrate_service, aios_runtime_client, memory_service_client) - Initialize adapter with dependencies.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::_get_dedupe_key(self, request) - Generate deduplication key from request.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/adapters/slack_webhook_adapter.py::_get_thread_key(self, request) - Generate deterministic thread key from r
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py::__init__(self, config) - Initialize client with configuration.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/clients/slack_webhook_client.py::_get_headers(self) - Get request headers.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::adapter(mock_substrate_service) - Create adapter instance.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::mock_substrate_service() - Mock substrate service.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::sample_context() - Create sample context.
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/tests/test_slack_webhook.py::sample_request() - Create sample request.
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::__init__(self, substrate_service, aios_runtime_client, memory_service_client) - Initialize adapter with dependencies.
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::__post_init__(self) - 
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/adapters/twilio_adapter_adapter.py::_generate_context(self, request) - Generate execution context with determin
@@ -635,6 +713,14 @@ codegen/code-gen-files/validate_spec_v25.py::validate_runtime_wiring(spec, resul
 codegen/code-gen-files/validate_spec_v25.py::validate_schema_version(spec, result) - Validate schema_version is exactly 2.5.
 codegen/code-gen-files/validate_spec_v25.py::validate_spec(spec_path) - Validate a Module-Spec v2.5 file.
 codegen/code-gen-files/validate_spec_v25.py::validate_tier_expectations(spec, result) - Validate tier_expectations section (v2.5
+codegen/compiler/classifier.py::classify_claim(claim) - 
+codegen/compiler/emitters/decisions.py::emit(decisions) - 
+codegen/compiler/emitters/ial_candidates.py::emit(ials) - 
+codegen/compiler/emitters/invariants.py::emit(invariants) - 
+codegen/compiler/emitters/lexer.py::extract_claims(text) - 
+codegen/compiler/emitters/work_packets.py::emit(tasks) - 
+codegen/compiler/transcript_compiler.py::compile(self, transcript_text) - 
+codegen/compiler/validator_bridge.py::validate_outputs(artifacts) - 
 codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py::__init__(self, reasoning_engine, packet_router, governance_bridge) - 
 codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py::_create_blocked_response(self, original_packet, reason) - Create governance-blocked response packe
 codegen/extractions/domain_tensor_bridge_v6_20260102/domain_tensor_bridge/agent_controller.py::_create_success_response(self, original_packet, result) - Create successful response packet.
@@ -740,10 +826,14 @@ core/agents/adaptive_prompting.py::_extract_lessons_from_approvals(approvals) - 
 core/agents/adaptive_prompting.py::_extract_lessons_from_rejections(rejections) - Extract lessons from rejection patterns.
 core/agents/adaptive_prompting.py::generate_adaptive_context(patterns) - Generate adaptive context from governanc
 core/agents/agent_instance.py::__init__(self, config, task) - Initialize a new agent instance.
+core/agents/agent_instance.py::_build_dag_context_section(self) - Build context section from DAG-stored th
+core/agents/agent_instance.py::_build_tool_name_map(self) - 
 core/agents/agent_instance.py::add_assistant_message(self, content, metadata) - Add an assistant message to history.
 core/agents/agent_instance.py::add_assistant_message_with_tool_calls(self, tool_calls, content, metadata) - Add an assistant message with tool_calls
+core/agents/agent_instance.py::add_governance_block(self, block_type, violation, pattern, tool_id, metadata) - Track a governance block during executio
 core/agents/agent_instance.py::add_tokens(self, tokens) - Add to total token count.
 core/agents/agent_instance.py::add_tool_result(self, tool_id, call_id, result, success) - Add a tool result to history.
+core/agents/agent_instance.py::add_user_correction(self, correction, metadata) - Track a user correction during execution
 core/agents/agent_instance.py::add_user_message(self, content, metadata) - Add a user message to history.
 core/agents/agent_instance.py::assemble_context(self) - Assemble full context bundle for AIOS ca
 core/agents/agent_instance.py::config(self) - Get agent configuration.
@@ -751,39 +841,55 @@ core/agents/agent_instance.py::get_bound_tools(self) - Get list of tools bound t
 core/agents/agent_instance.py::get_history(self) - Get message history.
 core/agents/agent_instance.py::get_messages_for_aios(self) - Get messages formatted for AIOS call.
 core/agents/agent_instance.py::get_tool_definitions(self) - Get tool definitions in OpenAI function 
+core/agents/agent_instance.py::governance_blocks(self) - Get list of governance blocks tracked du
 core/agents/agent_instance.py::has_tool(self, tool_id) - Check if a tool is bound to this agent.
 core/agents/agent_instance.py::increment_iteration(self) - Increment iteration counter.
 core/agents/agent_instance.py::instance_id(self) - Get instance ID.
 core/agents/agent_instance.py::iteration(self) - Get current iteration number.
+core/agents/agent_instance.py::resolve_tool_id(self, tool_name) - Resolve an OpenAI tool name alias back t
 core/agents/agent_instance.py::state(self) - Get current executor state.
 core/agents/agent_instance.py::task(self) - Get the task being executed.
 core/agents/agent_instance.py::thread_id(self) - Get the thread ID for this task.
 core/agents/agent_instance.py::to_trace_dict(self) - Serialize instance state for trace loggi
+core/agents/agent_instance.py::tool_results(self) - Get list of tool call results.
 core/agents/agent_instance.py::total_tokens(self) - Get total tokens used.
 core/agents/agent_instance.py::transition_to(self, new_state) - Transition to a new state.
+core/agents/agent_instance.py::user_corrections(self) - Get list of user corrections tracked dur
 core/agents/bootstrap/orchestrator.py::__init__(self, substrate_service) - 
 core/agents/executor.py::__init__(self, aios_runtime, tool_registry, substrate_service, agent_registry, default_agent_id, max_iterations) - Initialize the executor service.
+core/agents/executor.py::_get_kernel_aware_agent(self) - Get the kernel-aware agent if available 
 core/agents/executor.py::_validate_task(self, task) - Validate an incoming task. Does NOT muta
 core/agents/executor.py::agent_exists(self, agent_id) - Check if an agent is registered.
 core/agents/executor.py::get_agent_config(self, agent_id) - Get configuration for an agent.
 core/agents/executor.py::get_approved_tools(self, agent_id, principal_id) - Get list of tools approved for an agent.
+core/agents/executor.py::set_kernel_aware_agent(self, agent) - Set the kernel-aware agent for guarded e
 core/agents/graph_state/agent_graph_loader.py::__init__(self, neo4j_driver) - 
 core/agents/graph_state/agent_graph_loader.py::get_critical_directives(self) - Get all CRITICAL severity directives.
 core/agents/graph_state/agent_graph_loader.py::get_high_risk_tools(self) - Get tools requiring Igor approval.
 core/agents/graph_state/agent_graph_loader.py::get_sop_steps(self, sop_name) - Get steps for a specific SOP.
 core/agents/graph_state/agent_graph_loader.py::invalidate_cache(self, agent_id) - Invalidate cached agent state.
 core/agents/graph_state/graph_hydrator.py::__init__(self, neo4j_driver, kernel_stack) - 
-core/agents/graph_state/graph_hydrator.py::_build_system_prompt_from_kernels(self) - Extract system prompt from kernel stack.
+core/agents/graph_state/graph_hydrator.py::_build_system_prompt_from_kernels(self) - Build system prompt from kernel stack us
 core/agents/graph_state/graph_hydrator.py::_extract_safety_constraints(self) - Extract safety constraints from kernel s
 core/agents/graph_state/graph_hydrator.py::to_system_prompt_context(self) - Generate system prompt context from hydr
 core/agents/kernel_registry.py::__init__(self) - Initialize the registry with kernel-load
 core/agents/kernel_registry.py::_initialize_fallback(self) - Initialize with fallback prompt (no kern
-core/agents/kernel_registry.py::_initialize_with_kernels(self) - Initialize L-CTO agent with kernels.
+core/agents/kernel_registry.py::_initialize_with_kernels(self) - Initialize L-CTO agent with two-phase ke
 core/agents/kernel_registry.py::agent_exists(self, agent_id) - Check if agent exists.
 core/agents/kernel_registry.py::create_kernel_aware_registry() - Create a kernel-aware agent registry.
 core/agents/kernel_registry.py::get_agent_config(self, agent_id) - Get agent configuration by ID.
+core/agents/kernel_registry.py::get_kernel_hashes(self) - Get stored kernel hashes.
 core/agents/kernel_registry.py::get_kernel_state(self) - Get kernel state.
 core/agents/kernel_registry.py::get_l_cto_agent(self) - Get the L-CTO agent instance (if loaded 
+core/agents/kernel_registry.py::verify_kernel_integrity(self) - Verify kernel file integrity against sto
+core/agents/kernelevolution.py::_determine_update_type(gap) - Determine the type of kernel update need
+core/agents/kernelevolution.py::_generate_proposed_changes(gap) - Generate specific proposed changes for a
+core/agents/kernelevolution.py::_map_gap_to_kernel(gap) - Map a behavioral gap to the most relevan
+core/agents/kernelevolution.py::generate_gmp_spec_from_plan(plan) - Generate a GMP specification document fr
+core/agents/kernelevolution.py::generate_proposal_from_gap(gap) - Generate a kernel update proposal from a
+core/agents/kernelevolution.py::generate_proposals_from_reflection(reflection) - Generate kernel update proposals from a 
+core/agents/kernelevolution.py::to_dict(self) - Convert to dictionary for serialization.
+core/agents/kernelevolution.py::to_gmp_spec(self) - Generate a GMP specification for this pr
 core/agents/registry.py::__contains__(self, agent_id) - Check if agent is registered.
 core/agents/registry.py::__init__(self, config_dir) - Initialize the registry.
 core/agents/registry.py::__len__(self) - Return number of registered agents.
@@ -809,6 +915,14 @@ core/agents/schemas.py::get_dedupe_key(self) - Get deduplication key for idempot
 core/agents/schemas.py::get_thread_id(self) - Generate deterministic thread UUID from 
 core/agents/schemas.py::response(cls, content, tokens_used) - Create a response result.
 core/agents/schemas.py::tool_request(cls, tool_call, tokens_used) - Create a tool call result.
+core/agents/selfreflection.py::detect(self, context) - 
+core/agents/selfreflection.py::detect(self, context) - 
+core/agents/selfreflection.py::detect(self, context) - 
+core/agents/selfreflection.py::detect(self, context) - 
+core/agents/selfreflection.py::detect(self, context) - 
+core/agents/selfreflection.py::detect(self, context) - Detect a gap from the execution context.
+core/agents/selfreflection.py::detect_behavior_gaps(context, patterns) - Detect behavioral gaps from a task execu
+core/agents/selfreflection.py::to_dict(self) - Convert to dictionary for serialization.
 core/aios/runtime.py::__init__(self, api_key, model, temperature, max_tokens, default_system_prompt) - Initialize AIOS Runtime.
 core/aios/runtime.py::_get_client(self) - Get or create OpenAI client.
 core/aios/runtime.py::create_aios_runtime(api_key, model) - Factory function to create an AIOS runti
@@ -955,8 +1069,9 @@ core/governance/schemas.py::allow(cls, request_id, policy, duration_ms) - Create
 core/governance/schemas.py::deny(cls, request_id, policy, reason, duration_ms) - Create a deny result.
 core/governance/schemas.py::evaluate(self, context) - Evaluate this condition against a contex
 core/governance/schemas.py::matches(self, subject, action, resource, context) - Check if this policy matches the given r
-core/governance/session_startup.py::__init__(self, workspace_root) - Initialize startup protocol.
+core/governance/session_startup.py::__init__(self, workspace_root, check_kernels) - Initialize startup protocol.
 core/governance/session_startup.py::_calc_duration_ms(self, start_time) - Calculate duration in milliseconds.
+core/governance/session_startup.py::check_kernel_readiness(self) - Check kernel readiness for L-CTO agent.
 core/governance/session_startup.py::create_session_startup(workspace_root) - Create a SessionStartup instance.
 core/governance/session_startup.py::execute(self) - Execute full startup protocol.
 core/governance/session_startup.py::load_mandatory_files(self) - Load all mandatory startup files.
@@ -1017,6 +1132,21 @@ core/kernels/integrity.py::initialize_kernel_hashes(base_path, force) - Initiali
 core/kernels/integrity.py::load_kernel_hashes(hash_file) - Load stored kernel hashes from file.
 core/kernels/integrity.py::save_kernel_hashes(hashes, hash_file) - Save kernel hashes to file.
 core/kernels/integrity.py::verify_specific_file(file_path) - Verify a specific kernel file against st
+core/kernels/kernelloader.py::__init__(self, success, kernels_reloaded, modified_kernels, errors, previous_hashes, new_hashes) - 
+core/kernels/kernelloader.py::_build_activation_context() - Build the activation context that makes 
+core/kernels/kernelloader.py::_create_kernel_span(name, kernel_id, phase, trace_context) - Create a kernel lifecycle span if observ
+core/kernels/kernelloader.py::_finish_span(span, status, error) - Finish a span if it exists.
+core/kernels/kernelloader.py::_sha256_of_file(path) - Compute SHA256 hash of a file.
+core/kernels/kernelloader.py::_validate_kernel_yaml(data, file_path) - Validate kernel YAML against Pydantic sc
+core/kernels/kernelloader.py::absorb_kernel(self, kernel_data) - Absorb a kernel into the agent's configu
+core/kernels/kernelloader.py::activate_kernels_phase2(agent, kernels_by_path, hashes, trace_context) - Phase 2: ACTIVATE - Inject context, set 
+core/kernels/kernelloader.py::load_kernels(agent, base_path, validate_schema, verify_integrity) - Load all kernels into an agent using two
+core/kernels/kernelloader.py::load_kernels_phase1(base_path, validate_schema, verify_integrity, trace_context) - Phase 1: LOAD - Parse YAML, validate sch
+core/kernels/kernelloader.py::reload_kernels(agent, base_path, force) - Hot-reload kernels without restarting th
+core/kernels/kernelloader.py::require_kernel_activation(agent) - Assert that kernels are active. Hard cra
+core/kernels/kernelloader.py::set_system_context(self, context) - Set the agent's system context after ker
+core/kernels/kernelloader.py::verify_kernel_activation(agent) - Verify that an agent has properly activa
+core/kernels/kernelloader.py::verify_kernel_integrity(agent, base_path) - Verify kernel file integrity against sto
 core/kernels/prompt_builder.py::build_behavioral_section(behavioral_kernel) - Build behavioral rules from behavioral k
 core/kernels/prompt_builder.py::build_cognitive_section(cognitive_kernel) - Build cognitive patterns from cognitive 
 core/kernels/prompt_builder.py::build_execution_section(execution_kernel) - Build execution rules from execution ker
@@ -1025,11 +1155,21 @@ core/kernels/prompt_builder.py::build_safety_section(safety_kernel) - Build safe
 core/kernels/prompt_builder.py::build_system_prompt_from_kernels() - Build a complete system prompt from the 
 core/kernels/prompt_builder.py::get_fallback_prompt() - Fallback system prompt if kernel loading
 core/kernels/prompt_builder.py::get_kernel_stack() - Get or load the kernel stack (singleton)
+core/kernels/schemas.py::ensure_kernel_info(cls, v) - Ensure kernel info is properly structure
+core/kernels/schemas.py::get_kernel_type(self) - Infer kernel type from name.
+core/memory/runtime.py::__init__(self, event_type, agent_id, kernel_ids, previous_hashes, new_hashes, modified_kernels, trigger, success, errors, metadata) - 
+core/memory/runtime.py::to_packet_payload(self) - Convert to PacketEnvelope payload format
 core/memory/virtual_context.py::__init__(self, substrate_service, llm_service) - 
 core/memory/virtual_context.py::__init__(self, substrate_service, llm_service, neo4j_driver, main_context_size, working_memory_size) - 
 core/memory/virtual_context.py::_simple_extract(self, text) - Simple fact extraction (sentences with k
 core/memory/virtual_context.py::get_metrics(self) - Get consolidation metrics
 core/memory/virtual_context.py::get_metrics(self) - Get virtual context metrics
+core/moduleregistry.py::__init__(self) - 
+core/moduleregistry.py::get_definition(self, module_id) - 
+core/moduleregistry.py::get_status(self, module_id) - 
+core/moduleregistry.py::register(self, definition) - 
+core/moduleregistry.py::set_status(self, status) - 
+core/moduleregistry.py::snapshot(self) - Return a deterministic snapshot (sorted 
 core/observability/aggregation.py::__init__(self, window_size) - Initialize KPI tracker.
 core/observability/aggregation.py::compute_agent_kpis(spans, agent_name, period) - Compute agent-specific KPIs.
 core/observability/aggregation.py::compute_cost_breakdown(spans) - Compute cost breakdown by service.
@@ -1038,6 +1178,18 @@ core/observability/aggregation.py::detect_regressions(current_metrics, baseline_
 core/observability/aggregation.py::get_alerts(self, thresholds) - Get alerts for KPIs exceeding thresholds
 core/observability/aggregation.py::get_trend(self, kpi_name) - Get trend (up, down, stable) for a KPI.
 core/observability/aggregation.py::record_kpi(self, kpi) - Record a KPI measurement.
+core/observability/circuit_breaker.py::__init__(self, config) - Initialize circuit breaker.
+core/observability/circuit_breaker.py::__init__(self, message, circuit_name) - 
+core/observability/circuit_breaker.py::__post_init__(self) - Validate configuration.
+core/observability/circuit_breaker.py::__repr__(self) - 
+core/observability/circuit_breaker.py::from_settings(cls, settings, name) - Create circuit breaker from Observabilit
+core/observability/circuit_breaker.py::get_state(self) - Get current state as string.
+core/observability/circuit_breaker.py::get_stats(self) - Get circuit breaker statistics.
+core/observability/circuit_breaker.py::is_open(self) - Check if circuit breaker is blocking ope
+core/observability/circuit_breaker.py::record_failure(self, error) - Record a failed operation.
+core/observability/circuit_breaker.py::record_success(self) - Record a successful operation.
+core/observability/circuit_breaker.py::reset(self) - Manually reset circuit breaker to CLOSED
+core/observability/circuit_breaker.py::state(self) - Current circuit breaker state.
 core/observability/config.py::auto_enable_substrate_exporter(self) - Automatically add 'substrate' to exporte
 core/observability/config.py::load_config() - Load observability configuration from en
 core/observability/context_strategies.py::__init__(self, rag_percent, summary_percent, recent_percent) - Initialize hybrid strategy.
@@ -1068,13 +1220,15 @@ core/observability/instrumentation.py::trace_span(name, kind) - Decorator to aut
 core/observability/instrumentation.py::trace_tool_call(tool_name) - Decorator to trace tool invocations.
 core/observability/models.py::child_context(self) - Create a child context with new span_id.
 core/observability/models.py::finish(self, status, error) - Mark span as finished.
+core/observability/models.py::start(cls, name, trace_id, kernel_id, parent_span_id, kind) - Create and start a new kernel lifecycle 
 core/observability/models.py::start(cls, name, trace_id, parent_span_id, kind) - Create and start a new span.
 core/observability/models.py::to_headers(self) - Convert to W3C traceparent header.
 core/observability/service.py::__init__(self, config, substrate_service) - Initialize observability service.
-core/observability/service.py::_setup_logging(self) - Configure logging.
+core/observability/service.py::_setup_logging(self) - Configure logging (structlog is pre-conf
 core/observability/service.py::current_trace_context(self) - Get current trace context (create if nee
 core/observability/service.py::export_span(self, span) - Export a span to all configured exporter
 core/observability/service.py::get(cls) - Get global instance.
+core/observability/service.py::get_observability_service() - Get the global observability service ins
 core/observability/service.py::set_global(cls, service) - Set global instance.
 core/observability/service.py::set_trace_context(self, ctx) - Set trace context (e.g., from incoming r
 core/retrievers/substrate_retriever.py::__init__(self, service, agent_id, top_k) - 
@@ -1236,6 +1390,7 @@ core/tools/registry_adapter.py::__init__(self, base_registry, governance_enabled
 core/tools/registry_adapter.py::_get_l_tool_schema_for_registry(tool_name) - Get ToolSchema object for an L-CTO tool.
 core/tools/registry_adapter.py::_get_tool_schema(self, tool_id) - Get JSON Schema for a tool's parameters.
 core/tools/registry_adapter.py::_is_approved(self, agent_id, tool_id) - Check if a tool is explicitly approved f
+core/tools/registry_adapter.py::_tool_belongs_to_agent(tool_name, agent_id) - Check if a tool belongs to an agent via 
 core/tools/registry_adapter.py::approve_tool(self, agent_id, tool_id) - Explicitly approve a tool for an agent.
 core/tools/registry_adapter.py::create_executor_tool_registry(governance_enabled, base_registry, governance_engine) - Factory function to create an ExecutorTo
 core/tools/registry_adapter.py::get_approved_tools(self, agent_id, principal_id) - Get list of tools approved for an agent.
@@ -1244,6 +1399,18 @@ core/tools/registry_adapter.py::list_tools(self) - List all registered tools.
 core/tools/registry_adapter.py::register_tool(self, tool_id, name, description, executor, tool_type) - Register a new tool.
 core/tools/registry_adapter.py::revoke_tool(self, agent_id, tool_id) - Revoke approval for a tool.
 core/tools/registry_adapter.py::set_governance_engine(self, engine) - Attach a governance engine for policy ev
+core/tools/sanitizer.py::__init__(self, config) - 
+core/tools/sanitizer.py::__init__(self, tool_id, reasons) - 
+core/tools/sanitizer.py::_enforce_resource_limits(self, tool_id, obj, reasons) - 
+core/tools/sanitizer.py::_exceeds_depth(obj, max_depth) - 
+core/tools/sanitizer.py::_exceeds_list_length(obj, max_len) - 
+core/tools/sanitizer.py::_exceeds_string_length(obj, max_len) - 
+core/tools/sanitizer.py::_has_path_traversal(path) - 
+core/tools/sanitizer.py::_sanitize_value(self, key, value, expected, reasons) - 
+core/tools/sanitizer.py::_walk(o) - 
+core/tools/sanitizer.py::_walk(o) - 
+core/tools/sanitizer.py::_walk(o, depth) - 
+core/tools/sanitizer.py::sanitize(self, tool_id, arguments, schema) - Sanitize and validate tool arguments.
 core/tools/symbolic_tool.py::__init__(self) - Initialize the tool wrapper.
 core/tools/symbolic_tool.py::get_symbolic_engine() - Get or create the symbolic computation e
 core/tools/symbolic_tool.py::optimize(self, expression, strategies) - Optimize a symbolic expression for faste
@@ -1251,6 +1418,7 @@ core/tools/symbolic_tool.py::symbolic_optimize(expression, strategies) - Optimiz
 core/tools/tool_audit.py::__init__(self, substrate_service, buffer_size) - 
 core/tools/tool_audit.py::__post_init__(self) - 
 core/tools/tool_audit.py::estimate(self, tool_name, input_data, output_data) - Estimate tool execution cost
+core/tools/tool_graph.py::__post_init__(self) - Validate tool name matches OpenAI functi
 core/tools/tool_graph.py::create_tool_definition(name, description, category, scope, risk_level, is_destructive, requires_confirmation, external_apis, internal_dependencies, agent_id) - Convenience helper to create a ToolDefin
 core/worldmodel/insight_emitter.py::__init__(self, substrate_service) - Initialize InsightEmitter.
 core/worldmodel/insight_emitter.py::get_insight_emitter(substrate_service) - Get or create the global InsightEmitter 
@@ -1308,6 +1476,32 @@ email_agent/triage.py::run_daily_digest() - Generate daily email digest for Slac
 email_agent/triage.py::summarize_inbox(limit) - Summarize recent inbox messages using LL
 graph_adapter/packet_node_adapter.py::__init__(self, service, agent_id, event_type) - 
 graph_adapter/packet_node_adapter.py::_get_memory_service() - Lazy import of MemorySubstrateService to
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::__init__(self, config) - 
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::get_state(self) - Get current circuit breaker state.
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::is_open(self) - Check if circuit breaker is open.
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::record_failure(self, error) - Record failed operation.
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::record_success(self) - Record successful operation.
+igor/01-07-2026/L9 Memory Substrate Audit/circuit_breaker.py::reset(self) - Manually reset circuit breaker.
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::__init__(self) - 
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::__init__(self, message, field, value) - 
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_confidence(self, packet) - Validate confidence bounds (I3).
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_derive_type(self, packet) - Validate derive-type enumeration (I4).
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_lineage(self, packet) - Validate lineage object (I2).
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_metadata(self, packet) - Validate metadata structure.
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_required_fields(self, packet) - Validate all required fields are present
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::_validate_version(self, packet) - Validate schema version.
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::validate(self, packet) - Validate a packet envelope against V2.0 
+igor/01-07-2026/L9 Memory Substrate Audit/packet_validator.py::validate_timestamp(cls, v) - Ensure timestamp is valid ISO 8601.
+igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py::__init__(self) - 
+igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py::detect_injection(self, query) - Check if query contains injection patter
+igor/01-07-2026/L9 Memory Substrate Audit/query_injection.py::sanitize_query(self, query, max_length) - Sanitize query string for safe logging.
+igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py::__init__(self, substrate_repository, graph_client, vector_store) - 
+igor/01-07-2026/L9 Memory Substrate Audit/substrate_alignment.py::is_aligned(self, threshold) - Check if alignment meets threshold.
+igor/01-07-2026/L9 Memory Substrate Audit/test_memory_substrate_flow.py::mock_services(self) - Create mock services.
+igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py::forward(self, task_embedding) - 
+igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/agent_q_strategy_selector.py::learn_from_execution(self, strategy_id, outcome) - 
+igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/rafa_adapter_interface.py::adapt_strategy(strategy_graph, current_context, adaptation_budget) - 
+igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_feedback_updater.py::update_strategy_after_execution(strategy_id, outcome, execution_time) - 
 igor/audit-memory/api_memory_router.py::get_memory_orchestrator(request) - Get MemoryOrchestrator from app.state.
 igor/audit-memory/config_memory_substrate_settings.py::get_settings() - Get or create settings singleton.
 igor/audit-memory/config_memory_substrate_settings.py::reset_settings() - Reset settings (useful for testing).
@@ -1892,11 +2086,18 @@ memory/retrieval.py::init_retrieval_pipeline(repository, semantic_service) - Ini
 memory/retrieval.py::set_repository(self, repository) - Set or update the repository reference.
 memory/retrieval.py::set_semantic_service(self, service) - Set or update the semantic service refer
 memory/slack_ingest.py::_build_system_prompt(thread_context, semantic_hits, user_id, channel_id) - Build system prompt that includes thread
+memory/slack_ingest.py::_is_email_command(text) - Detect if text is an email-related comma
+memory/slack_ingest.py::_process_file_attachments(files) - Process Slack file attachments (download
+memory/slack_ingest.py::record_aios_call() - 
+memory/slack_ingest.py::record_idempotent_hit() - 
+memory/slack_ingest.py::record_packet_write_error() - 
+memory/slack_ingest.py::record_slack_reply_error() - 
 memory/state_manager.py::__init__(self, service, agent_id) - 
 memory/state_manager.py::agent_id(self) - 
 memory/strategymemory.py::__init__(self) - Initialize the stub service.
 memory/substrate_graph.py::__init__(self, repository, semantic_service, world_model_service) - Initialize DAG with dependencies.
 memory/substrate_graph.py::_default_state() - Create default state.
+memory/substrate_graph.py::_should_skip_embedding(text) - Check if text matches known low-value pa
 memory/substrate_graph.py::build_substrate_graph() - Build the LangGraph DAG for memory subst
 memory/substrate_models.py::to_envelope(self) - Convert input to full PacketEnvelope wit
 memory/substrate_models.py::with_mutation(self) - Create a new PacketEnvelope with updates
@@ -1937,6 +2138,8 @@ orchestration/cell_orchestrator.py::register_cell(self, name, cell_class) - Regi
 orchestration/cell_orchestrator.py::set_memory_client(self, client) - Set the memory substrate client for pack
 orchestration/cell_orchestrator.py::to_dict(self) - 
 orchestration/cell_orchestrator.py::to_dict(self) - 
+orchestration/email_task_router.py::get_client() - Get OpenAI client.
+orchestration/email_task_router.py::route_email_task(text, artifacts, user) - Convert Slack message + file artifacts i
 orchestration/long_plan_graph.py::_format_context(context) - Format context dict into readable string
 orchestration/long_plan_graph.py::build_long_plan_graph() - Build the LangGraph DAG for long plan ex
 orchestration/orchestrator_kernel.py::__init__(self, config) - Initialize the kernel.
@@ -2039,6 +2242,14 @@ orchestrators/action_tool/validator.py::__init__(self, valid, tool_id, safety_le
 orchestrators/action_tool/validator.py::_assess_safety_level(self, tool_id) - Assess the safety level of a tool.
 orchestrators/action_tool/validator.py::_requires_approval(self, tool_id, context) - Check if tool requires human approval.
 orchestrators/action_tool/validator.py::to_dict(self) - 
+orchestrators/agent_execution/orchestrator.py::__init__(self) - Initialize agent execution orchestrator.
+orchestrators/agent_execution/task_queue.py::complete_task(task_id, result, status, screenshot_path, logs) - Complete a task with result and status (
+orchestrators/agent_execution/task_queue.py::enqueue_mac_task(source, channel, user, command, steps, attachments) - Enqueue a new Mac task (legacy function 
+orchestrators/agent_execution/task_queue.py::enqueue_mac_task_dict(task_dict) - Enqueue a Mac task from task router (fil
+orchestrators/agent_execution/task_queue.py::enqueue_task(task_dict) - DEPRECATED: Use enqueue_mac_task_dict() 
+orchestrators/agent_execution/task_queue.py::get_next_task() - Get the oldest queued mac_task from file
+orchestrators/agent_execution/task_queue.py::list_tasks() - List all tasks as dictionaries (legacy s
+orchestrators/agent_execution/task_queue.py::mark_task_completed(task_id) - Mark a task as completed by moving it to
 orchestrators/evolution/apply_engine.py::__init__(self) - Initialize apply engine.
 orchestrators/evolution/orchestrator.py::__init__(self, apply_engine) - Initialize evolution orchestrator.
 orchestrators/evolution/orchestrator.py::_check_dependencies(self, upgrade) - Check if all dependencies are satisfied.
@@ -2062,7 +2273,7 @@ orchestrators/reasoning/adapter_node.py::create_reasoning_node(orchestrator) - F
 orchestrators/reasoning/orchestrator.py::__init__(self, max_depth, default_branch_factor) - Initialize reasoning orchestrator.
 orchestrators/reasoning/orchestrator.py::run(self, packet) - Synchronous interface for packet-based r
 orchestrators/research_swarm/convergence.py::__init__(self) - Initialize convergence.
-orchestrators/research_swarm/orchestrator.py::__init__(self) - Initialize research_swarm orchestrator.
+orchestrators/research_swarm/orchestrator.py::__init__(self, llm_client) - Initialize research_swarm orchestrator.
 orchestrators/world_model/orchestrator.py::__init__(self, scheduler) - Initialize world_model orchestrator.
 orchestrators/world_model/scheduler.py::__init__(self, min_interval_seconds, batch_size, max_pending) - Initialize scheduler.
 orchestrators/world_model/scheduler.py::reset(self) - Reset scheduler state.
@@ -2214,6 +2425,21 @@ scripts/audit/audit_shared_core.py::visit_AsyncFunctionDef(self, node) -
 scripts/audit/audit_shared_core.py::visit_Call(self, node) - 
 scripts/audit/audit_shared_core.py::visit_ClassDef(self, node) - 
 scripts/audit/audit_shared_core.py::visit_FunctionDef(self, node) - 
+scripts/audit/run_all.py::__init__(self, repo_root, cache_enabled, parallel_jobs, output_formats) - 
+scripts/audit/run_all.py::_build_summary(self) - Build audit run summary.
+scripts/audit/run_all.py::_generate_html_report(self) - Generate HTML report.
+scripts/audit/run_all.py::_generate_json_report(self) - Generate JSON report.
+scripts/audit/run_all.py::_generate_jsonl_report(self) - Generate JSONL report (one issue per lin
+scripts/audit/run_all.py::_generate_report(self, format_str) - Generate report in given format.
+scripts/audit/run_all.py::_generate_run_id(self) - Generate unique run ID.
+scripts/audit/run_all.py::_get_tier_audits(self, tier) - Get audits for tier.
+scripts/audit/run_all.py::_log_summary(self, run) - Log audit run summary.
+scripts/audit/run_all.py::_run_capability_audit(self) - Run capability inventory audit.
+scripts/audit/run_all.py::_run_code_integrity_audit(self) - Run code integrity audit (call graph + u
+scripts/audit/run_all.py::_run_infrastructure_audit(self) - Run infrastructure health audit.
+scripts/audit/run_all.py::main() - Command-line interface.
+scripts/audit/run_all.py::run_all(self, tier, only) - Run all audits for given tier.
+scripts/audit/run_all.py::run_audit(self, audit_type, tier) - Execute single audit.
 scripts/audit/tier1/audit_capability_inventory.py::assess_capability(method) - Assess capability for impact/risk/effort
 scripts/audit/tier1/audit_capability_inventory.py::build_parameters_from_signature(func) - Extract parameters from function signatu
 scripts/audit/tier1/audit_capability_inventory.py::extract_type_hint(annotation) - Convert type annotation to string.
@@ -2221,6 +2447,37 @@ scripts/audit/tier1/audit_capability_inventory.py::generate_mcp_schema(method) -
 scripts/audit/tier1/audit_capability_inventory.py::get_async_methods(filepath) - Extract async method definitions from fi
 scripts/audit/tier1/audit_capability_inventory.py::get_exposed_tools(root) - Extract tool names from TOOL_EXECUTORS d
 scripts/audit/tier1/audit_capability_inventory.py::main() - Run capability inventory audit.
+scripts/audit/tier1/audit_code_integrity.py::__init__(self, cache_dir) - 
+scripts/audit/tier1/audit_code_integrity.py::__init__(self, filepath) - 
+scripts/audit/tier1/audit_code_integrity.py::__init__(self, source_code) - 
+scripts/audit/tier1/audit_code_integrity.py::analyze_file_for_orphans(filepath, all_content) - Analyze file for orphan classes.
+scripts/audit/tier1/audit_code_integrity.py::analyze_file_for_uncalled(filepath, all_content) - Analyze file for uncalled parameterless 
+scripts/audit/tier1/audit_code_integrity.py::check_is_stub(self, node) - Check if class or function is a stub.
+scripts/audit/tier1/audit_code_integrity.py::compute_manifest_hash(self, all_files) - Compute hash of all file hashes combined
+scripts/audit/tier1/audit_code_integrity.py::detect_circular_imports(root) - Detect circular imports using import gra
+scripts/audit/tier1/audit_code_integrity.py::dfs(node, path) - 
+scripts/audit/tier1/audit_code_integrity.py::find_python_files(root, include_tests) - Find all Python files to scan.
+scripts/audit/tier1/audit_code_integrity.py::generate_html_report(report, output_path) - Generate HTML report.
+scripts/audit/tier1/audit_code_integrity.py::get_content_index_hash_path(self) - Path to content index hash.
+scripts/audit/tier1/audit_code_integrity.py::get_content_index_path(self) - Path to cached content index.
+scripts/audit/tier1/audit_code_integrity.py::get_file_hash(self, filepath) - Calculate SHA256 hash of file.
+scripts/audit/tier1/audit_code_integrity.py::get_modified_files(self, all_files) - Return only modified files since last ru
+scripts/audit/tier1/audit_code_integrity.py::get_results_cache_path(self) - Path to analysis results cache.
+scripts/audit/tier1/audit_code_integrity.py::load_content_index(self, all_files) - Load cached content index if valid.
+scripts/audit/tier1/audit_code_integrity.py::load_manifest(self) - Load cache manifest.
+scripts/audit/tier1/audit_code_integrity.py::load_results(self) - Load cached analysis results if content 
+scripts/audit/tier1/audit_code_integrity.py::save_content_index(self, all_files, content) - Save content index to cache.
+scripts/audit/tier1/audit_code_integrity.py::save_manifest(self, manifest) - Save cache manifest.
+scripts/audit/tier1/audit_code_integrity.py::save_results(self, uncalled, orphans, circular) - Save analysis results to cache.
+scripts/audit/tier1/audit_code_integrity.py::serialize(obj) - 
+scripts/audit/tier1/audit_code_integrity.py::should_skip_file(filepath, root) - Check if file should be skipped.
+scripts/audit/tier1/audit_code_integrity.py::update_manifest(self, all_files) - Update manifest with current file hashes
+scripts/audit/tier1/audit_code_integrity.py::visit_AsyncFunctionDef(self, node) - 
+scripts/audit/tier1/audit_code_integrity.py::visit_Attribute(self, node) - 
+scripts/audit/tier1/audit_code_integrity.py::visit_Call(self, node) - 
+scripts/audit/tier1/audit_code_integrity.py::visit_ClassDef(self, node) - 
+scripts/audit/tier1/audit_code_integrity.py::visit_ClassDef(self, node) - 
+scripts/audit/tier1/audit_code_integrity.py::visit_FunctionDef(self, node) - 
 scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, base_url, endpoints, timeout) - 
 scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, host, port, timeout) - 
 scripts/audit/tier1/audit_infrastructure_health.py::__init__(self, service_name, module, function, timeout) - 
@@ -2468,6 +2725,16 @@ telemetry/memory_metrics.py::record_memory_write(segment, status, duration_secon
 telemetry/memory_metrics.py::record_tool_invocation(tool_id, status, duration_ms) - Record a tool invocation.
 telemetry/memory_metrics.py::set_memory_substrate_health(healthy) - Set the memory substrate health gauge.
 telemetry/memory_metrics.py::update_packet_store_size(segment, count) - Update the packet store size gauge for a
+telemetry/slack_metrics.py::init_slack_metrics() - Initialize Slack metrics.
+telemetry/slack_metrics.py::record_aios_call(agent_type, duration_seconds) - Record AIOS/Agent call duration.
+telemetry/slack_metrics.py::record_idempotent_hit(team_id) - Record a deduplicated event.
+telemetry/slack_metrics.py::record_packet_write_error(packet_type) - Record a failed packet write.
+telemetry/slack_metrics.py::record_rate_limit_hit(team_id) - Record a rate limit rejection.
+telemetry/slack_metrics.py::record_signature_verification(valid, reason) - Record signature verification result.
+telemetry/slack_metrics.py::record_slack_processing(event_type, duration_seconds, status) - Record Slack event processing.
+telemetry/slack_metrics.py::record_slack_reply_error(error_type) - Record a failed Slack reply.
+telemetry/slack_metrics.py::record_slack_request(event_type, status) - Record a Slack webhook request.
+telemetry/slack_metrics.py::set_active_threads(count) - Set the active threads gauge.
 tests/agents/codegenagent/test_c_gmp_engine.py::engine(self, temp_dir) - Create engine with temp specs directory.
 tests/agents/codegenagent/test_c_gmp_engine.py::temp_dir(self) - Create temp directory with test specs.
 tests/agents/codegenagent/test_c_gmp_engine.py::test_clear_generated(self, engine) - Test clearing generated files.
@@ -2516,9 +2783,38 @@ tests/api/test_auth.py::test_malformed_bearer_token_fails(self) - Contract: Malf
 tests/api/test_auth.py::test_missing_auth_header_fails(self) - Contract: Missing Authorization header r
 tests/api/test_auth.py::test_missing_executor_key_config_fails(self) - Contract: If L9_EXECUTOR_API_KEY is not 
 tests/api/test_auth.py::test_valid_api_key_passes(self) - Contract: Valid API key in Authorization
+tests/api/test_e2e_slack_audit.py::__init__(self, name) - 
+tests/api/test_e2e_slack_audit.py::add_check(self, name, passed, details) - 
+tests/api/test_e2e_slack_audit.py::add_recommendation(self, recommendation) - 
+tests/api/test_e2e_slack_audit.py::add_warning(self, warning) - 
+tests/api/test_e2e_slack_audit.py::finalize(self) - 
 tests/api/test_server_health.py::test_docs_endpoint_accessible(self) - Contract: OpenAPI docs endpoint is acces
 tests/api/test_server_health.py::test_health_endpoint_returns_200(self) - Contract: /health endpoint returns 200 O
 tests/api/test_server_health.py::test_root_endpoint_returns_info(self) - Contract: Root endpoint returns service 
+tests/api/test_slack_adapter.py::mock_slack_client() - Mock SlackAPIClient.
+tests/api/test_slack_adapter.py::mock_slack_validator() - Mock SlackRequestValidator.
+tests/api/test_slack_adapter.py::mock_substrate_service() - Mock MemorySubstrateService.
+tests/api/test_slack_adapter.py::sample_slack_command() - Sample Slack slash command payload.
+tests/api/test_slack_adapter.py::sample_slack_event() - Sample Slack event_callback payload.
+tests/api/test_slack_adapter.py::test_canonical_events_documented(self) - Verify canonical events are documented i
+tests/api/test_slack_adapter.py::test_expired_timestamp_rejected(self, mock_slack_validator) - Test expired timestamp is rejected.
+tests/api/test_slack_adapter.py::test_init_slack_metrics(self) - Test metrics initialization.
+tests/api/test_slack_adapter.py::test_invalid_signature_rejected(self, mock_slack_validator) - Test invalid signature is rejected.
+tests/api/test_slack_adapter.py::test_metrics_graceful_degradation(self) - Test metrics degrade gracefully when pro
+tests/api/test_slack_adapter.py::test_metrics_module_imports(self) - Verify slack_metrics module imports with
+tests/api/test_slack_adapter.py::test_record_aios_call(self) - Test AIOS call duration metric.
+tests/api/test_slack_adapter.py::test_record_idempotent_hit(self) - Test idempotent hit metric.
+tests/api/test_slack_adapter.py::test_record_packet_write_error(self) - Test packet write error metric.
+tests/api/test_slack_adapter.py::test_record_rate_limit_hit(self) - Test rate limit hit metric.
+tests/api/test_slack_adapter.py::test_record_signature_verification_failure(self) - Test signature verification failure metr
+tests/api/test_slack_adapter.py::test_record_signature_verification_success(self) - Test signature verification success metr
+tests/api/test_slack_adapter.py::test_record_slack_processing(self) - Test processing duration metric.
+tests/api/test_slack_adapter.py::test_record_slack_reply_error(self) - Test Slack reply error metric.
+tests/api/test_slack_adapter.py::test_record_slack_request(self) - Test request metric recording.
+tests/api/test_slack_adapter.py::test_slack_normalizer_imports(self) - Test SlackRequestNormalizer imports.
+tests/api/test_slack_adapter.py::test_slack_validator_imports(self) - Test SlackRequestValidator imports.
+tests/api/test_slack_adapter.py::test_thread_uuid_generation(self, sample_slack_event) - Test deterministic thread UUID generatio
+tests/api/test_slack_adapter.py::test_valid_signature_accepted(self, mock_slack_validator) - Test valid signature is accepted.
 tests/clients/test_memory_client.py::test_client_initialization() - Contract: MemoryClient can be instantiat
 tests/codegen/test_codegen_pipeline.py::contract(valid_spec) - Create a MetaContract from valid spec.
 tests/codegen/test_codegen_pipeline.py::file_emitter() - Create file emitter in dry-run mode.
@@ -2583,6 +2879,8 @@ tests/conftest.py::async_postgres_cursor() - Postgres cursor mock returning ivff
 tests/conftest.py::event_loop() - Create event loop for async tests.
 tests/conftest.py::execute(self, q) - 
 tests/conftest.py::fetchone(self) - 
+tests/conftest.py::fresh_slack_timestamp() - Provide current Unix timestamp as string
+tests/conftest.py::generate_slack_signature(body, timestamp, secret) - Generate valid Slack HMAC-SHA256 signatu
 tests/conftest.py::governance_kernel() - Provide governance kernel config.
 tests/conftest.py::kernel_state() - Provide a fresh kernel state.
 tests/conftest.py::large_content() - Provide large content for blob testing.
@@ -2593,6 +2891,12 @@ tests/conftest.py::postgres_cursor() - Provide a mock PostgreSQL cursor.
 tests/conftest.py::redis() - Provide a mock Redis client.
 tests/conftest.py::sample_checkpoint() - Provide a sample checkpoint for testing.
 tests/conftest.py::sample_packet() - Provide a sample packet for testing.
+tests/conftest.py::slack_disabled(monkeypatch) - Disable Slack integration for tests.
+tests/conftest.py::slack_enabled(monkeypatch) - Enable Slack integration for tests.
+tests/conftest.py::slack_signature_generator() - Provide a function to generate valid Sla
+tests/conftest.py::slack_signing_secret() - Provide test Slack signing secret.
+tests/conftest.py::slack_test_ids() - Provide test Slack IDs (channel, user, t
+tests/conftest.py::stale_slack_timestamp() - Provide timestamp > 300 seconds old (out
 tests/conftest.py::tool_registry(redis) - Provide a mock tool registry.
 tests/conftest.py::world_model() - Provide a mock world model.
 tests/core/agents/test_agent_self_modify.py::test_add_directive_requires_approval() - Test that add_directive tool requires Ig
@@ -2800,6 +3104,27 @@ tests/integration/test_compliance_audit.py::test_in_date_range_empty(self) - Tes
 tests/integration/test_compliance_audit.py::test_in_date_range_valid(self) - Test valid timestamp in range.
 tests/integration/test_compliance_audit.py::test_report_creation(self) - Test creating a compliance report.
 tests/integration/test_compliance_audit.py::test_report_to_dict(self) - Test report serialization.
+tests/integration/test_governance_tracking_e2e.py::config() - Create a test agent config.
+tests/integration/test_governance_tracking_e2e.py::instance(config, task) - Create an AgentInstance.
+tests/integration/test_governance_tracking_e2e.py::task() - Create a test task.
+tests/integration/test_governance_tracking_e2e.py::test_add_governance_block_authority(self, instance) - Test tracking an authority block.
+tests/integration/test_governance_tracking_e2e.py::test_add_governance_block_safety(self, instance) - Test tracking a safety block.
+tests/integration/test_governance_tracking_e2e.py::test_add_governance_block_tool_approval(self, instance) - Test tracking a tool approval block.
+tests/integration/test_governance_tracking_e2e.py::test_add_user_correction(self, instance) - Test tracking a user correction.
+tests/integration/test_governance_tracking_e2e.py::test_execution_result_none_when_empty(self, task) - Test ExecutionResult can have None for e
+tests/integration/test_governance_tracking_e2e.py::test_execution_result_with_governance_blocks(self, task, instance) - Test ExecutionResult carries governance 
+tests/integration/test_governance_tracking_e2e.py::test_execution_result_with_user_corrections(self, task, instance) - Test ExecutionResult carries user correc
+tests/integration/test_governance_tracking_e2e.py::test_governance_block_pattern_does_not_fire_on_failure(self) - Test GovernanceBlockPattern doesn't fire
+tests/integration/test_governance_tracking_e2e.py::test_governance_block_pattern_empty_blocks(self) - Test GovernanceBlockPattern doesn't fire
+tests/integration/test_governance_tracking_e2e.py::test_governance_block_pattern_fires_on_denied_blocks(self) - Test GovernanceBlockPattern fires when b
+tests/integration/test_governance_tracking_e2e.py::test_governance_block_pattern_no_denied_reason(self) - Test GovernanceBlockPattern doesn't fire
+tests/integration/test_governance_tracking_e2e.py::test_governance_blocks_copy_isolation(self, instance) - Test that governance_blocks property ret
+tests/integration/test_governance_tracking_e2e.py::test_multiple_user_corrections(self, instance) - Test tracking multiple user corrections.
+tests/integration/test_governance_tracking_e2e.py::test_user_correction_pattern_empty_corrections(self) - Test UserCorrectionPattern doesn't fire 
+tests/integration/test_governance_tracking_e2e.py::test_user_correction_pattern_fires_on_multiple_corrections(self) - Test UserCorrectionPattern fires with >=
+tests/integration/test_governance_tracking_e2e.py::test_user_correction_pattern_severity_scales(self) - Test UserCorrectionPattern severity scal
+tests/integration/test_governance_tracking_e2e.py::test_user_correction_pattern_single_correction_no_fire(self) - Test UserCorrectionPattern doesn't fire 
+tests/integration/test_governance_tracking_e2e.py::test_user_corrections_copy_isolation(self, instance) - Test that user_corrections property retu
 tests/integration/test_graph_state_integration.py::mock_neo4j_driver() - Create a mock Neo4j driver for unit test
 tests/integration/test_graph_state_integration.py::sample_agent_node() - Sample agent node data.
 tests/integration/test_graph_state_integration.py::sample_graph_result(sample_agent_node) - Sample full graph query result.
@@ -2835,6 +3160,31 @@ tests/integration/test_kernel_agent_activation_integration.py::test_agent_receiv
 tests/integration/test_kernel_agent_activation_integration.py::test_kernel_files_exist(self) - Kernel YAML files exist in expected loca
 tests/integration/test_kernel_agent_activation_integration.py::test_kernel_loader_integration(self) - Kernel loader loads and merges kernels.
 tests/integration/test_kernel_agent_activation_integration.py::test_kernel_prompt_builder_integration(self) - Prompt builder uses kernel data.
+tests/integration/test_kernel_evolution_flow.py::failed_task_context() - A task context representing a failed exe
+tests/integration/test_kernel_evolution_flow.py::problematic_task_context() - A task context with multiple issues that
+tests/integration/test_kernel_evolution_flow.py::successful_task_context() - A task context representing a successful
+tests/integration/test_kernel_evolution_flow.py::test_detects_excessive_iterations(self, problematic_task_context) - Should detect excessive iteration count.
+tests/integration/test_kernel_evolution_flow.py::test_detects_repeated_tool_failures(self, problematic_task_context) - Should detect repeated tool failures.
+tests/integration/test_kernel_evolution_flow.py::test_detects_token_overuse(self, problematic_task_context) - Should detect excessive token usage.
+tests/integration/test_kernel_evolution_flow.py::test_detects_user_corrections(self, problematic_task_context) - Should detect user corrections as behavi
+tests/integration/test_kernel_evolution_flow.py::test_generate_proposal_from_capability_gap(self) - Should generate appropriate proposal for
+tests/integration/test_kernel_evolution_flow.py::test_generate_proposal_from_constraint_gap(self) - Should generate appropriate proposal for
+tests/integration/test_kernel_evolution_flow.py::test_generate_proposal_from_safety_gap(self) - Safety gaps should always require Igor a
+tests/integration/test_kernel_evolution_flow.py::test_no_gaps_on_successful_execution(self, successful_task_context) - Successful execution with no issues shou
+tests/integration/test_kernel_hot_reload.py::absorb_kernel(data) - 
+tests/integration/test_kernel_hot_reload.py::mock_agent() - Create a mock agent that can absorb kern
+tests/integration/test_kernel_hot_reload.py::mock_import(name) - 
+tests/integration/test_kernel_hot_reload.py::mock_import(name) - 
+tests/integration/test_kernel_hot_reload.py::mock_kernel_files(tmp_path) - Create mock kernel files in a temporary 
+tests/integration/test_kernel_hot_reload.py::test_reload_creates_span(self, mock_kernel_files, mock_agent) - reload_kernels() creates an observabilit
+tests/integration/test_kernel_hot_reload.py::test_reload_detects_modified_kernel(self, mock_kernel_files, mock_agent) - reload_kernels() detects and reloads mod
+tests/integration/test_kernel_hot_reload.py::test_reload_handles_invalid_yaml(self, mock_kernel_files, mock_agent) - reload_kernels() handles invalid YAML in
+tests/integration/test_kernel_hot_reload.py::test_reload_handles_missing_kernel_file(self, mock_kernel_files, mock_agent) - reload_kernels() handles missing kernel 
+tests/integration/test_kernel_hot_reload.py::test_reload_preserves_agent_state_on_success(self, mock_kernel_files, mock_agent) - reload_kernels() preserves agent state a
+tests/integration/test_kernel_hot_reload.py::test_reload_returns_hash_changes(self, mock_kernel_files, mock_agent) - reload_kernels() returns previous and ne
+tests/integration/test_kernel_hot_reload.py::test_reload_updates_registry_agent(self, mock_kernel_files, mock_agent) - Reload updates the agent in the registry
+tests/integration/test_kernel_hot_reload.py::test_reload_with_force(self, mock_kernel_files, mock_agent) - reload_kernels() reloads all kernels whe
+tests/integration/test_kernel_hot_reload.py::test_reload_with_no_changes(self, mock_kernel_files, mock_agent) - reload_kernels() skips reload when no ke
 tests/integration/test_kernel_router_orchestrator_end_to_end.py::kernel_stack() - Load deterministic 10-kernel stack.
 tests/integration/test_kernel_router_orchestrator_end_to_end.py::test_kernel_get_rule_traversal(kernel_stack) - Test get_rule can traverse nested paths.
 tests/integration/test_kernel_router_orchestrator_end_to_end.py::test_kernel_hashes_computed(kernel_stack) - Verify hashes are computed for drift det
@@ -3027,6 +3377,20 @@ tests/mac_agent/test_executor.py::test_executor_captures_output() - Contract: Ex
 tests/memory/test_consolidation_graph.py::test_consolidation_service_has_graph_method() - Test that consolidate_graph_state method
 tests/memory/test_consolidation_graph.py::test_get_metrics_includes_graph_snapshots() - Test that get_metrics returns graph_stat
 tests/memory/test_consolidation_graph.py::test_memory_consolidation_service_import() - Test that MemoryConsolidationService can
+tests/memory/test_e2e_memory_audit.py::__init__(self, name) - 
+tests/memory/test_e2e_memory_audit.py::add_check(self, name, passed, details) - 
+tests/memory/test_e2e_memory_audit.py::add_recommendation(self, recommendation) - 
+tests/memory/test_e2e_memory_audit.py::add_warning(self, warning) - 
+tests/memory/test_e2e_memory_audit.py::finalize(self) - 
+tests/memory/test_embedding_filter.py::test_allow_content_at_boundary(self) - Content at exactly 10 chars should be al
+tests/memory/test_embedding_filter.py::test_allow_valid_content(self) - Legitimate content should NOT be skipped
+tests/memory/test_embedding_filter.py::test_skip_empty_content(self) - Empty or None content should be skipped.
+tests/memory/test_embedding_filter.py::test_skip_error_pattern_with_whitespace(self) - Patterns with leading/trailing whitespac
+tests/memory/test_embedding_filter.py::test_skip_error_prefix_variants(self) - Error messages starting with known prefi
+tests/memory/test_embedding_filter.py::test_skip_exact_error_patterns(self) - Known error messages should be skipped.
+tests/memory/test_embedding_filter.py::test_skip_patterns_are_strings(self) - All skip patterns should be non-empty st
+tests/memory/test_embedding_filter.py::test_skip_patterns_list_not_empty(self) - SKIP_EMBEDDING_PATTERNS should contain p
+tests/memory/test_embedding_filter.py::test_skip_very_short_content(self) - Content under 10 chars should be skipped
 tests/memory/test_memory_adapter_basic.py::__init__(self, status_code, json_data) - 
 tests/memory/test_memory_adapter_basic.py::json(self) - 
 tests/memory/test_memory_adapter_basic.py::raise_for_status(self) - 
@@ -3336,6 +3700,7 @@ tests/test_memory_adapter.py::test_get_memory_adapter_requires_init(self) - Test
 tests/test_memory_adapter.py::test_init_memory_adapter(self) - Test initializing memory adapter.
 tests/test_memory_adapter.py::test_state_to_envelope(self, adapter, sample_state) - Test converting state to packet envelope
 tests/test_memory_adapter.py::test_state_to_envelope_custom_type(self, adapter, sample_state) - Test converting with custom packet type.
+tests/test_memory_substrate_basic.py::db_url(self) - Get database URL from environment or use
 tests/test_memory_substrate_basic.py::test_create_openai_provider(self) - Test creating OpenAI provider (without m
 tests/test_memory_substrate_basic.py::test_create_packet_with_all_fields(self) - Test creating a packet with all fields.
 tests/test_memory_substrate_basic.py::test_create_packet_with_required_fields(self) - Test creating a packet with only require
@@ -3388,6 +3753,124 @@ tests/test_tool_registry.py::test_resolve_for_role(self, resolver) - Test resolv
 tests/test_tool_registry.py::test_resolve_unauthorized_role(self, resolver) - Test resolving for unauthorized role.
 tests/test_tool_registry.py::test_resolve_with_filter(self, resolver) - Test resolving with tool name filter.
 tests/test_tool_registry.py::test_tool_metadata_defaults(self) - Test default values for tool metadata.
+tests/unit/test_guarded_execution.py::__init__(self) - 
+tests/unit/test_guarded_execution.py::__init__(self, kernel_state, kernels, behavioral, safety) - 
+tests/unit/test_guarded_execution.py::failing_import(name) - 
+tests/unit/test_guarded_execution.py::mock_agent() - Create a mock kernel-aware agent.
+tests/unit/test_guarded_execution.py::mock_registry() - Create a mock tool registry.
+tests/unit/test_guarded_execution.py::test_executor_get_kernel_aware_agent_active(self) - Executor should return agent when kernel
+tests/unit/test_guarded_execution.py::test_executor_get_kernel_aware_agent_inactive(self) - Executor should return None when kernels
+tests/unit/test_guarded_execution.py::test_executor_get_kernel_aware_agent_none(self) - Executor should return None when no agen
+tests/unit/test_guarded_execution.py::test_executor_set_kernel_aware_agent(self) - Executor should accept kernel-aware agen
+tests/unit/test_kernel_loader_activation.py::__init__(self) - 
+tests/unit/test_kernel_loader_activation.py::__init__(self) - 
+tests/unit/test_kernel_loader_activation.py::__init__(self) - 
+tests/unit/test_kernel_loader_activation.py::absorb_kernel(self, kernel_data) - 
+tests/unit/test_kernel_loader_activation.py::absorb_kernel(self, kernel_data) - 
+tests/unit/test_kernel_loader_activation.py::absorb_kernel(self, kernel_data) - Absorb a kernel into the agent's configu
+tests/unit/test_kernel_loader_activation.py::mock_agent() - Create a mock kernel-aware agent.
+tests/unit/test_kernel_loader_activation.py::set_system_context(self, context) - 
+tests/unit/test_kernel_loader_activation.py::set_system_context(self, context) - Set the agent's system context after ker
+tests/unit/test_kernel_loader_activation.py::temp_kernel_dir() - Create a temporary directory with mock k
+tests/unit/test_kernel_loader_activation.py::test_absorption_error_handling(self, temp_kernel_dir) - Should handle absorption errors graceful
+tests/unit/test_kernel_loader_activation.py::test_agent_without_set_system_context(self, temp_kernel_dir) - Should handle agents without set_system_
+tests/unit/test_kernel_loader_activation.py::test_empty_kernel_file(self, temp_kernel_dir) - Should handle empty kernel files gracefu
+tests/unit/test_kernel_loader_activation.py::test_kernel_manifest_missing_name(self) - KernelManifest should reject kernel with
+tests/unit/test_kernel_loader_activation.py::test_kernel_manifest_valid(self) - KernelManifest should accept valid kerne
+tests/unit/test_kernel_loader_activation.py::test_kernel_type_inference(self) - KernelManifest should infer kernel type 
+tests/unit/test_kernel_loader_activation.py::test_load_kernels_raises_on_phase1_failure(self, mock_agent, temp_kernel_dir) - load_kernels should raise RuntimeError i
+tests/unit/test_kernel_loader_activation.py::test_load_kernels_returns_agent(self, mock_agent, temp_kernel_dir) - load_kernels should return the activated
+tests/unit/test_kernel_loader_activation.py::test_load_kernels_two_phase(self, mock_agent, temp_kernel_dir) - load_kernels should perform both phases 
+tests/unit/test_kernel_loader_activation.py::test_phase1_computes_hashes(self, temp_kernel_dir) - Phase 1 should compute SHA256 hashes for
+tests/unit/test_kernel_loader_activation.py::test_phase1_fails_on_missing_kernels(self, temp_kernel_dir) - Phase 1 should raise RuntimeError if ker
+tests/unit/test_kernel_loader_activation.py::test_phase1_handles_yaml_errors(self, temp_kernel_dir) - Phase 1 should handle YAML parse errors 
+tests/unit/test_kernel_loader_activation.py::test_phase1_loads_all_kernels(self, temp_kernel_dir) - Phase 1 should load all 10 kernel files.
+tests/unit/test_kernel_loader_activation.py::test_phase1_skips_integrity_check_when_disabled(self, temp_kernel_dir) - Phase 1 should skip hash computation whe
+tests/unit/test_kernel_loader_activation.py::test_phase1_validates_schema(self, temp_kernel_dir) - Phase 1 should validate kernel schema.
+tests/unit/test_kernel_loader_activation.py::test_phase2_absorbs_all_kernels(self, mock_agent, temp_kernel_dir) - Phase 2 should call absorb_kernel for ea
+tests/unit/test_kernel_loader_activation.py::test_phase2_activates_agent(self, mock_agent, temp_kernel_dir) - Phase 2 should activate kernels on the a
+tests/unit/test_kernel_loader_activation.py::test_phase2_fails_on_insufficient_kernels(self, mock_agent) - Phase 2 should fail if not enough kernel
+tests/unit/test_kernel_loader_activation.py::test_phase2_sets_system_context(self, mock_agent, temp_kernel_dir) - Phase 2 should inject activation context
+tests/unit/test_kernel_loader_activation.py::test_phase2_stores_hashes(self, mock_agent, temp_kernel_dir) - Phase 2 should store kernel hashes on ag
+tests/unit/test_kernel_loader_activation.py::test_require_kernel_activation_failure(self, mock_agent) - require_kernel_activation should raise f
+tests/unit/test_kernel_loader_activation.py::test_require_kernel_activation_success(self, mock_agent, temp_kernel_dir) - require_kernel_activation should not rai
+tests/unit/test_kernel_loader_activation.py::test_verify_integrity_all_ok(self, mock_agent, temp_kernel_dir) - verify_kernel_integrity should return OK
+tests/unit/test_kernel_loader_activation.py::test_verify_integrity_missing(self, mock_agent, temp_kernel_dir) - verify_kernel_integrity should detect mi
+tests/unit/test_kernel_loader_activation.py::test_verify_integrity_modified(self, mock_agent, temp_kernel_dir) - verify_kernel_integrity should detect mo
+tests/unit/test_kernel_loader_activation.py::test_verify_kernel_activation_inactive(self, mock_agent) - verify_kernel_activation should return F
+tests/unit/test_kernel_loader_activation.py::test_verify_kernel_activation_no_kernels(self, mock_agent) - verify_kernel_activation should return F
+tests/unit/test_kernel_loader_activation.py::test_verify_kernel_activation_success(self, mock_agent, temp_kernel_dir) - verify_kernel_activation should return T
+tests/unit/test_kernel_loader_activation.py::test_verify_kernel_activation_wrong_state(self, mock_agent) - verify_kernel_activation should return F
+tests/unit/test_kernel_observability.py::test_all_kernel_span_kinds_are_strings(self) - All kernel SpanKind values are strings.
+tests/unit/test_kernel_observability.py::test_create_kernel_span_helper(self) - _create_kernel_span creates valid spans.
+tests/unit/test_kernel_observability.py::test_finish_span_helper(self) - _finish_span handles None spans graceful
+tests/unit/test_kernel_observability.py::test_kernel_activation_span_kind_exists(self) - KERNEL_ACTIVATION SpanKind value exists.
+tests/unit/test_kernel_observability.py::test_kernel_evolution_span_kind_exists(self) - KERNEL_EVOLUTION SpanKind value exists.
+tests/unit/test_kernel_observability.py::test_kernel_integrity_check_span_kind_exists(self) - KERNEL_INTEGRITY_CHECK SpanKind value ex
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_can_be_created_manually(self) - KernelLifecycleSpan can be created for t
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_captures_error(self) - KernelLifecycleSpan can capture errors.
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_creation(self) - KernelLifecycleSpan can be created with 
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_finish_method(self) - KernelLifecycleSpan.finish() completes t
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_finish_with_error(self) - KernelLifecycleSpan.finish() can record 
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_inherits_from_span(self) - KernelLifecycleSpan inherits from base S
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_start_method(self) - KernelLifecycleSpan.start() creates a ne
+tests/unit/test_kernel_observability.py::test_kernel_lifecycle_span_with_all_fields(self) - KernelLifecycleSpan stores all kernel-sp
+tests/unit/test_kernel_observability.py::test_kernel_load_span_kind_exists(self) - KERNEL_LOAD SpanKind value exists.
+tests/unit/test_kernel_observability.py::test_kernel_reload_span_kind_exists(self) - KERNEL_RELOAD SpanKind value exists.
+tests/unit/test_kernel_observability.py::test_span_includes_agent_id(self) - Kernel spans include agent_id when avail
+tests/unit/test_kernel_observability.py::test_span_includes_integrity_status(self) - Kernel spans include integrity status.
+tests/unit/test_kernel_observability.py::test_span_includes_kernel_count(self) - Kernel spans include kernel count attrib
+tests/unit/test_kernel_observability.py::test_trace_context_child_preserves_trace_id(self) - Child trace context preserves parent tra
+tests/unit/test_kernel_observability.py::test_trace_context_creates_valid_span_id(self) - TraceContext creates a valid span ID.
+tests/unit/test_kernel_observability.py::test_trace_context_creates_valid_trace_id(self) - TraceContext creates a valid trace ID.
+tests/unit/test_kernel_observability.py::test_trace_context_to_headers(self) - TraceContext converts to W3C traceparent
+tests/unit/test_lcto_bootstrap.py::mock_env_with_kernels(temp_kernel_dir, monkeypatch) - Set up environment for kernel loading.
+tests/unit/test_lcto_bootstrap.py::mock_env_without_kernels(monkeypatch) - Set up environment without kernel loadin
+tests/unit/test_lcto_bootstrap.py::patched_load(agent, base_path) - 
+tests/unit/test_lcto_bootstrap.py::patched_load(agent, base_path) - 
+tests/unit/test_lcto_bootstrap.py::temp_kernel_dir() - Create a temporary directory with mock k
+tests/unit/test_lcto_bootstrap.py::test_agent_with_custom_config(self) - Agent should accept custom config.
+tests/unit/test_lcto_bootstrap.py::test_agent_with_manifest_path(self) - Agent should accept manifest path.
+tests/unit/test_lcto_bootstrap.py::test_bootstrap_with_create_l_cto_agent(self, temp_kernel_dir) - Test bootstrap using create_l_cto_agent 
+tests/unit/test_lcto_bootstrap.py::test_bootstrap_without_kernel_loading(self) - Test creating agent without loading kern
+tests/unit/test_lcto_bootstrap.py::test_create_registry_raises_on_kernel_failure(self, monkeypatch) - Factory should raise RuntimeError if ker
+tests/unit/test_lcto_bootstrap.py::test_create_registry_without_kernels(self, mock_env_without_kernels) - Factory should create registry without k
+tests/unit/test_lcto_bootstrap.py::test_empty_kernel_absorption(self) - Agent should handle empty kernel data.
+tests/unit/test_lcto_bootstrap.py::test_full_bootstrap_flow(self, temp_kernel_dir) - Test complete bootstrap flow from agent 
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_absorb_behavioral_kernel(self) - LCTOAgent should absorb behavioral kerne
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_absorb_kernel(self) - LCTOAgent should absorb kernel data.
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_absorb_safety_kernel(self) - LCTOAgent should absorb safety kernel da
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_creation(self) - LCTOAgent should be created in INACTIVE 
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_describe_self_active(self, temp_kernel_dir) - LCTOAgent describe_self should indicate 
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_describe_self_inactive(self) - LCTOAgent describe_self should indicate 
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_fallback_prompt_when_inactive(self) - LCTOAgent should return fallback prompt 
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_kernel_prompt_when_active(self, temp_kernel_dir) - LCTOAgent should return kernel-built pro
+tests/unit/test_lcto_bootstrap.py::test_lcto_agent_set_system_context(self) - LCTOAgent should accept system context.
+tests/unit/test_lcto_bootstrap.py::test_multiple_kernel_absorptions(self) - Agent should handle multiple kernel abso
+tests/unit/test_lcto_bootstrap.py::test_registry_agent_exists(self, mock_env_without_kernels) - Registry should report agent exists.
+tests/unit/test_lcto_bootstrap.py::test_registry_get_agent_config(self, mock_env_without_kernels) - Registry should return agent config.
+tests/unit/test_lcto_bootstrap.py::test_registry_initialization_with_kernels(self, temp_kernel_dir, monkeypatch) - Registry should initialize with kernels 
+tests/unit/test_lcto_bootstrap.py::test_registry_initialization_without_kernels(self, mock_env_without_kernels) - Registry should initialize with fallback
+tests/unit/test_lcto_bootstrap.py::test_state_error_on_failure(self) - Agent should transition to ERROR on fail
+tests/unit/test_lcto_bootstrap.py::test_state_inactive_to_loading(self) - Agent should transition from INACTIVE to
+tests/unit/test_lcto_bootstrap.py::test_state_loading_to_active(self, temp_kernel_dir) - Agent should transition from LOADING to 
+tests/unit/test_startup_readiness.py::test_kernel_readiness_checks_kernel_directory(self) - Kernel readiness checks that kernel dire
+tests/unit/test_startup_readiness.py::test_kernel_readiness_computes_hashes(self) - Kernel readiness computes SHA256 hashes 
+tests/unit/test_startup_readiness.py::test_kernel_readiness_with_missing_directory(self) - Kernel readiness returns False when kern
+tests/unit/test_startup_readiness.py::test_startup_captures_kernel_hashes(self) - SessionStartup captures kernel hash snap
+tests/unit/test_startup_readiness.py::test_startup_checks_kernel_files(self) - SessionStartup checks kernel files in pr
+tests/unit/test_startup_readiness.py::test_startup_handles_insufficient_kernels(self) - SessionStartup reports error if fewer th
+tests/unit/test_startup_readiness.py::test_startup_handles_missing_kernel_directory(self) - SessionStartup handles missing kernel di
+tests/unit/test_startup_readiness.py::test_startup_health_response_structure(self) - Startup health endpoint returns full Sta
+tests/unit/test_startup_readiness.py::test_startup_health_unknown_when_not_executed(self) - Startup health returns 'unknown' when Se
+tests/unit/test_startup_readiness.py::test_startup_records_errors_in_result(self) - SessionStartup records errors in the res
+tests/unit/test_startup_readiness.py::test_startup_result_default_values(self) - StartupResult has sensible defaults.
+tests/unit/test_startup_readiness.py::test_startup_result_with_kernel_data(self) - StartupResult stores kernel readiness da
+tests/unit/test_tool_input_sanitizer.py::test_sanitizer_blocks_path_traversal_for_path_like_keys() - 
+tests/unit/test_tool_input_sanitizer.py::test_sanitizer_coerces_int_and_strips_strings() - 
+tests/unit/test_tool_input_sanitizer.py::test_sanitizer_enforces_required_fields() - 
+tests/unit/test_tool_input_sanitizer.py::test_sanitizer_rejects_non_object_arguments() - 
+tests/unit/test_tool_input_sanitizer.py::test_sanitizer_rejects_unknown_keys_when_schema_has_properties() - 
 tests/upgrades/test_packet_envelope_phases.py::test_cloudevent_batch(self) - Test CloudEvent batch serialization
 tests/upgrades/test_packet_envelope_phases.py::test_cloudevent_creation(self) - Test basic CloudEvent creation
 tests/upgrades/test_packet_envelope_phases.py::test_cloudevent_json_roundtrip(self) - Test CloudEvent serialization/deserializ

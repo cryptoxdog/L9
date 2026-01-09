@@ -175,10 +175,12 @@ Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 
 ## Open Questions
 <!-- Unresolved issues, blockers, or things needing Igor input -->
-- **VPS Neo4j Auth**: Password unknown. `.env` has placeholder. Options: (A) nuke volume, (B) find original pwd
-- Confirm actual POSTGRES_PASSWORD value for VPS
 - Decide on exact scope names (`cursor` vs `cursor-dev` vs `igor`)
-- Caddy configuration file location on VPS (need to check/create)
+
+### ✅ RESOLVED (2026-01-09)
+- **VPS Neo4j Auth**: `NEO4J_PASSWORD=FVmgaD1diPcz41zRbYLLP0UzyGvAi4E`
+- **VPS Postgres**: `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=8e4fXWM6Q3M87*b3`, `POSTGRES_DB=l9_memory`
+- **Caddy config**: `/etc/caddy/Caddyfile` (found + verified)
 
 ---
 
@@ -195,7 +197,7 @@ Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 - [ ] **Confirm local Docker memory is still healthy** (Postgres/Neo4j/Redis up; memory_write + memory_search smoke).
 - [ ] **Enforce `PacketValidator`** at the ingestion chokepoint (`memory/substrate_service.py:write_packet()`), with explicit error semantics + targeted tests.
 - [x] ~~**Unstub `ResearchSwarmOrchestrator`**~~ ✅ Implemented in GMP-47 (`orchestrators/research_swarm/orchestrator.py`)
-- [ ] **Run GMP-31 capability enabling** (details in `reports/GMP-31-Systematic-Capability-Enabling.md`).
+- [ ] **Run GMP-48** (next GMP; capability enabling per `reports/GMP-31-Systematic-Capability-Enabling.md`).
 - [ ] **Test server startup** to verify fail-loudly behavior (GMP-47 removed silent stubs).
 
 ---
@@ -215,9 +217,10 @@ Full history: `reports/Workflow_State_Archive_2026-01-08.md`
 - **Cloudflare**: All DNS for quantumaipartners.com proxied via Cloudflare (HTTPS, DDoS protection)
 
 ---
-*Last updated: 2026-01-09 07:50 EST*
+*Last updated: 2026-01-09 12:05 EST*
 
 **Recent Sessions (7-day window):**
+- 2026-01-09: Created `deploy.sh` (IGOR_ONLY, 8-phase deployment with MRI). Archived 3 legacy deploy scripts. VPS credentials resolved, Caddy at `/etc/caddy/Caddyfile`.
 - ✅ 2026-01-09: E2E Audits — Memory + Slack audit scripts (tests/memory/test_e2e_memory_audit.py, tests/api/test_e2e_slack_audit.py), api/SLACK_INTEGRATION.md
 - ✅ 2026-01-09: GMP-46 — Fix Silent Failures in KERNEL_TIER (AIOSRuntime + KernelLoader)
 - ✅ 2026-01-09: GMP-32/33/34/47 — CircuitBreaker, EmbeddingProvider, Stub Elimination (4 GMPs)

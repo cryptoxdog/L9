@@ -14,11 +14,19 @@
 | `execute_tool` | core | high | core/tools/base_registry.py |
 | `git_commit` | core | high | core/tools/registry_adapter.py |
 | `git_commit` | core | high | core/tools/tool_graph.py |
+| `github_create_issue` | core | high | core/tools/tool_graph.py |
+| `github_create_pull_request` | core | high | core/tools/tool_graph.py |
+| `github_merge_pull_request` | core | high | core/tools/tool_graph.py |
 | `gmp_run` | core | high | core/tools/registry_adapter.py |
 | `gmp_run` | core | high | core/tools/tool_graph.py |
+| `godaddy_update_dns_record` | core | high | core/tools/tool_graph.py |
 | `kernel_read` | core | high | core/tools/registry_adapter.py |
 | `kernel_read` | core | high | core/tools/tool_graph.py |
 | `llm_chat` | core | high | core/tools/tool_graph.py |
+| `long_plan_execute` | core | high | core/tools/registry_adapter.py |
+| `long_plan_execute` | core | high | core/tools/tool_graph.py |
+| `long_plan_simulate` | core | high | core/tools/registry_adapter.py |
+| `long_plan_simulate` | core | high | core/tools/tool_graph.py |
 | `mac_agent_exec_task` | core | high | core/tools/registry_adapter.py |
 | `mac_agent_exec_task` | core | high | core/tools/tool_graph.py |
 | `mcp_call_tool` | core | high | core/tools/registry_adapter.py |
@@ -72,6 +80,8 @@
 | `memory_write` | core | high | core/tools/tool_graph.py |
 | `neo4j_query` | core | high | core/tools/registry_adapter.py |
 | `neo4j_query` | core | high | core/tools/tool_graph.py |
+| `notion_create_page` | core | high | core/tools/tool_graph.py |
+| `notion_update_page` | core | high | core/tools/tool_graph.py |
 | `redis_decrement_rate_limit` | core | high | core/tools/registry_adapter.py |
 | `redis_delete` | core | high | core/tools/registry_adapter.py |
 | `redis_delete` | core | high | core/tools/tool_graph.py |
@@ -116,6 +126,8 @@
 | `tools_list_all` | core | high | core/tools/tool_graph.py |
 | `tools_list_enabled` | core | high | core/tools/registry_adapter.py |
 | `tools_list_enabled` | core | high | core/tools/tool_graph.py |
+| `vercel_get_deploy_status` | core | high | core/tools/tool_graph.py |
+| `vercel_trigger_deploy` | core | high | core/tools/tool_graph.py |
 | `web_search` | core | high | core/tools/tool_graph.py |
 | `world_model_get_entity` | core | high | core/tools/registry_adapter.py |
 | `world_model_get_entity` | core | high | core/tools/tool_graph.py |
@@ -134,4 +146,4 @@
 | `world_model_snapshot` | core | high | core/tools/registry_adapter.py |
 | `world_model_snapshot` | core | high | core/tools/tool_graph.py |
 
-# Total: 126 tool definitions found
+# Total: 138 tool definitions found

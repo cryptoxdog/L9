@@ -2356,6 +2356,8 @@
 VPS-Repo-Files/docker/docker-Dockerfile
 VPS-Repo-Files/runtime/*runtime-Dockerfile
 VPS-Repo-Files/runtime/runtime-docker-compose.yml
+_archived/codegen_slack_adapter/module.slack_adapter/Module-Spec-v2.6.yaml
+_archived/codegen_slack_adapter/slack_webhook_example.yaml
 agents/codegenagent/codegen+codegenAgent_specs/.github_workflows_l9_ci.yaml
 agents/codegenagent/codegen+codegenAgent_specs/agents_cli_cursor_cli_launcher.yaml
 agents/codegenagent/codegen+codegenAgent_specs/agents_codegen_agent.yaml
@@ -2463,13 +2465,12 @@ agents/codegenagent/patches/patches-done/ui_patch_audit_viewer.yaml
 api/adapters/calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
 api/adapters/email_adapter/Module-Spec-v2.6-email_adapter.yaml
 api/adapters/twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
+codegen/MODULE_REGISTRY.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/calendar_adapter.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/email_adapter.yaml
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/slack_webhook.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/examples/module_blocks/twilio_adapter.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/Module-Spec-v2.6-calendar_adapter.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/Module-Spec-v2.6-email_adapter.yaml
-codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/Module-Spec-v2.6.yaml
 codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/Module-Spec-v2.6-twilio_adapter.yaml
 codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Manus-System-Prompt-v1.0.yaml
 codegen/code-gen-files/Module Production/_Module Canonical Trio/Manus/Module-Spec-v2.0.yaml
@@ -2597,6 +2598,7 @@ docker/prometheus.yml
 generated/specs/config_loader.yaml
 grafana/dashboards/l9-tool-observability.json
 grafana/provisioning/dashboards/l9-tool-observability.json
+igor/01-07-2026/TODO/Memory - Strategic Memory/Harvested Files/strategy_governance_policy.yaml
 igor/audit-tools/Current Config/07_execution_kernel.yaml
 igor/audit-tools/Current Config/10_packet_protocol_kernel.yaml
 igor/l-cto-Setup/l-cto-yaml-files/INITIALIZATION_KERNEL_UNIFIED.yaml
@@ -2635,20 +2637,19 @@ private/kernels/bootstrap/kernel_manifest.yaml
 private/security/l9_security_kernel.yaml
 pyproject.toml
 pytest.ini
-reports/audit_infrastructure_health.json
-reports/audit_run_audit_run_20260106_185009_61c6ec09.json
-reports/audit_run_audit_run_20260106_185743_d10c38c1.json
-reports/audit_run_audit_run_20260106_192337_4c29281f.json
-reports/audit_run_audit_run_20260106_193241_0c979f9c.json
-reports/audit_run_audit_run_20260106_195658_cf97d356.json
-reports/audit_run_audit_run_20260106_195956_316d174c.json
-reports/audit_run_audit_run_20260106_200021_4401ad50.json
-reports/audit_run_audit_run_20260106_203324_ce365722.json
-reports/audit_run_audit_run_20260106_221652_9a004d6c.json
+reports/GMP Reports/audit_infrastructure_health.json
+reports/GMP Reports/audit_run_audit_run_20260106_185009_61c6ec09.json
+reports/GMP Reports/audit_run_audit_run_20260106_185743_d10c38c1.json
+reports/GMP Reports/audit_run_audit_run_20260106_192337_4c29281f.json
+reports/GMP Reports/audit_run_audit_run_20260106_193241_0c979f9c.json
+reports/GMP Reports/audit_run_audit_run_20260106_195658_cf97d356.json
+reports/GMP Reports/audit_run_audit_run_20260106_195956_316d174c.json
+reports/GMP Reports/audit_run_audit_run_20260106_200021_4401ad50.json
+reports/GMP Reports/audit_run_audit_run_20260106_203324_ce365722.json
+reports/GMP Reports/audit_run_audit_run_20260106_221652_9a004d6c.json
 runtime/Dockerfile
 scripts/audit/audit.yaml
 scripts/reports/audit_infrastructure_health.json
 services/symbolic_computation/Dockerfile
 services/symbolic_computation/docker-compose.yml
-specs/MODULE_REGISTRY.yaml
 tests/test-wirein-memory-yaml2.0.yaml

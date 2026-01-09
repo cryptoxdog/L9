@@ -3,6 +3,8 @@
 # Format: METHOD /path → handler_function @ file.py
 # Load into Neo4j as (Route)-[:HANDLED_BY]->(Function) relationships
 
+DELETE /delete/{key} → cache_delete() @ api/memory/cache.py
+DELETE /entity/{entity_type}/{entity_id} → delete_entity() @ api/memory/graph.py
 GET / → index() @ local_dashboard/app.py
 GET / → root() @ _archived/archived_mcp_memory/src/main.py
 GET / → root() @ api/server.py
@@ -15,27 +17,32 @@ GET /approvals/summary → get_approvals_summary() @ api/routes/worldmodel.py
 GET /audit-log → export_audit_log() @ api/routes/compliance.py
 GET /cache/stats → get_cache_stats() @ services/symbolic_computation/api/routes.py
 GET /context/{agent_id} → get_world_model_context() @ api/routes/worldmodel.py
+GET /context/{domain} → get_domain_context() @ api/memory/graph.py
 GET /entities → list_entities() @ api/world_model_api.py
 GET /entities/{entity_id} → get_entity() @ api/world_model_api.py
+GET /entity/{entity_type}/{entity_id} → get_entity() @ api/memory/graph.py
 GET /facts → get_facts() @ api/memory/router.py
 GET /facts → get_facts() @ igor/audit-memory/api_memory_router.py
 GET /gc/stats → get_gc_stats() @ api/memory/router.py
 GET /gc/stats → get_gc_stats() @ igor/audit-memory/api_memory_router.py
+GET /get/{key} → cache_get() @ api/memory/cache.py
 GET /graph/{graph_id} → get_runs_for_graph() @ api/routes/simulation.py
 GET /health → agent_health() @ api/agent_routes.py
+GET /health → cache_health() @ api/memory/cache.py
 GET /health → factory_health() @ api/routes/factory.py
+GET /health → graph_health() @ api/memory/graph.py
 GET /health → health() @ api/server.py
 GET /health → health() @ api/server_memory.py
 GET /health → health() @ tests/orchestrators/test_kernel_injection.py
 GET /health → health_check() @ _archived/archived_mcp_memory/src/main.py
 GET /health → health_check() @ _archived/archived_mcp_memory/src/routes/health.py
+GET /health → health_check() @ _archived/codegen_slack_adapter/module.slack_adapter/routes/slack_webhook.py
 GET /health → health_check() @ api/adapters/calendar_adapter/routes/calendar_adapter.py
 GET /health → health_check() @ api/adapters/email_adapter/routes/email_adapter.py
 GET /health → health_check() @ api/adapters/twilio_adapter/routes/twilio_adapter.py
 GET /health → health_check() @ api/memory/router.py
 GET /health → health_check() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.calendar_adapter/routes/calendar_adapter.py
 GET /health → health_check() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/routes/email_adapter.py
-GET /health → health_check() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py
 GET /health → health_check() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.twilio_adapter/routes/twilio_adapter.py
 GET /health → health_check() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/tools/generate_module_code.py
 GET /health → health_check() @ igor/audit-memory/api_memory_router.py
@@ -49,12 +56,14 @@ GET /health → tool_graph_health() @ api/tools/router.py
 GET /health → upgrade_health() @ api/routes/upgrades.py
 GET /health → world_model_health() @ api/world_model_api.py
 GET /health/neo4j → neo4j_health() @ api/server.py
+GET /health/startup → startup_health() @ api/server.py
 GET /help → get_help() @ api/routes/commands.py
 GET /infrastructure/status → get_infrastructure_status() @ api/routes/worldmodel.py
 GET /insights → get_insights() @ api/memory/router.py
 GET /insights → get_insights() @ igor/audit-memory/api_memory_router.py
 GET /integrations → get_integrations() @ api/routes/worldmodel.py
 GET /kernel → get_kernel() @ tests/orchestrators/test_kernel_injection.py
+GET /keys/{pattern} → cache_keys() @ api/memory/cache.py
 GET /lineage/{packet_id} → get_lineage() @ api/memory/router.py
 GET /lineage/{packet_id} → get_lineage() @ igor/audit-memory/api_memory_router.py
 GET /mcp/tools → list_tools() @ _archived/archived_mcp_memory/src/main.py
@@ -66,8 +75,13 @@ GET /packet-envelope/status → get_upgrade_status() @ api/routes/upgrades.py
 GET /packet-envelope/validate → validate_upgrade_deployment() @ api/routes/upgrades.py
 GET /packet/{packet_id} → get_packet() @ api/memory/router.py
 GET /packet/{packet_id} → get_packet() @ igor/audit-memory/api_memory_router.py
+GET /rate-limit/{key} → get_rate_limit() @ api/memory/cache.py
+GET /relationships/{entity_type}/{entity_id} → get_relationships() @ api/memory/graph.py
 GET /report → get_compliance_report() @ api/routes/compliance.py
 GET /report/daily → get_daily_compliance_report() @ api/routes/compliance.py
+GET /session-graph/{session_id} → get_session_graph() @ api/memory/graph.py
+GET /session/context/{session_id} → get_session_context() @ api/memory/cache.py
+GET /session/list → list_sessions() @ api/memory/cache.py
 GET /snapshots → list_snapshots() @ api/world_model_api.py
 GET /state-version → get_state_version() @ api/world_model_api.py
 GET /stats → get_memory_stats() @ _archived/archived_mcp_memory/src/routes/memory.py
@@ -75,9 +89,11 @@ GET /stats → get_memory_stats() @ igor/audit-memory/mcp_memory_src_routes_memo
 GET /stats → get_stats() @ api/memory/router.py
 GET /stats → get_stats() @ igor/audit-memory/api_memory_router.py
 GET /status → agent_status() @ api/agent_routes.py
+GET /status → get_modules_status() @ api/routes/modules.py
 GET /status → os_status() @ api/os_routes.py
 GET /status → research_status() @ api/routes/research.py
 GET /status/{thread_id} → get_research_status() @ services/research/research_api.py
+GET /task/context/{task_id} → get_task_context() @ api/memory/cache.py
 GET /tasks → list_mac_tasks() @ api/webhook_mac_agent.py
 GET /tasks/next → get_next_mac_task() @ api/webhook_mac_agent.py
 GET /tasks/{task_id} → get_task() @ tests/orchestrators/test_task_execution.py
@@ -92,6 +108,8 @@ GET /waba/webhook → verify_waba_webhook() @ api/webhook_waba.py
 GET /{run_id} → get_simulation_run() @ api/routes/simulation.py
 POST /agent/exec → agent_exec() @ api/vps_executor.py
 POST /api/chat → chat() @ local_dashboard/app.py
+POST /batch → batch_ingest() @ igor/01-07-2026/L9 Memory Substrate Audit/script_2.py
+POST /batch → batch_ingest() @ igor/01-07-2026/L9 Memory Substrate Audit/script_9.py
 POST /batch → batch_write() @ api/memory/router.py
 POST /batch → batch_write() @ igor/audit-memory/api_memory_router.py
 POST /cache/clear → clear_cache() @ services/symbolic_computation/api/routes.py
@@ -103,7 +121,9 @@ POST /compact → compact_storage() @ api/memory/router.py
 POST /compact → compact_storage() @ igor/audit-memory/api_memory_router.py
 POST /draft → draft_email() @ email_agent/router.py
 POST /email/webhook → handle_email_adapter() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.email_adapter/routes/email_adapter.py
+POST /entity → create_entity() @ api/memory/graph.py
 POST /evaluate → evaluate_expression() @ services/symbolic_computation/api/routes.py
+POST /events → handle_slack_webhook() @ _archived/codegen_slack_adapter/Slack-Audit-Pack/slack-adapter-complete.py
 POST /events → slack_events() @ api/routes/slack.py
 POST /execute → execute_command() @ api/routes/commands.py
 POST /execute → execute_reasoning() @ api/routes/reasoning.py
@@ -123,6 +143,7 @@ POST /hybrid/search → hybrid_search() @ api/memory/router.py
 POST /hybrid/search → hybrid_search() @ igor/audit-memory/api_memory_router.py
 POST /insights → submit_insights() @ api/world_model_api.py
 POST /intent → extract_intent_endpoint() @ api/routes/commands.py
+POST /kernels/reload → reload_kernels_endpoint() @ api/server.py
 POST /lchat → lchat() @ api/server.py
 POST /mcp/call → call_tool() @ _archived/archived_mcp_memory/src/main.py
 POST /mcp/call → call_tool() @ igor/audit-memory/mcp_memory_src_main.py
@@ -136,6 +157,9 @@ POST /packet-envelope/activate/phase-4 → activate_phase_4() @ api/routes/upgra
 POST /packet-envelope/activate/phase-5 → activate_phase_5() @ api/routes/upgrades.py
 POST /parse → parse_command_endpoint() @ api/routes/commands.py
 POST /query → query_emails() @ email_agent/router.py
+POST /query → run_query() @ api/memory/graph.py
+POST /rate-limit/{key}/increment → increment_rate_limit() @ api/memory/cache.py
+POST /relationship → create_relationship() @ api/memory/graph.py
 POST /reply → reply_email() @ email_agent/router.py
 POST /restore → restore_from_snapshot() @ api/world_model_api.py
 POST /resume/{thread_id} → resume_research() @ services/research/research_api.py
@@ -147,11 +171,16 @@ POST /search → search_memory() @ igor/audit-memory/mcp_memory_src_routes_memor
 POST /semantic/search → semantic_search() @ api/memory/router.py
 POST /semantic/search → semantic_search() @ igor/audit-memory/api_memory_router.py
 POST /send → send_email() @ email_agent/router.py
+POST /session/context → set_session_context() @ api/memory/cache.py
+POST /set → cache_set() @ api/memory/cache.py
+POST /slack/commands → slack_commands() @ _archived/legacy_slack/webhook_slack.py
 POST /slack/commands → slack_commands() @ api/webhook_slack.py
-POST /slack/events → handle_slack_webhook() @ codegen/code-gen-files/Module Production/Module-Pipeline-Complete/module.slack_adapter/routes/slack_webhook.py
+POST /slack/events → handle_slack_webhook() @ _archived/codegen_slack_adapter/module.slack_adapter/routes/slack_webhook.py
+POST /slack/events → slack_events() @ _archived/legacy_slack/webhook_slack.py
 POST /slack/events → slack_events() @ api/webhook_slack.py
 POST /snapshot → create_snapshot() @ api/world_model_api.py
 POST /task → submit_task() @ api/agent_routes.py
+POST /task/context/{task_id} → set_task_context() @ api/memory/cache.py
 POST /tasks → create_task() @ tests/orchestrators/test_kernel_injection.py
 POST /tasks → create_task() @ tests/orchestrators/test_task_execution.py
 POST /tasks/{task_id}/result → submit_task_result() @ api/webhook_mac_agent.py
@@ -170,4 +199,4 @@ POST /webhook → handle_twilio_adapter() @ api/adapters/twilio_adapter/routes/t
 WEBSOCKET /lws → l_ws() @ api/server.py
 WEBSOCKET /ws/agent → agent_ws_endpoint() @ api/server.py
 
-# Total: 166 route handlers
+# Total: 195 route handlers

@@ -4,11 +4,14 @@
   api/adapters/email_adapter/routes/email_adapter.py::router
   api/adapters/twilio_adapter/routes/twilio_adapter.py::router
   api/agent_routes.py::router
+  api/memory/cache.py::router
+  api/memory/graph.py::router
   api/memory/router.py::router
   api/os_routes.py::router
   api/routes/commands.py::router
   api/routes/compliance.py::router
   api/routes/factory.py::router
+  api/routes/modules.py::router
   api/routes/reasoning.py::router
   api/routes/research.py::router
   api/routes/simulation.py::router
@@ -17,9 +20,6 @@
   api/routes/worldmodel.py::router
   api/tools/router.py::router
   api/webhook_mac_agent.py::router
-  api/webhook_slack.py::router
-  api/webhook_twilio.py::router
-  api/webhook_waba.py::router
 
 # SERVICES Surface:
   services/research/research_api.py::router
