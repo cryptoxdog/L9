@@ -47,6 +47,7 @@ from core.governance.approvals import ApprovalManager
 from core.tools.tool_graph import ToolGraph
 from core.worldmodel.insight_emitter import get_insight_emitter
 from runtime.dora import emit_executor_trace
+from core.observability.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 
 # Self-reflection imports (optional - graceful degradation if not available)
 try:
@@ -1003,9 +1004,15 @@ class AgentExecutorService:
             self._max_iterations,
         )
 
-        # Circuit breaker: track consecutive AIOS failures
-        CIRCUIT_BREAKER_THRESHOLD = 3
-        consecutive_aios_failures = 0
+        # Circuit breaker: track AIOS failures with windowed counting
+        _aios_circuit_breaker = CircuitBreaker(
+            CircuitBreakerConfig(
+                failure_threshold=3,
+                window_seconds=60,
+                reset_timeout=30,
+                name="aios",
+            )
+        )
 
         # Initialize with task payload as first message
         if instance.task.payload.get("message"):
@@ -1046,14 +1053,17 @@ class AgentExecutorService:
             )
 
             # Circuit breaker check before AIOS call
-            if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+            if _aios_circuit_breaker.is_open():
+                cb_stats = _aios_circuit_breaker.get_stats()
                 logger.error(
                     "agent.executor.circuit_breaker_tripped",
                     task_id=str(instance.task.id),
-                    consecutive_failures=consecutive_aios_failures,
+                    circuit_state=cb_stats["state"],
+                    failures_in_window=cb_stats["failures_in_window"],
+                    total_trips=cb_stats["total_trips"],
                 )
                 instance.transition_to(ExecutorState.FAILED)
-                error = f"Circuit breaker tripped: {consecutive_aios_failures} consecutive AIOS failures"
+                error = f"Circuit breaker tripped: {cb_stats['failures_in_window']} failures in {cb_stats['window_seconds']}s window"
                 # Emit escalation packet
                 await self._emit_packet(
                     packet_type="agent.executor.escalation",
@@ -1061,7 +1071,7 @@ class AgentExecutorService:
                         "event": "circuit_breaker_tripped",
                         "task_id": str(instance.task.id),
                         "agent_id": instance.task.agent_id,
-                        "consecutive_failures": consecutive_aios_failures,
+                        "circuit_breaker_stats": cb_stats,
                         "requires_igor_approval": True,
                     },
                     thread_id=instance.thread_id,
@@ -1072,18 +1082,18 @@ class AgentExecutorService:
             context = instance.assemble_context()
             try:
                 aios_result = await self._aios_runtime.execute_reasoning(context)
-                # Reset failure counter on success
+                # Record success for circuit breaker (resets on non-error)
                 if aios_result.result_type != AIOSResultType.ERROR:
-                    consecutive_aios_failures = 0
+                    _aios_circuit_breaker.record_success()
             except Exception as aios_exc:
-                consecutive_aios_failures += 1
+                _aios_circuit_breaker.record_failure(str(aios_exc))
                 logger.warning(
                     "agent.executor.aios_call_exception",
                     task_id=str(instance.task.id),
                     error=str(aios_exc),
-                    consecutive_failures=consecutive_aios_failures,
+                    circuit_state=_aios_circuit_breaker.get_state(),
                 )
-                if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+                if _aios_circuit_breaker.is_open():
                     continue  # Will trip circuit breaker on next iteration
                 # Create error result to continue loop
                 aios_result = AIOSResult.error_result(str(aios_exc))
@@ -1152,17 +1162,18 @@ class AgentExecutorService:
 
             elif aios_result.result_type == AIOSResultType.ERROR:
                 # AIOS error - track for circuit breaker
-                consecutive_aios_failures += 1
                 error = aios_result.error or "Unknown AIOS error"
+                _aios_circuit_breaker.record_failure(error)
                 logger.error(
-                    "agent_aios_call_failed: task_id=%s, error=%s, consecutive_failures=%d",
-                    str(instance.task.id),
-                    error,
-                    consecutive_aios_failures,
+                    "agent_aios_call_failed",
+                    task_id=str(instance.task.id),
+                    error=error,
+                    circuit_state=_aios_circuit_breaker.get_state(),
+                    failures_in_window=_aios_circuit_breaker.get_stats()["failures_in_window"],
                 )
                 # Only fail immediately if circuit breaker not yet tripped
                 # (let circuit breaker handle escalation on next iteration)
-                if consecutive_aios_failures >= CIRCUIT_BREAKER_THRESHOLD:
+                if _aios_circuit_breaker.is_open():
                     continue  # Will trip circuit breaker on next iteration
                 instance.transition_to(ExecutorState.FAILED)
                 break

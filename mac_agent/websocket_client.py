@@ -211,7 +211,7 @@ def create_error_event(
 
 
 # =============================================================================
-# Task Executor (Phase 2 Stub)
+# Task Executor
 # =============================================================================
 
 
@@ -219,12 +219,12 @@ class TaskExecutor:
     """
     Task executor for Mac Agent.
 
-    Phase 2: Stub implementation that logs tasks.
-    Phase 3: Full implementation with:
-      - Shell executor
-      - Browser automation
-      - Python sandbox
-      - File operations
+    Dispatches tasks to appropriate executors based on task_type:
+      - shell: Execute shell commands via LocalAPI or subprocess
+      - browser: Playwright-based browser automation
+      - python: Sandboxed Python code execution
+      - file_read/file_write: File operations
+      - memory_read/memory_write: L9 memory substrate operations
     """
 
     def __init__(self):
@@ -258,8 +258,29 @@ class TaskExecutor:
         logger.info("[Executor] Starting task %s: type=%s", task_id, task_type)
 
         try:
-            # Phase 2: Stub - just echo the task
-            result = await self._execute_stub(task_id, task_type, payload)
+            # Dispatch to real executor based on task_type
+            if task_type == "shell":
+                result = await self._execute_shell(payload)
+            elif task_type == "browser":
+                result = await self._execute_browser(payload)
+            elif task_type == "python":
+                result = await self._execute_python(payload)
+            elif task_type == "file_read":
+                result = await self._execute_file_read(payload)
+            elif task_type == "file_write":
+                result = await self._execute_file_write(payload)
+            elif task_type == "memory_read":
+                result = await self._execute_memory_read(payload)
+            elif task_type == "memory_write":
+                result = await self._execute_memory_write(payload)
+            else:
+                # Unknown task type - return error, don't silently succeed
+                logger.warning("[Executor] Unknown task type: %s", task_type)
+                result = {
+                    "status": "error",
+                    "output": {},
+                    "error": f"Unknown task type: {task_type}. Supported: shell, browser, python, file_read, file_write, memory_read, memory_write",
+                }
 
             logger.info(
                 "[Executor] Task %s completed: status=%s", task_id, result.get("status")
@@ -281,39 +302,7 @@ class TaskExecutor:
                 "error": str(e),
             }
 
-    async def _execute_stub(
-        self,
-        task_id: str,
-        task_type: str,
-        payload: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        """
-        Phase 2 stub executor.
-
-        Logs the task and returns a success echo.
-        """
-        logger.info(
-            "[Executor] STUB: task_id=%s, type=%s, payload=%s",
-            task_id,
-            task_type,
-            json.dumps(payload, default=str)[:200],
-        )
-
-        # Simulate some work
-        await asyncio.sleep(0.1)
-
-        return {
-            "status": "completed",
-            "output": {
-                "echo": payload,
-                "task_type": task_type,
-                "executed_at": datetime.utcnow().isoformat(),
-                "executor": "stub_v1",
-            },
-            "error": None,
-        }
-
-    # Phase 3 executors
+    # Task type executors
     async def _execute_shell(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute shell command with security validation.

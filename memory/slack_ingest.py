@@ -44,12 +44,21 @@ from api.slack_client import SlackAPIClient, SlackClientError
 from memory.substrate_models import PacketEnvelopeIn, PacketMetadata, PacketProvenance
 from memory.substrate_service import MemorySubstrateService
 from config.settings import settings
-from telemetry.slack_metrics import (
-    record_aios_call,
-    record_idempotent_hit,
-    record_packet_write_error,
-    record_slack_reply_error,
-)
+
+# Optional telemetry - gracefully degrade if module not available
+try:
+    from telemetry.slack_metrics import (
+        record_aios_call,
+        record_idempotent_hit,
+        record_packet_write_error,
+        record_slack_reply_error,
+    )
+except ImportError:
+    # Stub functions when telemetry not available
+    def record_aios_call(*args, **kwargs): pass
+    def record_idempotent_hit(*args, **kwargs): pass
+    def record_packet_write_error(*args, **kwargs): pass
+    def record_slack_reply_error(*args, **kwargs): pass
 
 logger = structlog.get_logger(__name__)
 

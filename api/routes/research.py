@@ -94,8 +94,8 @@ async def research_status(
     return {
         "status": "ready",
         "orchestrator": "ResearchSwarmOrchestrator",
-        "implementation": "stub",  # Will be updated when fully implemented
-        "note": "Research swarm orchestrator initialized. Full implementation in progress.",
+        "implementation": "active",
+        "note": "Research swarm orchestrator active. Spawns parallel agents and attempts consensus.",
     }
 
 
@@ -113,9 +113,6 @@ async def execute_research(
     1. Independently investigate the query
     2. Generate individual results
     3. Converge toward consensus based on threshold
-
-    Note: Current implementation returns stub response.
-    Full implementation with analyst pass, dreamers, and convergence in progress.
     """
     try:
         logger.info(

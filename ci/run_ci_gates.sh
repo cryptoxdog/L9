@@ -317,6 +317,31 @@ gate_9_schema_deprecation() {
 }
 
 # =============================================================================
+# GATE 10: TOOL ID NAMING CONVENTION
+# =============================================================================
+
+gate_10_tool_naming() {
+    log_header "GATE 10: TOOL ID NAMING CONVENTION (OpenAI-compatible)"
+    
+    if [ ! -f "$SCRIPT_DIR/check_tool_naming.py" ]; then
+        log_warn "Tool naming checker not found, skipping"
+        return 0
+    fi
+    
+    log_info "Checking tool IDs for OpenAI naming compliance..."
+    
+    if ! python3 "$SCRIPT_DIR/check_tool_naming.py"; then
+        log_error "TOOL NAMING CHECK FAILED"
+        log_error "Tool IDs must only contain: a-zA-Z0-9_-"
+        log_error "No dots allowed. Use underscores instead."
+        return 1
+    fi
+    
+    log_info "✅ Tool naming check passed"
+    return 0
+}
+
+# =============================================================================
 # GATE 7: TEST FILE PRESENCE
 # =============================================================================
 
@@ -418,6 +443,7 @@ main() {
     gate_6_tool_wiring || exit 1
     gate_8_no_deprecated_services || exit 1
     gate_9_schema_deprecation || exit 1
+    gate_10_tool_naming || exit 1
     run_test_presence_check "$spec_file" "${files[@]}" || exit 1
     
     log_header "🎉 ALL CI GATES PASSED"

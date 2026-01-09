@@ -84,6 +84,12 @@ from .failures import (
     RecoveryAction,
     get_recovery_actions,
 )
+from .circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerState,
+    CircuitOpenError,
+)
 from .l9_integration import (
     instrument_agent_executor,
     instrument_tool_registry,
@@ -144,6 +150,11 @@ __all__ = [
     "RecoveryExecutor",
     "RecoveryAction",
     "get_recovery_actions",
+    # Circuit Breaker
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerState",
+    "CircuitOpenError",
     # L9 Integration
     "instrument_agent_executor",
     "instrument_tool_registry",

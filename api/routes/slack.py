@@ -28,12 +28,21 @@ from time import time as current_time
 
 from api.slack_adapter import SlackRequestValidator
 from memory.slack_ingest import handle_slack_events, handle_slack_commands
-from telemetry.slack_metrics import (
-    record_slack_request,
-    record_signature_verification,
-    record_slack_processing,
-    record_rate_limit_hit,
-)
+
+# Optional telemetry - gracefully degrade if module not available
+try:
+    from telemetry.slack_metrics import (
+        record_slack_request,
+        record_signature_verification,
+        record_slack_processing,
+        record_rate_limit_hit,
+    )
+except ImportError:
+    # Stub functions when telemetry not available
+    def record_slack_request(*args, **kwargs): pass
+    def record_signature_verification(*args, **kwargs): pass
+    def record_slack_processing(*args, **kwargs): pass
+    def record_rate_limit_hit(*args, **kwargs): pass
 
 logger = structlog.get_logger(__name__)
 

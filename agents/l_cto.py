@@ -361,7 +361,7 @@ class LCTOAgent(BaseAgent):
             try:
                 substrate = await init_service(
                     database_url=os.getenv("DATABASE_URL"),
-                    embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "stub"),
+                    embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "openai"),
                 )
             except Exception:
                 # Service not available - skip silently (executor will handle packets)

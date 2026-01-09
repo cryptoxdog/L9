@@ -468,7 +468,7 @@ async def lifespan(app: FastAPI):
             logger.info("Initializing memory service...")
             substrate_service = await init_service(
                 database_url=database_url,
-                embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "stub"),
+                embedding_provider_type=os.getenv("EMBEDDING_PROVIDER", "openai"),
                 embedding_model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-large"),
                 openai_api_key=os.getenv("OPENAI_API_KEY"),
             )
@@ -589,59 +589,33 @@ async def lifespan(app: FastAPI):
         try:
             logger.info("Initializing Agent Executor...")
 
-            # Use real AIOS runtime if available, otherwise stub
-            if _has_aios_runtime:
-                aios_runtime = create_aios_runtime()
-                logger.info("Using real AIOSRuntime")
-            else:
-
-                class StubAIOSRuntime:
-                    """Stub AIOS runtime - returns direct responses."""
-
-                    async def execute_reasoning(self, context):
-                        from core.agents.schemas import AIOSResult
-
-                        return AIOSResult.response(
-                            "AIOS runtime not yet implemented. Context received.",
-                            tokens_used=0,
-                        )
-
-                aios_runtime = StubAIOSRuntime()
-                logger.info("Using stub AIOSRuntime")
-
-            # Use real tool registry if available, otherwise stub
-            if _has_tool_registry:
-                # Connect governance engine if available
-                gov_engine = getattr(app.state, "governance_engine", None)
-                tool_registry = create_executor_tool_registry(
-                    governance_enabled=True,
-                    governance_engine=gov_engine,
+            # Use real AIOS runtime - FAIL LOUDLY if unavailable
+            if not _has_aios_runtime:
+                raise RuntimeError(
+                    "FATAL: AIOSRuntime import failed. "
+                    "Server cannot start without core agent runtime. "
+                    "Check core/agents/runtime.py exists and imports cleanly."
                 )
-                logger.info(
-                    "Using real ExecutorToolRegistry (governance=%s)",
-                    "attached" if gov_engine else "legacy",
+            aios_runtime = create_aios_runtime()
+            logger.info("AIOSRuntime initialized successfully")
+
+            # Use real tool registry - FAIL LOUDLY if unavailable
+            if not _has_tool_registry:
+                raise RuntimeError(
+                    "FATAL: ToolRegistry import failed. "
+                    "Server cannot start without tool dispatch capability. "
+                    "Check core/tools/registry_adapter.py exists and imports cleanly."
                 )
-            else:
-
-                class StubToolRegistry:
-                    """Stub tool registry - no tools available."""
-
-                    async def dispatch_tool_call(self, tool_id, arguments, context):
-                        from core.agents.schemas import ToolCallResult
-                        from uuid import uuid4
-
-                        return ToolCallResult(
-                            call_id=uuid4(),
-                            tool_id=tool_id,
-                            success=False,
-                            error="Tool registry not yet implemented",
-                        )
-
-                    def get_approved_tools(self, agent_id, principal_id):
-                        return []
-
-                tool_registry = StubToolRegistry()
-                logger.info("Using stub ToolRegistry")
+            # Connect governance engine if available
+            gov_engine = getattr(app.state, "governance_engine", None)
+            tool_registry = create_executor_tool_registry(
+                governance_enabled=True,
+                governance_engine=gov_engine,
+            )
+            logger.info(
+                "ExecutorToolRegistry initialized (governance=%s)",
+                "attached" if gov_engine else "legacy",
+            )
 
             # ========================================================================
             # SESSION STARTUP: Preflight checks + kernel readiness gate (v3.4+)
@@ -693,44 +667,21 @@ async def lifespan(app: FastAPI):
                 logger.warning("SessionStartup not available - skipping preflight checks")
                 app.state.startup_ready = True  # Assume ready if no checks available
 
-            # Initialize agent registry with kernel loading
-            if _has_kernel_registry:
-                try:
-                    logger.info("Initializing Kernel-Aware Agent Registry...")
-                    agent_registry = create_kernel_aware_registry()
-                    app.state.agent_registry = agent_registry
-                    logger.info(
-                        "Kernel-Aware Agent Registry initialized: kernel_state=%s",
-                        agent_registry.get_kernel_state(),
-                    )
-                except RuntimeError as e:
-                    # Kernel loading failed - this is critical
-                    logger.critical("FATAL: %s", str(e))
-                    # In production, you might want to crash here
-                    # For dev, fall back to stub
-                    logger.warning("Falling back to stub agent registry")
-                    agent_registry = None
-            else:
-                agent_registry = None
-
-            # Fallback stub registry if kernel registry unavailable
-            if agent_registry is None:
-
-                class StubAgentRegistry:
-                    """Stub agent registry with default agent."""
-
-                    def get_agent_config(self, agent_id):
-                        return AgentConfig(
-                            agent_id=agent_id,
-                            personality_id=agent_id,
-                            system_prompt="You are a helpful L9 AI assistant.",
-                        )
-
-                    def agent_exists(self, agent_id):
-                        return True
-
-                agent_registry = StubAgentRegistry()
-                logger.warning("Using stub agent registry (kernels not loaded)")
+            # Initialize agent registry with kernel loading - FAIL LOUDLY if unavailable
+            if not _has_kernel_registry:
+                raise RuntimeError(
+                    "FATAL: KernelAwareAgentRegistry import failed. "
+                    "Server cannot start without agent configuration capability. "
+                    "Check core/agents/registry.py exists and imports cleanly."
+                )
+            
+            logger.info("Initializing Kernel-Aware Agent Registry...")
+            agent_registry = create_kernel_aware_registry()
+            app.state.agent_registry = agent_registry
+            logger.info(
+                "Kernel-Aware Agent Registry initialized: kernel_state=%s",
+                agent_registry.get_kernel_state(),
+            )
 
             # Create executor
             executor = AgentExecutorService(

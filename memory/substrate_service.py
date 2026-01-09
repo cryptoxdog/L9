@@ -30,6 +30,7 @@ from telemetry.memory_metrics import (
     record_memory_search,
     set_memory_substrate_health,
 )
+from core.observability.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -75,6 +76,16 @@ class MemorySubstrateService:
         self._dag = SubstrateDAG(
             repository=repository,
             semantic_service=self._semantic_service,
+        )
+
+        # Initialize circuit breaker for DAG operations
+        self._circuit_breaker = CircuitBreaker(
+            CircuitBreakerConfig(
+                failure_threshold=5,
+                window_seconds=60,
+                reset_timeout=30,
+                name="memory_dag",
+            )
         )
 
         logger.info("MemorySubstrateService initialized")
@@ -175,8 +186,44 @@ class MemorySubstrateService:
         # Convert input to full envelope
         envelope = packet_in.to_envelope()
 
-        # Run through DAG
-        result = await self._dag.run(envelope)
+        # Circuit breaker check before DAG execution
+        if self._circuit_breaker.is_open():
+            cb_stats = self._circuit_breaker.get_stats()
+            logger.error(
+                "memory_substrate_circuit_breaker_open",
+                packet_type=packet_in.packet_type,
+                circuit_state=cb_stats["state"],
+                failures_in_window=cb_stats["failures_in_window"],
+            )
+            # Return error result without attempting DAG
+            return PacketWriteResult(
+                status="error",
+                packet_id=envelope.packet_id,
+                written_tables=[],
+                error_message=f"Circuit breaker open: {cb_stats['failures_in_window']} failures in {cb_stats['window_seconds']}s",
+            )
+
+        # Run through DAG with circuit breaker tracking
+        try:
+            result = await self._dag.run(envelope)
+            # Record success for non-error results
+            if result.status == "ok":
+                self._circuit_breaker.record_success()
+            else:
+                # DAG returned error status
+                self._circuit_breaker.record_failure(
+                    result.error_message or "DAG returned error status"
+                )
+        except Exception as dag_error:
+            # DAG threw exception - record failure and re-raise
+            self._circuit_breaker.record_failure(str(dag_error))
+            logger.error(
+                "memory_substrate_dag_exception",
+                packet_id=str(envelope.packet_id),
+                error=str(dag_error),
+                circuit_state=self._circuit_breaker.get_state(),
+            )
+            raise
 
         # Record Prometheus metrics for memory write
         record_memory_write(
@@ -699,7 +746,7 @@ class MemorySubstrateService:
 
 async def create_substrate_service(
     database_url: str,
-    embedding_provider_type: str = "stub",
+    embedding_provider_type: str = "openai",
     embedding_model: str = "text-embedding-3-large",
     openai_api_key: Optional[str] = None,
     db_pool_size: int = 5,

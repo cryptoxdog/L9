@@ -98,6 +98,11 @@ class ObservabilitySettings(BaseSettings):
         description="Time window for failure counting",
         gt=0,
     )
+    circuit_breaker_reset_timeout_sec: int = Field(
+        default=30,
+        description="Seconds to wait in OPEN state before testing recovery (HALF_OPEN)",
+        gt=0,
+    )
 
     @model_validator(mode='after')
     def auto_enable_substrate_exporter(self) -> 'ObservabilitySettings':
