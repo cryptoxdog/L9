@@ -44,11 +44,11 @@ async def run_migration(force: bool = False) -> dict:
     Returns:
         dict with migration statistics
     """
-    from neo4j import AsyncGraphDatabase
+    from neo4j import AsyncGraphDatabase, basic_auth
     from core.agents.graph_state.bootstrap_l_graph import bootstrap_l_graph
     
     # Get Neo4j connection details
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_uri = os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
     neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
     
@@ -60,7 +60,7 @@ async def run_migration(force: bool = False) -> dict:
     
     driver = AsyncGraphDatabase.driver(
         neo4j_uri,
-        auth=(neo4j_user, neo4j_password),
+        auth=basic_auth(neo4j_user, neo4j_password),
     )
     
     try:
@@ -90,16 +90,16 @@ async def verify_migration() -> dict:
     Returns:
         dict with verification results
     """
-    from neo4j import AsyncGraphDatabase
+    from neo4j import AsyncGraphDatabase, basic_auth
     from core.agents.graph_state.bootstrap_l_graph import verify_l_graph
     
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_uri = os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
     neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
     
     driver = AsyncGraphDatabase.driver(
         neo4j_uri,
-        auth=(neo4j_user, neo4j_password),
+        auth=basic_auth(neo4j_user, neo4j_password),
     )
     
     try:

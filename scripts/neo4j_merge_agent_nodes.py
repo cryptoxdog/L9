@@ -48,15 +48,15 @@ logger = structlog.get_logger(__name__)
 
 async def get_neo4j_driver():
     """Get async Neo4j driver."""
-    from neo4j import AsyncGraphDatabase
+    from neo4j import AsyncGraphDatabase, basic_auth
     
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_uri = os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
     neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
     
     return AsyncGraphDatabase.driver(
         neo4j_uri,
-        auth=(neo4j_user, neo4j_password),
+        auth=basic_auth(neo4j_user, neo4j_password),
     )
 
 

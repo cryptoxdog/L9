@@ -724,7 +724,7 @@ async def execute_long_plan(
             from core.tools.tool_graph import ToolGraph
 
             await ToolGraph.log_tool_call(
-                tool_name="long_plan.execute",
+                tool_name="long_plan_execute",
                 agent_id=agent_id,
                 success=len(final_state.get("errors", [])) == 0,
                 duration_ms=0,  # Would need timing

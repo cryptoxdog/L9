@@ -1,6 +1,6 @@
 # L-CTO System Architecture
 
-*After Migration - January 2026*
+*Updated: 2026-01-08 (GMP-44 Auto-Discovery)*
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -137,4 +137,24 @@ Located in `l-cto/l-cto-yaml-files/`:
 - `02-identity.yaml`
 - `08-safety.yaml`
 - ... (10 total kernels)
+
+## Tool Auto-Discovery (GMP-44)
+
+Tools are **auto-discovered** from `ToolDefinition.agent_id`:
+
+```
+register_l_tools() → _TOOL_AGENT_IDS["tool"] = "L" → get_approved_tools() checks dict
+```
+
+| Component | File | Role |
+|-----------|------|------|
+| Executor functions | `runtime/l_tools.py` | 71 async functions |
+| ToolDefinitions | `core/tools/registry_adapter.py` | Metadata + auto-discovery |
+| CI Gate | `ci/check_tool_wiring.py` | Validates consistency |
+
+**To add a tool:** 
+1. Add executor to `l_tools.py`
+2. Add ToolDefinition with `agent_id="L"` to `register_l_tools()`
+
+No manual enum or capability list updates needed.
 

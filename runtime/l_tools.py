@@ -2547,8 +2547,8 @@ TOOL_EXECUTORS: dict[str, Any] = {
     "mcp_discover_and_register": mcp_discover_and_register,
     "world_model_query": world_model_query,
     "kernel_read": kernel_read,
-    "long_plan.execute": long_plan_execute_tool,
-    "long_plan.simulate": long_plan_simulate_tool,
+    "long_plan_execute": long_plan_execute_tool,
+    "long_plan_simulate": long_plan_simulate_tool,
     # Neo4j graph database tools
     "neo4j_query": neo4j_query,
     # Redis cache tools

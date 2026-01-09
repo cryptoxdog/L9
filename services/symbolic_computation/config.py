@@ -6,7 +6,8 @@ Loads configuration from environment variables and provides defaults.
 
 import os
 from typing import Optional
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -15,6 +16,13 @@ load_dotenv()
 
 class SymbolicComputationConfig(BaseSettings):
     """Configuration settings for symbolic computation."""
+
+    model_config = SettingsConfigDict(
+        extra="ignore",  # Allow extra env vars
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
 
     # Cache settings
     cache_enabled: bool = Field(
@@ -76,11 +84,6 @@ class SymbolicComputationConfig(BaseSettings):
         description="Allow potentially dangerous functions"
     )
 
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 # Global configuration instance

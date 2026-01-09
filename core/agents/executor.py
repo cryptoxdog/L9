@@ -943,6 +943,11 @@ class AgentExecutorService:
                         "task_id": str(instance.task.id),
                     },
                 )
+                # Track authority block for self-reflection
+                instance.add_governance_block(
+                    block_type="authority_block",
+                    violation=authority_check.get("violation"),
+                )
                 return ExecutionResult(
                     task_id=instance.task.id,
                     status="blocked",
@@ -951,6 +956,7 @@ class AgentExecutorService:
                     duration_ms=int(
                         (datetime.utcnow() - start_time).total_seconds() * 1000
                     ),
+                    governance_blocks=instance.governance_blocks,
                 )
 
             # Safety check
@@ -965,6 +971,12 @@ class AgentExecutorService:
                         "task_id": str(instance.task.id),
                     },
                 )
+                # Track safety block for self-reflection
+                instance.add_governance_block(
+                    block_type="safety_block",
+                    violation=safety_check.get("violation"),
+                    pattern=safety_check.get("pattern"),
+                )
                 return ExecutionResult(
                     task_id=instance.task.id,
                     status="blocked",
@@ -973,6 +985,7 @@ class AgentExecutorService:
                     duration_ms=int(
                         (datetime.utcnow() - start_time).total_seconds() * 1000
                     ),
+                    governance_blocks=instance.governance_blocks,
                 )
         except ImportError:
             # Governance validation not available - skip (non-fatal)
@@ -1228,6 +1241,8 @@ class AgentExecutorService:
             trace_id=instance.instance_id,
             tool_calls=tool_call_results if tool_call_results else None,
             tokens_used=instance.total_tokens,
+            governance_blocks=instance.governance_blocks if instance.governance_blocks else None,
+            user_corrections=instance.user_corrections if instance.user_corrections else None,
         )
 
     # =========================================================================
@@ -1326,6 +1341,12 @@ class AgentExecutorService:
                     f"Tool {tool_call.tool_id} requires approval but not approved. task_id=%s, call_id=%s",
                     str(instance.task.id),
                     str(tool_call.call_id),
+                )
+                # Track tool approval block for self-reflection
+                instance.add_governance_block(
+                    block_type="tool_approval_block",
+                    tool_id=tool_call.tool_id,
+                    metadata={"call_id": str(tool_call.call_id)},
                 )
                 return ToolCallResult(
                     call_id=tool_call.call_id,
@@ -1648,8 +1669,10 @@ class AgentExecutorService:
                 warnings=[],
                 iterations=result.iterations,
                 tokens_used=result.tokens_used or 0,
-                governance_blocks=[],  # TODO: Track governance blocks in result
-                user_corrections=[],  # TODO: Track user corrections
+                governance_blocks=result.governance_blocks or [],
+                user_corrections=[
+                    uc.get("correction", str(uc)) for uc in (result.user_corrections or [])
+                ],
                 metadata={
                     "thread_id": str(task.get_thread_id()) if task.get_thread_id() else None,
                 },

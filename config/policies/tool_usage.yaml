@@ -91,8 +91,8 @@ policies:
     actions: ["tool.execute"]
     resources:
       - "gmp_run"
-      - "long_plan.execute"
-      - "long_plan.simulate"
+      - "long_plan_execute"
+      - "long_plan_simulate"
       - "simulation"
     enabled: true
 

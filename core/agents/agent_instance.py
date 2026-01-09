@@ -110,6 +110,8 @@ class AgentInstance:
         self._total_tokens = 0
         self._tool_name_map: dict[str, str] = {}
         self._tool_name_reverse_map: dict[str, str] = {}
+        self._user_corrections: list[dict[str, Any]] = []
+        self._governance_blocks: list[dict[str, Any]] = []
 
         logger.info(
             "AgentInstance created",
@@ -164,6 +166,16 @@ class AgentInstance:
         """Get list of tool call results."""
         return self._tool_results.copy()
 
+    @property
+    def user_corrections(self) -> list[dict[str, Any]]:
+        """Get list of user corrections tracked during execution."""
+        return self._user_corrections.copy()
+
+    @property
+    def governance_blocks(self) -> list[dict[str, Any]]:
+        """Get list of governance blocks tracked during execution."""
+        return self._governance_blocks.copy()
+
     # =========================================================================
     # State Management
     # =========================================================================
@@ -199,6 +211,80 @@ class AgentInstance:
     def add_tokens(self, tokens: int) -> None:
         """Add to total token count."""
         self._total_tokens += tokens
+
+    def add_user_correction(
+        self, correction: str, metadata: Optional[dict[str, Any]] = None
+    ) -> None:
+        """
+        Track a user correction during execution.
+
+        Used for behavioral gap analysis in self-reflection.
+
+        Args:
+            correction: The correction text from user
+            metadata: Optional metadata about the correction
+        """
+        self._user_corrections.append(
+            {
+                "correction": correction,
+                "iteration": self._iteration,
+                "timestamp": datetime.utcnow().isoformat(),
+                "metadata": metadata or {},
+            }
+        )
+        logger.debug(
+            "User correction tracked",
+            extra={
+                "instance_id": str(self._instance_id),
+                "task_id": str(self._task.id),
+                "iteration": self._iteration,
+            },
+        )
+
+    def add_governance_block(
+        self,
+        block_type: str,
+        violation: Optional[str] = None,
+        pattern: Optional[str] = None,
+        tool_id: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Track a governance block during execution.
+
+        Used for behavioral gap analysis in self-reflection.
+
+        Args:
+            block_type: Type of block (authority_block, safety_block, tool_approval_block)
+            violation: The violation description if applicable
+            pattern: The pattern that triggered the block if applicable
+            tool_id: The tool ID if this is a tool approval block
+            metadata: Optional additional metadata
+        """
+        block = {
+            "type": block_type,
+            "agent_id": self._config.agent_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "iteration": self._iteration,
+        }
+        if violation:
+            block["violation"] = violation
+        if pattern:
+            block["pattern"] = pattern
+        if tool_id:
+            block["tool_id"] = tool_id
+        if metadata:
+            block["metadata"] = metadata
+
+        self._governance_blocks.append(block)
+        logger.debug(
+            f"Governance block tracked: {block_type}",
+            extra={
+                "instance_id": str(self._instance_id),
+                "task_id": str(self._task.id),
+                "block_type": block_type,
+            },
+        )
 
     # =========================================================================
     # Tool Management

@@ -28,6 +28,12 @@ from time import time as current_time
 
 from api.slack_adapter import SlackRequestValidator
 from memory.slack_ingest import handle_slack_events, handle_slack_commands
+from telemetry.slack_metrics import (
+    record_slack_request,
+    record_signature_verification,
+    record_slack_processing,
+    record_rate_limit_hit,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -86,6 +92,7 @@ async def slack_events(
       - Internal errors: 200 OK (swallow Slack-side to prevent redelivery loop)
     """
     start_time = current_time()
+    record_slack_request(event_type="events", status="received")
 
     # Get raw request body
     request_body = await request.body()
@@ -103,11 +110,14 @@ async def slack_events(
                 error=error_reason,
                 timestamp=x_slack_request_timestamp,
             )
+            record_signature_verification(valid=False, reason=error_reason or "invalid")
             raise HTTPException(status_code=401, detail="Unauthorized")
+        record_signature_verification(valid=True)
     except HTTPException:
         raise
     except Exception as e:
         logger.error("slack_signature_verification_error", error=str(e))
+        record_signature_verification(valid=False, reason="exception")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Parse JSON payload
@@ -130,6 +140,7 @@ async def slack_events(
     if payload.get("type") == "url_verification":
         challenge = payload.get("challenge", "")
         logger.info("slack_url_verification_challenge", challenge=challenge[:20])
+        record_slack_processing(event_type="url_verification", duration_seconds=current_time() - start_time, status="success")
         return {"challenge": challenge}
 
     # Rate limit check (100 events per minute per team)
@@ -141,6 +152,7 @@ async def slack_events(
             is_allowed = await rate_limiter.check_and_increment(rate_key, limit=100)
             if not is_allowed:
                 logger.warning("slack_rate_limit_exceeded", team_id=team_id)
+                record_rate_limit_hit(team_id=team_id)
                 raise HTTPException(status_code=429, detail="Rate limit exceeded")
         except HTTPException:
             raise
@@ -210,21 +222,33 @@ async def slack_events(
             app=request.app,  # Pass app for L-CTO agent routing
         )
 
-        elapsed_ms = (current_time() - start_time) * 1000
+        elapsed_seconds = current_time() - start_time
+        elapsed_ms = elapsed_seconds * 1000
         logger.info(
             "slack_events_processed",
             event_id=payload.get("event_id"),
             event_type=payload.get("event", {}).get("type"),
             elapsed_ms=elapsed_ms,
         )
+        record_slack_processing(
+            event_type=payload.get("event", {}).get("type", "unknown"),
+            duration_seconds=elapsed_seconds,
+            status="success",
+        )
         return result
     except Exception as e:
-        elapsed_ms = (current_time() - start_time) * 1000
+        elapsed_seconds = current_time() - start_time
+        elapsed_ms = elapsed_seconds * 1000
         logger.error(
             "slack_events_handler_error",
             error=str(e),
             event_id=payload.get("event_id"),
             elapsed_ms=elapsed_ms,
+        )
+        record_slack_processing(
+            event_type=payload.get("event", {}).get("type", "unknown"),
+            duration_seconds=elapsed_seconds,
+            status="error",
         )
         # Return 200 to prevent Slack redelivery, but log error for investigation
         return {"ok": True, "error_logged": True}
@@ -263,6 +287,7 @@ async def slack_commands(
       - AIOS failure: 200 with temporary failure message
     """
     start_time = current_time()
+    record_slack_request(event_type="commands", status="received")
 
     # Get raw request body
     request_body = await request.body()
@@ -280,11 +305,14 @@ async def slack_commands(
                 error=error_reason,
                 timestamp=x_slack_request_timestamp,
             )
+            record_signature_verification(valid=False, reason=error_reason or "invalid")
             raise HTTPException(status_code=401, detail="Unauthorized")
+        record_signature_verification(valid=True)
     except HTTPException:
         raise
     except Exception as e:
         logger.error("slack_signature_verification_error", error=str(e))
+        record_signature_verification(valid=False, reason="exception")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Parse form-encoded payload
@@ -328,20 +356,32 @@ async def slack_commands(
                 slack_client=slack_client,
                 aios_base_url=aios_base_url,
             )
-            elapsed_ms = (current_time() - start_time) * 1000
+            elapsed_seconds = current_time() - start_time
+            elapsed_ms = elapsed_seconds * 1000
             logger.info(
                 "slack_commands_processed",
                 command=payload.get("command"),
                 user_id=payload.get("user_id"),
                 elapsed_ms=elapsed_ms,
             )
+            record_slack_processing(
+                event_type="command",
+                duration_seconds=elapsed_seconds,
+                status="success",
+            )
         except Exception as e:
-            elapsed_ms = (current_time() - start_time) * 1000
+            elapsed_seconds = current_time() - start_time
+            elapsed_ms = elapsed_seconds * 1000
             logger.error(
                 "slack_commands_handler_error",
                 error=str(e),
                 command=payload.get("command"),
                 elapsed_ms=elapsed_ms,
+            )
+            record_slack_processing(
+                event_type="command",
+                duration_seconds=elapsed_seconds,
+                status="error",
             )
 
     # Schedule async task (Fire and forget, but logged)

@@ -491,9 +491,9 @@ async def bootstrap_l_governance(driver: "AsyncDriver") -> dict:
 
 async def main():
     """CLI entrypoint for standalone execution."""
-    from neo4j import AsyncGraphDatabase
+    from neo4j import AsyncGraphDatabase, basic_auth
     
-    uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    uri = os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
     user = os.getenv("NEO4J_USER", "neo4j")
     password = os.getenv("NEO4J_PASSWORD", "")
     
@@ -502,7 +502,7 @@ async def main():
         return
     
     logger.info(f"Connecting to Neo4j at {uri}...")
-    driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+    driver = AsyncGraphDatabase.driver(uri, auth=basic_auth(user, password))
     
     try:
         result = await bootstrap_l_governance(driver)

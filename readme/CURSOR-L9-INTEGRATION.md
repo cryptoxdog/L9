@@ -1,7 +1,8 @@
 # 🔌 Cursor-L9 Integration Guide
 
-**Generated:** 2026-01-06 14:15 EST  
-**Purpose:** How Cursor IDE can leverage L9's infrastructure
+**Generated:** 2026-01-08 20:15 EST  
+**Purpose:** How Cursor IDE can leverage L9's infrastructure  
+**L's Tools:** 71 (auto-discovered from ToolDefinition.agent_id)
 
 ---
 
@@ -220,6 +221,53 @@ python scripts/cursor_neo4j_query.py "MATCH (t:Tool) RETURN t.name LIMIT 10"
 
 ---
 
+## 8. Tool Auto-Discovery (GMP-44)
+
+L's tools are **auto-discovered** from `ToolDefinition.agent_id="L"` at startup.
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TOOL REGISTRATION FLOW                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  register_l_tools() at startup:                                 │
+│                                                                 │
+│  1. ToolDefinition(name="tool_name", agent_id="L", ...)         │
+│                        ↓                                        │
+│  2. _TOOL_AGENT_IDS["tool_name"] = "L"                         │
+│                        ↓                                        │
+│  3. get_approved_tools() checks _TOOL_AGENT_IDS                │
+│                        ↓                                        │
+│  4. Tool available to L ✅                                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Adding New Tools
+
+| Step | File | Action |
+|------|------|--------|
+| 1 | `runtime/l_tools.py` | Add async executor function |
+| 2 | `core/tools/registry_adapter.py` | Add ToolDefinition with `agent_id="L"` |
+
+**No ToolName enum or DEFAULT_L_CAPABILITIES updates needed!**
+
+### Verify Tool Wiring
+
+```bash
+python3 ci/check_tool_wiring.py
+```
+
+Expected output:
+```
+✅ CI GATE PASSED: Tool wiring is consistent
+ℹ️  GMP-44: Auto-discovery from ToolDefinition.agent_id is active
+```
+
+---
+
 ## 7. Simulation Engine (Future)
 
 **Status:** Needs API endpoint or MCP server.
@@ -258,7 +306,7 @@ python scripts/cursor_simulate.py --graph-file plan.json
 
 ---
 
-## 8. Kernel Patterns for Cursor (GMP-34)
+## 9. Kernel Patterns for Cursor (GMP-34)
 
 When generating code for L9, Cursor MUST follow these patterns from the kernels:
 
@@ -343,7 +391,8 @@ async def fetch_user_data(user_id: str) -> dict:
 | File | Purpose |
 |------|---------|
 | `readme/L9-KERNEL-REFERENCE.md` | Kernel governance rules |
-| `readme/L-CTO-ABILITIES.md` | L's 70 tools |
+| `readme/L-CTO-ABILITIES.md` | L's 71 tools (auto-discovered) |
+| `docs/CAPABILITY_ENABLING_PATTERN.md` | How to add new tools |
 | `core/governance/mistake_prevention.py` | Mistake prevention source |
 | `scripts/cursor_check_mistakes.py` | CLI for mistake checking |
 | `.cursor/rules/*.mdc` | Cursor-native rules |

@@ -18,6 +18,7 @@ Changes v1.1.0:
 
 from __future__ import annotations
 
+import re
 import structlog
 import os
 from dataclasses import dataclass, field
@@ -31,6 +32,10 @@ logger = structlog.get_logger(__name__)
 # L uses:      L9_TENANT_ID = 'l-cto' (here and runtime/redis_client.py)
 # Cursor uses: CURSOR_TENANT_ID = 'cursor-ide' (core/governance/cursor_memory_kernel.py)
 DEFAULT_TENANT_ID = os.getenv("L9_TENANT_ID", "l-cto")
+
+
+# OpenAI function calling requires tool names to match this pattern
+OPENAI_TOOL_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 @dataclass
@@ -48,6 +53,15 @@ class ToolDefinition:
     scope: str = "internal"  # "internal" | "external" | "requires_igor_approval"
     risk_level: str = "low"  # "low" | "medium" | "high"
     requires_igor_approval: bool = False
+
+    def __post_init__(self):
+        """Validate tool name matches OpenAI function calling pattern."""
+        if not OPENAI_TOOL_NAME_PATTERN.match(self.name):
+            raise ValueError(
+                f"Tool name '{self.name}' is invalid. "
+                f"Must match pattern ^[a-zA-Z0-9_-]+$ (no dots allowed). "
+                f"Use underscores instead: '{self.name.replace('.', '_')}'"
+            )
 
 
 class ToolGraph:
@@ -967,7 +981,7 @@ L_INTERNAL_TOOLS = [
     ),
     # GitHub MCP Tools
     ToolDefinition(
-        name="github.create_issue",
+        name="github_create_issue",
         description="Create a GitHub issue via MCP",
         category="integration",
         scope="external",
@@ -978,7 +992,7 @@ L_INTERNAL_TOOLS = [
         agent_id="L",
     ),
     ToolDefinition(
-        name="github.create_pull_request",
+        name="github_create_pull_request",
         description="Create a GitHub pull request via MCP",
         category="integration",
         scope="external",
@@ -989,7 +1003,7 @@ L_INTERNAL_TOOLS = [
         agent_id="L",
     ),
     ToolDefinition(
-        name="github.merge_pull_request",
+        name="github_merge_pull_request",
         description="Merge a GitHub pull request via MCP",
         category="integration",
         scope="external",
@@ -1002,7 +1016,7 @@ L_INTERNAL_TOOLS = [
     ),
     # Notion MCP Tools
     ToolDefinition(
-        name="notion.create_page",
+        name="notion_create_page",
         description="Create a Notion page via MCP",
         category="integration",
         scope="external",
@@ -1013,7 +1027,7 @@ L_INTERNAL_TOOLS = [
         agent_id="L",
     ),
     ToolDefinition(
-        name="notion.update_page",
+        name="notion_update_page",
         description="Update a Notion page via MCP",
         category="integration",
         scope="external",
@@ -1025,7 +1039,7 @@ L_INTERNAL_TOOLS = [
     ),
     # Vercel MCP Tools
     ToolDefinition(
-        name="vercel.trigger_deploy",
+        name="vercel_trigger_deploy",
         description="Trigger a Vercel deployment via MCP",
         category="integration",
         scope="external",
@@ -1037,7 +1051,7 @@ L_INTERNAL_TOOLS = [
         agent_id="L",
     ),
     ToolDefinition(
-        name="vercel.get_deploy_status",
+        name="vercel_get_deploy_status",
         description="Get Vercel deployment status via MCP",
         category="integration",
         scope="external",
@@ -1049,7 +1063,7 @@ L_INTERNAL_TOOLS = [
     ),
     # GoDaddy MCP Tools
     ToolDefinition(
-        name="godaddy.update_dns_record",
+        name="godaddy_update_dns_record",
         description="Update a GoDaddy DNS record via MCP",
         category="integration",
         scope="external",
@@ -1062,7 +1076,7 @@ L_INTERNAL_TOOLS = [
     ),
     # Long Plan DAG Tools
     ToolDefinition(
-        name="long_plan.execute",
+        name="long_plan_execute",
         description="Execute a long plan through LangGraph DAG (orchestrates memory, MCP, Mac Agent, GMP)",
         category="orchestration",
         scope="internal",
@@ -1073,7 +1087,7 @@ L_INTERNAL_TOOLS = [
         agent_id="L",
     ),
     ToolDefinition(
-        name="long_plan.simulate",
+        name="long_plan_simulate",
         description="Simulate a long plan without executing (dry run)",
         category="orchestration",
         scope="internal",

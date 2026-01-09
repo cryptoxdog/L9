@@ -94,7 +94,10 @@ from core.agents.schemas import (
     ToolBinding,
     ToolCallResult,
 )
-from core.schemas.capabilities import ToolName, DEFAULT_L_CAPABILITIES
+from core.schemas.capabilities import ToolName
+# GMP-45: Tool argument sanitization gate
+from core.tools.sanitizer import ToolInputSanitizer, ToolInputSanitizationError
+# NOTE: DEFAULT_L_CAPABILITIES is DEPRECATED - we now auto-discover from ToolDefinition.agent_id
 # NOTE: log_tool_invocation imported lazily in guarded_execute to avoid
 # test path shadowing issue (tests/memory shadows memory module)
 
@@ -102,6 +105,44 @@ if TYPE_CHECKING:
     from core.governance.engine import GovernanceEngineService
 
 logger = structlog.get_logger(__name__)
+
+# GMP-45: Stateless sanitizer instance (safe to reuse)
+_TOOL_INPUT_SANITIZER = ToolInputSanitizer()
+
+# =============================================================================
+# Auto-Discovery: Tool → Agent Mapping (GMP-44)
+# =============================================================================
+# Instead of maintaining a manual allowlist (DEFAULT_L_CAPABILITIES), we now
+# auto-discover which tools belong to which agent from ToolDefinition.agent_id.
+# This dict is populated by register_l_tools() at startup.
+_TOOL_AGENT_IDS: dict[str, str] = {}
+
+
+def _tool_belongs_to_agent(tool_name: str, agent_id: str) -> bool:
+    """
+    Check if a tool belongs to an agent via auto-discovery.
+    
+    Args:
+        tool_name: Name of the tool
+        agent_id: Agent identifier (e.g., "L", "l-cto")
+        
+    Returns:
+        True if tool's ToolDefinition.agent_id matches (or tool is unknown)
+    """
+    # Normalize agent aliases
+    l_aliases = ("L", "l-cto", "l9-standard-v1")
+    
+    registered_agent = _TOOL_AGENT_IDS.get(tool_name)
+    if registered_agent is None:
+        # Tool not in registry - allow (it may be a system tool)
+        return True
+    
+    # Check if both agent_id and registered_agent are L aliases
+    if agent_id in l_aliases and registered_agent in l_aliases:
+        return True
+    
+    # Exact match
+    return registered_agent == agent_id
 
 
 # =============================================================================
@@ -236,24 +277,15 @@ class ExecutorToolRegistry:
         bindings: list[ToolBinding] = []
 
         for tool_meta in self._registry.list_enabled():
-            # Map registry tool ID to ToolName enum when possible so we can
-            # enforce capabilities for L using DEFAULT_L_CAPABILITIES.
-            tool_enum: Optional[ToolName] = None
-            try:
-                tool_enum = ToolName(tool_meta.id)
-            except ValueError:
-                tool_enum = None
-
-            # Enforce AgentCapabilities for L (agent ids that alias L)
-            if agent_id in ("L", "l-cto", "l9-standard-v1") and tool_enum is not None:
-                cap = DEFAULT_L_CAPABILITIES.get_capability(tool_enum)
-                if not cap or not cap.allowed:
-                    logger.debug(
-                        "Tool %s denied for agent %s by capabilities profile",
-                        tool_meta.id,
-                        agent_id,
-                    )
-                    continue
+            # GMP-44: Auto-discover tool capabilities from ToolDefinition.agent_id
+            # instead of manual DEFAULT_L_CAPABILITIES allowlist.
+            if not _tool_belongs_to_agent(tool_meta.id, agent_id):
+                logger.debug(
+                    "Tool %s denied for agent %s by auto-discovery (agent_id mismatch)",
+                    tool_meta.id,
+                    agent_id,
+                )
+                continue
 
             # Use governance engine if available
             if self._governance_engine:
@@ -338,6 +370,17 @@ class ExecutorToolRegistry:
         start_time = time.monotonic()
         agent_id = context.get("agent_id", "unknown")
         task_id = context.get("task_id")
+
+        # Import lazily to avoid test path shadowing issue
+        # (tests/memory shadows memory module in pytest)
+        try:
+            import importlib
+
+            tool_audit_module = importlib.import_module("memory.tool_audit")
+            log_tool_invocation = tool_audit_module.log_tool_invocation
+        except Exception:
+            async def log_tool_invocation(**kwargs):  # type: ignore[no-redef]
+                return None
 
         try:
             # Get tool from registry using tool_id
@@ -452,12 +495,45 @@ class ExecutorToolRegistry:
                     "agent_id": agent_id,
                     "task_id": task_id,
                 }
+
+                # GMP-45: deterministic sanitization gate (schema + resource limits)
+                tool_schema: dict[str, Any]
+                if hasattr(self._registry, "get_tool_schema"):
+                    tool_schema = self._registry.get_tool_schema(tool_id)
+                else:
+                    tool_schema = self._get_tool_schema(tool_id)
+
+                try:
+                    sanitized_arguments = _TOOL_INPUT_SANITIZER.sanitize(
+                        tool_id=tool_id,
+                        arguments=arguments_with_context,
+                        schema=tool_schema,
+                    )
+                except ToolInputSanitizationError as sanitize_err:
+                    duration_ms = int((time.monotonic() - start_time) * 1000)
+                    await log_tool_invocation(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        agent_id=agent_id,
+                        task_id=task_id,
+                        status="denied",
+                        duration_ms=duration_ms,
+                        error=str(sanitize_err),
+                        arguments=arguments_with_context,
+                    )
+                    return ToolCallResult(
+                        call_id=call_id,
+                        tool_id=tool_id,
+                        success=False,
+                        error=str(sanitize_err),
+                    )
+
                 logger.info(
                     "Executing tool via registry: %s with arguments: %s",
                     tool_id,
-                    arguments_with_context,
+                    sanitized_arguments,
                 )
-                result = await self._registry.execute_tool(tool_id, arguments_with_context)
+                result = await self._registry.execute_tool(tool_id, sanitized_arguments)
                 duration_ms = int((time.monotonic() - start_time) * 1000)
 
                 if result["success"]:
@@ -468,7 +544,7 @@ class ExecutorToolRegistry:
                         task_id=task_id,
                         status="success",
                         duration_ms=duration_ms,
-                        arguments=arguments,
+                        arguments=sanitized_arguments,
                     )
                     return ToolCallResult(
                         call_id=call_id,
@@ -486,7 +562,7 @@ class ExecutorToolRegistry:
                         status="failure",
                         duration_ms=duration_ms,
                         error=result["error"],
-                        arguments=arguments,
+                        arguments=sanitized_arguments,
                     )
                     return ToolCallResult(
                         call_id=call_id,
@@ -522,23 +598,56 @@ class ExecutorToolRegistry:
                 "agent_id": agent_id,
                 "task_id": task_id,
             }
+
+            # GMP-45: deterministic sanitization gate for legacy path
+            tool_schema: dict[str, Any]
+            if hasattr(self._registry, "get_tool_schema"):
+                tool_schema = self._registry.get_tool_schema(tool_id)
+            else:
+                tool_schema = self._get_tool_schema(tool_id)
+
+            try:
+                sanitized_arguments = _TOOL_INPUT_SANITIZER.sanitize(
+                    tool_id=tool_id,
+                    arguments=arguments_with_context,
+                    schema=tool_schema,
+                )
+            except ToolInputSanitizationError as sanitize_err:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+                await log_tool_invocation(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    agent_id=agent_id,
+                    task_id=task_id,
+                    status="denied",
+                    duration_ms=duration_ms,
+                    error=str(sanitize_err),
+                    arguments=arguments_with_context,
+                )
+                return ToolCallResult(
+                    call_id=call_id,
+                    tool_id=tool_id,
+                    success=False,
+                    error=str(sanitize_err),
+                )
+
             logger.info(
                 "Executing tool: %s with arguments: %s",
                 tool_id,
-                arguments_with_context,
+                sanitized_arguments,
             )
 
             # Handle both sync and async executors
             if hasattr(executor, "execute"):
                 if asyncio.iscoroutinefunction(executor.execute):
-                    result = await executor.execute(**arguments_with_context)
+                    result = await executor.execute(**sanitized_arguments)
                 else:
-                    result = executor.execute(**arguments_with_context)
+                    result = executor.execute(**sanitized_arguments)
             elif callable(executor):
                 if asyncio.iscoroutinefunction(executor):
-                    result = await executor(**arguments_with_context)
+                    result = await executor(**sanitized_arguments)
                 else:
-                    result = executor(**arguments_with_context)
+                    result = executor(**sanitized_arguments)
             else:
                 duration_ms = int((time.monotonic() - start_time) * 1000)
                 await log_tool_invocation(
@@ -574,7 +683,7 @@ class ExecutorToolRegistry:
                 task_id=task_id,
                 status="success",
                 duration_ms=duration_ms,
-                arguments=arguments,
+                arguments=sanitized_arguments,
             )
 
             return ToolCallResult(
@@ -1215,7 +1324,7 @@ class ExecutorToolRegistry:
                 },
                 "required": ["kernel_name", "property"],
             },
-            "long_plan.execute": {
+            "long_plan_execute": {
                 "type": "object",
                 "properties": {
                     "plan_id": {
@@ -1230,7 +1339,7 @@ class ExecutorToolRegistry:
                 },
                 "required": ["plan_id"],
             },
-            "long_plan.simulate": {
+            "long_plan_simulate": {
                 "type": "object",
                 "properties": {
                     "plan_id": {
@@ -1848,7 +1957,7 @@ def _get_l_tool_schema_for_registry(tool_name: str):
             },
             required=["kernel_name", "property"],
         ),
-        "long_plan.execute": ToolSchema(
+        "long_plan_execute": ToolSchema(
             type="object",
             properties={
                 "plan_id": {"type": "string", "description": "Plan identifier"},
@@ -1856,7 +1965,7 @@ def _get_l_tool_schema_for_registry(tool_name: str):
             },
             required=["plan_id"],
         ),
-        "long_plan.simulate": ToolSchema(
+        "long_plan_simulate": ToolSchema(
             type="object",
             properties={
                 "plan_id": {"type": "string", "description": "Plan identifier"},
@@ -2470,7 +2579,7 @@ async def register_l_tools() -> int:
             agent_id="L",
         ),
         ToolDefinition(
-            name="long_plan.execute",
+            name="long_plan_execute",
             description="Execute a long plan through LangGraph DAG",
             category="orchestration",
             scope="internal",
@@ -2481,7 +2590,7 @@ async def register_l_tools() -> int:
             agent_id="L",
         ),
         ToolDefinition(
-            name="long_plan.simulate",
+            name="long_plan_simulate",
             description="Simulate a long plan without executing (dry run)",
             category="orchestration",
             scope="internal",
@@ -2977,6 +3086,12 @@ async def register_l_tools() -> int:
             agent_id="L",
         ),
     ]
+
+    # GMP-44: Populate auto-discovery mapping before registration
+    global _TOOL_AGENT_IDS
+    for tool_def in tools_to_register:
+        _TOOL_AGENT_IDS[tool_def.name] = tool_def.agent_id
+    logger.info(f"Auto-discovery: populated {len(_TOOL_AGENT_IDS)} tool→agent mappings")
 
     # Register each tool in BOTH Neo4j AND base registry
     registered_count = 0

@@ -114,8 +114,8 @@ def _finish_span(
             obs_service = get_observability_service()
             if obs_service:
                 obs_service.emit_span(span)
-        except Exception:
-            pass  # Best-effort emission
+        except Exception as e:
+            logger.debug("kernel_loader.span_emission_failed", error=str(e))  # Best-effort emission
     except Exception as e:
         logger.debug("kernel_loader.span_finish_failed", error=str(e))
 

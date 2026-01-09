@@ -74,6 +74,14 @@ try:
 except ImportError:
     _has_slack = False
 
+# Optional: Modules Status Router (GMP-45)
+try:
+    from api.routes.modules import router as modules_router
+
+    _has_modules_router = True
+except ImportError:
+    _has_modules_router = False
+
 # Optional: Quantum Research Factory (v2.1+)
 try:
     from services.research.research_api import router as research_router
@@ -384,6 +392,58 @@ async def lifespan(app: FastAPI):
     # STARTUP: Run migrations and initialize memory service
     # ========================================================================
     logger.info("Starting L9 API server...")
+
+    # ------------------------------------------------------------------------
+    # GMP-45: ModuleRegistry (runtime truth)
+    # ------------------------------------------------------------------------
+    try:
+        from core.moduleregistry import ModuleRegistry, ModuleDefinition
+
+        module_registry = ModuleRegistry()
+        module_registry.register(
+            ModuleDefinition(
+                module_id="memory",
+                display_name="Memory Substrate",
+                route_prefix="/api/v1/memory",
+            )
+        )
+        module_registry.register(
+            ModuleDefinition(
+                module_id="tools",
+                display_name="Tools Router",
+                route_prefix="/tools",
+            )
+        )
+        module_registry.register(
+            ModuleDefinition(
+                module_id="slack",
+                display_name="Slack Adapter",
+                route_prefix="/slack",
+            )
+        )
+        module_registry.register(
+            ModuleDefinition(
+                module_id="research_swarm",
+                display_name="Research Swarm",
+                route_prefix="/research/swarm",
+            )
+        )
+        module_registry.register(
+            ModuleDefinition(
+                module_id="world_model",
+                display_name="World Model",
+                route_prefix="/worldmodel",
+            )
+        )
+
+        app.state.module_registry = module_registry
+        logger.info("ModuleRegistry ready (GMP-45)")
+    except Exception as e:
+        # Fail-fast contract: ModuleRegistry is a required wiring primitive for E2E observability.
+        # Do not silently degrade; server must not start in a half-working state.
+        app.state.module_registry = None
+        logger.critical("FATAL: ModuleRegistry init failed: %s", str(e), exc_info=True)
+        raise RuntimeError(f"ModuleRegistry init failed: {e}") from e
 
     # Get database URL
     database_url = os.getenv("MEMORY_DSN") or os.getenv("DATABASE_URL")
@@ -2065,6 +2125,11 @@ app.include_router(os_routes.router, prefix="/os")
 
 # Background agent tasking
 app.include_router(agent_routes.router, prefix="/agent")
+
+# Modules status router (GMP-45)
+if _has_modules_router:
+    app.include_router(modules_router)
+    logger.info("Modules router registered at /modules")
 
 # Persistent memory router
 app.include_router(memory_router, prefix="/api/v1/memory")

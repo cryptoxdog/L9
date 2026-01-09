@@ -345,6 +345,14 @@ class ExecutionResult(BaseModel):
     tokens_used: Optional[int] = Field(
         None, ge=0, description="Total tokens consumed across all LLM calls"
     )
+    governance_blocks: Optional[List[dict[str, Any]]] = Field(
+        None,
+        description="Governance blocks that occurred during execution (authority, safety, tool approval)",
+    )
+    user_corrections: Optional[List[dict[str, Any]]] = Field(
+        None,
+        description="User corrections provided during execution for behavioral gap analysis",
+    )
 
     model_config = {"extra": "forbid"}
 

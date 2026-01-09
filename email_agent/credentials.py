@@ -16,7 +16,7 @@ try:
     GMAIL_AUTH_AVAILABLE = True
 except ImportError:
     GMAIL_AUTH_AVAILABLE = False
-    logging.warning("Gmail OAuth libraries not available")
+    structlog.get_logger(__name__).warning("Gmail OAuth libraries not available")
 
 from email_agent.config import TOKENS_FILE, CLIENT_SECRET_FILE, SCOPES, ensure_dirs
 

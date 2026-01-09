@@ -44,11 +44,11 @@ class Neo4jBackend:
         """Initialize Neo4j connection."""
         try:
             # Import here to avoid hard dependency
-            from neo4j import AsyncGraphDatabase
+            from neo4j import AsyncGraphDatabase, basic_auth
             
             self.driver = AsyncGraphDatabase.driver(
                 self.uri,
-                auth=(self.user, self.password),
+                auth=basic_auth(self.user, self.password),
                 connection_timeout=30,
                 max_pool_size=50
             )

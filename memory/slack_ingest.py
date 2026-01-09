@@ -37,14 +37,35 @@ Error handling:
 import httpx
 from typing import Any, Dict, Optional, Tuple
 import structlog
+from time import time as current_time
 
 from api.slack_adapter import SlackRequestNormalizer
 from api.slack_client import SlackAPIClient, SlackClientError
 from memory.substrate_models import PacketEnvelopeIn, PacketMetadata, PacketProvenance
 from memory.substrate_service import MemorySubstrateService
 from config.settings import settings
+from telemetry.slack_metrics import (
+    record_aios_call,
+    record_idempotent_hit,
+    record_packet_write_error,
+    record_slack_reply_error,
+)
 
 logger = structlog.get_logger(__name__)
+
+# =============================================================================
+# CANONICAL LOG EVENT NAMES (9 required per Module-Spec-v2.5)
+# =============================================================================
+# 1. slack_request_received - Webhook request received (logged in routes)
+# 2. slack_signature_verified - HMAC signature validated (logged in routes)
+# 3. slack_thread_uuid_generated - Deterministic UUID created
+# 4. slack_dedupe_check - Idempotency check performed
+# 5. slack_aios_call_start - AIOS/Agent call initiated
+# 6. slack_aios_call_complete - AIOS/Agent call finished
+# 7. slack_packet_stored - PacketEnvelope persisted
+# 8. slack_reply_sent - Slack reply posted
+# 9. slack_handler_error - Error during processing
+# =============================================================================
 
 # Feature flag for legacy Slack routing
 # When False, route Slack messages through AgentTask + AgentExecutorService
@@ -462,8 +483,9 @@ async def handle_slack_events(
     text = normalized.get("text", "")
     event_type = normalized.get("event_type")
 
+    # CANONICAL LOG EVENT 3: Thread UUID generated
     logger.info(
-        "slack_event_received",
+        "slack_thread_uuid_generated",
         event_id=event_id,
         event_type=event_type,
         team_id=team_id,
@@ -502,14 +524,17 @@ async def handle_slack_events(
         )
 
         if dedupe_result.get("is_duplicate"):
+            # CANONICAL LOG EVENT 4: Dedupe check - duplicate found
             logger.info(
-                "slack_event_deduplicated",
+                "slack_dedupe_check",
                 event_id=event_id,
+                is_duplicate=True,
                 reason=dedupe_result.get("reason"),
             )
+            record_idempotent_hit(team_id=team_id)
             return {"ok": True, "deduplicated": True}
     except Exception as e:
-        logger.error("slack_dedupe_check_error", error=str(e), event_id=event_id)
+        logger.error("slack_dedupe_check", error=str(e), event_id=event_id, is_duplicate=False)
         # Continue processing; dedupe is opportunistic
 
     # Retrieve memory context
@@ -879,6 +904,10 @@ async def handle_slack_events(
     # Call AIOS /chat endpoint
     aios_response = None
     aios_error = None
+    aios_start_time = current_time()
+
+    # CANONICAL LOG EVENT 5: AIOS call start
+    logger.info("slack_aios_call_start", event_id=event_id, agent_type="aios")
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -901,22 +930,33 @@ async def handle_slack_events(
             aios_response_obj.raise_for_status()
             aios_response = aios_response_obj.json()
 
+            aios_duration = current_time() - aios_start_time
+            # CANONICAL LOG EVENT 6: AIOS call complete
             logger.info(
-                "aios_chat_success",
+                "slack_aios_call_complete",
                 event_id=event_id,
                 response_length=len(aios_response.get("reply", "")),
+                duration_seconds=aios_duration,
+                status="success",
             )
+            record_aios_call(agent_type="aios", duration_seconds=aios_duration)
     except httpx.TimeoutException:
         aios_error = "AIOS timeout (10s)"
-        logger.error("aios_chat_timeout", event_id=event_id)
+        aios_duration = current_time() - aios_start_time
+        logger.error("slack_aios_call_complete", event_id=event_id, status="timeout", duration_seconds=aios_duration)
+        record_aios_call(agent_type="aios", duration_seconds=aios_duration)
     except httpx.HTTPStatusError as e:
         aios_error = f"AIOS HTTP {e.response.status_code}"
+        aios_duration = current_time() - aios_start_time
         logger.error(
-            "aios_chat_http_error", event_id=event_id, status=e.response.status_code
+            "slack_aios_call_complete", event_id=event_id, status="http_error", http_status=e.response.status_code, duration_seconds=aios_duration
         )
+        record_aios_call(agent_type="aios", duration_seconds=aios_duration)
     except Exception as e:
         aios_error = str(e)
-        logger.error("aios_chat_error", event_id=event_id, error=aios_error)
+        aios_duration = current_time() - aios_start_time
+        logger.error("slack_aios_call_complete", event_id=event_id, status="error", error=aios_error, duration_seconds=aios_duration)
+        record_aios_call(agent_type="aios", duration_seconds=aios_duration)
 
     # Store inbound packet
     try:
@@ -943,13 +983,16 @@ async def handle_slack_events(
         )
 
         result = await substrate_service.write_packet(inbound_packet_in)
+        # CANONICAL LOG EVENT 7: Packet stored
         logger.debug(
-            "slack_inbound_packet_stored", event_id=event_id, packet_id=result.packet_id
+            "slack_packet_stored", event_id=event_id, packet_id=result.packet_id, packet_type="slack.in"
         )
     except Exception as e:
+        # CANONICAL LOG EVENT 9: Handler error
         logger.error(
-            "slack_inbound_packet_storage_error", error=str(e), event_id=event_id
+            "slack_handler_error", error=str(e), event_id=event_id, context="inbound_packet_storage"
         )
+        record_packet_write_error(packet_type="slack.in")
 
     # Prepare outbound response
     reply_text = aios_response.get("reply") if aios_response else None
@@ -972,13 +1015,16 @@ async def handle_slack_events(
             reply_broadcast=False,
         )
         slack_ts = slack_response.get("ts")
-        logger.info("slack_reply_posted", event_id=event_id, slack_ts=slack_ts)
+        # CANONICAL LOG EVENT 8: Reply sent
+        logger.info("slack_reply_sent", event_id=event_id, slack_ts=slack_ts, channel_id=channel_id)
     except SlackClientError as e:
         slack_error = str(e)
-        logger.error("slack_post_error", event_id=event_id, error=slack_error)
+        logger.error("slack_reply_sent", event_id=event_id, error=slack_error, status="error")
+        record_slack_reply_error(error_type="api_error")
     except Exception as e:
         slack_error = str(e)
-        logger.error("slack_post_exception", event_id=event_id, error=slack_error)
+        logger.error("slack_reply_sent", event_id=event_id, error=slack_error, status="exception")
+        record_slack_reply_error(error_type="exception")
 
     # Store outbound packet
     try:
@@ -1006,14 +1052,17 @@ async def handle_slack_events(
         )
 
         result = await substrate_service.write_packet(outbound_packet_in)
+        # CANONICAL LOG EVENT 7: Packet stored (outbound)
         logger.debug(
-            "slack_outbound_packet_stored",
+            "slack_packet_stored",
             event_id=event_id,
             packet_id=result.packet_id,
+            packet_type="slack.out",
         )
     except Exception as e:
+        # CANONICAL LOG EVENT 9: Handler error
         logger.error(
-            "slack_outbound_packet_storage_error", error=str(e), event_id=event_id
+            "slack_handler_error", error=str(e), event_id=event_id, context="outbound_packet_storage"
         )
 
     return {"ok": True}

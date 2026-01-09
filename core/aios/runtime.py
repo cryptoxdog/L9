@@ -252,8 +252,18 @@ class AIOSRuntime:
                 # Parse tool arguments
                 try:
                     arguments = json.loads(tool_call.function.arguments)
-                except json.JSONDecodeError:
-                    arguments = {}
+                except json.JSONDecodeError as e:
+                    # Fail loudly: explicit error logging and raise
+                    logger.error(
+                        "AIOS tool_call.json_decode_failed",
+                        tool_id=tool_call.function.name,
+                        raw_arguments=tool_call.function.arguments,
+                        error=str(e),
+                        exc_info=True,
+                    )
+                    raise ValueError(
+                        f"Failed to parse tool call arguments for {tool_call.function.name}: {str(e)}"
+                    ) from e
 
                 # Create tool call request
                 # function.name IS the tool_id (canonical identity)

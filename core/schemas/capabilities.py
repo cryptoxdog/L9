@@ -62,8 +62,8 @@ class ToolName(str, Enum):
     MAC_AGENT_EXEC_TASK = "mac_agent_exec_task"
 
     # Long plan orchestration tools
-    LONG_PLAN_EXECUTE = "long_plan.execute"
-    LONG_PLAN_SIMULATE = "long_plan.simulate"
+    LONG_PLAN_EXECUTE = "long_plan_execute"
+    LONG_PLAN_SIMULATE = "long_plan_simulate"
 
     # Symbolic computation tools (Quantum AI Factory)
     SYMBOLIC_COMPUTE = "symbolic_compute"

@@ -5,9 +5,10 @@ L9 CI Gate: Tool Wiring Consistency Check
 
 Validates that all L9 tools are properly wired across:
 - runtime/l_tools.py TOOL_EXECUTORS
-- core/schemas/capabilities.py ToolName enum
-- core/schemas/capabilities.py DEFAULT_L_CAPABILITIES
-- core/tools/registry_adapter.py register_l_tools()
+- core/tools/registry_adapter.py register_l_tools() ToolDefinitions
+
+NOTE (GMP-44): ToolName enum and DEFAULT_L_CAPABILITIES are now INFORMATIONAL ONLY.
+Auto-discovery from ToolDefinition.agent_id is the source of truth for capabilities.
 
 Usage:
     python ci/check_tool_wiring.py
@@ -65,63 +66,58 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
         return False, errors
     
     # =========================================================================
-    # Check 1: TOOL_EXECUTORS vs ToolName enum
+    # Check 1: TOOL_EXECUTORS vs ToolName enum (INFORMATIONAL - GMP-44)
     # =========================================================================
     
-    logger.info("\n🔍 Check 1: TOOL_EXECUTORS vs ToolName enum")
+    logger.info("\n🔍 Check 1: TOOL_EXECUTORS vs ToolName enum (INFORMATIONAL)")
     
-    # Tools in TOOL_EXECUTORS but not in ToolName
+    # GMP-44: ToolName enum is now optional for type-safety only.
+    # Auto-discovery from ToolDefinition.agent_id is the source of truth.
     missing_from_enum = l_tools_executors - toolname_values
     if missing_from_enum:
-        for tool in sorted(missing_from_enum):
-            errors.append(
-                f"Tool '{tool}' is in TOOL_EXECUTORS but missing from ToolName enum"
-            )
-        logger.info(f"   ❌ {len(missing_from_enum)} tool(s) missing from ToolName enum")
+        # Downgraded from error to info - not blocking since GMP-44
+        logger.info(f"   ℹ️  {len(missing_from_enum)} tool(s) not in ToolName enum (OK - auto-discovered)")
     else:
         logger.info("   ✅ All TOOL_EXECUTORS have ToolName enum entries")
     
     # =========================================================================
-    # Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES
+    # Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES (DEPRECATED - GMP-44)
     # =========================================================================
     
-    logger.info("\n🔍 Check 2: TOOL_EXECUTORS vs DEFAULT_L_CAPABILITIES")
+    logger.info("\n🔍 Check 2: DEFAULT_L_CAPABILITIES (DEPRECATED - auto-discovery active)")
     
-    # Tools in TOOL_EXECUTORS but not in L's capabilities
+    # GMP-44: DEFAULT_L_CAPABILITIES is deprecated.
+    # Capabilities are now auto-discovered from ToolDefinition.agent_id.
     missing_from_capabilities = l_tools_executors - l_capability_tools
     if missing_from_capabilities:
-        for tool in sorted(missing_from_capabilities):
-            # This is a warning, not error - some tools may be intentionally ungated
-            warnings.append(
-                f"Tool '{tool}' is in TOOL_EXECUTORS but not in DEFAULT_L_CAPABILITIES "
-                "(may be intentional if ungated)"
-            )
-        logger.info(f"   ⚠️  {len(missing_from_capabilities)} tool(s) not in L capabilities (may be intentional)")
+        # Downgraded from warning to info - DEFAULT_L_CAPABILITIES is deprecated
+        logger.info(f"   ℹ️  {len(missing_from_capabilities)} tool(s) not in DEFAULT_L_CAPABILITIES (OK - auto-discovered)")
     else:
         logger.info("   ✅ All TOOL_EXECUTORS have L capability entries")
     
     # =========================================================================
-    # Check 3: Verify high-risk tools have approval flags
+    # Check 3: Verify high-risk tools have approval flags in ToolDefinition
     # =========================================================================
     
     logger.info("\n🔍 Check 3: High-risk tools have approval requirements")
     
     HIGH_RISK_TOOLS = {"gmp_run", "git_commit", "mac_agent_exec_task"}
     
+    # Check ToolDefinitions in registry_adapter.py for requires_igor_approval
+    registry_adapter_path = PROJECT_ROOT / "core" / "tools" / "registry_adapter.py"
+    content = registry_adapter_path.read_text()
+    
+    import re
     for tool in HIGH_RISK_TOOLS:
         if tool not in l_tools_executors:
             continue  # Skip if not in executors
             
-        # Check if it's in capabilities with proper scope
-        cap = DEFAULT_L_CAPABILITIES.get_capability(ToolName(tool))
-        if cap is None:
+        # Check if ToolDefinition has requires_igor_approval=True
+        # The ToolDefinition spans multiple lines, so we use [\s\S] to match any char including newlines
+        tool_def_pattern = rf'ToolDefinition\([\s\S]*?name="{tool}"[\s\S]*?requires_igor_approval=True[\s\S]*?\),'
+        if not re.search(tool_def_pattern, content):
             errors.append(
-                f"High-risk tool '{tool}' has no capability entry in DEFAULT_L_CAPABILITIES"
-            )
-        elif cap.scope != "requires_igor_approval":
-            errors.append(
-                f"High-risk tool '{tool}' should have scope='requires_igor_approval' "
-                f"but has scope='{cap.scope}'"
+                f"High-risk tool '{tool}' should have requires_igor_approval=True in ToolDefinition"
             )
     
     if not any("High-risk" in e for e in errors):
@@ -219,7 +215,7 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
             logger.info(f"   ⚠️  Inconsistency detected")
     
     # =========================================================================
-    # Summary
+    # Summary (GMP-44: Auto-discovery is source of truth)
     # =========================================================================
     
     logger.info("\n" + "=" * 60)
@@ -227,8 +223,9 @@ def check_tool_wiring() -> tuple[bool, list[str]]:
     logger.info("=" * 60)
     
     logger.info(f"\n   Tools in TOOL_EXECUTORS: {len(l_tools_executors)}")
-    logger.info(f"   Tools in ToolName enum:  {len(toolname_values)}")
-    logger.info(f"   Tools in L capabilities: {len(l_capability_tools)}")
+    logger.info(f"   Tools in ToolName enum:  {len(toolname_values)} (informational)")
+    logger.info(f"   Tools in L capabilities: {len(l_capability_tools)} (deprecated)")
+    logger.info(f"   ℹ️  GMP-44: Auto-discovery from ToolDefinition.agent_id is active")
     
     if errors:
         logger.info(f"\n   ❌ ERRORS: {len(errors)}")

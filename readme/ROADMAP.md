@@ -286,6 +286,33 @@ GMP-31 and GMP-32 enabled **ALL 70 high-value capabilities** across 10 batches:
 
 ## Future (Deferred) 🔮
 
+### Stage 8: Self-Reflection Governance Tracking 🔄
+
+**Status:** 🔄 PARTIAL (Data Flow Complete, Action Handlers Missing)
+**Implementation Spec:** `docs/IMPL-Self-Reflection-Governance-Tracking.md`
+**GMP:** governance_tracking_enterprise_frontier
+
+**Completed:**
+- [x] Track governance blocks (authority, safety, tool approval) on AgentInstance
+- [x] Track user corrections on AgentInstance
+- [x] Wire to ExecutionResult schema
+- [x] Populate in self-reflection TaskExecutionContext
+- [x] GovernanceBlockPattern (POLICY) and UserCorrectionPattern (CONSTRAINT) fire correctly
+- [x] Integration tests (20 tests passing)
+
+**Remaining:**
+- [ ] Severity escalation for GovernanceBlockPattern (currently always LOW)
+- [ ] Wire user correction detection from conversation layer (chat, websocket, slack)
+- [ ] Slack notification for kernel evolution plans
+- [ ] API endpoints for evolution plan management
+- [ ] ApprovalManager integration for evolution proposals
+
+**Dependencies:**
+- Enables: Kernel hot-reload based on behavioral gaps
+- Blocks: Full self-evolution capabilities
+
+---
+
 ### Self-Evolution Capabilities
 > ⚠️ **DEFERRED** - Requires careful security review and governance framework.
 
@@ -331,6 +358,7 @@ The following capabilities are intentionally deferred until proper safety mechan
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 0.5.0 | 2026-01-08 | Added Stage 8 (Self-Reflection Governance Tracking) with implementation spec |
 | 0.4.0 | 2026-01-08 | Added Development Environment section (venv Homebrew Python migration) |
 | 0.3.0 | 2026-01-05 | Added Stage 2.7 (PacketEnvelope v2.0 Schema Migration) with sunset timeline |
 | 0.2.0 | 2025-01-27 | Added Stage 2.5 (Memory API & Client SDK completion), Stage 2.6 (Orchestrator API Wiring), gap analysis docs |

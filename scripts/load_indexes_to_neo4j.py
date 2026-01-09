@@ -37,7 +37,7 @@ INDEX_DIR = REPO_DIR / "readme" / "repo-index"
 
 # Try to import Neo4j
 try:
-    from neo4j import GraphDatabase
+    from neo4j import GraphDatabase, basic_auth
     HAS_NEO4J = True
 except ImportError:
     HAS_NEO4J = False
@@ -56,7 +56,7 @@ class RepoGraphLoader:
         dry_run: bool = False,
         verbose: bool = False,
     ):
-        self.uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        self.uri = uri or os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.user = user or os.getenv("NEO4J_USER", "neo4j")
         self.password = password or os.getenv("NEO4J_PASSWORD")
         self.database = database
@@ -92,7 +92,7 @@ class RepoGraphLoader:
         try:
             self.driver = GraphDatabase.driver(
                 self.uri,
-                auth=(self.user, self.password),
+                auth=basic_auth(self.user, self.password),
             )
             # Test connection
             with self.driver.session(database=self.database) as session:

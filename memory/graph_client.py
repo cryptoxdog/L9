@@ -23,7 +23,7 @@ logger = structlog.get_logger(__name__)
 
 # Try to import Neo4j driver
 try:
-    from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession
+    from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession, basic_auth
     from neo4j.exceptions import ServiceUnavailable, AuthError
 
     _has_neo4j = True
@@ -65,7 +65,7 @@ class Neo4jClient:
             )
             return
 
-        self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        self._uri = uri or os.getenv("NEO4J_URL") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
         self._password = password or os.getenv("NEO4J_PASSWORD")
         self._database = database
@@ -92,7 +92,7 @@ class Neo4jClient:
         try:
             self._driver = AsyncGraphDatabase.driver(
                 self._uri,
-                auth=(self._user, self._password),
+                auth=basic_auth(self._user, self._password),
             )
 
             # Test connection

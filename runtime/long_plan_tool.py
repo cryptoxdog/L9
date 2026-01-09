@@ -58,7 +58,7 @@ async def long_plan_execute_tool(
     try:
         # Use tool_call_wrapper to ensure logging
         result = await tool_call_wrapper(
-            tool_name="long_plan.execute",
+            tool_name="long_plan_execute",
             tool_func=execute_long_plan,
             agent_id=agent_id,
             goal=goal,
@@ -108,7 +108,7 @@ async def long_plan_simulate_tool(
     try:
         # Use tool_call_wrapper to ensure logging
         result = await tool_call_wrapper(
-            tool_name="long_plan.simulate",
+            tool_name="long_plan_simulate",
             tool_func=simulate_long_plan,
             agent_id=agent_id,
             goal=goal,

@@ -8,7 +8,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from email_agent.credentials import create_flow, exchange_code_for_tokens
 
-logging.basicConfig(level=logging.INFO)
 logger = structlog.get_logger(__name__)
 
 PORT = 8080

@@ -29,7 +29,7 @@ try:
     GMAIL_AVAILABLE = True
 except ImportError:
     GMAIL_AVAILABLE = False
-    logging.warning("Gmail API libraries not available")
+    structlog.get_logger(__name__).warning("Gmail API libraries not available")
 
 logger = structlog.get_logger(__name__)
 

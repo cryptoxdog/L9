@@ -88,15 +88,15 @@ secrets/
 # Backup/reference files (local only)
 Repo-Files/
 
+# Local reports (generated / archive)
+reports/GMP Reports/
+
 # Generated specs
 docs/12-19-25/generated/specs/config_loader.yaml
 .Trash/
 
 # CodeGen extractions (generated output)
 codegen/extractions/
-
-# Prototype/roadmap docs (contains secrets, not production code)
-docs/
 
 # Python packaging artifacts
 *.egg-info/

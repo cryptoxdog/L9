@@ -21,9 +21,15 @@ from pathlib import Path
 
 # Configuration
 logger = structlog.get_logger(__name__)
-REPO_DIR = "/Users/ib-mac/Projects/L9"
-REPO_INDEX_DIR = "/Users/ib-mac/Projects/L9/readme/repo-index"
-DROPBOX_EXPORT_DIR = "/Users/ib-mac/Dropbox/Repo_Dropbox_IB/L9-index-export"
+
+# Use L9_REPO_ROOT env var if set, otherwise fall back to default paths
+_REPO_ROOT = os.getenv("L9_REPO_ROOT", "/Users/ib-mac/Projects/L9")
+REPO_DIR = _REPO_ROOT
+REPO_INDEX_DIR = os.path.join(_REPO_ROOT, "readme/repo-index")
+DROPBOX_EXPORT_DIR = os.getenv(
+    "L9_DROPBOX_EXPORT_DIR",
+    "/Users/ib-mac/Dropbox/Repo_Dropbox_IB/L9-index-export"
+)
 
 # Directories to skip
 SKIP_DIRS = {

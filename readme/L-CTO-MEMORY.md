@@ -1,6 +1,6 @@
-Let me check the actual configuration:
+# L-CTO Memory Architecture
 
-[3 tools called]
+*Updated: 2026-01-08*
 
 ## Current Design: **Shared User ID, Different Scope**
 
@@ -70,3 +70,34 @@ elif token == settings.MCP_API_KEY_C:
 L (as CTO kernel) has **supervisory access** — can see and modify everything Cursor does. Cursor can see L's guidance but can't overwrite it.
 
 **You did NOT give us separate user IDs** — we share `l9-shared` so we collaborate in the same memory space.
+
+---
+
+## L's Memory Tools (20 total)
+
+L has 20 memory-related tools (auto-discovered via GMP-44):
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| Core | `memory_search`, `memory_write`, `memory_hybrid_search` | Basic read/write |
+| Substrate Direct | 9 tools | Direct packet access |
+| Client API | 5 tools | High-level operations |
+| Advanced | 3 tools | Health, checkpoints, world model |
+
+See `readme/L-CTO-ABILITIES.md` for full list.
+
+---
+
+## Cursor Memory Client
+
+Cursor accesses memory via REST API:
+
+```bash
+python3 .cursor-commands/cursor-memory/cursor_memory_client.py [command]
+```
+
+| Command | Purpose |
+|---------|---------|
+| `search "query"` | Semantic search |
+| `write "content" --kind TYPE` | Write packet |
+| `health` | Check connectivity |
